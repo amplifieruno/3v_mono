@@ -15,6 +15,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "download-models": "chmod +x scripts/download-models.sh && ./scripts/download-models.sh",
+    "sync-db": "tsx src/scripts/sync-db.ts",
     "setup": "pnpm install && pnpm download-models"
   },
   "dependencies": {

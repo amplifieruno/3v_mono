@@ -18,6 +18,7 @@ export function FaceDebugPage() {
   const [faceDetectionResult, setFaceDetectionResult] = useState<any>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [realtimeStats, setRealtimeStats] = useState({ fps: 0, processed: 0, errors: 0 })
+  const [identityStats, setIdentityStats] = useState<any>(null)
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -44,6 +45,28 @@ export function FaceDebugPage() {
         clearInterval(streamIntervalRef.current)
       }
     }
+  }, [])
+
+  // Load Identity stats on mount and periodically
+  useEffect(() => {
+    const loadIdentityStats = async () => {
+      try {
+        const response = await fetch('/api/identities')
+        if (response.ok) {
+          const data = await response.json()
+          setIdentityStats(data.stats)
+        }
+      } catch (error) {
+        console.error('Error loading identity stats:', error)
+      }
+    }
+
+    loadIdentityStats()
+    
+    // Reload stats every 10 seconds
+    const interval = setInterval(loadIdentityStats, 10000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const drawFaceOverlay = useCallback((faces: any[]) => {
@@ -236,7 +259,7 @@ export function FaceDebugPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Feed */}
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -343,7 +366,23 @@ export function FaceDebugPage() {
 
               {faceDetectionResult.faces?.map((face: any, index: number) => (
                 <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                  <h4 className="font-medium mb-2">Face {index + 1}</h4>
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium">Face {index + 1}</h4>
+                    {face.identity && (
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          face.identity.isNewIdentity 
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800' 
+                        }`}>
+                          {face.identity.isNewIdentity ? 'NEW' : 'KNOWN'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ID: {face.identity.id.substring(0, 8)}...
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -353,15 +392,21 @@ export function FaceDebugPage() {
                       </span>
                     </div>
                     
-                    <div>
-                      <span className="font-medium">Age:</span>
-                      <span className="ml-2">{face.age || 'N/A'}</span>
-                    </div>
+                    {face.identity && (
+                      <div>
+                        <span className="font-medium">Similarity:</span>
+                        <span className="ml-2 text-blue-600">
+                          {(face.identity.similarity * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
                     
-                    <div>
-                      <span className="font-medium">Gender:</span>
-                      <span className="ml-2">{face.gender || 'N/A'}</span>
-                    </div>
+                    {face.identity && (
+                      <div>
+                        <span className="font-medium">Detections:</span>
+                        <span className="ml-2">{face.identity.detectionCount}</span>
+                      </div>
+                    )}
                     
                     <div>
                       <span className="font-medium">Position:</span>
@@ -369,13 +414,35 @@ export function FaceDebugPage() {
                         ({face.x_min}, {face.y_min})
                       </span>
                     </div>
+
+                    {face.identity && (
+                      <div className="col-span-2">
+                        <span className="font-medium">Status:</span>
+                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                          face.identity.status === 'verified' 
+                            ? 'bg-green-100 text-green-800' 
+                            : face.identity.status === 'unverified'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {face.identity.status}
+                        </span>
+                      </div>
+                    )}
+
+                    {face.identity && !face.identity.isNewIdentity && (
+                      <div className="col-span-2 text-xs text-gray-600">
+                        <div>First seen: {new Date(face.identity.firstSeen).toLocaleString()}</div>
+                        <div>Last seen: {new Date(face.identity.lastSeen).toLocaleString()}</div>
+                      </div>
+                    )}
                   </div>
 
                   {face.embedding && (
                     <div className="mt-2">
-                      <span className="font-medium">Descriptor:</span>
+                      <span className="font-medium">Embedding:</span>
                       <div className="mt-1 p-2 bg-white rounded text-xs font-mono break-all">
-                        [{face.embedding.slice(0, 10).join(', ')}...]
+                        [{face.embedding.slice(0, 8).join(', ')}...] (128D)
                       </div>
                     </div>
                   )}
@@ -385,6 +452,59 @@ export function FaceDebugPage() {
           ) : (
             <div className="text-center py-8 text-gray-500">
               Capture an image to see detection results
+            </div>
+          )}
+        </Card>
+
+        {/* Identity Statistics */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Identity Database</h2>
+          
+          {identityStats ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{identityStats.total}</div>
+                  <div className="text-sm text-gray-600">Total Identities</div>
+                </div>
+                
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{identityStats.verified}</div>
+                  <div className="text-sm text-gray-600">Verified</div>
+                </div>
+                
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{identityStats.unverified}</div>
+                  <div className="text-sm text-gray-600">Unverified</div>
+                </div>
+                
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">{identityStats.recentDetections}</div>
+                  <div className="text-sm text-gray-600">Recent (1h)</div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-medium mb-2">Distribution</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Verified:</span>
+                    <span>{identityStats.total > 0 ? Math.round((identityStats.verified / identityStats.total) * 100) : 0}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Unverified:</span>
+                    <span>{identityStats.total > 0 ? Math.round((identityStats.unverified / identityStats.total) * 100) : 0}%</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Archived:</span>
+                    <span>{identityStats.total > 0 ? Math.round((identityStats.archived / identityStats.total) * 100) : 0}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Loading identity statistics...
             </div>
           )}
         </Card>

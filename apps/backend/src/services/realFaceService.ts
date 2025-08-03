@@ -9,6 +9,7 @@ import sharp from 'sharp'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { identityService } from './identityService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -24,6 +25,15 @@ interface DetectedFace {
   y_max: number
   landmarks?: number[][]
   embedding?: number[]
+  identity?: {
+    id: string
+    similarity: number
+    isNewIdentity: boolean
+    detectionCount: number
+    firstSeen: string
+    lastSeen: string
+    status: string
+  }
 }
 
 interface FaceDetectionResult {
@@ -162,6 +172,39 @@ class RealFaceService {
       // Wait for all embeddings to be generated
       const faces: DetectedFace[] = await Promise.all(facePromises)
 
+      // Add Identity information to each detected face
+      const facesWithIdentities = await Promise.all(
+        faces.map(async (face) => {
+          if (face.embedding) {
+            try {
+              const identityMatch = await identityService.findOrCreateIdentity({
+                embedding: face.embedding,
+                confidence: face.confidence,
+                x_min: face.x_min,
+                y_min: face.y_min,
+                x_max: face.x_max,
+                y_max: face.y_max
+              })
+
+              face.identity = {
+                id: identityMatch.identity.id,
+                similarity: identityMatch.similarity,
+                isNewIdentity: identityMatch.isNewIdentity,
+                detectionCount: identityMatch.identity.detectionCount,
+                firstSeen: identityMatch.identity.firstSeen?.toISOString() || new Date().toISOString(),
+                lastSeen: identityMatch.identity.lastSeen?.toISOString() || new Date().toISOString(),
+                status: identityMatch.identity.status
+              }
+
+              console.log(`👤 Face mapped to identity: ${face.identity.id} (${face.identity.isNewIdentity ? 'NEW' : 'EXISTING'})`)
+            } catch (error) {
+              console.error('Error processing identity for face:', error)
+            }
+          }
+          return face
+        })
+      )
+
       // Cleanup tensors
       imageTensor.dispose()
       if (rgbTensor !== imageTensor) {
@@ -172,7 +215,7 @@ class RealFaceService {
       console.log(`Face detection completed in ${processingTime}ms`)
 
       return {
-        faces,
+        faces: facesWithIdentities,
         processing_time: processingTime
       }
 

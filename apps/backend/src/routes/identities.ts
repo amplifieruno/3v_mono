@@ -1,27 +1,32 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import { identityService } from '../services/identityService.js'
 
 const router = Router()
 
 // GET /api/identities
 router.get('/', asyncHandler(async (req, res) => {
-  // TODO: Implement actual identity fetching
-  const identities = [
-    {
-      id: '1',
-      embeddings: [],
-      attributes: { age: 30, gender: 'male' },
-      confidence: 0.95,
-      status: 'verified',
-      createdAt: new Date(),
-      detectionCount: 42
-    }
-  ]
+  const identities = await identityService.getAllIdentities()
+  const stats = await identityService.getIdentityStats()
   
   res.json({
     success: true,
-    data: identities,
-    total: identities.length
+    data: identities.map(identity => ({
+      id: identity.id,
+      confidence: identity.confidence,
+      status: identity.status,
+      detectionCount: identity.detectionCount,
+      firstSeen: identity.firstSeen,
+      lastSeen: identity.lastSeen,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt,
+      attributes: identity.attributes,
+      hasPhotos: identity.photos && identity.photos.length > 0,
+      photoCount: identity.photos?.length || 0,
+      embeddingCount: identity.embeddings?.length || 0
+    })),
+    total: identities.length,
+    stats
   })
 }))
 
@@ -44,20 +49,30 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params
   
-  // TODO: Implement actual identity fetching by ID
-  const identity = {
-    id,
-    embeddings: [],
-    attributes: { age: 30, gender: 'male' },
-    confidence: 0.95,
-    status: 'verified',
-    createdAt: new Date(),
-    detectionCount: 42
+  const identity = await identityService.getIdentityById(id)
+  
+  if (!identity) {
+    return res.status(404).json({
+      success: false,
+      error: 'Identity not found'
+    })
   }
   
   res.json({
     success: true,
-    data: identity
+    data: {
+      id: identity.id,
+      confidence: identity.confidence,
+      status: identity.status,
+      detectionCount: identity.detectionCount,
+      firstSeen: identity.firstSeen,
+      lastSeen: identity.lastSeen,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt,
+      attributes: identity.attributes,
+      photos: identity.photos,
+      embeddingCount: identity.embeddings?.length || 0
+    }
   })
 }))
 
