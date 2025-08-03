@@ -2,7 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
-import { faceService } from '../services/simpleFaceService.js'
+import { faceService } from '../services/realFaceService.js'
 
 const router = Router()
 
@@ -43,24 +43,10 @@ router.post('/detect', upload.single('image'), async (req, res) => {
 
     // Check if face service is ready
     if (!faceService.isReady()) {
-      console.log('Face service not ready, returning mock data')
-      const mockResult = {
-        faces: [
-          {
-            confidence: 0.95,
-            x_min: 100,
-            y_min: 120,
-            x_max: 200,
-            y_max: 220,
-            age: 25,
-            gender: 'male',
-            embedding: Array.from({length: 128}, () => Math.random() * 2 - 1)
-          }
-        ],
-        processing_time: 150,
-        mock: true
-      }
-      return res.json(mockResult)
+      return res.status(503).json({ 
+        error: 'Face detection service not initialized',
+        details: 'TensorFlow.js or BlazeFace model not loaded'
+      })
     }
 
     // Use real face detection service
@@ -70,25 +56,10 @@ router.post('/detect', upload.single('image'), async (req, res) => {
       res.json(result)
     } catch (error) {
       console.error('Face detection service error:', error)
-      // Fallback to mock data on error
-      const mockResult = {
-        faces: [
-          {
-            confidence: 0.85,
-            x_min: 120,
-            y_min: 140,
-            x_max: 220,
-            y_max: 240,
-            age: 30,
-            gender: 'female',
-            embedding: Array.from({length: 128}, () => Math.random() * 2 - 1)
-          }
-        ],
-        processing_time: 100,
-        mock: true,
-        error: 'Fallback to mock data'
-      }
-      res.json(mockResult)
+      res.status(500).json({ 
+        error: 'Face detection failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      })
     }
 
     // TODO: Uncomment when CompreFace API key is configured

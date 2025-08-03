@@ -18,7 +18,7 @@ import { deviceRoutes } from './routes/devices.js'
 import { facilityRoutes } from './routes/facilities.js'
 import { analyticsRoutes } from './routes/analytics.js'
 import faceRoutes from './routes/face.js'
-import { faceService } from './services/simpleFaceService.js'
+import { faceService } from './services/realFaceService.js'
 
 // Load environment variables
 dotenv.config()
