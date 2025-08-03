@@ -23,6 +23,8 @@ interface FaceDetectionResult {
 class RealFaceService {
   private blazeFaceModel: blazeface.BlazeFaceModel | null = null
   private isInitialized = false
+  private processingQueue: Array<{ buffer: Buffer, resolve: Function, reject: Function }> = []
+  private isProcessing = false
 
   async initialize(): Promise<void> {
     try {
@@ -48,6 +50,42 @@ class RealFaceService {
   }
 
   async detectFaces(imageBuffer: Buffer): Promise<FaceDetectionResult> {
+    // For realtime processing, use queue to prevent memory overflow
+    return new Promise((resolve, reject) => {
+      this.processingQueue.push({ buffer: imageBuffer, resolve, reject })
+      this.processQueue()
+    })
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing || this.processingQueue.length === 0) return
+
+    this.isProcessing = true
+
+    while (this.processingQueue.length > 0) {
+      const { buffer, resolve, reject } = this.processingQueue.shift()!
+      
+      try {
+        const result = await this.performDetection(buffer)
+        resolve(result)
+      } catch (error) {
+        reject(error)
+      }
+
+      // Skip frames if queue is getting too long (> 3 frames)
+      if (this.processingQueue.length > 3) {
+        console.log(`Dropping ${this.processingQueue.length - 1} frames to maintain performance`)
+        // Keep only the latest frame
+        const latest = this.processingQueue[this.processingQueue.length - 1]
+        this.processingQueue.splice(0, this.processingQueue.length - 1)
+        latest.reject(new Error('Frame dropped due to high load'))
+      }
+    }
+
+    this.isProcessing = false
+  }
+
+  private async performDetection(imageBuffer: Buffer): Promise<FaceDetectionResult> {
     const startTime = Date.now()
 
     if (!this.isInitialized || !this.blazeFaceModel) {

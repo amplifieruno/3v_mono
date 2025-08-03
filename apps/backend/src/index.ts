@@ -91,6 +91,40 @@ io.on('connection', (socket) => {
     socket.leave(`facility-${facilityId}`)
     console.log(`Client ${socket.id} left facility ${facilityId}`)
   })
+
+  // Real-time face detection
+  socket.on('realtime-face-detection', async (data: { image: ArrayBuffer, timestamp: number }) => {
+    try {
+      console.log(`Processing realtime frame from ${socket.id}, size: ${data.image.byteLength}`)
+      
+      if (!faceService.isReady()) {
+        socket.emit('face-detection-error', { error: 'Face service not ready' })
+        return
+      }
+
+      // Convert ArrayBuffer to Buffer
+      const imageBuffer = Buffer.from(data.image)
+      
+      // Process with face detection
+      const result = await faceService.detectFaces(imageBuffer)
+      
+      console.log(`Realtime detection completed: ${result.faces.length} faces in ${result.processing_time}ms`)
+      
+      // Send result back to client
+      socket.emit('face-detection-result', {
+        ...result,
+        timestamp: data.timestamp,
+        client_id: socket.id
+      })
+      
+    } catch (error) {
+      console.error('Realtime face detection error:', error)
+      socket.emit('face-detection-error', { 
+        error: 'Face detection failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
+  })
   
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id)

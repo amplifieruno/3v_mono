@@ -1,13 +1,78 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import io, { Socket } from 'socket.io-client'
+
+type DetectionMode = 'snapshot' | 'realtime'
 
 export function FaceDebugPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
+  const streamIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const socketRef = useRef<Socket | null>(null)
+  
   const [isStreaming, setIsStreaming] = useState(false)
+  const [detectionMode, setDetectionMode] = useState<DetectionMode>('snapshot')
+  const [isRealTimeActive, setIsRealTimeActive] = useState(false)
   const [faceDetectionResult, setFaceDetectionResult] = useState<any>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [realtimeStats, setRealtimeStats] = useState({ fps: 0, processed: 0, errors: 0 })
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    socketRef.current = io('http://localhost:3001')
+    
+    socketRef.current.on('face-detection-result', (result) => {
+      setFaceDetectionResult(result)
+      setRealtimeStats(prev => ({ 
+        ...prev, 
+        processed: prev.processed + 1,
+        fps: Math.round(1000 / (result.processing_time || 1))
+      }))
+      drawFaceOverlay(result.faces)
+    })
+    
+    socketRef.current.on('face-detection-error', (error) => {
+      console.error('Face detection error:', error)
+      setRealtimeStats(prev => ({ ...prev, errors: prev.errors + 1 }))
+    })
+    
+    return () => {
+      socketRef.current?.disconnect()
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current)
+      }
+    }
+  }, [])
+
+  const drawFaceOverlay = useCallback((faces: any[]) => {
+    const canvas = overlayCanvasRef.current
+    const video = videoRef.current
+    if (!canvas || !video) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Clear previous drawings
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // Draw bounding boxes for each face
+    faces.forEach((face, index) => {
+      ctx.strokeStyle = '#00ff00'
+      ctx.lineWidth = 2
+      ctx.strokeRect(face.x_min, face.y_min, face.x_max - face.x_min, face.y_max - face.y_min)
+      
+      // Draw confidence
+      ctx.fillStyle = '#00ff00'
+      ctx.font = '14px Arial'
+      ctx.fillText(
+        `Face ${index + 1}: ${(face.confidence * 100).toFixed(1)}%`,
+        face.x_min,
+        face.y_min - 5
+      )
+    })
+  }, [])
 
   const startCamera = useCallback(async () => {
     try {
@@ -18,6 +83,14 @@ export function FaceDebugPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         setIsStreaming(true)
+        
+        // Setup overlay canvas
+        videoRef.current.onloadedmetadata = () => {
+          const video = videoRef.current!
+          const overlay = overlayCanvasRef.current!
+          overlay.width = video.videoWidth
+          overlay.height = video.videoHeight
+        }
       }
     } catch (error) {
       console.error('Error accessing camera:', error)
@@ -32,6 +105,62 @@ export function FaceDebugPage() {
       videoRef.current.srcObject = null
       setIsStreaming(false)
     }
+    stopRealTimeDetection()
+  }, [])
+
+  const startRealTimeDetection = useCallback(() => {
+    if (!isStreaming || !videoRef.current) return
+
+    setIsRealTimeActive(true)
+    setRealtimeStats({ fps: 0, processed: 0, errors: 0 })
+
+    // Capture and send frames every 300ms (roughly 3 FPS)
+    streamIntervalRef.current = setInterval(() => {
+      captureFrameForRealTime()
+    }, 300)
+  }, [isStreaming])
+
+  const stopRealTimeDetection = useCallback(() => {
+    setIsRealTimeActive(false)
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current)
+      streamIntervalRef.current = null
+    }
+    // Clear overlay
+    const canvas = overlayCanvasRef.current
+    if (canvas) {
+      const ctx = canvas.getContext('2d')
+      ctx?.clearRect(0, 0, canvas.width, canvas.height)
+    }
+  }, [])
+
+  const captureFrameForRealTime = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || !socketRef.current) return
+
+    const canvas = canvasRef.current
+    const video = videoRef.current
+    const ctx = canvas.getContext('2d')
+    
+    if (!ctx) return
+
+    // Capture frame from video at lower resolution for performance
+    canvas.width = 320
+    canvas.height = 240
+    ctx.drawImage(video, 0, 0, 320, 240)
+
+    // Convert to blob and send via WebSocket
+    canvas.toBlob((blob) => {
+      if (blob && socketRef.current) {
+        const reader = new FileReader()
+        reader.onload = () => {
+          socketRef.current!.emit('realtime-face-detection', {
+            image: reader.result,
+            timestamp: Date.now()
+          })
+        }
+        reader.readAsArrayBuffer(blob)
+      }
+    }, 'image/jpeg', 0.7)
   }, [])
 
   const captureAndDetect = useCallback(async () => {
@@ -90,7 +219,25 @@ export function FaceDebugPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Camera Feed */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Camera Feed</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Camera Feed</h2>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setDetectionMode('snapshot')}
+                variant={detectionMode === 'snapshot' ? 'default' : 'outline'}
+                size="sm"
+              >
+                Snapshot
+              </Button>
+              <Button
+                onClick={() => setDetectionMode('realtime')}
+                variant={detectionMode === 'realtime' ? 'default' : 'outline'}
+                size="sm"
+              >
+                Real-time
+              </Button>
+            </div>
+          </div>
           
           <div className="space-y-4">
             <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
@@ -102,12 +249,28 @@ export function FaceDebugPage() {
                 className="w-full h-full object-cover"
                 style={{ display: isStreaming ? 'block' : 'none' }}
               />
+              <canvas
+                ref={overlayCanvasRef}
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                style={{ display: isStreaming && detectionMode === 'realtime' ? 'block' : 'none' }}
+              />
               {!isStreaming && (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                   Camera not active
                 </div>
               )}
             </div>
+
+            {/* Real-time stats */}
+            {detectionMode === 'realtime' && isRealTimeActive && (
+              <div className="bg-black text-green-400 p-3 rounded font-mono text-sm">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>FPS: {realtimeStats.fps}</div>
+                  <div>Processed: {realtimeStats.processed}</div>
+                  <div>Errors: {realtimeStats.errors}</div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {!isStreaming ? (
@@ -120,13 +283,24 @@ export function FaceDebugPage() {
                 </Button>
               )}
               
-              <Button 
-                onClick={captureAndDetect} 
-                disabled={!isStreaming || isProcessing}
-                className="flex-1"
-              >
-                {isProcessing ? 'Processing...' : 'Capture & Detect'}
-              </Button>
+              {detectionMode === 'snapshot' ? (
+                <Button 
+                  onClick={captureAndDetect} 
+                  disabled={!isStreaming || isProcessing}
+                  className="flex-1"
+                >
+                  {isProcessing ? 'Processing...' : 'Capture & Detect'}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={isRealTimeActive ? stopRealTimeDetection : startRealTimeDetection}
+                  disabled={!isStreaming}
+                  className="flex-1"
+                  variant={isRealTimeActive ? 'destructive' : 'default'}
+                >
+                  {isRealTimeActive ? 'Stop Real-time' : 'Start Real-time'}
+                </Button>
+              )}
             </div>
           </div>
 
