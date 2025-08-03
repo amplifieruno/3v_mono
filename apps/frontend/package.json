@@ -1,0 +1,52 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.vite"
+  },
+  "dependencies": {
+    "react": "catalog:react",
+    "react-dom": "catalog:react-dom",
+    "react-router-dom": "catalog:react-router-dom",
+    "@tanstack/react-query": "catalog:@tanstack/react-query",
+    "zustand": "catalog:zustand",
+    "axios": "catalog:axios",
+    "socket.io-client": "catalog:socket.io-client",
+    "zod": "catalog:zod",
+    "@radix-ui/react-avatar": "catalog:@radix-ui/react-avatar",
+    "@radix-ui/react-button": "catalog:@radix-ui/react-button",
+    "@radix-ui/react-dialog": "catalog:@radix-ui/react-dialog",
+    "@radix-ui/react-dropdown-menu": "catalog:@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-icons": "catalog:@radix-ui/react-icons",
+    "class-variance-authority": "catalog:class-variance-authority",
+    "clsx": "catalog:clsx",
+    "tailwind-merge": "catalog:tailwind-merge",
+    "recharts": "^2.13.3",
+    "date-fns": "^4.1.0",
+    "react-hook-form": "^7.54.2",
+    "@hookform/resolvers": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:react-types",
+    "@types/react-dom": "catalog:react-types",
+    "@vitejs/plugin-react": "catalog:@vitejs/plugin-react",
+    "typescript": "catalog:typescript",
+    "vite": "catalog:vite",
+    "tailwindcss": "catalog:tailwindcss",
+    "@tailwindcss/cli": "catalog:@tailwindcss/cli",
+    "eslint": "catalog:eslint",
+    "@typescript-eslint/eslint-plugin": "catalog:@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser": "catalog:@typescript-eslint/parser",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1"
+  }
+}
