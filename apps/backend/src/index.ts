@@ -18,6 +18,7 @@ import { deviceRoutes } from './routes/devices.js'
 import { facilityRoutes } from './routes/facilities.js'
 import { analyticsRoutes } from './routes/analytics.js'
 import faceRoutes from './routes/face.js'
+import { faceService } from './services/simpleFaceService.js'
 
 // Load environment variables
 dotenv.config()
@@ -117,6 +118,15 @@ async function startServer() {
     // Test Redis connection
     await redisClient.ping()
     console.log('Redis connection established successfully')
+    
+    // Initialize face detection service
+    try {
+      await faceService.initialize()
+      console.log('Face detection service initialized successfully')
+    } catch (error) {
+      console.warn('Face detection service initialization failed:', error.message)
+      console.warn('Will use mock data for face detection')
+    }
     
     // Start server
     server.listen(PORT, () => {

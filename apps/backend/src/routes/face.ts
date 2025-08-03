@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
+import { faceService } from '../services/simpleFaceService.js'
 
 const router = Router()
 
@@ -34,6 +35,64 @@ router.post('/detect', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'No image file provided' })
     }
 
+    console.log('Received image for detection:', {
+      filename: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    })
+
+    // Check if face service is ready
+    if (!faceService.isReady()) {
+      console.log('Face service not ready, returning mock data')
+      const mockResult = {
+        faces: [
+          {
+            confidence: 0.95,
+            x_min: 100,
+            y_min: 120,
+            x_max: 200,
+            y_max: 220,
+            age: 25,
+            gender: 'male',
+            embedding: Array.from({length: 128}, () => Math.random() * 2 - 1)
+          }
+        ],
+        processing_time: 150,
+        mock: true
+      }
+      return res.json(mockResult)
+    }
+
+    // Use real face detection service
+    try {
+      const result = await faceService.detectFaces(req.file.buffer)
+      console.log(`Detected ${result.faces.length} faces in ${result.processing_time}ms`)
+      res.json(result)
+    } catch (error) {
+      console.error('Face detection service error:', error)
+      // Fallback to mock data on error
+      const mockResult = {
+        faces: [
+          {
+            confidence: 0.85,
+            x_min: 120,
+            y_min: 140,
+            x_max: 220,
+            y_max: 240,
+            age: 30,
+            gender: 'female',
+            embedding: Array.from({length: 128}, () => Math.random() * 2 - 1)
+          }
+        ],
+        processing_time: 100,
+        mock: true,
+        error: 'Fallback to mock data'
+      }
+      res.json(mockResult)
+    }
+
+    // TODO: Uncomment when CompreFace API key is configured
+    /*
     // Create form data for CompreFace
     const formData = new FormData()
     formData.append('file', req.file.buffer, {
@@ -78,6 +137,7 @@ router.post('/detect', upload.single('image'), async (req, res) => {
     }
 
     res.json(transformedResult)
+    */
   } catch (error) {
     console.error('Face detection error:', error)
     res.status(500).json({ 
