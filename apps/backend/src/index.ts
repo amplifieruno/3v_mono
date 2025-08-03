@@ -17,6 +17,7 @@ import { identityRoutes } from './routes/identities.js'
 import { deviceRoutes } from './routes/devices.js'
 import { facilityRoutes } from './routes/facilities.js'
 import { analyticsRoutes } from './routes/analytics.js'
+import faceRoutes from './routes/face.js'
 
 // Load environment variables
 dotenv.config()
@@ -74,6 +75,7 @@ app.use('/api/identities', identityRoutes)
 app.use('/api/devices', deviceRoutes)
 app.use('/api/facilities', facilityRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/face', faceRoutes)
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {

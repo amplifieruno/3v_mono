@@ -6,6 +6,7 @@ import { DevicesPage } from '@/pages/DevicesPage'
 import { FacilitiesPage } from '@/pages/FacilitiesPage'
 import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { FaceDebugPage } from '@/pages/FaceDebugPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -24,6 +25,7 @@ function App() {
         <Route path="/devices" element={<DevicesPage />} />
         <Route path="/facilities" element={<FacilitiesPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/debug/face-detection" element={<FaceDebugPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </Layout>
