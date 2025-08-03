@@ -66,6 +66,9 @@ Based on the functional specification, ITAP will consist of the following core m
 # Install dependencies
 npm install
 
+# Setup backend (install deps + download face recognition models)
+cd apps/backend && pnpm setup
+
 # Start development environment
 docker-compose up -d postgres redis minio  # Start infrastructure
 npm run dev:backend    # Start backend server
@@ -74,6 +77,9 @@ npm run dev:frontend   # Start frontend development server
 # Database operations
 npm run db:migrate     # Run database migrations
 npm run db:seed        # Seed initial data
+
+# Face recognition models
+cd apps/backend && pnpm download-models  # Download face-api.js models
 ```
 
 ### Production Commands
