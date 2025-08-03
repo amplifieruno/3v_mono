@@ -57,19 +57,34 @@ export function FaceDebugPage() {
     // Clear previous drawings
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    // Calculate scaling factors
+    // We send 320x240 images to server, but overlay on full video size
+    const scaleX = canvas.width / 320
+    const scaleY = canvas.height / 240
+
+    console.log(`Overlay scaling: ${scaleX}x${scaleY} (canvas: ${canvas.width}x${canvas.height})`)
+
     // Draw bounding boxes for each face
     faces.forEach((face, index) => {
+      // Scale coordinates from 320x240 to actual video size
+      const scaledX = face.x_min * scaleX
+      const scaledY = face.y_min * scaleY
+      const scaledWidth = (face.x_max - face.x_min) * scaleX
+      const scaledHeight = (face.y_max - face.y_min) * scaleY
+
+      console.log(`Face ${index + 1}: original(${face.x_min},${face.y_min}) -> scaled(${scaledX.toFixed(1)},${scaledY.toFixed(1)})`)
+
       ctx.strokeStyle = '#00ff00'
-      ctx.lineWidth = 2
-      ctx.strokeRect(face.x_min, face.y_min, face.x_max - face.x_min, face.y_max - face.y_min)
+      ctx.lineWidth = 3
+      ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight)
       
-      // Draw confidence
+      // Draw confidence with scaled position
       ctx.fillStyle = '#00ff00'
-      ctx.font = '14px Arial'
+      ctx.font = '16px Arial'
       ctx.fillText(
         `Face ${index + 1}: ${(face.confidence * 100).toFixed(1)}%`,
-        face.x_min,
-        face.y_min - 5
+        scaledX,
+        scaledY - 8
       )
     })
   }, [])
@@ -84,12 +99,17 @@ export function FaceDebugPage() {
         videoRef.current.srcObject = stream
         setIsStreaming(true)
         
-        // Setup overlay canvas
+        // Setup overlay canvas to match video dimensions
         videoRef.current.onloadedmetadata = () => {
           const video = videoRef.current!
           const overlay = overlayCanvasRef.current!
+          
+          // Set canvas internal dimensions to match video
           overlay.width = video.videoWidth
           overlay.height = video.videoHeight
+          
+          console.log(`Video dimensions: ${video.videoWidth}x${video.videoHeight}`)
+          console.log(`Canvas dimensions: ${overlay.width}x${overlay.height}`)
         }
       }
     } catch (error) {
