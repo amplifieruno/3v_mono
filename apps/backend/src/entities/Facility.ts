@@ -12,13 +12,13 @@ export class Facility {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
-  @Column()
+  @Column('varchar')
   name!: string
 
   @Column('text', { nullable: true })
   description?: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   address?: string
 
   @Column('decimal', { precision: 10, scale: 7, nullable: true })
@@ -27,7 +27,7 @@ export class Facility {
   @Column('decimal', { precision: 10, scale: 7, nullable: true })
   longitude?: number
 
-  @Column({ default: 'UTC' })
+  @Column('varchar', { default: 'UTC' })
   timezone!: string
 
   @Column('uuid')

@@ -13,12 +13,12 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "zod": "catalog:zod"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "typescript": "catalog:typescript",
-    "eslint": "catalog:eslint",
-    "@typescript-eslint/eslint-plugin": "catalog:@typescript-eslint/eslint-plugin",
-    "@typescript-eslint/parser": "catalog:@typescript-eslint/parser"
+    "typescript": "^5.7.2",
+    "eslint": "^9.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0"
   }
 }

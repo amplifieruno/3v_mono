@@ -23,25 +23,25 @@ export class Profile {
   @Column('uuid')
   identityId!: string
 
-  @Column()
+  @Column('varchar')
   firstName!: string
 
-  @Column()
+  @Column('varchar')
   lastName!: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   email?: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   phone?: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   employeeId?: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   department?: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   role?: string
 
   @Column({

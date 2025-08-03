@@ -11,7 +11,7 @@ export class Segment {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
-  @Column()
+  @Column('varchar')
   name!: string
 
   @Column('text', { nullable: true })
@@ -20,7 +20,7 @@ export class Segment {
   @Column('jsonb')
   conditions!: Record<string, any>
 
-  @Column({ default: true })
+  @Column('boolean', { default: true })
   isDynamic!: boolean
 
   @Column('int', { default: 0 })

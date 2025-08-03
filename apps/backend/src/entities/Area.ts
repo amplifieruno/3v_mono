@@ -34,7 +34,7 @@ export class Area {
   @Column('uuid', { nullable: true })
   parentId?: string
 
-  @Column()
+  @Column('varchar')
   name!: string
 
   @Column('text', { nullable: true })

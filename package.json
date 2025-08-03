@@ -4,7 +4,6 @@
   "description": "Identity Tracking and Access Platform - Monorepo",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.1",
   "scripts": {
     "build": "pnpm -r build",
     "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
@@ -47,10 +46,5 @@
   "lint-staged": {
     "*.{js,ts,tsx}": ["eslint --fix", "prettier --write"],
     "*.{json,md,yml,yaml}": ["prettier --write"]
-  },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "catalog:react-types"
-    }
   }
 }

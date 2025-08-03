@@ -26,7 +26,7 @@ export class Device {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
-  @Column()
+  @Column('varchar')
   name!: string
 
   @Column({
@@ -39,13 +39,13 @@ export class Device {
   @Column('uuid')
   areaId!: string
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   streamUrl?: string
 
   @Column('jsonb', { nullable: true })
   credentials?: Record<string, any>
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   resolution?: string
 
   @Column('int', { nullable: true })
