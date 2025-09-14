@@ -1,0 +1,3 @@
+[submodule "libs/InsightFace-REST"]
+	path = libs/InsightFace-REST
+	url = https://github.com/SthPhoenix/InsightFace-REST.git

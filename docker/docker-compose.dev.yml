@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -63,51 +61,19 @@ services:
 
   # InsightFace-REST - CPU-Optimized Face Recognition Service
   insightface:
-    image: bavlat/insightface-rest:v0.6.2.0
     container_name: itap-insightface
-    environment:
-      # CPU-оптимизированные модели - возвращаемся к рабочей конфигурации
-      DET_NAME: scrfd_10g_gnkps     # Рабочая модель детекции
-      REC_NAME: glintr100           # Проверенная модель распознавания  
-      GA_MODEL: "None"              # Отключаем Age/Gender для скорости
-      MASK_DETECTOR: "None"         # Без детекции масок
-      
-      # Performance settings - оптимизировано для скорости
-      DEF_DET_THRESH: "0.6"         # Порог детекции
-      MAX_SIZE: "1280,1280"         # Исходный размер для совместимости с моделью
-      
-      # API behavior settings
-      DEF_RETURN_FACE_DATA: "False" # Не возвращаем сырые изображения лиц
-      DEF_EXTRACT_GA: "False"       # Отключаем gender/age
-      DEF_EXTRACT_EMBEDDING: "True" # Только embeddings
-      
-      # Batch processing - один за раз для CPU
-      REC_BATCH_SIZE: "1"           # Размер батча распознавания
-      DET_BATCH_SIZE: "1"           # Размер батча детекции
-      
-      # Backend settings
-      INFERENCE_BACKEND: "onnx"     # ONNX для CPU
-      FORCE_FP16: "False"           # Без FP16 на CPU
-      
-      # CPU Optimization - критично для производительности!
-      NUM_WORKERS: "1"              # 1 воркер вместо 4 для CPU
-      
-      # Thread limits - избегаем конкуренции потоков
-      OMP_NUM_THREADS: "4"          # OpenMP потоки
-      OPENBLAS_NUM_THREADS: "4"     # OpenBLAS потоки
-      MKL_NUM_THREADS: "4"          # Intel MKL потоки
-      NUMEXPR_NUM_THREADS: "4"      # NumExpr потоки
-      
-      LOG_LEVEL: "INFO"             # Логирование
-      USE_NVJPEG: "False"           # Без NVIDIA JPEG
-      
-    ports:
-      - "18080:18080"               # InsightFace REST API port
-    
+    platform: linux/amd64
+    build:
+      context: ../libs/InsightFace-REST
+      dockerfile: dockerfiles/Dockerfile_cpu
+    env_file:
+      - insightface-cpu.env
     volumes:
-      # Model cache for faster startup
-      - insightface_models:/models
-      
+      - ../libs/InsightFace-REST/models:/models
+      - ../libs/InsightFace-REST/if_rest:/app/if_rest
+      - ../libs/InsightFace-REST/entrypoint.sh:/app/entrypoint.sh
+    ports:
+      - "18080:18080"               # InsightFace REST API port  
     networks:
       - itap-network
     

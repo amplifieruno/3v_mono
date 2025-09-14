@@ -22,7 +22,14 @@ interface InsightFaceDetection {
 }
 
 // InsightFace API returns array of arrays of face detections
-type InsightFaceResponse = InsightFaceDetection[][]
+type InsightFaceResponse = {
+  tool: { total_ms: number }
+  data: {
+    status: string
+    took_ms: number
+    faces: InsightFaceDetection[]
+  }[]
+}
 
 interface DetectedFace {
   confidence: number
@@ -143,7 +150,7 @@ class InsightFaceService {
         images: {
           data: [base64Image]
         },
-        max_size: [1280, 1280],
+        max_size: [640, 640],
         threshold: 0.6,
         extract_embedding: true,
         extract_ga: false,
@@ -168,9 +175,9 @@ class InsightFaceService {
       }
       
       const result: InsightFaceResponse = await response.json()
-      
+
       // InsightFace returns [[face1, face2, ...]] - array of arrays
-      if (!result || result.length === 0 || !result[0] || result[0].length === 0) {
+      if (!result || result.data.length === 0 || !result.data[0] || result.data[0].faces.length === 0) {
         console.log('📷 No faces detected')
         return {
           faces: [],
@@ -178,7 +185,7 @@ class InsightFaceService {
         }
       }
       
-      const detectedFaces = result[0] // Get first (and only) image's faces
+      const detectedFaces = result.data[0].faces // Get first (and only) image's faces
       console.log(`👤 Detected ${detectedFaces.length} face(s)`)
       
       // Process faces with identity matching
