@@ -20,7 +20,7 @@ interface IdentityMatchResult {
 
 export class IdentityService {
   private identityRepository: Repository<Identity>
-  private similarityThreshold = 0.85 // Порог схожести для считания лиц одинаковыми
+  private similarityThreshold = 0.65 // Порог схожести для InsightFace 512D embeddings (оптимизированный)
 
   constructor() {
     this.identityRepository = AppDataSource.getRepository(Identity)
@@ -47,6 +47,7 @@ export class IdentityService {
       // Сравниваем с каждым embedding у Identity (может быть несколько)
       for (const storedEmbedding of identity.embeddings) {
         const similarity = this.calculateCosineSimilarity(faceData.embedding, storedEmbedding)
+        console.log(`🔍 Comparing with identity ${identity.id}: similarity = ${similarity.toFixed(3)} (embedding sizes: ${faceData.embedding.length} vs ${storedEmbedding.length})`)
         
         if (similarity > bestSimilarity) {
           bestSimilarity = similarity
@@ -246,6 +247,44 @@ export class IdentityService {
       unverified,
       archived,
       recentDetections
+    }
+  }
+
+  /**
+   * Очистить всю базу Identity (ОПАСНАЯ ОПЕРАЦИЯ!)
+   */
+  async clearAllIdentities(): Promise<{ deleted: number, message: string }> {
+    console.log('🗑️ CLEARING ALL IDENTITIES FROM DATABASE (DANGEROUS OPERATION)')
+    
+    try {
+      // Получаем количество записей перед удалением
+      const totalCount = await this.identityRepository.count()
+      
+      if (totalCount === 0) {
+        return {
+          deleted: 0,
+          message: 'База Identity уже пуста'
+        }
+      }
+      
+      // Удаляем все записи 
+      const allIdentities = await this.identityRepository.find({ select: ['id'] })
+      const ids = allIdentities.map(identity => identity.id)
+      
+      if (ids.length > 0) {
+        await this.identityRepository.delete(ids)
+      }
+      
+      console.log(`✅ Successfully cleared ${totalCount} identities from database`)
+      
+      return {
+        deleted: totalCount,
+        message: `Успешно удалено ${totalCount} Identity записей из базы данных`
+      }
+      
+    } catch (error) {
+      console.error('❌ Error clearing identities:', error)
+      throw new Error(`Ошибка при очистке базы данных: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
     }
   }
 }

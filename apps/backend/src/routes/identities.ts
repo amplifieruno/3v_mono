@@ -104,4 +104,25 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   })
 }))
 
+// POST /api/identities/clear - Очистить всю базу Identity (ОПАСНАЯ ОПЕРАЦИЯ!)
+router.post('/clear', asyncHandler(async (req, res) => {
+  console.log('⚠️  CLEAR ALL IDENTITIES REQUEST from client')
+  
+  try {
+    const result = await identityService.clearAllIdentities()
+    
+    res.json({
+      success: true,
+      data: result,
+      message: result.message
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Ошибка при очистке базы данных',
+      message: 'Не удалось очистить базу данных Identity'
+    })
+  }
+}))
+
 export { router as identityRoutes }
