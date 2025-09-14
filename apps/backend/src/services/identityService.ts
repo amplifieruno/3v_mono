@@ -30,50 +30,72 @@ export class IdentityService {
    * Найти или создать Identity на основе embedding лица
    */
   async findOrCreateIdentity(faceData: FaceDetectionData): Promise<IdentityMatchResult> {
-    // Ищем похожие лица среди существующих Identity
-    const existingIdentities = await this.identityRepository.find({
-      where: { status: IdentityStatus.UNVERIFIED },
-      order: { lastSeen: 'DESC' },
-      take: 100 // Ограничиваем поиск последними 100 Identity для производительности
-    })
+    // Используем pgvector для быстрого поиска похожих лиц
+    const embeddingVector = `[${faceData.embedding.join(',')}]`
 
-    let bestMatch: Identity | null = null
-    let bestSimilarity = 0
+    const query = `
+      SELECT
+        id,
+        1 - (embedding <=> $1::vector) as similarity,
+        embeddings,
+        attributes,
+        photos,
+        confidence,
+        status,
+        "createdAt",
+        "updatedAt",
+        "firstSeen",
+        "lastSeen",
+        "detectionCount"
+      FROM identities
+      WHERE embedding IS NOT NULL
+        AND status = $2
+        AND 1 - (embedding <=> $1::vector) > $3
+      ORDER BY embedding <=> $1::vector
+      LIMIT 1
+    `
 
-    // Сравниваем с каждым существующим Identity
-    for (const identity of existingIdentities) {
-      if (!identity.embeddings || identity.embeddings.length === 0) continue
+    const result = await this.identityRepository.query(query, [
+      embeddingVector,
+      IdentityStatus.UNVERIFIED,
+      this.similarityThreshold
+    ])
 
-      // Сравниваем с каждым embedding у Identity (может быть несколько)
-      for (const storedEmbedding of identity.embeddings) {
-        const similarity = this.calculateCosineSimilarity(faceData.embedding, storedEmbedding)
-        console.log(`🔍 Comparing with identity ${identity.id}: similarity = ${similarity.toFixed(3)} (embedding sizes: ${faceData.embedding.length} vs ${storedEmbedding.length})`)
-        
-        if (similarity > bestSimilarity) {
-          bestSimilarity = similarity
-          bestMatch = identity
-        }
-      }
-    }
+    if (result && result.length > 0) {
+      const matchData = result[0]
+      const similarity = parseFloat(matchData.similarity)
 
-    // Если найдено схожее лицо выше порога
-    if (bestMatch && bestSimilarity >= this.similarityThreshold) {
-      console.log(`🔍 Found matching identity ${bestMatch.id} with similarity ${bestSimilarity.toFixed(3)}`)
-      
+      console.log(`🔍 Found matching identity ${matchData.id} with similarity ${similarity.toFixed(3)} using pgvector`)
+
+      // Преобразуем результат в объект Identity
+      const bestMatch = this.identityRepository.create({
+        id: matchData.id,
+        embeddings: matchData.embeddings,
+        attributes: matchData.attributes,
+        photos: matchData.photos,
+        confidence: matchData.confidence,
+        status: matchData.status,
+        createdAt: matchData.createdAt,
+        updatedAt: matchData.updatedAt,
+        firstSeen: matchData.firstSeen,
+        lastSeen: matchData.lastSeen,
+        detectionCount: matchData.detectionCount
+      })
+
       // Обновляем существующий Identity
       await this.updateIdentityWithNewDetection(bestMatch, faceData)
-      
+
       return {
         identity: bestMatch,
-        similarity: bestSimilarity,
+        similarity: similarity,
         isNewIdentity: false
       }
     } else {
-      console.log(`✨ Creating new identity (best similarity: ${bestSimilarity.toFixed(3)})`)
-      
+      console.log(`✨ Creating new identity (no matches found above threshold ${this.similarityThreshold})`)
+
       // Создаем новый Identity
       const newIdentity = await this.createNewIdentity(faceData)
-      
+
       return {
         identity: newIdentity,
         similarity: 1.0,
@@ -112,8 +134,16 @@ export class IdentityService {
     }
 
     const savedIdentity = await this.identityRepository.save(identity)
-    console.log(`✅ Created new identity: ${savedIdentity.id}`)
-    
+
+    // Сохраняем embedding отдельным запросом, так как TypeORM не поддерживает vector тип
+    const embeddingVector = `[${faceData.embedding.join(',')}]`
+    await this.identityRepository.query(
+      'UPDATE identities SET embedding = $1::vector WHERE id = $2',
+      [embeddingVector, savedIdentity.id]
+    )
+
+    console.log(`✅ Created new identity: ${savedIdentity.id} with embedding vector`)
+
     return savedIdentity
   }
 
@@ -123,7 +153,7 @@ export class IdentityService {
   private async updateIdentityWithNewDetection(identity: Identity, faceData: FaceDetectionData): Promise<void> {
     // Добавляем новый embedding (максимум 5 для производительности)
     if (!identity.embeddings) identity.embeddings = []
-    
+
     identity.embeddings.push(faceData.embedding)
     if (identity.embeddings.length > 5) {
       identity.embeddings = identity.embeddings.slice(-5) // Оставляем последние 5
@@ -157,36 +187,50 @@ export class IdentityService {
     }
 
     await this.identityRepository.save(identity)
+
+    // Обновляем vector embedding отдельным запросом
+    const avgEmbedding = this.calculateAverageEmbedding(identity.embeddings)
+    const embeddingVector = `[${avgEmbedding.join(',')}]`
+    await this.identityRepository.query(
+      'UPDATE identities SET embedding = $1::vector WHERE id = $2',
+      [embeddingVector, identity.id]
+    )
     console.log(`🔄 Updated identity ${identity.id}, total detections: ${identity.detectionCount}`)
   }
 
   /**
-   * Вычислить косинусное сходство между двумя векторами embeddings
+   * Вычислить среднее embedding из нескольких векторов
    */
-  private calculateCosineSimilarity(embedding1: number[], embedding2: number[]): number {
-    if (embedding1.length !== embedding2.length) {
-      console.warn('Embedding dimensions mismatch:', embedding1.length, 'vs', embedding2.length)
-      return 0
+  private calculateAverageEmbedding(embeddings: number[][]): number[] {
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error('Cannot calculate average of empty embeddings array')
     }
 
-    let dotProduct = 0
-    let norm1 = 0
-    let norm2 = 0
-
-    for (let i = 0; i < embedding1.length; i++) {
-      dotProduct += embedding1[i] * embedding2[i]
-      norm1 += embedding1[i] * embedding1[i]
-      norm2 += embedding2[i] * embedding2[i]
+    if (embeddings.length === 1) {
+      return embeddings[0]
     }
 
-    const magnitude1 = Math.sqrt(norm1)
-    const magnitude2 = Math.sqrt(norm2)
+    const embeddingLength = embeddings[0].length
+    const avgEmbedding = new Array(embeddingLength).fill(0)
 
-    if (magnitude1 === 0 || magnitude2 === 0) {
-      return 0
+    // Суммируем все embedding векторы
+    for (const embedding of embeddings) {
+      if (embedding.length !== embeddingLength) {
+        console.warn('Embedding dimension mismatch, skipping:', embedding.length, 'vs', embeddingLength)
+        continue
+      }
+
+      for (let i = 0; i < embeddingLength; i++) {
+        avgEmbedding[i] += embedding[i]
+      }
     }
 
-    return dotProduct / (magnitude1 * magnitude2)
+    // Усредняем
+    for (let i = 0; i < embeddingLength; i++) {
+      avgEmbedding[i] /= embeddings.length
+    }
+
+    return avgEmbedding
   }
 
   /**

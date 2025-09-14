@@ -12,8 +12,14 @@ export class Identity {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
+  // Legacy: old embeddings stored as JSONB
   @Column('jsonb', { nullable: true })
   embeddings?: number[][]
+
+  // New: single averaged embedding vector for fast similarity search
+  // Note: vector column is added via migration, TypeORM doesn't recognize 'vector' type
+  // @Column('vector(512)', { nullable: true })
+  embedding?: string // pgvector stores as string, we'll parse it
 
   @Column('jsonb', { nullable: true })
   attributes?: Record<string, any>
