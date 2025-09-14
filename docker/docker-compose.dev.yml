@@ -61,38 +61,45 @@ services:
     networks:
       - itap-network
 
-  # InsightFace-REST - High-performance Face Recognition Service (using community image)
+  # InsightFace-REST - CPU-Optimized Face Recognition Service
   insightface:
     image: bavlat/insightface-rest:v0.6.2.0
     container_name: itap-insightface
     environment:
-      # Model configuration for CPU (optimized for accuracy)
-      DET_NAME: scrfd_10g_gnkps     # High accuracy detection model
-      REC_NAME: glintr100           # Best recognition model (512D embeddings) 
-      GA_MODEL: genderage_v1        # Age/Gender model
-      MASK_DETECTOR: "None"         # No mask detection for now
+      # CPU-оптимизированные модели - возвращаемся к рабочей конфигурации
+      DET_NAME: scrfd_10g_gnkps     # Рабочая модель детекции
+      REC_NAME: glintr100           # Проверенная модель распознавания  
+      GA_MODEL: "None"              # Отключаем Age/Gender для скорости
+      MASK_DETECTOR: "None"         # Без детекции масок
       
-      # Performance settings
-      DEF_DET_THRESH: 0.6           # Detection threshold
-      MAX_SIZE: "1280,1280"         # Max input image size (CPU optimized)
+      # Performance settings - оптимизировано для скорости
+      DEF_DET_THRESH: "0.6"         # Порог детекции
+      MAX_SIZE: "1280,1280"         # Исходный размер для совместимости с моделью
       
       # API behavior settings
-      DEF_RETURN_FACE_DATA: "False" # Don't return raw face crops
-      DEF_EXTRACT_GA: "True"        # Extract gender/age by default
-      DEF_EXTRACT_EMBEDDING: "True" # Extract embeddings by default
+      DEF_RETURN_FACE_DATA: "False" # Не возвращаем сырые изображения лиц
+      DEF_EXTRACT_GA: "False"       # Отключаем gender/age
+      DEF_EXTRACT_EMBEDDING: "True" # Только embeddings
       
-      # Batch processing (CPU optimized)
-      REC_BATCH_SIZE: 1             # Recognition batch size
-      DET_BATCH_SIZE: 1             # Detection batch size
+      # Batch processing - один за раз для CPU
+      REC_BATCH_SIZE: "1"           # Размер батча распознавания
+      DET_BATCH_SIZE: "1"           # Размер батча детекции
       
       # Backend settings
-      INFERENCE_BACKEND: "onnx"     # Use ONNX for CPU
-      FORCE_FP16: "False"           # No FP16 on CPU
+      INFERENCE_BACKEND: "onnx"     # ONNX для CPU
+      FORCE_FP16: "False"           # Без FP16 на CPU
       
-      # Workers and logging
-      NUM_WORKERS: 4                # Number of worker processes
-      LOG_LEVEL: "INFO"             # Logging level
-      USE_NVJPEG: "False"           # No NVIDIA JPEG acceleration
+      # CPU Optimization - критично для производительности!
+      NUM_WORKERS: "1"              # 1 воркер вместо 4 для CPU
+      
+      # Thread limits - избегаем конкуренции потоков
+      OMP_NUM_THREADS: "4"          # OpenMP потоки
+      OPENBLAS_NUM_THREADS: "4"     # OpenBLAS потоки
+      MKL_NUM_THREADS: "4"          # Intel MKL потоки
+      NUMEXPR_NUM_THREADS: "4"      # NumExpr потоки
+      
+      LOG_LEVEL: "INFO"             # Логирование
+      USE_NVJPEG: "False"           # Без NVIDIA JPEG
       
     ports:
       - "18080:18080"               # InsightFace REST API port
@@ -109,15 +116,11 @@ services:
       interval: 45s
       timeout: 15s
       retries: 5
-      start_period: 120s            # CPU model loading takes more time
+      start_period: 180s            # Дольше для загрузки новых моделей
     
-    # Resource limits for CPU usage
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 2G
+    # Resource limits (для docker-compose, не Swarm)
+    mem_limit: 4g                   # Реальный лимит памяти
+    # cpus: "4.0"                   # Раскомментировать при необходимости
 
 volumes:
   postgres_data:

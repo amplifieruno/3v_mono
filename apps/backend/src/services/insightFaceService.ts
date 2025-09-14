@@ -146,7 +146,7 @@ class InsightFaceService {
         max_size: [1280, 1280],
         threshold: 0.6,
         extract_embedding: true,
-        extract_ga: true,
+        extract_ga: false,
         return_landmarks: false,
         return_face_data: false
       }
@@ -192,9 +192,9 @@ class InsightFaceService {
             y_max: Math.round(face.bbox[3]), // y2
             landmarks: face.landmarks || [],
             embedding: face.vec || [],
-            age: face.age,
-            gender: face.gender === 0 ? 'Male' : face.gender === 1 ? 'Female' : undefined,
-            genderConfidence: 0.9 // InsightFace doesn't provide gender confidence separately
+            age: undefined, // Age/Gender отключены для производительности
+            gender: undefined,
+            genderConfidence: undefined
           }
           
           // Match with existing identities using high-quality embeddings
@@ -220,7 +220,7 @@ class InsightFaceService {
               }
               
               console.log(`🆔 Identity: ${processedFace.identity.id} (${processedFace.identity.isNewIdentity ? 'NEW' : 'EXISTING'})`)
-              console.log(`📊 Similarity: ${processedFace.identity.similarity.toFixed(3)}, Age: ${processedFace.age}, Gender: ${processedFace.gender}`)
+              console.log(`📊 Similarity: ${processedFace.identity.similarity.toFixed(3)}`)
               
             } catch (error) {
               console.error('❌ Error matching identity:', error)
