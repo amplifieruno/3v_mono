@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import sharp from 'sharp'
 import { identityService } from './identityService.js'
 
 interface InsightFaceBoundingBox {
@@ -207,13 +208,23 @@ class InsightFaceService {
           // Match with existing identities using high-quality embeddings
           if (processedFace.embedding && processedFace.embedding.length > 0) {
             try {
+              // Extract face crop from original image
+              const faceCrop = await this.extractFaceCrop(
+                imageBuffer,
+                processedFace.x_min,
+                processedFace.y_min,
+                processedFace.x_max,
+                processedFace.y_max
+              )
+
               const identityMatch = await identityService.findOrCreateIdentity({
                 embedding: processedFace.embedding,
                 confidence: processedFace.confidence,
                 x_min: processedFace.x_min,
                 y_min: processedFace.y_min,
                 x_max: processedFace.x_max,
-                y_max: processedFace.y_max
+                y_max: processedFace.y_max,
+                image_data: faceCrop // Добавляем изображение лица
               })
               
               processedFace.identity = {
@@ -287,8 +298,58 @@ class InsightFaceService {
     if (!response.ok) {
       throw new Error(`Failed to get service info: ${response.status}`)
     }
-    
+
     return response.json()
+  }
+
+  /**
+   * Extract face crop from image buffer based on bounding box
+   */
+  private async extractFaceCrop(
+    imageBuffer: Buffer,
+    x_min: number,
+    y_min: number,
+    x_max: number,
+    y_max: number
+  ): Promise<string> {
+    try {
+      // Add padding to the face crop (10% on each side)
+      const padding = 0.1
+      const width = x_max - x_min
+      const height = y_max - y_min
+
+      const padWidth = Math.round(width * padding)
+      const padHeight = Math.round(height * padding)
+
+      const cropX = Math.max(0, x_min - padWidth)
+      const cropY = Math.max(0, y_min - padHeight)
+      const cropWidth = width + (padWidth * 2)
+      const cropHeight = height + (padHeight * 2)
+
+      // Extract face crop using Sharp
+      const faceCropBuffer = await sharp(imageBuffer)
+        .extract({
+          left: Math.round(cropX),
+          top: Math.round(cropY),
+          width: Math.round(cropWidth),
+          height: Math.round(cropHeight)
+        })
+        .resize(150, 150, { // Resize to standard size
+          fit: 'cover',
+          position: 'center'
+        })
+        .jpeg({ quality: 80 })
+        .toBuffer()
+
+      // Convert to base64 data URL
+      const base64 = faceCropBuffer.toString('base64')
+      return `data:image/jpeg;base64,${base64}`
+
+    } catch (error) {
+      console.error('Error extracting face crop:', error)
+      // Return empty data URL if extraction fails
+      return ''
+    }
   }
 }
 

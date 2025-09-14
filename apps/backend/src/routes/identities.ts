@@ -23,6 +23,7 @@ router.get('/', asyncHandler(async (req, res) => {
       attributes: identity.attributes,
       hasPhotos: identity.photos && identity.photos.length > 0,
       photoCount: identity.photos?.length || 0,
+      photos: identity.photos || [], // Включаем фотографии в ответ
       embeddingCount: identity.embeddings?.length || 0
     })),
     total: identities.length,
