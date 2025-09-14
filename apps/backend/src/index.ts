@@ -18,7 +18,7 @@ import { deviceRoutes } from './routes/devices.js'
 import { facilityRoutes } from './routes/facilities.js'
 import { analyticsRoutes } from './routes/analytics.js'
 import faceRoutes from './routes/face.js'
-import { faceService } from './services/realFaceService.js'
+import { insightFaceService } from './services/insightFaceService.js'
 
 // Load environment variables
 dotenv.config()
@@ -97,16 +97,16 @@ io.on('connection', (socket) => {
     try {
       console.log(`Processing realtime frame from ${socket.id}, size: ${data.image.byteLength}`)
       
-      if (!faceService.isReady()) {
-        socket.emit('face-detection-error', { error: 'Face service not ready' })
+      if (!insightFaceService.isReady()) {
+        socket.emit('face-detection-error', { error: 'InsightFace service not ready' })
         return
       }
 
       // Convert ArrayBuffer to Buffer
       const imageBuffer = Buffer.from(data.image)
       
-      // Process with face detection
-      const result = await faceService.detectFaces(imageBuffer)
+      // Process with InsightFace (high-quality embeddings + age/gender)
+      const result = await insightFaceService.detectFaces(imageBuffer)
       
       console.log(`Realtime detection completed: ${result.faces.length} faces in ${result.processing_time}ms`)
       
@@ -153,13 +153,13 @@ async function startServer() {
     await redisClient.ping()
     console.log('Redis connection established successfully')
     
-    // Initialize face detection service
+    // Initialize InsightFace-REST service for high-quality face recognition
     try {
-      await faceService.initialize()
-      console.log('Face detection service initialized successfully')
+      await insightFaceService.initialize()
+      console.log('InsightFace-REST service initialized successfully')
     } catch (error) {
-      console.warn('Face detection service initialization failed:', error.message)
-      console.warn('Will use mock data for face detection')
+      console.warn('InsightFace service initialization failed:', error.message)
+      console.warn('Will fall back to basic face detection if available')
     }
     
     // Start server

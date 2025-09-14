@@ -61,64 +61,63 @@ services:
     networks:
       - itap-network
 
-  # CompreFace - Face Recognition Service
-  compreface-postgres:
-    image: postgres:14
-    container_name: itap-compreface-postgres
+  # InsightFace-REST - High-performance Face Recognition Service (using community image)
+  insightface:
+    image: bavlat/insightface-rest:v0.6.2.0
+    container_name: itap-insightface
     environment:
-      POSTGRES_DB: compreface
-      POSTGRES_USER: compreface
-      POSTGRES_PASSWORD: compreface_password
+      # Model configuration for CPU (optimized for accuracy)
+      DET_NAME: scrfd_10g_gnkps     # High accuracy detection model
+      REC_NAME: glintr100           # Best recognition model (512D embeddings) 
+      GA_MODEL: genderage_v1        # Age/Gender model
+      MASK_DETECTOR: "None"         # No mask detection for now
+      
+      # Performance settings
+      DEF_DET_THRESH: 0.6           # Detection threshold
+      MAX_SIZE: "1280,1280"         # Max input image size (CPU optimized)
+      
+      # API behavior settings
+      DEF_RETURN_FACE_DATA: "False" # Don't return raw face crops
+      DEF_EXTRACT_GA: "True"        # Extract gender/age by default
+      DEF_EXTRACT_EMBEDDING: "True" # Extract embeddings by default
+      
+      # Batch processing (CPU optimized)
+      REC_BATCH_SIZE: 1             # Recognition batch size
+      DET_BATCH_SIZE: 1             # Detection batch size
+      
+      # Backend settings
+      INFERENCE_BACKEND: "onnx"     # Use ONNX for CPU
+      FORCE_FP16: "False"           # No FP16 on CPU
+      
+      # Workers and logging
+      NUM_WORKERS: 4                # Number of worker processes
+      LOG_LEVEL: "INFO"             # Logging level
+      USE_NVJPEG: "False"           # No NVIDIA JPEG acceleration
+      
+    ports:
+      - "18080:18080"               # InsightFace REST API port
+    
     volumes:
-      - compreface_postgres_data:/var/lib/postgresql/data
+      # Model cache for faster startup
+      - insightface_models:/models
+      
     networks:
       - itap-network
-
-  compreface-admin:
-    image: exadel/compreface-admin:1.2.0
-    container_name: itap-compreface-admin
-    environment:
-      POSTGRES_URL: jdbc:postgresql://compreface-postgres:5432/compreface
-      POSTGRES_USER: compreface
-      POSTGRES_PASSWORD: compreface_password
-      ADMIN_JAVA_OPTS: -Xmx8g
-      MAX_FILE_SIZE: 5MB
-      MAX_REQUEST_SIZE: 10MB
-    depends_on:
-      - compreface-postgres
-    ports:
-      - "8080:8080"
-    networks:
-      - itap-network
-
-  compreface-api:
-    image: exadel/compreface-api:1.2.0
-    container_name: itap-compreface-api
-    environment:
-      POSTGRES_URL: jdbc:postgresql://compreface-postgres:5432/compreface
-      POSTGRES_USER: compreface
-      POSTGRES_PASSWORD: compreface_password
-      API_JAVA_OPTS: -Xmx8g
-      SAVE_IMAGES_TO_DB: true
-    depends_on:
-      - compreface-postgres
-    ports:
-      - "8081:8080"
-    networks:
-      - itap-network
-
-  compreface-fe:
-    image: exadel/compreface-fe:1.2.0
-    container_name: itap-compreface-fe
-    environment:
-      API_URL: http://compreface-api:8080
-    depends_on:
-      - compreface-api
-      - compreface-admin
-    ports:
-      - "8082:80"
-    networks:
-      - itap-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18080/info"]
+      interval: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 120s            # CPU model loading takes more time
+    
+    # Resource limits for CPU usage
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
 
 volumes:
   postgres_data:
@@ -127,7 +126,7 @@ volumes:
     driver: local
   minio_data:
     driver: local
-  compreface_postgres_data:
+  insightface_models:
     driver: local
 
 networks:

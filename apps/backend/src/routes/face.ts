@@ -2,7 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
-import { faceService } from '../services/realFaceService.js'
+import { insightFaceService } from '../services/insightFaceService.js'
 
 const router = Router()
 
@@ -41,21 +41,21 @@ router.post('/detect', upload.single('image'), async (req, res) => {
       size: req.file.size
     })
 
-    // Check if face service is ready
-    if (!faceService.isReady()) {
+    // Check if InsightFace service is ready
+    if (!insightFaceService.isReady()) {
       return res.status(503).json({ 
         error: 'Face detection service not initialized',
-        details: 'TensorFlow.js or BlazeFace model not loaded'
+        details: 'InsightFace-REST API not available'
       })
     }
 
-    // Use real face detection service
+    // Use InsightFace for high-quality face recognition
     try {
-      const result = await faceService.detectFaces(req.file.buffer)
+      const result = await insightFaceService.detectFaces(req.file.buffer, req.file.originalname)
       console.log(`Detected ${result.faces.length} faces in ${result.processing_time}ms`)
       res.json(result)
     } catch (error) {
-      console.error('Face detection service error:', error)
+      console.error('InsightFace detection error:', error)
       res.status(500).json({ 
         error: 'Face detection failed',
         message: error instanceof Error ? error.message : 'Unknown error'
@@ -165,26 +165,25 @@ router.post('/recognize', upload.single('image'), async (req, res) => {
 
 /**
  * GET /api/face/status
- * Check CompreFace service status
+ * Check InsightFace service status and information
  */
 router.get('/status', async (req, res) => {
   try {
-    const response = await fetch(`${COMPREFACE_API_URL}/api/v1/status`)
-    
-    if (response.ok) {
-      const status = await response.json()
-      res.json({ 
-        status: 'connected',
-        compreface: status 
-      })
-    } else {
-      res.status(503).json({ 
-        status: 'disconnected',
-        error: 'CompreFace service unavailable'
+    if (!insightFaceService.isReady()) {
+      return res.status(503).json({ 
+        status: 'not_initialized',
+        error: 'InsightFace service not initialized'
       })
     }
+    
+    const serviceInfo = await insightFaceService.getServiceInfo()
+    res.json({ 
+      status: 'connected',
+      service: 'InsightFace-REST',
+      info: serviceInfo
+    })
   } catch (error) {
-    console.error('CompreFace status check failed:', error)
+    console.error('InsightFace status check failed:', error)
     res.status(503).json({ 
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error'
