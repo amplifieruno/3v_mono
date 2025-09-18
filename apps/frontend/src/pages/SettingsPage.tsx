@@ -28,7 +28,7 @@ export function SettingsPage() {
         alert(`❌ Ошибка: ${result.error}`)
       }
     } catch (error) {
-      alert(`❌ Ошибка сети: ${error.message}`)
+      alert(`❌ Ошибка сети: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsClearing(false)
     }

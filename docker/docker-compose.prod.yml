@@ -1,7 +1,10 @@
 services:
-  # nginx reverse proxy
+  # nginx reverse proxy with frontend
   nginx:
-    image: nginx:alpine
+    build:
+      context: ../
+      dockerfile: apps/frontend/Dockerfile
+      target: production
     container_name: itap-nginx-prod
     ports:
       - "80:80"
@@ -9,27 +12,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - frontend_build:/usr/share/nginx/html
     depends_on:
       - backend
-      - frontend
-    networks:
-      - itap-network
-    restart: unless-stopped
-
-  # Frontend React App
-  frontend:
-    build:
-      context: ../
-      dockerfile: apps/frontend/Dockerfile
-      target: production
-    container_name: itap-frontend-prod
-    environment:
-      NODE_ENV: production
-      VITE_API_URL: ${VITE_API_URL:-http://backend:3001}
-      VITE_WS_URL: ${VITE_WS_URL:-ws://backend:3001}
-    volumes:
-      - frontend_build:/app/dist
     networks:
       - itap-network
     restart: unless-stopped
@@ -152,8 +136,6 @@ volumes:
   redis_data:
     driver: local
   minio_data:
-    driver: local
-  frontend_build:
     driver: local
   insightface_models:
     driver: local
