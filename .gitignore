@@ -2,3 +2,29 @@
 node_modules
 
 *.log
+
+.DS_Store
+
+
+
+# Environment files (contain sensitive data)
+.env
+.env.dev
+.env.prod
+.env.local
+.env.*
+!.env.example
+!.env.dev.example
+!.env.prod.example
+
+# Backup files
+backup/
+*.backup
+*.sql
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
