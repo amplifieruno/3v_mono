@@ -41,16 +41,16 @@ WORKDIR /app
 RUN apk add --no-cache cairo jpeg pango giflib && \
     corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy workspace files for production deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/backend/package.json ./apps/backend/
+# Copy workspace files and dependencies from builder
+COPY --from=builder /app ./
 
-# Install ALL dependencies (including devDependencies needed for runtime)
-RUN pnpm install --frozen-lockfile --prefer-offline --ignore-scripts --filter backend...
+# Copy built application and source files needed at runtime
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/models ./apps/backend/models
+COPY --from=builder /app/apps/backend/src ./apps/backend/src
 
-# Copy built application and models
-COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/models ./models
+# Set working directory to backend app
+WORKDIR /app/apps/backend
 
 # Create uploads directory
 RUN mkdir -p uploads

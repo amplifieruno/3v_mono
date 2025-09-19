@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, JoinColumn } from 'typeorm'
-import { Identity } from './Identity.js'
+import type { Identity } from './Identity.js'
 
 export enum AccessLevel {
   BASIC = 'basic',
@@ -73,7 +73,7 @@ export class Profile {
   @UpdateDateColumn()
   updatedAt!: Date
 
-  @OneToOne(() => Identity, identity => identity.profile)
+  @OneToOne('Identity', 'profile')
   @JoinColumn({ name: 'identityId' })
   identity!: Identity
 }

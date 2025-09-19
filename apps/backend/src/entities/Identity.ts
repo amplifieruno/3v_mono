@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm'
-import { Profile } from './Profile.js'
+import type { Profile } from './Profile.js'
 
 export enum IdentityStatus {
   VERIFIED = 'verified',
@@ -52,6 +52,6 @@ export class Identity {
   @Column('int', { default: 0 })
   detectionCount!: number
 
-  @OneToOne(() => Profile, profile => profile.identity)
+  @OneToOne('Profile', 'identity')
   profile?: Profile
 }

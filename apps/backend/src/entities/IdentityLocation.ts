@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
-import { TrackingSession } from './TrackingSession.js'
+import type { TrackingSession } from './TrackingSession.js'
 
 export enum MovementType {
   ENTRY = 'entry',
@@ -44,7 +44,7 @@ export class IdentityLocation {
   @CreateDateColumn()
   timestamp!: Date
 
-  @ManyToOne(() => TrackingSession, session => session.locations)
+  @ManyToOne('TrackingSession', 'locations')
   @JoinColumn({ name: 'sessionId' })
   session?: TrackingSession
 }

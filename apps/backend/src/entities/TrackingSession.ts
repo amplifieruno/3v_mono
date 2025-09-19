@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm'
-import { IdentityLocation } from './IdentityLocation.js'
+import type { IdentityLocation } from './IdentityLocation.js'
 
 export enum SessionStatus {
   ACTIVE = 'active',
@@ -38,6 +38,6 @@ export class TrackingSession {
   })
   status!: SessionStatus
 
-  @OneToMany(() => IdentityLocation, location => location.session)
+  @OneToMany('IdentityLocation', 'session')
   locations!: IdentityLocation[]
 }

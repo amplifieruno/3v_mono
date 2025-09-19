@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
-import { Area } from './Area.js'
+import type { Area } from './Area.js'
 
 export enum FacilityStatus {
   ACTIVE = 'active',
@@ -46,6 +46,6 @@ export class Facility {
   @UpdateDateColumn()
   updatedAt!: Date
 
-  @OneToMany(() => Area, area => area.facility)
+  @OneToMany('Area', 'facility')
   areas!: Area[]
 }

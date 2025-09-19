@@ -22,7 +22,8 @@ export function FaceDebugPage() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    socketRef.current = io('http://localhost:3001')
+    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001'
+    socketRef.current = io(wsUrl)
     
     socketRef.current.on('face-detection-result', (result) => {
       setFaceDetectionResult(result)

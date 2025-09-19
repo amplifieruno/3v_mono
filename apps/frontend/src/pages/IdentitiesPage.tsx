@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_ENDPOINTS, createApiUrl } from '../config/api'
 import { format } from 'date-fns'
 import {
   Users,
@@ -38,7 +39,7 @@ export function IdentitiesPage() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('http://localhost:3001/api/identities')
+      const response = await fetch(API_ENDPOINTS.identities)
       if (!response.ok) {
         throw new Error('Failed to fetch identities')
       }
@@ -62,7 +63,7 @@ export function IdentitiesPage() {
     if (!confirm('Are you sure you want to delete this identity?')) return
 
     try {
-      const response = await fetch(`http://localhost:3001/api/identities/${id}`, {
+      const response = await fetch(createApiUrl(`/api/identities/${id}`), {
         method: 'DELETE'
       })
       if (response.ok) {
@@ -77,7 +78,7 @@ export function IdentitiesPage() {
     if (!confirm('Are you sure you want to delete ALL identities? This cannot be undone!')) return
 
     try {
-      const response = await fetch('http://localhost:3001/api/identities/clear', {
+      const response = await fetch(createApiUrl('/api/identities/clear'), {
         method: 'DELETE'
       })
       if (response.ok) {

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm'
-import { Facility } from './Facility.js'
-import { Device } from './Device.js'
+import type { Facility } from './Facility.js'
+import type { Device } from './Device.js'
 
 export enum AreaType {
   BUILDING = 'building',
@@ -70,17 +70,17 @@ export class Area {
   @UpdateDateColumn()
   updatedAt!: Date
 
-  @ManyToOne(() => Facility, facility => facility.areas)
+  @ManyToOne('Facility', 'areas')
   @JoinColumn({ name: 'facilityId' })
   facility!: Facility
 
-  @ManyToOne(() => Area, area => area.children)
+  @ManyToOne('Area', 'children')
   @JoinColumn({ name: 'parentId' })
   parent?: Area
 
-  @OneToMany(() => Area, area => area.parent)
+  @OneToMany('Area', 'parent')
   children!: Area[]
 
-  @OneToMany(() => Device, device => device.area)
+  @OneToMany('Device', 'area')
   devices!: Device[]
 }

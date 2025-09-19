@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
-import { Area } from './Area.js'
+import type { Area } from './Area.js'
 
 export enum DeviceType {
   STATIC_VIDEO_CAMERA = 'static_video_camera',
@@ -77,7 +77,7 @@ export class Device {
   @UpdateDateColumn()
   updatedAt!: Date
 
-  @ManyToOne(() => Area, area => area.devices)
+  @ManyToOne('Area', 'devices')
   @JoinColumn({ name: 'areaId' })
   area!: Area
 }
