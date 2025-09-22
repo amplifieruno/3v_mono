@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class AddVectorEmbedding1700000000000 implements MigrationInterface {
-  name = 'AddVectorEmbedding1700000000000'
+export class AddVectorEmbedding1700000000002 implements MigrationInterface {
+  name = 'AddVectorEmbedding1700000000002'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Ensure pgvector extension is installed

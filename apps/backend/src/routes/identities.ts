@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { identityService } from '../services/identityService.js'
 
-const router = Router()
+const router: Router = Router()
 
 // GET /api/identities
 router.get('/', asyncHandler(async (req, res) => {

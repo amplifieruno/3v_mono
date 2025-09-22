@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 // GET /api/analytics/stats
 router.get('/stats', asyncHandler(async (req, res) => {

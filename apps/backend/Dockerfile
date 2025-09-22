@@ -27,7 +27,7 @@ COPY apps/backend ./apps/backend/
 WORKDIR /app/apps/backend
 
 # Build the application (skip type errors for production)
-RUN npx tsc || true
+RUN pnpm build; exit 0
 
 # Download face-api models - skip for production build
 # Models should be mounted as volume or downloaded at runtime
@@ -55,8 +55,14 @@ WORKDIR /app/apps/backend
 # Create uploads directory
 RUN mkdir -p uploads
 
+# Install PostgreSQL client and redis-cli for health checks
+RUN apk add --no-cache postgresql-client redis curl
+
 # Set environment
 ENV NODE_ENV=production
+ENV POSTGRES_USER=itap_user
+ENV POSTGRES_DB=itap_prod
+ENV REDIS_PASSWORD=redis_password_prod
 
 # Expose port
 EXPOSE 3001
@@ -65,8 +71,9 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# RUN echo "Содержимое /app:" && ls -lah /app
+
+CMD npm run migration:run && node dist/index.js
 
 # Development stage (optional)
 FROM base AS development

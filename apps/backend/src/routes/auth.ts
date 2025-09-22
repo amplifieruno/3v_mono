@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/errorHandler.js'
 
-const router = Router()
+const router: Router = Router()
 
 // POST /api/auth/login
 router.post('/login', asyncHandler(async (req, res) => {

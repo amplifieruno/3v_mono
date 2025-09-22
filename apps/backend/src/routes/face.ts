@@ -4,7 +4,7 @@ import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { insightFaceService } from '../services/insightFaceService.js'
 
-const router = Router()
+const router: Router = Router()
 
 // Configure multer for file uploads
 const upload = multer({

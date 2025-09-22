@@ -16,7 +16,10 @@
     "test:coverage": "vitest --coverage",
     "download-models": "chmod +x scripts/download-models.sh && ./scripts/download-models.sh",
     "sync-db": "tsx src/scripts/sync-db.ts",
-    "setup": "pnpm install && pnpm download-models"
+    "setup": "pnpm install && pnpm download-models",
+    "migration:generate": "typeorm migration:generate InitialSchema -d ./dist/config/database.js",
+    "migration:run": "tsx src/scripts/run-migrations.ts",
+    "migration:revert": "tsx src/scripts/revert-migration.ts"
   },
   "dependencies": {
     "@tensorflow-models/blazeface": "^0.1.0",

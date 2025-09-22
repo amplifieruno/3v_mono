@@ -80,7 +80,7 @@ class InsightFaceService {
         throw new Error(`InsightFace service not available: ${response.status}`)
       }
       
-      const info = await response.json()
+      const info: any = await response.json()
       console.log('✅ InsightFace-REST service connected successfully!')
       console.log('📋 Service info:', {
         version: info.version,
@@ -175,7 +175,7 @@ class InsightFaceService {
         throw new Error(`InsightFace API error: ${response.status} - ${errorText}`)
       }
       
-      const result: InsightFaceResponse = await response.json()
+      const result = await response.json() as InsightFaceResponse
 
       // InsightFace returns [[face1, face2, ...]] - array of arrays
       if (!result || result.data.length === 0 || !result.data[0] || result.data[0].faces.length === 0) {

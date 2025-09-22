@@ -11,7 +11,7 @@ import { User } from '../entities/User.js'
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  url: process.env.DATABASE_URL || 'postgresql://itap_user:itap_password@localhost:5432/itap_dev',
+  url: process.env.DATABASE_URL || '',
   synchronize: process.env.NODE_ENV === 'development', // Only for development
   logging: process.env.NODE_ENV === 'development',
   entities: [

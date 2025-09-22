@@ -1,8 +1,8 @@
-import { createClient } from 'redis'
+import { createClient, RedisClientType } from 'redis'
 
 const redisUrl = process.env.REDIS_URL || 'redis://:redis_password@localhost:6379'
 
-export const redisClient = createClient({
+export const redisClient: RedisClientType = createClient({
   url: redisUrl,
   socket: {
     reconnectStrategy: (retries) => Math.min(retries * 50, 500)
