@@ -1,0 +1,20 @@
+table:
+  name: roles
+  schema: auth
+configuration:
+  column_config:
+    role:
+      custom_name: role
+  custom_column_names:
+    role: role
+  custom_name: authRoles
+  custom_root_fields:
+    delete: deleteAuthRoles
+    delete_by_pk: deleteAuthRole
+    insert: insertAuthRoles
+    insert_one: insertAuthRole
+    select: authRoles
+    select_aggregate: authRolesAggregate
+    select_by_pk: authRole
+    update: updateAuthRoles
+    update_by_pk: updateAuthRole

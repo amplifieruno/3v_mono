@@ -1,0 +1,48 @@
+table:
+  name: profiles
+  schema: itap
+array_relationships:
+  - name: identities
+    using:
+      foreign_key_constraint_on:
+        column: profile_id
+        table:
+          name: identities
+          schema: itap
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - email
+        - first_name
+        - last_name
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - email
+        - first_name
+        - last_name
+        - created_at
+        - updated_at
+        - id
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: staff
+    permission:
+      columns:
+        - email
+        - first_name
+        - last_name
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: staff
+    permission:
+      filter: {}
+    comment: ""

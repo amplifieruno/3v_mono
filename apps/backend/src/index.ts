@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import 'dotenv/config';
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -10,7 +11,6 @@ import { Server } from 'socket.io'
 import rateLimit from 'express-rate-limit'
 
 import { AppDataSource } from './config/database.js'
-import { redisClient } from './config/redis.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { authRoutes } from './routes/auth.js'
 import { identityRoutes } from './routes/identities.js'
@@ -149,10 +149,6 @@ async function startServer() {
     await AppDataSource.initialize()
     console.log('Database connection initialized successfully')
     
-    // Test Redis connection
-    await redisClient.ping()
-    console.log('Redis connection established successfully')
-    
     // Initialize InsightFace-REST service for high-quality face recognition
     try {
       await insightFaceService.initialize()
@@ -184,8 +180,7 @@ process.on('SIGTERM', async () => {
   
   try {
     await AppDataSource.destroy()
-    await redisClient.quit()
-    console.log('Database and Redis connections closed')
+    console.log('Database connections closed')
     process.exit(0)
   } catch (error) {
     console.error('Error during shutdown:', error)

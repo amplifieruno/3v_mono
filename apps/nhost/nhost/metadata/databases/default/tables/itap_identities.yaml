@@ -1,0 +1,50 @@
+table:
+  name: identities
+  schema: itap
+object_relationships:
+  - name: profile
+    using:
+      foreign_key_constraint_on: profile_id
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - attributes
+        - embedding
+        - images
+        - profile_id
+        - status
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - images
+        - attributes
+        - status
+        - created_at
+        - updated_at
+        - embedding
+        - id
+        - profile_id
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: staff
+    permission:
+      columns:
+        - attributes
+        - embedding
+        - images
+        - profile_id
+        - status
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: staff
+    permission:
+      filter: {}
+    comment: ""

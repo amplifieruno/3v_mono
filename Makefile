@@ -1,3 +1,6 @@
+dev2-compose:
+	docker-compose --env-file .env.dev2 -f docker/docker-compose.dev2.yml up -d
+
 dev-compose:
 	docker-compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d
 
