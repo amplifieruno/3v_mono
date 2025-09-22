@@ -65,7 +65,7 @@ export function FaceDebugPage() {
     loadIdentityStats()
     
     // Reload stats every 10 seconds
-    const interval = setInterval(loadIdentityStats, 10000)
+    const interval = setInterval(loadIdentityStats, 30000)
     
     return () => clearInterval(interval)
   }, [])

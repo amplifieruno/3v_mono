@@ -136,6 +136,32 @@ router.get('/profile/:profileId', asyncHandler(async (req, res) => {
   })
 }))
 
+// POST /api/identities/compare - Сравнить identity по векторам
+router.post('/compare', asyncHandler(async (req, res) => {
+  const { identityIds } = req.body
+
+  if (!Array.isArray(identityIds) || identityIds.length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'At least 2 identity IDs are required for comparison'
+    })
+  }
+
+  try {
+    const comparison = await identityService.compareIdentities(identityIds)
+
+    res.json({
+      success: true,
+      data: comparison
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Error during comparison'
+    })
+  }
+}))
+
 // POST /api/identities/clear - Очистить всю базу Identity (ОПАСНАЯ ОПЕРАЦИЯ!)
 router.post('/clear', asyncHandler(async (req, res) => {
   console.log('⚠️  CLEAR ALL IDENTITIES REQUEST from client')

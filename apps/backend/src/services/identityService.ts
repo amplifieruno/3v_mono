@@ -47,7 +47,6 @@ export class IdentityService {
         FROM (
           SELECT
             id,
-            1 - (embedding <=> $1::vector) AS similarity,
             images, attributes, status,
             created_at AS "createdAt",
             updated_at AS "updatedAt",
@@ -58,7 +57,7 @@ export class IdentityService {
           ORDER BY dist
           LIMIT 1
         ) s
-      WHERE s.similarity > $2;
+      WHERE s.dist < $2;
     `
 
     const result = await this.identityRepository.query(query, [
@@ -68,7 +67,7 @@ export class IdentityService {
 
     if (result && result.length > 0) {
       const matchData = result[0]
-      const similarity = parseFloat(matchData.similarity)
+      const similarity = 1 - parseFloat(matchData.dist)
 
       console.log(`🔍 Found matching identity ${matchData.id} with similarity ${similarity.toFixed(3)} using pgvector`)
 
@@ -324,6 +323,95 @@ export class IdentityService {
    */
   async deleteIdentity(identityId: string): Promise<void> {
     await this.identityRepository.delete(identityId)
+  }
+
+  /**
+   * Сравнить несколько Identity по векторной схожести
+   */
+  async compareIdentities(identityIds: string[]): Promise<{
+    baseIdentity: Identity
+    comparisons: Array<{
+      identity: Identity
+      similarity: number
+      distance: number
+    }>
+  }> {
+    if (identityIds.length < 2) {
+      throw new Error('At least 2 identities are required for comparison')
+    }
+
+    const baseIdentityId = identityIds[0]
+    const compareIds = identityIds.slice(1)
+
+    // Получаем базовую identity
+    const baseIdentity = await this.identityRepository.findOne({
+      where: { id: baseIdentityId },
+      relations: ['profile']
+    })
+
+    if (!baseIdentity) {
+      throw new Error('Base identity not found')
+    }
+
+    // Сравниваем с остальными
+    const query = `
+      SELECT
+        i.id,
+        i.status,
+        i.created_at as "createdAt",
+        i.updated_at as "updatedAt",
+        i.images,
+        i.attributes,
+        i.profile_id as "profileId",
+        (base.embedding <=> i.embedding) as distance,
+        (1 - (base.embedding <=> i.embedding)) as similarity
+      FROM itap.identities i
+      CROSS JOIN (
+        SELECT embedding
+        FROM itap.identities
+        WHERE id = $1 AND embedding IS NOT NULL
+      ) base
+      WHERE i.id = ANY($2::uuid[])
+        AND i.embedding IS NOT NULL
+      ORDER BY distance ASC
+    `
+
+    const results = await this.identityRepository.query(query, [
+      baseIdentityId,
+      compareIds
+    ])
+
+    const comparisons = await Promise.all(
+      results.map(async (result: any) => {
+        const identity = this.identityRepository.create({
+          id: result.id,
+          status: result.status,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+          images: result.images,
+          attributes: result.attributes,
+          profileId: result.profileId
+        })
+
+        // Загружаем профиль если есть
+        if (result.profileId) {
+          identity.profile = await this.profileRepository.findOne({
+            where: { id: result.profileId }
+          })
+        }
+
+        return {
+          identity,
+          similarity: parseFloat(result.similarity),
+          distance: parseFloat(result.distance)
+        }
+      })
+    )
+
+    return {
+      baseIdentity,
+      comparisons
+    }
   }
 
   /**
