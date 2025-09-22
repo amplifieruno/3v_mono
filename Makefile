@@ -4,6 +4,10 @@ dev2-compose:
 dev-compose:
 	docker-compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d
 
+hasura_apply:
+	docker compose --env-file .env.dev2 exec console \
+		sh -c "hasura-cli metadata apply --endpoint=http://graphql:8080 && \
+					 hasura-cli migrate apply --database-name 'default' --endpoint=http://graphql:8080"
 dev:
 	make dev-compose
 	pnpm run dev

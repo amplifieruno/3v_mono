@@ -1,57 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
 import type { Profile } from './Profile.js'
 
-export enum IdentityStatus {
-  VERIFIED = 'verified',
-  UNVERIFIED = 'unverified', 
-  ARCHIVED = 'archived'
-}
-
-@Entity('identities')
+@Entity({ schema: 'itap', name: 'identities' })
 export class Identity {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
-  // Legacy: old embeddings stored as JSONB
-  @Column('jsonb', { nullable: true })
-  embeddings?: number[][]
-
-  // New: single averaged embedding vector for fast similarity search
-  // Note: vector column is added via migration, TypeORM doesn't recognize 'vector' type
-  // @Column('vector(512)', { nullable: true })
-  embedding?: string // pgvector stores as string, we'll parse it
-
-  @Column('jsonb', { nullable: true })
-  attributes?: Record<string, any>
-
-  @Column('text', { array: true, default: [] })
-  photos!: string[]
-
-  @Column('decimal', { precision: 3, scale: 2, default: 0.8 })
-  confidence!: number
-
-  @Column({
-    type: 'enum',
-    enum: IdentityStatus,
-    default: IdentityStatus.UNVERIFIED
-  })
-  status!: IdentityStatus
-
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date
 
-  @Column('timestamp', { nullable: true })
-  firstSeen?: Date
+  @Column('text', { array: true })
+  images!: string[]
 
-  @Column('timestamp', { nullable: true })
-  lastSeen?: Date
+  @Column('text', { default: 'unverified' })
+  status!: string
 
-  @Column('int', { default: 0 })
-  detectionCount!: number
+  @Column('jsonb', { default: {} })
+  attributes!: Record<string, any>
 
-  @OneToOne('Profile', 'identity')
+  // Vector embedding for face recognition
+  // TypeORM doesn't support vector type natively, handled via raw queries
+  embedding?: number[]
+
+  @Column('uuid', { name: 'profile_id', nullable: true })
+  profileId?: string
+
+  @ManyToOne('Profile', 'identities')
+  @JoinColumn({ name: 'profile_id' })
   profile?: Profile
 }

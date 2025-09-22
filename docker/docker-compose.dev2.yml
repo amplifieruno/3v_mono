@@ -139,14 +139,15 @@ services:
             HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
             HASURA_GRAPHQL_USE_PREPARED_STATEMENTS: "true"
             HASURA_GRAPHQL_WS_READ_COOKIE: "false"
+            HASURA_GRAPHQL_MIGRATIONS_DIR: /migrations
+            HASURA_GRAPHQL_METADATA_DIR: /metadata
         extra_hosts:
             - host.docker.internal:host-gateway
             - ${AUTH_URL}:host-gateway
             - ${DB_URL}:host-gateway
             - ${FUNCTIONS_URL}:host-gateway
             - ${GRAPHQL_URL}:0.0.0.0
-            - ${STORAGE_URL}:host-gateway
-        
+            - ${STORAGE_URL}:host-gateway   
         healthcheck:
             test:
                 - CMD-SHELL
@@ -397,7 +398,7 @@ services:
             - --providers.file.directory=/opt/traefik
             - --providers.file.watch=true
             - --providers.docker.exposedbydefault=false
-            - --providers.docker.constraints=Label(`com.docker.compose.project`,`nhost2`)
+            - --providers.docker.constraints=Label(`com.docker.compose.project`,`${COMPOSE_PROJECT_NAME}`)
             - --entrypoints.web.address=:80
         extra_hosts:
             - host.docker.internal:host-gateway

@@ -1,6 +1,7 @@
-import { Repository, MoreThanOrEqual } from 'typeorm'
+import { Repository } from 'typeorm'
 import { AppDataSource } from '../config/database.js'
-import { Identity, IdentityStatus } from '../entities/Identity.js'
+import { Identity } from '../entities/Identity.js'
+import { Profile } from '../entities/Profile.js'
 
 interface FaceDetectionData {
   embedding: number[]
@@ -12,6 +13,12 @@ interface FaceDetectionData {
   y_max: number
 }
 
+interface CreateIdentityData {
+  embedding: number[]
+  imageUrl?: string
+  profileId?: string
+}
+
 interface IdentityMatchResult {
   identity: Identity
   similarity: number
@@ -20,10 +27,12 @@ interface IdentityMatchResult {
 
 export class IdentityService {
   private identityRepository: Repository<Identity>
-  private similarityThreshold = 0.65 // Порог схожести для InsightFace 512D embeddings (оптимизированный)
+  private profileRepository: Repository<Profile>
+  private similarityThreshold = 0.50 // Порог схожести для InsightFace 512D embeddings (оптимизированный)
 
   constructor() {
     this.identityRepository = AppDataSource.getRepository(Identity)
+    this.profileRepository = AppDataSource.getRepository(Profile)
   }
 
   /**
@@ -34,30 +43,26 @@ export class IdentityService {
     const embeddingVector = `[${faceData.embedding.join(',')}]`
 
     const query = `
-      SELECT
-        id,
-        1 - (embedding <=> $1::vector) as similarity,
-        embeddings,
-        attributes,
-        photos,
-        confidence,
-        status,
-        "createdAt",
-        "updatedAt",
-        "firstSeen",
-        "lastSeen",
-        "detectionCount"
-      FROM identities
-      WHERE embedding IS NOT NULL
-        AND status = $2
-        AND 1 - (embedding <=> $1::vector) > $3
-      ORDER BY embedding <=> $1::vector
-      LIMIT 1
+      SELECT *
+        FROM (
+          SELECT
+            id,
+            1 - (embedding <=> $1::vector) AS similarity,
+            images, attributes, status,
+            created_at AS "createdAt",
+            updated_at AS "updatedAt",
+            profile_id AS "profileId",
+            (embedding <=> $1::vector) AS dist
+          FROM itap.identities
+          WHERE embedding IS NOT NULL
+          ORDER BY dist
+          LIMIT 1
+        ) s
+      WHERE s.similarity > $2;
     `
 
     const result = await this.identityRepository.query(query, [
       embeddingVector,
-      IdentityStatus.UNVERIFIED,
       this.similarityThreshold
     ])
 
@@ -70,16 +75,12 @@ export class IdentityService {
       // Преобразуем результат в объект Identity
       const bestMatch = this.identityRepository.create({
         id: matchData.id,
-        embeddings: matchData.embeddings,
+        images: matchData.images,
         attributes: matchData.attributes,
-        photos: matchData.photos,
-        confidence: matchData.confidence,
         status: matchData.status,
         createdAt: matchData.createdAt,
         updatedAt: matchData.updatedAt,
-        firstSeen: matchData.firstSeen,
-        lastSeen: matchData.lastSeen,
-        detectionCount: matchData.detectionCount
+        profileId: matchData.profileId
       })
 
       // Обновляем существующий Identity
@@ -109,12 +110,7 @@ export class IdentityService {
    */
   private async createNewIdentity(faceData: FaceDetectionData): Promise<Identity> {
     const identity = new Identity()
-    identity.embeddings = [faceData.embedding]
-    identity.confidence = faceData.confidence
-    identity.status = IdentityStatus.UNVERIFIED
-    identity.firstSeen = new Date()
-    identity.lastSeen = new Date()
-    identity.detectionCount = 1
+    identity.status = 'unverified'
     identity.attributes = {
       last_detection: {
         bbox: {
@@ -125,12 +121,15 @@ export class IdentityService {
         },
         confidence: faceData.confidence,
         timestamp: new Date().toISOString()
-      }
+      },
+      confidence: faceData.confidence
     }
 
-    // Если есть данные изображения, сохраняем первое фото
+    // Если есть данные изображения, сохраняем
     if (faceData.image_data) {
-      identity.photos = [faceData.image_data]
+      identity.images = [faceData.image_data]
+    } else {
+      identity.images = []
     }
 
     const savedIdentity = await this.identityRepository.save(identity)
@@ -138,7 +137,7 @@ export class IdentityService {
     // Сохраняем embedding отдельным запросом, так как TypeORM не поддерживает vector тип
     const embeddingVector = `[${faceData.embedding.join(',')}]`
     await this.identityRepository.query(
-      'UPDATE identities SET embedding = $1::vector WHERE id = $2',
+      'UPDATE itap.identities SET embedding = $1::vector WHERE id = $2',
       [embeddingVector, savedIdentity.id]
     )
 
@@ -151,19 +150,6 @@ export class IdentityService {
    * Обновить существующий Identity новым обнаружением
    */
   private async updateIdentityWithNewDetection(identity: Identity, faceData: FaceDetectionData): Promise<void> {
-    // Добавляем новый embedding (максимум 5 для производительности)
-    if (!identity.embeddings) identity.embeddings = []
-
-    identity.embeddings.push(faceData.embedding)
-    if (identity.embeddings.length > 5) {
-      identity.embeddings = identity.embeddings.slice(-5) // Оставляем последние 5
-    }
-
-    // Обновляем статистику
-    identity.lastSeen = new Date()
-    identity.detectionCount += 1
-    identity.confidence = Math.max(identity.confidence, faceData.confidence)
-
     // Обновляем атрибуты
     if (!identity.attributes) identity.attributes = {}
     identity.attributes.last_detection = {
@@ -176,69 +162,37 @@ export class IdentityService {
       confidence: faceData.confidence,
       timestamp: new Date().toISOString()
     }
+    identity.attributes.lastSeen = new Date().toISOString()
+    identity.attributes.detectionCount = (identity.attributes.detectionCount || 0) + 1
 
     // Добавляем фото если есть (максимум 3)
     if (faceData.image_data) {
-      if (!identity.photos) identity.photos = []
-      identity.photos.push(faceData.image_data)
-      if (identity.photos.length > 3) {
-        identity.photos = identity.photos.slice(-3) // Оставляем последние 3
+      if (!identity.images) identity.images = []
+      identity.images.push(faceData.image_data)
+      if (identity.images.length > 3) {
+        identity.images = identity.images.slice(-3) // Оставляем последние 3
       }
     }
 
     await this.identityRepository.save(identity)
 
-    // Обновляем vector embedding отдельным запросом
-    const avgEmbedding = this.calculateAverageEmbedding(identity.embeddings)
-    const embeddingVector = `[${avgEmbedding.join(',')}]`
+    // Обновляем embedding текущим значением
+    const embeddingVector = `[${faceData.embedding.join(',')}]`
     await this.identityRepository.query(
-      'UPDATE identities SET embedding = $1::vector WHERE id = $2',
+      'UPDATE itap.identities SET embedding = $1::vector WHERE id = $2',
       [embeddingVector, identity.id]
     )
-    console.log(`🔄 Updated identity ${identity.id}, total detections: ${identity.detectionCount}`)
+    console.log(`🔄 Updated identity ${identity.id}, total detections: ${identity.attributes.detectionCount}`)
   }
 
-  /**
-   * Вычислить среднее embedding из нескольких векторов
-   */
-  private calculateAverageEmbedding(embeddings: number[][]): number[] {
-    if (!embeddings || embeddings.length === 0) {
-      throw new Error('Cannot calculate average of empty embeddings array')
-    }
-
-    if (embeddings.length === 1) {
-      return embeddings[0]
-    }
-
-    const embeddingLength = embeddings[0].length
-    const avgEmbedding = new Array(embeddingLength).fill(0)
-
-    // Суммируем все embedding векторы
-    for (const embedding of embeddings) {
-      if (embedding.length !== embeddingLength) {
-        console.warn('Embedding dimension mismatch, skipping:', embedding.length, 'vs', embeddingLength)
-        continue
-      }
-
-      for (let i = 0; i < embeddingLength; i++) {
-        avgEmbedding[i] += embedding[i]
-      }
-    }
-
-    // Усредняем
-    for (let i = 0; i < embeddingLength; i++) {
-      avgEmbedding[i] /= embeddings.length
-    }
-
-    return avgEmbedding
-  }
 
   /**
    * Получить все Identity с базовой информацией
    */
   async getAllIdentities(): Promise<Identity[]> {
     return await this.identityRepository.find({
-      order: { lastSeen: 'DESC' },
+      relations: ['profile'],
+      order: { updatedAt: 'DESC' },
       take: 50 // Ограничиваем для производительности
     })
   }
@@ -247,7 +201,10 @@ export class IdentityService {
    * Получить Identity по ID
    */
   async getIdentityById(id: string): Promise<Identity | null> {
-    return await this.identityRepository.findOne({ where: { id } })
+    return await this.identityRepository.findOne({
+      where: { id },
+      relations: ['profile']
+    })
   }
 
   /**
@@ -265,33 +222,108 @@ export class IdentityService {
     total: number
     verified: number
     unverified: number
-    archived: number
-    recentDetections: number
+    withProfile: number
   }> {
     const total = await this.identityRepository.count()
-    const verified = await this.identityRepository.count({ 
-      where: { status: IdentityStatus.VERIFIED } 
+    const verified = await this.identityRepository.count({
+      where: { status: 'verified' }
     })
-    const unverified = await this.identityRepository.count({ 
-      where: { status: IdentityStatus.UNVERIFIED } 
-    })
-    const archived = await this.identityRepository.count({ 
-      where: { status: IdentityStatus.ARCHIVED } 
+    const unverified = await this.identityRepository.count({
+      where: { status: 'unverified' }
     })
 
-    // Подсчет недавних обнаружений (за последний час)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-    const recentDetections = await this.identityRepository.count({
-      where: { lastSeen: MoreThanOrEqual(oneHourAgo) }
-    })
+    // Подсчет identity с профилями
+    const withProfileResult = await this.identityRepository.query(
+      'SELECT COUNT(*) as count FROM itap.identities WHERE profile_id IS NOT NULL'
+    )
+    const withProfile = parseInt(withProfileResult[0]?.count || 0)
 
     return {
       total,
       verified,
       unverified,
-      archived,
-      recentDetections
+      withProfile
     }
+  }
+
+  /**
+   * Создать новую Identity с привязкой к профилю
+   */
+  async createIdentityForProfile(data: CreateIdentityData): Promise<Identity> {
+    const identity = new Identity()
+    identity.status = 'unverified'
+    identity.attributes = {}
+    identity.images = data.imageUrl ? [data.imageUrl] : []
+    identity.profileId = data.profileId
+
+    const savedIdentity = await this.identityRepository.save(identity)
+
+    // Сохраняем embedding
+    if (data.embedding && data.embedding.length > 0) {
+      const embeddingVector = `[${data.embedding.join(',')}]`
+      await this.identityRepository.query(
+        'UPDATE itap.identities SET embedding = $1::vector WHERE id = $2',
+        [embeddingVector, savedIdentity.id]
+      )
+    }
+
+    return savedIdentity
+  }
+
+  /**
+   * Привязать существующую Identity к профилю
+   */
+  async linkIdentityToProfile(identityId: string, profileId: string): Promise<Identity> {
+    const identity = await this.identityRepository.findOne({ where: { id: identityId } })
+    if (!identity) {
+      throw new Error('Identity not found')
+    }
+
+    identity.profileId = profileId
+    return await this.identityRepository.save(identity)
+  }
+
+  /**
+   * Отвязать Identity от профиля
+   */
+  async unlinkIdentityFromProfile(identityId: string): Promise<Identity> {
+    const identity = await this.identityRepository.findOne({ where: { id: identityId } })
+    if (!identity) {
+      throw new Error('Identity not found')
+    }
+
+    identity.profileId = undefined
+    return await this.identityRepository.save(identity)
+  }
+
+  /**
+   * Получить все Identity для профиля
+   */
+  async getIdentitiesByProfileId(profileId: string): Promise<Identity[]> {
+    return await this.identityRepository.find({
+      where: { profileId },
+      order: { createdAt: 'DESC' }
+    })
+  }
+
+  /**
+   * Обновить статус Identity
+   */
+  async updateIdentityStatus(identityId: string, status: string): Promise<Identity> {
+    const identity = await this.identityRepository.findOne({ where: { id: identityId } })
+    if (!identity) {
+      throw new Error('Identity not found')
+    }
+
+    identity.status = status
+    return await this.identityRepository.save(identity)
+  }
+
+  /**
+   * Удалить Identity
+   */
+  async deleteIdentity(identityId: string): Promise<void> {
+    await this.identityRepository.delete(identityId)
   }
 
   /**
@@ -311,13 +343,8 @@ export class IdentityService {
         }
       }
       
-      // Удаляем все записи 
-      const allIdentities = await this.identityRepository.find({ select: ['id'] })
-      const ids = allIdentities.map(identity => identity.id)
-      
-      if (ids.length > 0) {
-        await this.identityRepository.delete(ids)
-      }
+      // Удаляем все записи через SQL для схемы itap
+      await this.identityRepository.query('DELETE FROM itap.identities')
       
       console.log(`✅ Successfully cleared ${totalCount} identities from database`)
       

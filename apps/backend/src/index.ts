@@ -12,11 +12,8 @@ import rateLimit from 'express-rate-limit'
 
 import { AppDataSource } from './config/database.js'
 import { errorHandler } from './middleware/errorHandler.js'
-import { authRoutes } from './routes/auth.js'
 import { identityRoutes } from './routes/identities.js'
-import { deviceRoutes } from './routes/devices.js'
-import { facilityRoutes } from './routes/facilities.js'
-import { analyticsRoutes } from './routes/analytics.js'
+import { profileRoutes } from './routes/profiles.js'
 import faceRoutes from './routes/face.js'
 import { insightFaceService } from './services/insightFaceService.js'
 
@@ -51,7 +48,7 @@ app.use(cors({
 }))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
-app.use(limiter)
+// app.use(limiter)
 
 // Logging
 if (NODE_ENV === 'development') {
@@ -71,25 +68,22 @@ app.get('/health', (req, res) => {
 })
 
 // API Routes
-app.use('/api/auth', authRoutes)
 app.use('/api/identities', identityRoutes)
-app.use('/api/devices', deviceRoutes)
-app.use('/api/facilities', facilityRoutes)
-app.use('/api/analytics', analyticsRoutes)
+app.use('/api/profiles', profileRoutes)
 app.use('/api/face', faceRoutes)
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id)
   
-  socket.on('join-facility', (facilityId: string) => {
-    socket.join(`facility-${facilityId}`)
-    console.log(`Client ${socket.id} joined facility ${facilityId}`)
+  socket.on('join-room', (roomId: string) => {
+    socket.join(roomId)
+    console.log(`Client ${socket.id} joined room ${roomId}`)
   })
-  
-  socket.on('leave-facility', (facilityId: string) => {
-    socket.leave(`facility-${facilityId}`)
-    console.log(`Client ${socket.id} left facility ${facilityId}`)
+
+  socket.on('leave-room', (roomId: string) => {
+    socket.leave(roomId)
+    console.log(`Client ${socket.id} left room ${roomId}`)
   })
 
   // Real-time face detection

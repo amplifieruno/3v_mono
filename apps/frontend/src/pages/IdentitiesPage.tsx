@@ -12,21 +12,24 @@ import {
   XCircle
 } from 'lucide-react'
 
+interface Profile {
+  id: string
+  firstName?: string
+  lastName?: string
+  email?: string
+}
+
 interface Identity {
   id: string
-  embeddings?: number[][]
-  attributes?: Record<string, any>
-  photos?: string[]
-  hasPhotos: boolean
-  photoCount: number
-  embeddingCount: number
-  confidence: number
-  status: 'verified' | 'unverified' | 'archived'
+  status: string
   createdAt: string
   updatedAt: string
-  firstSeen?: string
-  lastSeen?: string
-  detectionCount: number
+  attributes: Record<string, any>
+  images: string[]
+  profileId?: string
+  profile?: Profile
+  hasImages: boolean
+  imageCount: number
 }
 
 export function IdentitiesPage() {
@@ -79,7 +82,7 @@ export function IdentitiesPage() {
 
     try {
       const response = await fetch(createApiUrl('/api/identities/clear'), {
-        method: 'DELETE'
+        method: 'POST'
       })
       if (response.ok) {
         await fetchIdentities()
@@ -172,8 +175,8 @@ export function IdentitiesPage() {
                 Unverified: {identities.filter(i => i.status === 'unverified').length}
               </span>
               <span className="flex items-center gap-1">
-                <XCircle className="h-4 w-4 text-gray-500" />
-                Archived: {identities.filter(i => i.status === 'archived').length}
+                <Users className="h-4 w-4 text-blue-500" />
+                With Profile: {identities.filter(i => i.profileId).length}
               </span>
             </div>
           </div>
@@ -200,16 +203,13 @@ export function IdentitiesPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Confidence
+                    Profile
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Detections
+                    Created
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    First Seen
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Last Seen
+                    Updated
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
@@ -221,14 +221,14 @@ export function IdentitiesPage() {
                   <tr key={identity.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
-                        {identity.photos && identity.photos.length > 0 ? (
-                          identity.photos.slice(0, 3).map((photo, idx) => (
+                        {identity.images && identity.images.length > 0 ? (
+                          identity.images.slice(0, 3).map((image, idx) => (
                             <img
                               key={idx}
-                              src={photo}
+                              src={image}
                               alt={`Identity ${identity.id}`}
                               className="h-12 w-12 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-primary"
-                              onClick={() => setSelectedPhoto(photo)}
+                              onClick={() => setSelectedPhoto(image)}
                             />
                           ))
                         ) : (
@@ -236,9 +236,9 @@ export function IdentitiesPage() {
                             <Users className="h-6 w-6 text-gray-400" />
                           </div>
                         )}
-                        {identity.photos && identity.photos.length > 3 && (
+                        {identity.images && identity.images.length > 3 && (
                           <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                            +{identity.photos.length - 3}
+                            +{identity.images.length - 3}
                           </div>
                         )}
                       </div>
@@ -255,41 +255,32 @@ export function IdentitiesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {(parseFloat(identity.confidence as any) * 100).toFixed(1)}%
+                      {identity.profile ? (
+                        <div className="text-sm">
+                          <div className="text-gray-900 dark:text-gray-100 font-medium">
+                            {identity.profile.firstName} {identity.profile.lastName}
+                          </div>
+                          {identity.profile.email && (
+                            <div className="text-gray-500 dark:text-gray-400">
+                              {identity.profile.email}
+                            </div>
+                          )}
                         </div>
-                        <div className="ml-2 w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${parseFloat(identity.confidence as any) * 100}%` }}
-                          />
-                        </div>
-                      </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <Eye className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-900 dark:text-gray-100">
-                          {identity.detectionCount}
-                        </span>
+                        <Calendar className="h-4 w-4" />
+                        {format(new Date(identity.createdAt), 'MMM d, HH:mm')}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {identity.firstSeen ? (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {format(new Date(identity.firstSeen), 'MMM d, HH:mm')}
-                        </div>
-                      ) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {identity.lastSeen ? (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {format(new Date(identity.lastSeen), 'MMM d, HH:mm')}
-                        </div>
-                      ) : '-'}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {format(new Date(identity.updatedAt), 'MMM d, HH:mm')}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
