@@ -386,13 +386,15 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     labels:
       traefik.enable: "true"
-      traefik.http.routers.frontend.entrypoints: websecure
+      traefik.http.routers.frontend.entrypoints: web
       traefik.http.routers.frontend.rule: Host(`${APP_URL}`)
-      traefik.http.routers.frontend.tls: "true"
-      traefik.http.routers.frontend.tls.certresolver: le
-      traefik.http.routers.frontend-http.entrypoints: web
-      traefik.http.routers.frontend-http.rule: Host(`${APP_URL}`)
-      traefik.http.routers.frontend-http.middlewares: redirect-https@file
+      # traefik.http.routers.frontend.entrypoints: websecure
+      # traefik.http.routers.frontend.rule: Host(`${APP_URL}`)
+      # traefik.http.routers.frontend.tls: "true"
+      # traefik.http.routers.frontend.tls.certresolver: le
+      # traefik.http.routers.frontend-http.entrypoints: web
+      # traefik.http.routers.frontend-http.rule: Host(`${APP_URL}`)
+      # traefik.http.routers.frontend-http.middlewares: redirect-https@file
 
       traefik.http.services.frontend.loadbalancer.server.port: "80"
 
@@ -423,12 +425,14 @@ services:
       - internal
     labels:
       traefik.enable: "true"
-      traefik.http.routers.backend.entrypoints: websecure
+      traefik.http.routers.backend.entrypoints: web
       traefik.http.routers.backend.rule: Host(`${API_URL}`)
-      traefik.http.routers.backend.tls: "true"
-      traefik.http.routers.backend.tls.certresolver: le
-      traefik.http.routers.backend-http.entrypoints: web
-      traefik.http.routers.backend-http.rule: Host(`${API_URL}`)
+      # traefik.http.routers.backend.entrypoints: websecure
+      # traefik.http.routers.backend.rule: Host(`${API_URL}`)
+      # traefik.http.routers.backend.tls: "true"
+      # traefik.http.routers.backend.tls.certresolver: le
+      # traefik.http.routers.backend-http.entrypoints: web
+      # traefik.http.routers.backend-http.rule: Host(`${API_URL}`)
       # traefik.http.routers.backend-http.middlewares: redirect-https@file
 
       traefik.http.services.backend.loadbalancer.server.port: ${BACKEND_PORT}
