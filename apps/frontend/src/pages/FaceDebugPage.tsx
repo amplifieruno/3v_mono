@@ -13,7 +13,7 @@ export function FaceDebugPage() {
   const socketRef = useRef<Socket | null>(null)
   
   const [isStreaming, setIsStreaming] = useState(false)
-  const [detectionMode, setDetectionMode] = useState<DetectionMode>('snapshot')
+  const [detectionMode, setDetectionMode] = useState<DetectionMode>('realtime')
   const [isRealTimeActive, setIsRealTimeActive] = useState(false)
   const [faceDetectionResult, setFaceDetectionResult] = useState<any>(null)
   const [isProcessing, setIsProcessing] = useState(false)
