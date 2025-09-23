@@ -10,4 +10,7 @@ dev:
 	pnpm run dev
 
 prod:
+	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d
+
+prod-rebuild:
 	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d --build --force-recreate

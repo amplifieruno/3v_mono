@@ -1,3 +1,10 @@
+
+networks:
+  proxy:
+    external: false
+  internal:
+    external: false
+
 services:
   auth:
     image: nhost/hasura-auth:0.40.2
@@ -89,121 +96,14 @@ services:
       traefik.http.routers.auth.tls: 'false'
       traefik.http.services.auth.loadbalancer.server.port: '4000'
     restart: always
+    networks:
+      - internal
+      - proxy
     volumes:
       - type: bind
         source: ../apps/nhost/nhost/emails
         target: /app/email-templates
         read_only: false
-
-  console:
-    image: nhost/graphql-engine:v2.46.0-ce.cli-migrations-v3
-    depends_on:
-      graphql:
-        condition: service_healthy
-    entrypoint:
-      - hasura-cli
-    command:
-      - console
-      - --no-browser
-      - --endpoint=http://graphql:8080
-      - --address=0.0.0.0
-      - --console-port=9695
-      - --api-port=80
-      - --api-host=http://${GRAPHQL_URL}
-      - --console-hge-endpoint=http://${GRAPHQL_URL}
-    environment:
-      GRAPHITE_WEBHOOK_SECRET: ''
-      HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS: 'true'
-      HASURA_GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
-      HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
-      HASURA_GRAPHQL_CORS_DOMAIN: '*'
-      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
-      HASURA_GRAPHQL_DEV_MODE: 'true'
-      HASURA_GRAPHQL_DISABLE_CORS: 'false'
-      HASURA_GRAPHQL_ENABLE_ALLOWLIST: 'false'
-      HASURA_GRAPHQL_ENABLE_CONSOLE: 'true'
-      HASURA_GRAPHQL_ENABLE_REMOTE_SCHEMA_PERMISSIONS: 'false'
-      HASURA_GRAPHQL_ENABLE_TELEMETRY: 'false'
-      HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql,pgdump,config
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log
-      HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE: '100'
-      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'true'
-      HASURA_GRAPHQL_JWT_SECRET: ${JWT_SECRET}
-      HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_BATCH_SIZE: '100'
-      HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: '1000'
-      HASURA_GRAPHQL_LOG_LEVEL: warn
-      HASURA_GRAPHQL_PG_CONNECTIONS: '50'
-      HASURA_GRAPHQL_PG_TIMEOUT: '180'
-      HASURA_GRAPHQL_STRINGIFY_NUMERIC_TYPES: 'false'
-      HASURA_GRAPHQL_TX_ISOLATION: read-committed
-      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
-      HASURA_GRAPHQL_USE_PREPARED_STATEMENTS: 'true'
-      HASURA_GRAPHQL_WS_READ_COOKIE: 'false'
-      HASURA_GRAPHQL_MIGRATIONS_DIR: /migrations
-      HASURA_GRAPHQL_METADATA_DIR: /metadata
-    extra_hosts:
-      - host.docker.internal:host-gateway
-      - ${AUTH_URL}:host-gateway
-      - ${DB_URL}:host-gateway
-      - ${FUNCTIONS_URL}:host-gateway
-      - ${GRAPHQL_URL}:0.0.0.0
-      - ${STORAGE_URL}:host-gateway
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - timeout 1s bash -c ':> /dev/tcp/127.0.0.1/9695' || exit 1
-      timeout: 60s
-      interval: 5s
-      start_period: 60s
-    labels:
-      traefik.enable: 'true'
-      traefik.http.routers.console.entrypoints: web
-      traefik.http.routers.console.rule: Host(`${GRAPHQL_URL}`)
-      traefik.http.routers.console.service: console
-      traefik.http.routers.console.tls: 'false'
-      traefik.http.routers.migrate.entrypoints: web
-      traefik.http.routers.migrate.rule: Host(`${GRAPHQL_URL}`) && PathPrefix(`/apis/`)
-      traefik.http.routers.migrate.service: migrate
-      traefik.http.routers.migrate.tls: 'false'
-      traefik.http.services.console.loadbalancer.server.port: '9695'
-      traefik.http.services.migrate.loadbalancer.server.port: '80'
-    restart: always
-    volumes:
-      - type: bind
-        source: ../apps/nhost/nhost
-        target: /app
-        read_only: false
-    working_dir: /app
-
-  dashboard:
-    image: nhost/dashboard:2.34.0
-    environment:
-      NEXT_PUBLIC_ENV: dev
-      NEXT_PUBLIC_NHOST_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
-      NEXT_PUBLIC_NHOST_AUTH_URL: http://${AUTH_URL}/v1
-      NEXT_PUBLIC_NHOST_FUNCTIONS_URL: http://${FUNCTIONS_URL}/v1
-      NEXT_PUBLIC_NHOST_GRAPHQL_URL: http://${GRAPHQL_URL}/v1/graphql
-      NEXT_PUBLIC_NHOST_HASURA_API_URL: http://${GRAPHQL_URL}
-      NEXT_PUBLIC_NHOST_HASURA_CONSOLE_URL: http://${GRAPHQL_URL}/console
-      NEXT_PUBLIC_NHOST_HASURA_MIGRATIONS_API_URL: http://${GRAPHQL_URL}
-      NEXT_PUBLIC_NHOST_PLATFORM: 'false'
-      NEXT_PUBLIC_NHOST_STORAGE_URL: http://${STORAGE_URL}/v1
-    extra_hosts:
-      - host.docker.internal:host-gateway
-      - ${AUTH_URL}:host-gateway
-      - ${DB_URL}:host-gateway
-      - ${FUNCTIONS_URL}:host-gateway
-      - ${GRAPHQL_URL}:host-gateway
-      - ${STORAGE_URL}:host-gateway
-    labels:
-      traefik.enable: 'true'
-      traefik.http.routers.dashboard.entrypoints: web
-      traefik.http.routers.dashboard.rule: Host(`${DASHBOARD_URL}`)
-      traefik.http.routers.dashboard.service: dashboard
-      traefik.http.routers.dashboard.tls: 'false'
-      traefik.http.services.dashboard.loadbalancer.server.port: '3000'
-    restart: ''
-    working_dir: ''
 
   graphql:
     image: nhost/graphql-engine:v2.46.0-ce
@@ -217,13 +117,13 @@ services:
       HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
       HASURA_GRAPHQL_CORS_DOMAIN: '*'
       HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
-      HASURA_GRAPHQL_DEV_MODE: 'true'
+      HASURA_GRAPHQL_DEV_MODE: 'false'
       HASURA_GRAPHQL_DISABLE_CORS: 'false'
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: 'false'
-      HASURA_GRAPHQL_ENABLE_CONSOLE: 'true'
+      HASURA_GRAPHQL_ENABLE_CONSOLE: 'false'
       HASURA_GRAPHQL_ENABLE_REMOTE_SCHEMA_PERMISSIONS: 'false'
       HASURA_GRAPHQL_ENABLE_TELEMETRY: 'false'
-      HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql,pgdump,config
+      HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log
       HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE: '100'
       HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'true'
@@ -256,13 +156,19 @@ services:
       traefik.enable: 'true'
       traefik.http.middlewares.replace-graphql.replacepathregex.regex: /v1(/|$$)(.*)
       traefik.http.middlewares.replace-graphql.replacepathregex.replacement: /v1/graphql$$2
-      traefik.http.routers.hasura.entrypoints: web
+      traefik.http.routers.hasura.entrypoints: websecure
       traefik.http.routers.hasura.rule: Host(`${GRAPHQL_URL}`) && ( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/api/`) || PathPrefix(`/console/assets`) )
       traefik.http.routers.hasura.service: hasura
-      traefik.http.routers.hasura.tls: 'false'
+      traefik.http.routers.hasura.tls: 'true'
       traefik.http.services.graphql.loadbalancer.server.port: '8080'
       traefik.http.services.hasura.loadbalancer.server.port: '8080'
+      # traefik.http.routers.hasura-http.entrypoints: web
+      # traefik.http.routers.hasura-http.rule: Host(`${GRAPHQL_URL}`)
+      # traefik.http.routers.hasura-http.middlewares: redirect-https@file
     restart: always
+    networks:
+      - proxy
+      - internal
 
   minio:
     image: minio/minio:RELEASE.2025-02-28T09-55-16Z
@@ -282,6 +188,13 @@ services:
       - ${GRAPHQL_URL}:host-gateway
       - ${STORAGE_URL}:host-gateway
     restart: always
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
     volumes:
       - type: volume
         source: minio
@@ -317,6 +230,8 @@ services:
         published: '5432'
         protocol: tcp
     restart: always
+    networks:
+      - internal
     volumes:
       - type: volume
         source: pgdata
@@ -367,9 +282,12 @@ services:
       traefik.http.routers.storage.tls: 'false'
       traefik.http.services.storage.loadbalancer.server.port: '5000'
     restart: always
+    networks:
+      - internal
+      - proxy
 
   insightface:
-    container_name: itap-insightface
+    container_name: itap-insightface-prod
     platform: linux/amd64
     build:
       context: ../libs/InsightFace-REST
@@ -389,17 +307,28 @@ services:
       retries: 5
       start_period: 180s
     mem_limit: 4g
+    networks:
+      - internal
 
   traefik:
     image: traefik:v3.1
     command:
-      - --api.insecure=true
+      - --api.dashboard=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.file.directory=/opt/traefik
       - --providers.file.watch=true
       - --providers.docker.exposedbydefault=false
-      - --providers.docker.constraints=Label(`com.docker.compose.project`,`${COMPOSE_PROJECT_NAME}`)
-      - --entrypoints.web.address=:80
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    networks:
+      - proxy
+      - internal
+    ports:
+      - "80:80"
+      - "443:443"
     extra_hosts:
       - host.docker.internal:host-gateway
       - ${AUTH_URL}:host-gateway
@@ -407,11 +336,6 @@ services:
       - ${FUNCTIONS_URL}:host-gateway
       - ${GRAPHQL_URL}:host-gateway
       - ${STORAGE_URL}:host-gateway
-    ports:
-      - mode: ingress
-        target: 80
-        published: '80'
-        protocol: tcp
     restart: always
     volumes:
       - type: bind
@@ -422,28 +346,59 @@ services:
         source: ../apps/nhost/traefik
         target: /opt/traefik
         read_only: true
+      - letsencrypt:/letsencrypt
 
+  migrate:
+    image: nhost/graphql-engine:v2.46.0-ce.cli-migrations-v3
+    depends_on:
+      graphql:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        hasura-cli metadata apply --endpoint=http://graphql:8080 &&
+        hasura-cli migrate apply --database-name default --endpoint=http://graphql:8080
+    environment:
+      HASURA_GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      HASURA_GRAPHQL_JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - internal
+    restart: "no"
+    volumes:
+      - type: bind
+        source: ../apps/nhost/nhost
+        target: /app
+        read_only: false
+    working_dir: /app
 
   # nginx reverse proxy with frontend
-  nginx:
+  frontend:
     build:
       context: ../
       dockerfile: apps/frontend/Dockerfile
       target: production
-      args:
-        VITE_API_URL: ${VITE_API_URL}
-        VITE_WS_URL: ${VITE_WS_URL}
-    container_name: itap-nginx-prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+    container_name: itap-frontend
     depends_on:
       backend:
         condition: service_healthy
-    restart: unless-stopped
+    ports: []
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.frontend.entrypoints: websecure
+      traefik.http.routers.frontend.rule: Host(`${APP_URL}`)
+      traefik.http.routers.frontend.tls: "true"
+      traefik.http.routers.frontend.tls.certresolver: le
+      traefik.http.routers.frontend-http.entrypoints: web
+      traefik.http.routers.frontend-http.rule: Host(`${APP_URL}`)
+      traefik.http.routers.frontend-http.middlewares: redirect-https@file
+
+      traefik.http.services.frontend.loadbalancer.server.port: "80"
 
   # Backend API
   backend:
@@ -454,8 +409,7 @@ services:
     container_name: itap-backend-prod
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -466,10 +420,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_healthy
       insightface:
         condition: service_healthy
+    networks:
+      - proxy
+      - internal
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.backend.entrypoints: websecure
+      traefik.http.routers.backend.rule: Host(`${API_URL}`)
+      traefik.http.routers.backend.tls: "true"
+      traefik.http.routers.backend.tls.certresolver: le
+      traefik.http.routers.backend-http.entrypoints: web
+      traefik.http.routers.backend-http.rule: Host(`${API_URL}`)
+      # traefik.http.routers.backend-http.middlewares: redirect-https@file
+
+      traefik.http.services.backend.loadbalancer.server.port: ${BACKEND_PORT}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
@@ -479,3 +445,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  pgdata: {}
+  minio: {}
+  letsencrypt: {}

@@ -26,12 +26,6 @@ COPY apps/frontend ./apps/frontend/
 # Build the application
 WORKDIR /app/apps/frontend
 
-# Set environment variables for Vite build
-ARG VITE_API_URL
-ARG VITE_WS_URL
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_WS_URL=$VITE_WS_URL
-
 # Build without type checking (skip tsc)
 RUN npx vite build --mode production
 

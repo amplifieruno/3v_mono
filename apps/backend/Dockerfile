@@ -60,9 +60,6 @@ RUN apk add --no-cache postgresql-client redis curl
 
 # Set environment
 ENV NODE_ENV=production
-ENV POSTGRES_USER=itap_user
-ENV POSTGRES_DB=itap_prod
-ENV REDIS_PASSWORD=redis_password_prod
 
 # Expose port
 EXPOSE 3001
@@ -73,7 +70,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # RUN echo "Содержимое /app:" && ls -lah /app
 
-CMD npm run migration:run && node dist/index.js
+CMD node dist/index.js
 
 # Development stage (optional)
 FROM base AS development

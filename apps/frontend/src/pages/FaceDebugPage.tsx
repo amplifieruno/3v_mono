@@ -22,7 +22,7 @@ export function FaceDebugPage() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || ''
+    const wsUrl = ''; //import.meta.env.VITE_WS_URL || ''
     socketRef.current = io(wsUrl)
     
     socketRef.current.on('face-detection-result', (result) => {
