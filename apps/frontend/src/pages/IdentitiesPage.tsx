@@ -497,7 +497,7 @@ export function IdentitiesPage() {
             <div>
               <h3 className="text-lg font-medium mb-3">Comparison Results</h3>
               <div className="space-y-3">
-                {comparisonResult.comparisons.map((comparison, index) => (
+                {comparisonResult.comparisons.map((comparison) => (
                   <div
                     key={comparison.identity.id}
                     className="border border-gray-200 rounded-lg p-4"

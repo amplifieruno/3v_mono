@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit'
 
 import { AppDataSource } from './config/database.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { authRoutes } from './routes/auth.js'
 import { identityRoutes } from './routes/identities.js'
 import { profileRoutes } from './routes/profiles.js'
 import faceRoutes from './routes/face.js'
@@ -68,6 +69,7 @@ app.get('/health', (req, res) => {
 })
 
 // API Routes
+app.use('/api/auth', authRoutes)
 app.use('/api/identities', identityRoutes)
 app.use('/api/profiles', profileRoutes)
 app.use('/api/face', faceRoutes)

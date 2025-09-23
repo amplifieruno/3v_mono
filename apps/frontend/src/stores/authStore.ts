@@ -1,11 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { API_ENDPOINTS } from '../config/api'
 
 interface User {
   id: string
   email: string
-  name: string
+  firstName: string
+  lastName: string
   role: string
+  permissions: string[]
 }
 
 interface AuthState {
@@ -25,31 +28,54 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       
-      login: async (email: string, _password: string) => {
-        // TODO: Implement actual authentication
-        // For demo purposes, we'll simulate a login
-        const mockUser: User = {
-          id: '1',
-          email,
-          name: 'Demo User',
-          role: 'admin'
+      login: async (email: string, password: string) => {
+        try {
+          const response = await fetch(API_ENDPOINTS.auth.login, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          })
+
+          const data = await response.json()
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Login failed')
+          }
+
+          const { user, token } = data.data
+
+          set({
+            user,
+            token,
+            isAuthenticated: true
+          })
+        } catch (error) {
+          console.error('Login error:', error)
+          throw error
         }
-        
-        const mockToken = 'demo-jwt-token'
-        
-        set({
-          user: mockUser,
-          token: mockToken,
-          isAuthenticated: true
-        })
       },
       
-      logout: () => {
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false
-        })
+      logout: async () => {
+        try {
+          // Call backend logout endpoint
+          await fetch(API_ENDPOINTS.auth.logout, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        } catch (error) {
+          console.error('Logout error:', error)
+        } finally {
+          // Clear local state regardless of backend response
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false
+          })
+        }
       },
       
       setUser: (user: User) => {

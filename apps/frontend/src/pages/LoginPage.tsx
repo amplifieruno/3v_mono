@@ -3,19 +3,22 @@ import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/authStore'
 
 export function LoginPage() {
-  const [email, setEmail] = useState('admin@itap.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const { login } = useAuthStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+    setError('')
+
     try {
       await login(email, password)
     } catch (error) {
       console.error('Login failed:', error)
+      setError(error instanceof Error ? error.message : 'Login failed')
     } finally {
       setIsLoading(false)
     }
@@ -34,6 +37,12 @@ export function LoginPage() {
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">
+              {error}
+            </div>
+          )}
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email address
@@ -69,10 +78,6 @@ export function LoginPage() {
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
-          
-          <div className="text-xs text-muted-foreground text-center">
-            Demo credentials are pre-filled. Click "Sign in" to continue.
-          </div>
         </form>
       </div>
     </div>
