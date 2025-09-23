@@ -315,14 +315,10 @@ services:
     command:
       - --api.dashboard=false
       - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.file.directory=/opt/traefik
       - --providers.file.watch=true
       - --providers.docker.exposedbydefault=false
-      - --certificatesresolvers.le.acme.tlschallenge=true
-      - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
     networks:
       - proxy
       - internal
@@ -347,7 +343,6 @@ services:
         source: ../apps/nhost/traefik
         target: /opt/traefik
         read_only: true
-      - letsencrypt:/letsencrypt
 
   migrate:
     image: nhost/graphql-engine:v2.46.0-ce.cli-migrations-v3
