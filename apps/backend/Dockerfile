@@ -46,7 +46,7 @@ COPY --from=builder /app ./
 
 # Copy built application and source files needed at runtime
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/apps/backend/models ./apps/backend/models
+# COPY --from=builder /app/apps/backend/models ./apps/backend/models
 COPY --from=builder /app/apps/backend/src ./apps/backend/src
 
 # Set working directory to backend app
