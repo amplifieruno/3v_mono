@@ -154,14 +154,18 @@ services:
       start_period: 60s
     labels:
       traefik.enable: 'true'
-      traefik.http.middlewares.replace-graphql.replacepathregex.regex: /v1(/|$$)(.*)
-      traefik.http.middlewares.replace-graphql.replacepathregex.replacement: /v1/graphql$$2
-      traefik.http.routers.hasura.entrypoints: websecure
+      traefik.http.routers.hasura.entrypoints: web
       traefik.http.routers.hasura.rule: Host(`${GRAPHQL_URL}`) && ( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/api/`) || PathPrefix(`/console/assets`) )
-      traefik.http.routers.hasura.service: hasura
-      traefik.http.routers.hasura.tls: 'true'
-      traefik.http.services.graphql.loadbalancer.server.port: '8080'
-      traefik.http.services.hasura.loadbalancer.server.port: '8080'
+      traefik.http.services.hasura.loadbalancer.server.port: "8080"
+      # traefik.http.middlewares.replace-graphql.replacepathregex.regex: /v1(/|$$)(.*)
+      # traefik.http.middlewares.replace-graphql.replacepathregex.replacement: /v1/graphql$$2
+      # traefik.http.routers.hasura.entrypoints: websecure
+      # traefik.http.routers.hasura.rule: Host(`${GRAPHQL_URL}`) && ( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/api/`) || PathPrefix(`/console/assets`) )
+      # traefik.http.routers.hasura.service: hasura
+      # traefik.http.routers.hasura.tls: 'true'
+      # traefik.http.services.graphql.loadbalancer.server.port: '8080'
+      # traefik.http.services.hasura.loadbalancer.server.port: '8080'
+
       # traefik.http.routers.hasura-http.entrypoints: web
       # traefik.http.routers.hasura-http.rule: Host(`${GRAPHQL_URL}`)
       # traefik.http.routers.hasura-http.middlewares: redirect-https@file
