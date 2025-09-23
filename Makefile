@@ -12,5 +12,9 @@ dev:
 prod:
 	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d
 
+prod-down:
+	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml down
+
 prod-rebuild:
 	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d --build --force-recreate
+
