@@ -248,6 +248,9 @@ importers:
       shadcn:
         specifier: ^2.4.1
         version: 2.10.0(@types/node@20.19.9)(typescript@5.9.2)
+      socket.io-client:
+        specifier: ^4.8.1
+        version: 4.8.1
       sonner:
         specifier: ^2.0.3
         version: 2.0.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

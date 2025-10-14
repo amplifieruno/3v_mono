@@ -12,6 +12,7 @@ import routerBindings, {
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router';
 import { Layout } from './components/layout';
 import { Login } from '../pages/login';
+import { DetectionDebugPage } from '../pages/detection-debug/detection-debug-page';
 // import { authProvider } from '../shared/auth/authProvider';
 // import { TooltipProvider } from '../shadcn/components/ui/tooltip';
 // import { ThemeProvider } from '../shadcn/components/ThemeProvider';
@@ -91,6 +92,12 @@ const App: FC = () => {
                       <Route
                         path={`/${profileConfig.list}/*`}
                         element={<ProfileRouter />}
+                      />
+
+                      {/* Custom pages */}
+                      <Route
+                        path='/face-detection-debug'
+                        element={<DetectionDebugPage />}
                       />
 
                       <Route path='*' element={<ErrorComponent />} />

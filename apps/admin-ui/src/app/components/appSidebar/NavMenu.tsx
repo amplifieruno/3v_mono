@@ -1,6 +1,6 @@
 'use client';
 
-import { CommandIcon } from 'lucide-react';
+import { CommandIcon, Camera } from 'lucide-react';
 
 import {
   SidebarGroup,
@@ -42,6 +42,19 @@ export const NavMenu = () => {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Tools</SidebarGroupLabel>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Face Debug'>
+              <NavLink to='/face-detection-debug'>
+                <Camera />
+                <span>Detection Debug</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
     </>
