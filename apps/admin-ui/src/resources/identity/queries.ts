@@ -12,6 +12,12 @@ const fragment = gql(`
     status
     profile_id
     updated_at
+    profile {
+      id
+      first_name
+      last_name
+      email
+    }
   }
 `);
 

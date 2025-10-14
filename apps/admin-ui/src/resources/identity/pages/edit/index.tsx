@@ -2,21 +2,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useNavigation, useResourceParams } from '@refinedev/core';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useList, useNavigation, useResourceParams } from '@refinedev/core';
 import { useForm } from '@refinedev/react-hook-form';
 import { ListIcon } from 'lucide-react';
 import { FC } from 'react';
+import { Controller } from 'react-hook-form';
 import { Link } from 'react-router';
+import { identityStatuses } from '../../data/enums';
 import { IdentityOneQuery, IdentityUpdateOneMutation } from '../../queries';
+import { ProfileListQuery } from '@/resources/profile/queries';
 
 export const EditPage: FC = () => {
   const { identifier } = useResourceParams();
   const { listUrl } = useNavigation();
 
-  const {
-    refineCore: { onFinish },
-    ...form
-  } = useForm({
+  const form = useForm({
     refineCoreProps: {
       meta: {
         gqlQuery: IdentityOneQuery,
@@ -26,10 +33,24 @@ export const EditPage: FC = () => {
   });
 
   const {
+    refineCore: { onFinish },
+    control,
     formState: { isSubmitting, errors },
     handleSubmit,
     register,
+    watch,
   } = form;
+
+  // Fetch profiles for selector
+  const profilesQuery = useList({
+    resource: 'itap_profiles',
+    meta: {
+      gqlQuery: ProfileListQuery,
+    },
+    pagination: {
+      pageSize: 100,
+    },
+  });
 
   return (
     <div>
@@ -48,124 +69,122 @@ export const EditPage: FC = () => {
           </Button>
         </div>
       </div>
-      <Card className='mt-4 max-w-[400px]'>
+      <Card className='mt-4 max-w-[600px]'>
         <CardContent>
           <Form {...form}>
             <form onSubmit={handleSubmit(onFinish)} noValidate className='mt-6'>
-              <div className='flex flex-col gap-2'>
+              <div className='flex flex-col gap-4'>
                 <FormItem>
-                  <FormLabel className='mr-2'>Name</FormLabel>
+                  <FormLabel>Status</FormLabel>
+                  <Controller
+                    name='status'
+                    control={control}
+                    rules={{ required: 'Status is required' }}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select status' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {identityStatuses.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <FormMessage className='text-destructive'>
+                    {errors?.status?.message as string}
+                  </FormMessage>
+                </FormItem>
+
+                <FormItem>
+                  <FormLabel>Profile (optional)</FormLabel>
+                  <Controller
+                    name='profile_id'
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value === '__none__' ? null : value);
+                        }}
+                        value={field.value || '__none__'}
+                      >
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select profile or leave empty' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='__none__'>No profile</SelectItem>
+                          {profilesQuery?.query?.data?.data?.map((profile: any) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              {profile.first_name} {profile.last_name}
+                              {profile.email && ` (${profile.email})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <FormMessage className='text-destructive'>
+                    {errors?.profile_id?.message as string}
+                  </FormMessage>
+                </FormItem>
+
+                <FormItem>
+                  <FormLabel>Image URLs (comma-separated)</FormLabel>
                   <Input
                     type='text'
-                    {...register('name', {
-                      required: 'Name cannot be empty',
+                    placeholder='https://example.com/image1.jpg, https://example.com/image2.jpg'
+                    {...register('images', {
+                      required: 'At least one image URL is required',
+                      setValueAs: (value: string | string[]) => {
+                        if (Array.isArray(value)) {
+                          return value;
+                        }
+                        if (!value) return [];
+                        return value
+                          .split(',')
+                          .map((url) => url.trim())
+                          .filter((url) => url.length > 0);
+                      },
+                      value: watch('images')?.join(', ') || '',
                     })}
                   />
                   <FormMessage className='text-destructive'>
-                    {(errors as any)?.name?.message as string}
+                    {errors?.images?.message as string}
                   </FormMessage>
                 </FormItem>
 
                 <FormItem>
-                  <FormLabel className='mr-2'>Transaction fee</FormLabel>
+                  <FormLabel>Attributes (JSON)</FormLabel>
                   <Input
-                    type='number'
-                    {...register('card_transaction_client_fee', {
-                      required: 'Transaction fee cannot be empty',
+                    type='text'
+                    placeholder='{}'
+                    {...register('attributes', {
+                      required: 'Attributes are required (use {} for empty)',
+                      setValueAs: (value: string | object) => {
+                        if (typeof value === 'object') {
+                          return value;
+                        }
+                        try {
+                          return value ? JSON.parse(value) : {};
+                        } catch {
+                          return {};
+                        }
+                      },
+                      value: JSON.stringify(watch('attributes') || {}, null, 2),
                     })}
                   />
                   <FormMessage className='text-destructive'>
-                    {
-                      (errors as any)?.card_transaction_client_fee
-                        ?.message as string
-                    }
+                    {errors?.attributes?.message as string}
                   </FormMessage>
                 </FormItem>
 
-                <FormItem>
-                  <FormLabel className='mr-2'>Minimum fee</FormLabel>
-                  <Input
-                    type='number'
-                    {...register('minimum_fee', {
-                      required: 'cannot be empty',
-                    })}
-                  />
-                  <FormMessage className='text-destructive'>
-                    {(errors as any)?.minimum_fee?.message as string}
-                  </FormMessage>
-                </FormItem>
-
-                <FormItem>
-                  <FormLabel className='mr-2'>Exchange fee</FormLabel>
-                  <Input
-                    type='number'
-                    {...register('exchange_fee', {
-                      required: 'cannot be empty',
-                    })}
-                  />
-                  <FormMessage className='text-destructive'>
-                    {(errors as any)?.exchange_fee?.message as string}
-                  </FormMessage>
-                </FormItem>
-
-                <FormItem>
-                  <FormLabel className='mr-2'>Daily interest rate</FormLabel>
-                  <Input
-                    type='number'
-                    {...register('daily_interest_rate', {
-                      required: 'cannot be empty',
-                    })}
-                  />
-                  <FormMessage className='text-destructive'>
-                    {(errors as any)?.daily_interest_rate?.message as string}
-                  </FormMessage>
-                </FormItem>
-
-                <FormItem>
-                  <FormLabel className='mr-2'>USDT LTV</FormLabel>
-                  <Input
-                    type='number'
-                    {...register('usdt_cl_coefficient', {
-                      required: 'cannot be empty',
-                    })}
-                  />
-                  <FormMessage className='text-destructive'>
-                    {(errors as any)?.usdt_cl_coefficient?.message as string}
-                  </FormMessage>
-                </FormItem>
-
-                <FormItem>
-                  <FormLabel className='mr-2'>EURC LTV</FormLabel>
-                  <Input
-                    type='number'
-                    {...register('eurc_ltv', {
-                      required: 'cannot be empty',
-                    })}
-                  />
-                  <FormMessage className='text-destructive'>
-                    {(errors as any)?.eurc_ltv?.message as string}
-                  </FormMessage>
-                </FormItem>
-
-                {/*<div className='flex items-center pt-2 space-x-2'>*/}
-                {/*  <Controller*/}
-                {/*    name='is_default'*/}
-                {/*    control={control}*/}
-                {/*    render={({ field }) => (*/}
-                {/*      <Checkbox*/}
-                {/*        id='isTariffDefault'*/}
-                {/*        checked={field.value}*/}
-                {/*        onCheckedChange={field.onChange}*/}
-                {/*      />*/}
-                {/*    )}*/}
-                {/*  />*/}
-                {/*  <label*/}
-                {/*    htmlFor='isTariffDefault'*/}
-                {/*    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'*/}
-                {/*  >*/}
-                {/*    Default*/}
-                {/*  </label>*/}
-                {/*</div>*/}
                 <div className='mt-4'>
                   <Button
                     className='w-40'

@@ -23,6 +23,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { notificationProvider } from './notificationsProvider';
 import { identityConfig } from '@/resources/identity/resourceConfig';
 import { IdentityRouter } from '@/resources/identity/router';
+import { profileConfig } from '@/resources/profile/resourceConfig';
+import { ProfileRouter } from '@/resources/profile/router';
 import { gqlClient } from '@/shared/api';
 import dataProvider from '@refinedev/hasura';
 import { ThemeProvider } from '@/components/refine-ui/theme/theme-provider';
@@ -47,7 +49,7 @@ const App: FC = () => {
                 routerProvider={routerBindings}
                 authProvider={authProvider}
                 notificationProvider={notificationProvider}
-                resources={[identityConfig]}
+                resources={[identityConfig, profileConfig]}
                 options={{
                   // reactQuery: {
                   //   clientConfig: queryClient,
@@ -85,6 +87,10 @@ const App: FC = () => {
                       <Route
                         path={`/${identityConfig.list}/*`}
                         element={<IdentityRouter />}
+                      />
+                      <Route
+                        path={`/${profileConfig.list}/*`}
+                        element={<ProfileRouter />}
                       />
 
                       <Route path='*' element={<ErrorComponent />} />
