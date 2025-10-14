@@ -21,12 +21,12 @@ interface DataTableRowActionsProps<TData> {
   show?: boolean;
   edit?: boolean;
   deleteOptions?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gqlMutation: any;
   };
 }
 
 export function DataTableRowActions<TData>({
-  row,
   resource: resourceProp,
   recordId,
   show,

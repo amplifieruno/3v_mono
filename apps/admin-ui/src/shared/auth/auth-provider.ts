@@ -1,6 +1,7 @@
 import { nhost } from '@/lib/nhost';
 import type { AuthProvider } from '@refinedev/core';
 import { authService } from './auth-service';
+import { Session } from '@nhost/nhost-js/session';
 
 export const TOKEN_KEY = 'refine-auth';
 
@@ -14,7 +15,7 @@ export const authProvider: AuthProvider = {
         });
 
         if (body.session) {
-          authService.setSession(body.session);
+          authService.setSession(body.session as Session);
           return {
             success: true,
             redirectTo: '/',

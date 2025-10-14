@@ -1,5 +1,6 @@
 import { nhost } from '@/lib/nhost';
 import { isTokenExpired } from '../lib/utils/jwt';
+import { Session } from '@nhost/nhost-js/session';
 
 const STORAGE_KEY = 'session';
 
@@ -42,7 +43,7 @@ class AuthService {
         refreshToken: session.refreshToken,
       });
 
-      this.setSession(body);
+      this.setSession(body as Session);
     } catch {
       await this.logout();
       return null;

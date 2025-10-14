@@ -373,10 +373,38 @@ services:
     working_dir: /app
 
   # nginx reverse proxy with frontend
-  frontend:
+  frontend-old:
     build:
       context: ../
       dockerfile: apps/frontend/Dockerfile
+      target: production
+    container_name: itap-frontend-old
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports: []
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.frontend.entrypoints: web
+      traefik.http.routers.frontend.rule: Host(app-old.itap-local.tulkumurun.kg)
+      # traefik.http.routers.frontend.entrypoints: websecure
+      # traefik.http.routers.frontend.rule: Host(`${APP_URL}`)
+      # traefik.http.routers.frontend.tls: "true"
+      # traefik.http.routers.frontend.tls.certresolver: le
+      # traefik.http.routers.frontend-http.entrypoints: web
+      # traefik.http.routers.frontend-http.rule: Host(`${APP_URL}`)
+      # traefik.http.routers.frontend-http.middlewares: redirect-https@file
+      traefik.http.services.frontend.loadbalancer.server.port: "80"
+
+  frontend:
+    build:
+      context: ../
+      dockerfile: apps/admin-ui/Dockerfile
       target: production
     container_name: itap-frontend
     depends_on:
@@ -399,7 +427,6 @@ services:
       # traefik.http.routers.frontend-http.entrypoints: web
       # traefik.http.routers.frontend-http.rule: Host(`${APP_URL}`)
       # traefik.http.routers.frontend-http.middlewares: redirect-https@file
-
       traefik.http.services.frontend.loadbalancer.server.port: "80"
 
   # Backend API

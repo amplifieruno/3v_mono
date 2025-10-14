@@ -24,14 +24,32 @@ COPY . .
 
 RUN npm run build
 
-FROM base as runner
+# FROM base as runner
 
-ENV NODE_ENV production
+# ENV NODE_ENV production
 
-RUN npm install -g serve
+# RUN npm install -g serve
 
-COPY --from=builder /app/refine/dist ./
+# COPY --from=builder /app/refine/dist ./
 
-USER refine
+# USER refine
 
-CMD ["serve"]
+# CMD ["serve"]
+
+FROM nginx:alpine AS production
+WORKDIR /usr/share/nginx/html
+
+# Remove default nginx config
+RUN rm -rf /etc/nginx/conf.d/*
+
+# Copy custom nginx config
+COPY apps/admin-ui/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built application
+COPY --from=builder /app/apps/admin-ui/dist ./
+
+# Expose port
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -165,7 +165,7 @@ const hasuraDataProvider: Required<DataProvider> = {
       : camelcase(`${operation}_aggregate`);
 
     const {
-      current = 1,
+      currentPage: current = 1,
       pageSize: limit = 10,
       mode = 'server',
     } = pagination ?? {};
@@ -260,7 +260,13 @@ const hasuraDataProvider: Required<DataProvider> = {
       variables,
     });
 
-    console.log('getList', { operation, aggregateOperation, response, defaultNamingConvention, namingConvention });
+    console.log('getList', {
+      operation,
+      aggregateOperation,
+      response,
+      defaultNamingConvention,
+      namingConvention,
+    });
 
     return {
       data: response[operation],
@@ -606,7 +612,7 @@ const hasuraDataProvider: Required<DataProvider> = {
     );
   },
 
-  custom: async ({ url, method, headers, meta }) => {
+  custom: async ({ url, meta }) => {
     if (url) {
       // gqlClient = new GraphQLClient(url, { headers });
     }
@@ -614,7 +620,7 @@ const hasuraDataProvider: Required<DataProvider> = {
     const gqlOperation = meta?.gqlMutation ?? meta?.gqlQuery;
 
     if (gqlOperation) {
-      const response: any = await gqlClient.request({
+      const response: never = await gqlClient.request({
         document: gqlOperation,
         variables: meta?.variables ?? {},
       });

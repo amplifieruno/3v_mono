@@ -8,9 +8,9 @@ import { PrepareadColumns } from "./columns";
 export const useFixTableBehaviour = (table: UseTableReturnType<any, HttpError>, columns: PrepareadColumns<any, any>) => {
   useEffectOnce(() => {
     if (columns.columnsInitialFilter) {
-      const columnFilters = table.getState().columnFilters;
+      const columnFilters = table.reactTable.getState().columnFilters;
       if (columnFilters.length === 0) {
-        table.setColumnFilters(columns.columnsInitialFilter);
+        table.reactTable.setColumnFilters(columns.columnsInitialFilter);
       } else {
         columns.columnsInitialFilter.forEach((filter) => {
           const columnFilter = columnFilters.find((f) => f.id === filter.id);
@@ -18,7 +18,7 @@ export const useFixTableBehaviour = (table: UseTableReturnType<any, HttpError>, 
             columnFilters.push(filter);
           }
         });
-        table.setColumnFilters(columnFilters);
+        table.reactTable.setColumnFilters(columnFilters);
       }
     }
   });
