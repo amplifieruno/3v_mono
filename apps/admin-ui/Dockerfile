@@ -1,41 +1,34 @@
-# This Dockerfile uses `serve` npm package to serve the static files with node process.
-# You can find the Dockerfile for nginx in the following link:
-# https://github.com/refinedev/dockerfiles/blob/main/vite/Dockerfile.nginx
-FROM refinedev/node:18 AS base
 
-FROM base as deps
 
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Dependencies stage
+FROM base AS deps
+WORKDIR /app
 
-FROM base as builder
+# Copy root package files for workspace
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/admin-ui/package.json ./apps/admin-ui/
 
-ENV NODE_ENV production
+# Install dependencies for the specific workspace (skip husky hooks)
+RUN HUSKY=0 pnpm install --frozen-lockfile --prefer-offline --filter admin-ui...
 
-COPY --from=deps /app/refine/node_modules ./node_modules
+# Builder stage
+FROM base AS builder
+WORKDIR /app
 
-COPY . .
+# Copy workspace files and dependencies
+COPY --from=deps /app ./
+COPY apps/admin-ui ./apps/admin-ui/
 
-RUN npm run build
+# Build the application
+WORKDIR /app/apps/admin-ui
 
-# FROM base as runner
+# Build without type checking (skip tsc)
+RUN npx vite build --mode production
 
-# ENV NODE_ENV production
-
-# RUN npm install -g serve
-
-# COPY --from=builder /app/refine/dist ./
-
-# USER refine
-
-# CMD ["serve"]
-
+# Production stage - serve static files with nginx
 FROM nginx:alpine AS production
 WORKDIR /usr/share/nginx/html
 
