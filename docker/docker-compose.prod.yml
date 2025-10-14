@@ -405,7 +405,6 @@ services:
     build:
       context: ../
       dockerfile: apps/admin-ui/Dockerfile
-      target: production
     container_name: itap-frontend
     depends_on:
       backend:
