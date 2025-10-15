@@ -1,6 +1,15 @@
 'use client';
 
-import { CommandIcon, Camera } from 'lucide-react';
+import {
+  CommandIcon,
+  Camera,
+  Building2,
+  Monitor,
+  Bell,
+  FileText,
+  Settings,
+  Users,
+} from 'lucide-react';
 
 import {
   SidebarGroup,
@@ -27,6 +36,14 @@ export const NavMenu = () => {
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Notifications'>
+              <NavLink to='/'>
+                <Bell />
+                <span>Notifications</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
       <SidebarGroup>
@@ -42,6 +59,24 @@ export const NavMenu = () => {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip='Facilities'>
+                <NavLink to='/'>
+                  <Building2 />
+                  <span>Facilities</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip='Devices'>
+                <NavLink to='/'>
+                  <Monitor />
+                  <span>Devices</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarMenu>
       </SidebarGroup>
       <SidebarGroup>
@@ -52,6 +87,35 @@ export const NavMenu = () => {
               <NavLink to='/face-detection-debug'>
                 <Camera />
                 <span>Detection Debug</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Administration</SidebarGroupLabel>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Users'>
+              <NavLink to='/'>
+                <Users />
+                <span>Users</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Reports'>
+              <NavLink to='/'>
+                <FileText />
+                <span>Reports</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Settings'>
+              <NavLink to='/'>
+                <Settings />
+                <span>Settings</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
