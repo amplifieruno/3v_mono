@@ -1,8 +1,8 @@
 import { GraphQLClient, graphqlWS } from '@refinedev/hasura';
 import { authService } from '../auth';
 
-const API_URL = 'http://local.graphql.local.nhost.run/v1/graphql';
-const WS_URL = 'ws://local.graphql.local.nhost.run/v1/graphql';
+const API_URL = '/gql/v1/graphql';
+const WS_URL = '/gql/v1/graphql/';
 
 export const gqlClient = new GraphQLClient(API_URL, {
   // headers: {
