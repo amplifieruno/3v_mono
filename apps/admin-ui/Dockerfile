@@ -1,4 +1,4 @@
-
+FROM node:20-alpine AS base
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -46,3 +46,24 @@ EXPOSE 80
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
+
+
+# Development stage (optional)
+FROM base AS development
+WORKDIR /app
+
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/frontend/package.json ./apps/frontend/
+RUN HUSKY=0 pnpm install --filter frontend...
+
+# Copy source code
+COPY apps/frontend ./apps/frontend/
+
+WORKDIR /app/apps/frontend
+
+# Expose vite dev server port
+EXPOSE 5173
+
+# Start development server
+CMD ["pnpm", "dev", "--host", "0.0.0.0"]
