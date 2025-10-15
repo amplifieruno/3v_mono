@@ -25,7 +25,7 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      '/auth': {
+      '/auth-api': {
         target: 'http://local.auth.local.nhost.run',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/auth/, ''),
