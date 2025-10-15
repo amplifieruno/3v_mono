@@ -18,3 +18,7 @@ prod-down:
 prod-rebuild:
 	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d --build --force-recreate
 
+deploy:
+	make prod-down
+	git pull
+	make prod-rebuild
