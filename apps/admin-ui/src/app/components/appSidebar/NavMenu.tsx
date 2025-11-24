@@ -9,6 +9,7 @@ import {
   FileText,
   Settings,
   Users,
+  ScanFace,
 } from 'lucide-react';
 
 import {
@@ -87,6 +88,14 @@ export const NavMenu = () => {
               <NavLink to='/face-detection-debug'>
                 <Camera />
                 <span>Detection Debug</span>
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip='Face Auth Debug'>
+              <NavLink to='/face-auth-debug'>
+                <ScanFace />
+                <span>Face Auth Debug</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

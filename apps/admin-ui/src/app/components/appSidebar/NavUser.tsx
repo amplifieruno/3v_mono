@@ -29,8 +29,6 @@ export const NavUser = observer(() => {
   const { data: user } = useGetIdentity();
   const username = user?.name || 'Unknown user';
 
-  console.log('user', user);
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
