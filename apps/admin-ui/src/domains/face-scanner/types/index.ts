@@ -3,6 +3,7 @@
  */
 
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type { ScanningSession, ScanningConfig, CaptureResult } from './scanning';
 
 /**
  * Head pose angles in degrees
@@ -65,6 +66,9 @@ export interface FaceScannerState {
   videoElement: HTMLVideoElement | null;
   canvasElement: HTMLCanvasElement | null;
   stream: MediaStream | null;
+
+  // Scanning session (optional, only present when scanning is active)
+  scanningSession: ScanningSession | null;
 }
 
 /**
@@ -81,6 +85,11 @@ export interface FaceScannerActions {
   // Error handling
   setError: (error: string | null) => void;
   clearError: () => void;
+
+  // Scanning control
+  startScanning: (config?: ScanningConfig) => void;
+  stopScanning: () => void;
+  resetScanning: () => void;
 
   // Cleanup
   cleanup: () => void;

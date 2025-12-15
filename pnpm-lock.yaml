@@ -170,6 +170,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.2.6
         version: 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@tbmc/opencv-js':
+        specifier: 4.9.0-release.3-custom1
+        version: 4.9.0-release.3-custom1
       '@types/lodash':
         specifier: ^4.17.20
         version: 4.17.20
@@ -3101,6 +3104,9 @@ packages:
   '@tanstack/table-core@8.21.3':
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
+
+  '@tbmc/opencv-js@4.9.0-release.3-custom1':
+    resolution: {integrity: sha512-1/GJ8p6nXRqCDUEM+QLpuqKfkmrH6u0Kgf9+//5wxcrydORFa3vVdUkCawqOHCWvAksmboYZDYUmIAemh+bGug==}
 
   '@tensorflow-models/blazeface@0.1.0':
     resolution: {integrity: sha512-Qc5Wii8/OE5beC7XfehkhF9SEFLaPbVKnxxalV0T9JXsUynXqvLommc9Eko7b8zXKy4SJ1BtVlcX2cmCzQrn9A==}
@@ -10835,6 +10841,8 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
 
   '@tanstack/table-core@8.21.3': {}
+
+  '@tbmc/opencv-js@4.9.0-release.3-custom1': {}
 
   '@tensorflow-models/blazeface@0.1.0(@tensorflow/tfjs-converter@4.22.0(@tensorflow/tfjs-core@4.22.0))(@tensorflow/tfjs-core@4.22.0)':
     dependencies:

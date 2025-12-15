@@ -49,6 +49,7 @@
     "@tailwindcss/vite": "^4.1.8",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-table": "^8.2.6",
+    "@tbmc/opencv-js": "4.9.0-release.3-custom1",
     "@types/lodash": "^4.17.20",
     "camelcase": "^8.0.0",
     "class-variance-authority": "^0.7.1",

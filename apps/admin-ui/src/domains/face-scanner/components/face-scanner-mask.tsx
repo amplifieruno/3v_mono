@@ -58,16 +58,22 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
   showMask = true,
   maskColor = 'rgba(255, 255, 255, 0.3)',
   maskBorderColor = 'rgba(255, 255, 255, 0.8)',
-  maskBorderWidth = 2
+  maskBorderWidth = 2,
 }) => {
   // Subscribe to detection results
-  const detectionResult = useFaceScannerState(state => state.lastDetectionResult);
+  const detectionResult = useFaceScannerState(
+    (state) => state.lastDetectionResult
+  );
 
   // Calculate mask position and size from face landmarks
   const getMaskTransform = () => {
-    if (!detectionResult || !detectionResult.landmarks || detectionResult.landmarks.length === 0) {
+    if (
+      !detectionResult ||
+      !detectionResult.landmarks ||
+      detectionResult.landmarks.length === 0
+    ) {
       return {
-        display: 'none'
+        display: 'none',
       };
     }
 
@@ -76,13 +82,16 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
 
     if (!landmarks || landmarks.length === 0) {
       return {
-        display: 'none'
+        display: 'none',
       };
     }
 
     // Calculate bounding box from landmarks
-    let minX = 1, maxX = 0, minY = 1, maxY = 0;
-    landmarks.forEach(landmark => {
+    let minX = 1,
+      maxX = 0,
+      minY = 1,
+      maxY = 0;
+    landmarks.forEach((landmark) => {
       minX = Math.min(minX, landmark.x);
       maxX = Math.max(maxX, landmark.x);
       minY = Math.min(minY, landmark.y);
@@ -125,7 +134,7 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
       height: `${heightPercent}%`,
       transform: transforms.join(' '),
       transformStyle: 'preserve-3d' as const,
-      display: 'block'
+      display: 'block',
     };
   };
 
@@ -139,7 +148,7 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
         width: '100%',
         height: '100%',
         perspective: '1000px', // Enable 3D perspective
-        ...style
+        ...style,
       }}
     >
       {children}
@@ -153,7 +162,7 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
             border: `${maskBorderWidth}px solid ${maskBorderColor}`,
             background: maskColor,
             pointerEvents: 'none',
-            transition: 'all 0.1s ease-out'
+            transition: 'all 0.1s ease-out',
           }}
         />
       )}

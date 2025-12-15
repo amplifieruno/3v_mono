@@ -12,6 +12,7 @@
 // Components
 export { FaceScannerCamera } from './components/face-scanner-camera';
 export { FaceScannerMask } from './components/face-scanner-mask';
+export { FaceScannerScanningMask } from './components/face-scanner-scanning-mask';
 
 // Context and Provider
 export {
@@ -35,8 +36,31 @@ export type {
   FaceScannerModel
 } from './types';
 
+// Scanning Types
+export type {
+  HeadPosePosition,
+  PositionTarget,
+  CaptureResult,
+  ScanningSession,
+  ScanningConfig
+} from './types/scanning';
+
+export { ScanningInstruction, ScanningError } from './types/scanning';
+
 // Utilities (if needed externally)
 export {
   getSimplifiedHeadPose,
   calculateHeadPose
 } from './utils/headPoseCalculation';
+
+export {
+  DEFAULT_SCAN_POSITIONS,
+  matchesPosition,
+  getNextUncapturedPosition,
+  captureCanvasImage,
+  cropHeadImage,
+  validateScanningConditions,
+  calculateFaceCenterDistance,
+  calculateFaceSize,
+  generateSessionId
+} from './utils/scanningUtils';
