@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+@AGENTS.md
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -13,6 +15,7 @@ This is the Identity Tracking and Access Platform (ITAP) monorepo - a comprehens
 Based on the functional specification, ITAP will consist of the following core modules:
 
 ### Core Functional Modules
+
 - **Identity Database Management**: Centralized storage and management of Identity records
 - **Profile Management**: Management of known individuals with personal data linked to Identities
 - **Segment Management**: Creation and management of logical groups of Identities
@@ -25,6 +28,7 @@ Based on the functional specification, ITAP will consist of the following core m
 - **Notification System**: Configurable alerts for security and operational events
 
 ### Key Domain Entities
+
 - **Identity**: Any entity tracked by the platform (known/unknown individuals)
 - **Profile**: Supplementary record with personal data for known individuals
 - **Segment**: Logical grouping of Identities based on conditions/attributes
@@ -35,12 +39,14 @@ Based on the functional specification, ITAP will consist of the following core m
 ## Technology Stack
 
 ### Frontend
+
 - **Framework**: React + TypeScript + TailwindCSS v4 + shadcn/ui
 - **Routing**: React Router (client-side routing, no SSR needed)
 - **State Management**: React Query for server state, Zustand for client state
 - **Real-time**: WebSocket connection for live tracking updates
 
 ### Backend
+
 - **Runtime**: Node.js + Express + TypeScript
 - **Database**: PostgreSQL (via Docker) + TypeORM for development simplicity
 - **Cache/Sessions**: Redis
@@ -48,12 +54,14 @@ Based on the functional specification, ITAP will consist of the following core m
 - **Real-time**: Socket.io for WebSocket connections
 
 ### Face Recognition
+
 - **Primary Service**: CompreFace (self-hosted open-source solution)
 - **Fallback**: FaceAPI.js for client-side processing
 - **Image Processing**: OpenCV for preprocessing
 - **Alternative**: InsightFace for high-quality embeddings
 
 ### Infrastructure
+
 - **Containerization**: Docker + Docker Compose
 - **Database**: PostgreSQL container for local and production
 - **File Storage**: Minio (S3-compatible) for images and reports
@@ -62,6 +70,7 @@ Based on the functional specification, ITAP will consist of the following core m
 ## Development Commands
 
 ### Local Development Setup
+
 ```bash
 # Install dependencies
 npm install
@@ -83,6 +92,7 @@ cd apps/backend && pnpm download-models  # Download face-api.js models
 ```
 
 ### Production Commands
+
 ```bash
 # Build and deploy
 docker-compose up -d   # Full production stack
@@ -91,6 +101,7 @@ npm run start          # Start production server
 ```
 
 ### Testing
+
 ```bash
 npm run test           # Run all tests
 npm run test:e2e       # Run end-to-end tests
@@ -116,6 +127,7 @@ The project documentation is organized as follows:
 ## Implementation Roadmap
 
 ### Phase 1: Core Foundation (MVP)
+
 1. **Identity Database Management**: Basic CRUD operations for Identity records
 2. **Device Management**: Single camera integration with CompreFace
 3. **Facility/Area Management**: Simple hierarchical structure
@@ -123,12 +135,14 @@ The project documentation is organized as follows:
 5. **Simple Dashboard**: Basic management interface
 
 ### Phase 2: Real-time Features
+
 1. **Real-time Tracking**: Live Identity movement monitoring
 2. **Multiple Camera Support**: Scale to multiple video sources
 3. **Analytics Dashboard**: Basic reporting and visualization
 4. **Notification System**: Configurable alerts and notifications
 
 ### Phase 3: Advanced Features
+
 1. **Advanced Analytics**: Heatmaps, flow analysis, behavioral patterns
 2. **Profile Management**: Enhanced personal data management
 3. **Segment Management**: Dynamic grouping and targeting
@@ -176,7 +190,7 @@ Since this is an MVP to validate market hypothesis, we're using proven open-sour
    - MediaPipe for real-time face detection
    - InsightFace for high-quality embeddings
 
-3. **Future Migration Path**: 
+3. **Future Migration Path**:
    - Once market hypothesis is validated, integrate custom models
    - Maintain same API interface for seamless transition
    - Consider cloud solutions (AWS Rekognition, Azure Face API) for scaling
@@ -184,6 +198,7 @@ Since this is an MVP to validate market hypothesis, we're using proven open-sour
 ## Key Implementation Notes
 
 The functional specification includes detailed user stories with:
+
 - Acceptance criteria in Gherkin format
 - Complete domain entity schemas
 - Interface specifications
