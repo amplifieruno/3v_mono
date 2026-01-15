@@ -3,6 +3,7 @@ import multer from 'multer'
 import FormData from 'form-data'
 import fetch from 'node-fetch'
 import { insightFaceService } from '../services/insightFaceService.js'
+import { identityService } from '../services/identityService.js'
 
 const router: Router = Router()
 
@@ -27,7 +28,11 @@ const COMPREFACE_API_KEY = process.env.COMPREFACE_API_KEY || 'default-key'
 
 /**
  * POST /api/face/detect
- * Detect faces in uploaded image using CompreFace
+ * Detect faces in uploaded image using InsightFace
+ *
+ * Query parameters:
+ * - profileId: (optional) UUID of profile to link identities to
+ * - skipSimilarityCheck: (optional) If true, creates new identity without checking similarity (for enrollment)
  */
 router.post('/detect', upload.single('image'), async (req, res) => {
   try {
@@ -35,15 +40,20 @@ router.post('/detect', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'No image file provided' })
     }
 
+    const profileId = req.query.profileId as string | undefined
+    const skipSimilarityCheck = req.query.skipSimilarityCheck === 'true'
+
     console.log('Received image for detection:', {
       filename: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
+      profileId,
+      skipSimilarityCheck
     })
 
     // Check if InsightFace service is ready
     if (!insightFaceService.isReady()) {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: 'Face detection service not initialized',
         details: 'InsightFace-REST API not available'
       })
@@ -53,10 +63,68 @@ router.post('/detect', upload.single('image'), async (req, res) => {
     try {
       const result = await insightFaceService.detectFaces(req.file.buffer, req.file.originalname)
       console.log(`Detected ${result.faces.length} faces in ${result.processing_time}ms`)
+
+      // If profileId is provided, create/link identities
+      if (profileId) {
+        const identities = []
+
+        for (const face of result.faces) {
+          if (!face.embedding) {
+            console.warn('Face detected without embedding, skipping identity creation')
+            continue
+          }
+
+          // Create identity with embedding
+          // For face enrollment, we skip similarity check to capture all angles as separate identities
+          let identity
+          if (skipSimilarityCheck) {
+            // Force create new identity (used during enrollment to capture all 5 angles)
+            identity = await identityService.createIdentityForProfile({
+              embedding: face.embedding,
+              imageUrl: face.face_crop,
+              profileId,
+            })
+            console.log(`✅ Created new identity ${identity.id} for profile ${profileId} (similarity check skipped)`)
+          } else {
+            // Normal flow: find or create identity
+            const matchResult = await identityService.findOrCreateIdentity({
+              embedding: face.embedding,
+              confidence: face.confidence,
+              image_data: face.face_crop,
+              x_min: face.x_min,
+              y_min: face.y_min,
+              x_max: face.x_max,
+              y_max: face.y_max,
+            })
+
+            identity = matchResult.identity
+
+            // If new identity and profileId provided, link to profile
+            if (matchResult.isNewIdentity && profileId) {
+              await identityService.linkIdentityToProfile(identity.id, profileId)
+              console.log(`🔗 Linked new identity ${identity.id} to profile ${profileId}`)
+            }
+          }
+
+          identities.push({
+            id: identity.id,
+            status: identity.status,
+            profile_id: identity.profileId,
+          })
+        }
+
+        return res.json({
+          ...result,
+          identities,
+          profile_id: profileId,
+        })
+      }
+
+      // Default response without identity creation
       res.json(result)
     } catch (error) {
       console.error('InsightFace detection error:', error)
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Face detection failed',
         message: error instanceof Error ? error.message : 'Unknown error'
       })

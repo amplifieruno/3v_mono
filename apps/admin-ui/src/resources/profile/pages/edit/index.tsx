@@ -4,14 +4,19 @@ import { Form, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useNavigation, useResourceParams } from '@refinedev/core';
 import { useForm } from '@refinedev/react-hook-form';
-import { ListIcon } from 'lucide-react';
-import { FC } from 'react';
+import { ListIcon, Camera } from 'lucide-react';
+import { FC, useState } from 'react';
 import { Link } from 'react-router';
+import { useToast } from '@/hooks/use-toast';
+import { FaceScannerModal } from '@/domains/face-scanner';
 import { ProfileOneQuery, ProfileUpdateOneMutation } from '../../queries';
 
 export const EditPage: FC = () => {
   const { identifier } = useResourceParams();
   const { listUrl } = useNavigation();
+  const { toast } = useToast();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const {
     refineCore: { onFinish },
@@ -30,6 +35,54 @@ export const EditPage: FC = () => {
     handleSubmit,
     register,
   } = form;
+
+  const handleFaceIdComplete = async (files: File[]) => {
+    setUploading(true);
+    try {
+      // Upload each file to backend with skipSimilarityCheck=true
+      // This ensures all 5 face angles are captured as separate identities
+      const uploadPromises = files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch(
+          `/api/face/detect?profileId=${identifier}&skipSimilarityCheck=true`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+
+        return response.json();
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const totalIdentities = results.reduce(
+        (sum, r) => sum + (r.identities?.length || 0),
+        0
+      );
+
+      toast({
+        title: 'Success',
+        description: `Face ID created successfully. ${totalIdentities} identities linked to profile.`,
+      });
+
+      setScannerOpen(false);
+    } catch (error) {
+      console.error('Failed to create Face ID:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create Face ID. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div>
@@ -98,6 +151,19 @@ export const EditPage: FC = () => {
 
                 <div className='mt-4'>
                   <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => setScannerOpen(true)}
+                    disabled={uploading}
+                    className='w-full'
+                  >
+                    <Camera className='mr-2 h-4 w-4' />
+                    {uploading ? 'Uploading...' : 'Create Face ID'}
+                  </Button>
+                </div>
+
+                <div className='mt-4'>
+                  <Button
                     className='w-40'
                     type='submit'
                     disabled={isSubmitting}
@@ -110,6 +176,13 @@ export const EditPage: FC = () => {
           </Form>
         </CardContent>
       </Card>
+
+      <FaceScannerModal
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onComplete={handleFaceIdComplete}
+        profileId={identifier}
+      />
     </div>
   );
 };
