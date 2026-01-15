@@ -60,43 +60,31 @@ export const FaceScannerMask: FC<FaceScannerMaskProps> = ({
   maskBorderColor = 'rgba(255, 255, 255, 0.8)',
   maskBorderWidth = 2,
 }) => {
-  // Subscribe to detection results
+  // Subscribe to detection results and canvas element
   const detectionResult = useFaceScannerState(
     (state) => state.lastDetectionResult
   );
+  const canvasElement = useFaceScannerState((state) => state.canvasElement);
 
-  // Calculate mask position and size from face landmarks
+  // Calculate mask position and size from face bounds
   const getMaskTransform = () => {
-    if (
-      !detectionResult ||
-      !detectionResult.landmarks ||
-      detectionResult.landmarks.length === 0
-    ) {
+    if (!detectionResult || !detectionResult.faceBounds || !canvasElement) {
       return {
         display: 'none',
       };
     }
 
-    const landmarks = detectionResult.landmarks[0]; // First detected face
+    const faceBounds = detectionResult.faceBounds;
     const headPose = detectionResult.headPose;
 
-    if (!landmarks || landmarks.length === 0) {
-      return {
-        display: 'none',
-      };
-    }
-
-    // Calculate bounding box from landmarks
-    let minX = 1,
-      maxX = 0,
-      minY = 1,
-      maxY = 0;
-    landmarks.forEach((landmark) => {
-      minX = Math.min(minX, landmark.x);
-      maxX = Math.max(maxX, landmark.x);
-      minY = Math.min(minY, landmark.y);
-      maxY = Math.max(maxY, landmark.y);
-    });
+    // faceBounds already contains the calculated bounding box
+    // Values are in canvas pixel coordinates, normalize to 0-1 range
+    const canvasWidth = canvasElement.width;
+    const canvasHeight = canvasElement.height;
+    const minX = faceBounds.left / canvasWidth;
+    const maxX = faceBounds.right / canvasWidth;
+    const minY = faceBounds.top / canvasHeight;
+    const maxY = faceBounds.bottom / canvasHeight;
 
     // Calculate center and size (in normalized coordinates 0-1)
     const centerX = (minX + maxX) / 2;

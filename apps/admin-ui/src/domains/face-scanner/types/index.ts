@@ -2,24 +2,41 @@
  * Face Scanner Domain Types
  */
 
-import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type { FaceResult } from '@vladmandic/human';
 import type { ScanningSession, ScanningConfig, CaptureResult } from './scanning';
 
 /**
- * Head pose angles in degrees
+ * Head pose angles (normalized values from -1 to 1)
+ * Values from @vladmandic/human library
  */
 export interface HeadPose {
-  yaw: number; // -90 to 90 degrees (left/right rotation)
-  pitch: number; // -90 to 90 degrees (up/down tilt)
-  roll: number; // -90 to 90 degrees (clockwise/counter-clockwise tilt)
+  yaw: number; // -1 to 1 (left/right rotation)
+  pitch: number; // -1 to 1 (up/down tilt)
+  roll: number; // -1 to 1 (clockwise/counter-clockwise tilt)
+}
+
+/**
+ * Face bounding box calculated from mesh landmarks
+ */
+export interface FaceBounds {
+  left: number; // Left edge X coordinate
+  top: number; // Top edge Y coordinate
+  right: number; // Right edge X coordinate
+  bottom: number; // Bottom edge Y coordinate
+  width: number; // Face width (with expansion)
+  height: number; // Face height (with expansion)
+  centerX: number; // Face center X coordinate
+  centerY: number; // Face center Y coordinate
 }
 
 /**
  * Complete face detection result from a single frame
+ * Uses @vladmandic/human library format
  */
 export interface FaceDetectionResult {
-  landmarks: NormalizedLandmark[][]; // Array of face landmarks for each detected face
+  faces: FaceResult[]; // Array of detected faces from Human library
   headPose: HeadPose | null; // Head pose for the primary face (first detected)
+  faceBounds: FaceBounds | null; // Face bounding box for the primary face
   faceCount: number; // Number of faces detected in the frame
   timestamp: number; // Timestamp of detection
 }
@@ -35,13 +52,11 @@ export interface CameraConfig {
 }
 
 /**
- * Face detection configuration for MediaPipe
+ * Face detection configuration for Human library
  */
 export interface FaceScannerConfig {
-  numFaces?: number; // Maximum number of faces to detect (default: 1)
-  minFaceDetectionConfidence?: number; // Minimum confidence for detection (default: 0.5)
-  minFacePresenceConfidence?: number; // Minimum confidence for presence (default: 0.5)
-  minTrackingConfidence?: number; // Minimum confidence for tracking (default: 0.5)
+  modelBasePath?: string; // Path to Human library models (default: '/models')
+  minConfidence?: number; // Minimum confidence for detection (default: 0.5)
 }
 
 /**

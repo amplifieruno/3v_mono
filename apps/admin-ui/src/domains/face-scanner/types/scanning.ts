@@ -1,35 +1,38 @@
 /**
  * Face Scanning / Enrollment Types
  *
- * Types for guided face enrollment with 9-position capture
+ * Types for guided face enrollment with 5-position capture
+ * Based on proven implementation from @vladmandic/human
  */
 
-import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
-import type { HeadPose } from './index';
+import type { FaceResult } from '@vladmandic/human';
+import type { HeadPose, FaceBounds } from './index';
 
 /**
- * Head pose positions for enrollment (9 positions total)
+ * Head pose positions for enrollment (5 positions total)
+ * Simplified from 9 to 5 for better UX
  */
-export type HeadPosePosition =
-  | 'center'
-  | 'up'
-  | 'down'
-  | 'left'
-  | 'right'
-  | 'up-left'
-  | 'up-right'
-  | 'down-left'
-  | 'down-right';
+export type HeadPosePosition = 'center' | 'top' | 'right' | 'bottom' | 'left';
 
 /**
  * Target position with expected head pose angles
+ * Uses normalized -1 to 1 range (not degrees)
  */
 export interface PositionTarget {
   position: HeadPosePosition;
-  yaw: number; // Target yaw angle in degrees
-  pitch: number; // Target pitch angle in degrees
-  tolerance: number; // Tolerance in degrees for matching
+  yawMin?: number; // Minimum yaw value (optional = unlimited)
+  yawMax?: number; // Maximum yaw value (optional = unlimited)
+  pitchMin?: number; // Minimum pitch value (optional = unlimited)
+  pitchMax?: number; // Maximum pitch value (optional = unlimited)
   angle: number; // Visual angle on circular guide (0° = top, clockwise)
+}
+
+/**
+ * Face box configuration for dual-boundary system
+ */
+export interface FaceBoxConfig {
+  startFaceBox: [number, number, number, number]; // [top, right, bottom, left] insets
+  exitFaceBox: [number, number, number, number]; // Reset boundary (looser)
 }
 
 /**
@@ -40,7 +43,7 @@ export interface CaptureResult {
   fullImage: string; // Base64 JPEG of full frame
   headImage: string; // Base64 JPEG of cropped head (150% of face bbox)
   headPose: HeadPose; // Head pose at capture time
-  landmarks: NormalizedLandmark[][]; // Face landmarks
+  face: FaceResult; // Complete face data from Human library
   timestamp: number; // Capture timestamp
 }
 
@@ -75,12 +78,6 @@ export interface ScanningConfig {
   sessionTimeout?: number;
 
   /**
-   * Tolerance for position matching (degrees)
-   * @default 10
-   */
-  positionTolerance?: number;
-
-  /**
    * Size of guide circle relative to container height
    * @default 0.6 (60%)
    */
@@ -99,16 +96,14 @@ export interface ScanningConfig {
   cropMultiplier?: number;
 
   /**
-   * Bounds check margin (percentage of canvas)
-   * Face must be within this margin
-   * @default 0.9 (90% - 10% margin)
-   */
-  boundsMargin?: number;
-
-  /**
-   * Custom position targets (overrides default 9 positions)
+   * Custom position targets (overrides default 5 positions)
    */
   positions?: PositionTarget[];
+
+  /**
+   * Face box configuration (dual-boundary system)
+   */
+  faceBoxConfig?: FaceBoxConfig;
 
   /**
    * Auto-start scanning on mount

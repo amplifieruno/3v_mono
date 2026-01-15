@@ -46,14 +46,17 @@ function ScanningDebugInfo() {
         zIndex: 10
       }}
     >
-      <div>Current: yaw={headPose?.yaw.toFixed(1) ?? '?'}° pitch={headPose?.pitch.toFixed(1) ?? '?'}°</div>
+      <div>Current: yaw={headPose?.yaw.toFixed(2) ?? '?'} pitch={headPose?.pitch.toFixed(2) ?? '?'}</div>
       {target && (
         <div style={{ color: '#ffff00' }}>
-          Target: {target.position} (yaw={target.yaw}° pitch={target.pitch}° ±{target.tolerance}°)
+          Target: {target.position} (
+          yaw: {target.yawMin?.toFixed(2) ?? '-∞'} to {target.yawMax?.toFixed(2) ?? '+∞'},
+          pitch: {target.pitchMin?.toFixed(2) ?? '-∞'} to {target.pitchMax?.toFixed(2) ?? '+∞'}
+          )
         </div>
       )}
       <div style={{ marginTop: '0.25rem', color: '#00ff00' }}>
-        Captured: {scanningSession?.captures.length ?? 0}/9
+        Captured: {scanningSession?.captures.length ?? 0}/5
       </div>
     </div>
   );

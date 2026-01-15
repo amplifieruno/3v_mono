@@ -1,15 +1,19 @@
 /**
  * Face Scanner Model (Zustand Store)
  *
- * Manages face detection state, MediaPipe processing, and camera stream.
- * All heavy calculations are extracted to utils.
+ * Manages face detection state, Human library processing, and camera stream.
+ * Uses split detection/drawing loops for optimal performance (60fps/30fps).
+ *
+ * Based on proven implementation from @vladmandic/human with:
+ * - 5 positions (center + 4 cardinals)
+ * - Normalized -1 to 1 angle range
+ * - Dual face box system (start/exit)
+ * - Mesh-based face bounds calculation
  */
 
 import { create } from 'zustand';
-import type {
-  FaceLandmarker,
-  NormalizedLandmark,
-} from '@mediapipe/tasks-vision';
+import type Human from '@vladmandic/human';
+import type { Result as HumanResult, FaceResult } from '@vladmandic/human';
 import type {
   FaceScannerModel,
   FaceScannerState,
@@ -17,6 +21,7 @@ import type {
   CameraConfig,
   FaceDetectionResult,
   HeadPose,
+  FaceBounds,
 } from '../types';
 import type {
   ScanningSession,
@@ -24,8 +29,9 @@ import type {
   CaptureResult,
   PositionTarget,
   HeadPosePosition,
+  FaceBoxConfig,
 } from '../types/scanning';
-import { initializeFaceLandmarker } from '../utils/mediapipeUtils';
+import { initializeHuman } from '../utils/humanUtils';
 import {
   initializeCameraStream,
   stopMediaStream,
@@ -33,13 +39,15 @@ import {
 } from '../utils/cameraUtils';
 import { drawMirroredVideoFrame } from '../utils/canvasUtils';
 import {
-  calculateHeadPose,
-  calculateHeadPose2,
+  calculateHeadPoseFromHuman,
+  calculateFaceBounds,
 } from '../utils/headPoseCalculation';
 import {
   DEFAULT_SCAN_POSITIONS,
+  DEFAULT_FACE_BOX_CONFIG,
   matchesPosition,
   getNextUncapturedPosition,
+  isFaceInBox,
   captureCanvasImage,
   cropHeadImage,
   validateScanningConditions,
@@ -48,11 +56,16 @@ import {
 
 /**
  * Internal state that's not exposed via the model interface
+ * Stores Human library instance and loop control
  */
 interface InternalState {
-  faceLandmarker: FaceLandmarker | null;
-  animationFrameId: number | null;
-  lastVideoTime: number;
+  human: Human | null;
+  detectionFrameId: number | null; // Detection loop (60fps)
+  drawingTimeoutId: number | null; // Drawing loop (30fps)
+  isProcessing: boolean; // Flag to control loops
+  videoElement: HTMLVideoElement | null;
+  canvasElement: HTMLCanvasElement | null;
+  scanningConfig: ScanningConfig | null;
 }
 
 /**
@@ -61,9 +74,13 @@ interface InternalState {
 export function createFaceScannerModel() {
   // Internal state outside Zustand store (for non-reactive refs)
   let internal: InternalState = {
-    faceLandmarker: null,
-    animationFrameId: null,
-    lastVideoTime: -1,
+    human: null,
+    detectionFrameId: null,
+    drawingTimeoutId: null,
+    isProcessing: false,
+    videoElement: null,
+    canvasElement: null,
+    scanningConfig: null,
   };
 
   const store = create<FaceScannerModel>((set, get) => ({
@@ -79,7 +96,7 @@ export function createFaceScannerModel() {
     stream: null,
     scanningSession: null,
 
-    // Initialize MediaPipe Face Landmarker
+    // Initialize Human library
     initialize: async (config?: FaceScannerConfig) => {
       const state = get();
       if (state.isInitialized || state.isInitializing) {
@@ -89,8 +106,8 @@ export function createFaceScannerModel() {
       set({ isInitializing: true, error: null });
 
       try {
-        const faceLandmarker = await initializeFaceLandmarker(config);
-        internal.faceLandmarker = faceLandmarker;
+        const human = await initializeHuman(config);
+        internal.human = human;
 
         set({
           isInitialized: true,
@@ -135,6 +152,9 @@ export function createFaceScannerModel() {
         await attachStreamToVideo(videoElement, stream);
 
         // Store references
+        internal.videoElement = videoElement;
+        internal.canvasElement = canvasElement;
+
         set({
           videoElement,
           canvasElement,
@@ -161,10 +181,7 @@ export function createFaceScannerModel() {
       const state = get();
 
       // Stop frame processing
-      if (internal.animationFrameId !== null) {
-        cancelAnimationFrame(internal.animationFrameId);
-        internal.animationFrameId = null;
-      }
+      stopFrameProcessing();
 
       // Stop media stream
       if (state.stream) {
@@ -176,6 +193,10 @@ export function createFaceScannerModel() {
         state.videoElement.srcObject = null;
       }
 
+      // Clear internal refs
+      internal.videoElement = null;
+      internal.canvasElement = null;
+
       // Reset state
       set({
         isCameraActive: false,
@@ -184,8 +205,6 @@ export function createFaceScannerModel() {
         stream: null,
         lastDetectionResult: null,
       });
-
-      internal.lastVideoTime = -1;
     },
 
     // Set error
@@ -211,23 +230,26 @@ export function createFaceScannerModel() {
       }
 
       // Merge config with defaults
-      const scanningConfig: Required<ScanningConfig> = {
+      const scanningConfig: ScanningConfig = {
         holdDuration: config?.holdDuration ?? 1000,
         sessionTimeout: config?.sessionTimeout ?? 120000,
-        positionTolerance: config?.positionTolerance ?? 10,
         guideSize: config?.guideSize ?? 0.6,
         captureQuality: config?.captureQuality ?? 0.92,
         cropMultiplier: config?.cropMultiplier ?? 1.5,
-        boundsMargin: config?.boundsMargin ?? 0.9,
         positions: config?.positions ?? DEFAULT_SCAN_POSITIONS,
+        faceBoxConfig: config?.faceBoxConfig ?? DEFAULT_FACE_BOX_CONFIG,
         autoStart: config?.autoStart ?? false,
       };
+
+      // Store config for processing
+      internal.scanningConfig = scanningConfig;
 
       // Create new scanning session
       const session: ScanningSession = {
         isScanning: true,
         currentTargetPosition:
-          scanningConfig.positions.find((p) => p.position === 'center') || null,
+          scanningConfig.positions!.find((p) => p.position === 'center') ||
+          null,
         capturedPositions: new Set<HeadPosePosition>(),
         captures: [],
         holdStartTime: null,
@@ -264,10 +286,11 @@ export function createFaceScannerModel() {
       }
 
       // Reset to initial state but keep config
+      const positions = internal.scanningConfig?.positions ?? DEFAULT_SCAN_POSITIONS;
       const session: ScanningSession = {
         isScanning: true,
         currentTargetPosition:
-          DEFAULT_SCAN_POSITIONS.find((p) => p.position === 'center') || null,
+          positions.find((p) => p.position === 'center') || null,
         capturedPositions: new Set<HeadPosePosition>(),
         captures: [],
         holdStartTime: null,
@@ -288,11 +311,9 @@ export function createFaceScannerModel() {
         get().stopCamera();
       }
 
-      // Close MediaPipe
-      if (internal.faceLandmarker) {
-        internal.faceLandmarker.close();
-        internal.faceLandmarker = null;
-      }
+      // No need to close Human library (it's lightweight)
+      internal.human = null;
+      internal.scanningConfig = null;
 
       // Reset to initial state
       set({
@@ -307,10 +328,169 @@ export function createFaceScannerModel() {
         stream: null,
         scanningSession: null,
       });
-
-      internal.lastVideoTime = -1;
     },
   }));
+
+  /**
+   * Internal function: Start frame processing loops
+   * Split into detection (60fps) and drawing (30fps) for performance
+   */
+  function startFrameProcessing() {
+    internal.isProcessing = true;
+
+    // Start detection loop (60fps)
+    startDetectionLoop();
+
+    // Start drawing loop (30fps)
+    startDrawingLoop();
+  }
+
+  /**
+   * Internal function: Stop frame processing loops
+   */
+  function stopFrameProcessing() {
+    internal.isProcessing = false;
+
+    // Cancel detection loop
+    if (internal.detectionFrameId !== null) {
+      cancelAnimationFrame(internal.detectionFrameId);
+      internal.detectionFrameId = null;
+    }
+
+    // Cancel drawing loop
+    if (internal.drawingTimeoutId !== null) {
+      clearTimeout(internal.drawingTimeoutId);
+      internal.drawingTimeoutId = null;
+    }
+  }
+
+  /**
+   * Internal function: Detection loop (60fps via requestAnimationFrame)
+   * Runs Human library face detection
+   */
+  function startDetectionLoop() {
+    const detect = async () => {
+      if (!internal.isProcessing) {
+        return;
+      }
+
+      const video = internal.videoElement;
+      const canvas = internal.canvasElement;
+
+      if (!video || !canvas || !internal.human) {
+        internal.detectionFrameId = requestAnimationFrame(detect);
+        return;
+      }
+
+      // Check if video is ready
+      if (video.readyState < 2) {
+        internal.detectionFrameId = requestAnimationFrame(detect);
+        return;
+      }
+
+      try {
+        // Run Human library detection
+        const result: HumanResult = await internal.human.detect(video);
+
+        // Process detection results
+        const detectionResult = processHumanResult(result);
+
+        // Update state with detection results
+        store.setState({ lastDetectionResult: detectionResult });
+
+        // Process scanning session if active
+        processScanningSession(detectionResult, canvas);
+      } catch (error) {
+        console.error('Error in detection loop:', error);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Detection error';
+        store.setState({ error: errorMessage });
+      }
+
+      // Continue detection loop
+      internal.detectionFrameId = requestAnimationFrame(detect);
+    };
+
+    // Start the loop
+    internal.detectionFrameId = requestAnimationFrame(detect);
+  }
+
+  /**
+   * Internal function: Drawing loop (30fps via setTimeout)
+   * Draws video frame to canvas
+   */
+  function startDrawingLoop() {
+    const draw = () => {
+      if (!internal.isProcessing) {
+        return;
+      }
+
+      const video = internal.videoElement;
+      const canvas = internal.canvasElement;
+
+      if (!video || !canvas) {
+        internal.drawingTimeoutId = window.setTimeout(draw, 33); // ~30fps
+        return;
+      }
+
+      // Check if video is ready
+      if (video.readyState < 2) {
+        internal.drawingTimeoutId = window.setTimeout(draw, 33);
+        return;
+      }
+
+      try {
+        // Draw mirrored video frame to canvas
+        drawMirroredVideoFrame(canvas, video);
+      } catch (error) {
+        console.error('Error in drawing loop:', error);
+      }
+
+      // Continue drawing loop (30fps)
+      internal.drawingTimeoutId = window.setTimeout(draw, 33);
+    };
+
+    // Start the loop
+    internal.drawingTimeoutId = window.setTimeout(draw, 33);
+  }
+
+  /**
+   * Internal function: Process Human library result into FaceDetectionResult
+   */
+  function processHumanResult(result: HumanResult): FaceDetectionResult {
+    const faces = result.face || [];
+    const faceCount = faces.length;
+
+    // Process first face if available
+    let headPose: HeadPose | null = null;
+    let faceBounds: FaceBounds | null = null;
+
+    if (faceCount > 0) {
+      const firstFace = faces[0];
+
+      // Calculate head pose from Human rotation data
+      headPose = calculateHeadPoseFromHuman(firstFace);
+
+      // Calculate face bounds from mesh landmarks
+      if (firstFace.meshRaw && firstFace.meshRaw.length >= 360) {
+        try {
+          // Convert Point[] to number[][] format: [x, y, z] for each point
+          const meshArray = firstFace.meshRaw.map((p) => [p[0], p[1], p[2] || 0]);
+          faceBounds = calculateFaceBounds(meshArray);
+        } catch (error) {
+          console.warn('Failed to calculate face bounds:', error);
+        }
+      }
+    }
+
+    return {
+      faces,
+      headPose,
+      faceBounds,
+      faceCount,
+      timestamp: performance.now(),
+    };
+  }
 
   /**
    * Internal function: Process scanning session
@@ -328,17 +508,14 @@ export function createFaceScannerModel() {
     }
 
     const now = Date.now();
-    const config: ScanningConfig = {
-      holdDuration: 1000,
-      sessionTimeout: 120000,
-      positionTolerance: 10,
-      captureQuality: 0.92,
-      cropMultiplier: 1.5,
-      boundsMargin: 0.9,
-    };
+    const config = internal.scanningConfig;
+    const faceBoxConfig = config?.faceBoxConfig ?? DEFAULT_FACE_BOX_CONFIG;
 
     // Check session timeout
-    if (now - session.sessionStartTime > (config.sessionTimeout ?? 120000)) {
+    if (
+      now - session.sessionStartTime >
+      (config?.sessionTimeout ?? 120000)
+    ) {
       store.setState({
         scanningSession: {
           ...session,
@@ -353,32 +530,50 @@ export function createFaceScannerModel() {
     // Validate scanning conditions (face count, bounds, etc.)
     const validationError = validateScanningConditions(
       detectionResult.faceCount,
-      detectionResult.landmarks,
-      config.boundsMargin ?? 0.9
+      detectionResult.faceBounds,
+      canvas.width,
+      canvas.height,
+      faceBoxConfig
     );
 
     if (validationError) {
-      // Reset session on error
+      // Reset session on critical errors
       console.warn('Scanning validation error:', validationError);
-      store.getState().resetScanning();
+
+      // Update session with error but don't reset immediately
+      // (allows user to see error message)
+      store.setState({
+        scanningSession: {
+          ...session,
+          lastError: validationError,
+        },
+      });
       return;
+    }
+
+    // Clear any previous errors
+    if (session.lastError) {
+      store.setState({
+        scanningSession: {
+          ...session,
+          lastError: null,
+        },
+      });
     }
 
     const headPose = detectionResult.headPose;
-    if (!headPose) {
-      return; // No head pose available
-    }
+    const faceBounds = detectionResult.faceBounds;
 
-    const landmarks = detectionResult.landmarks[0];
-    if (!landmarks) {
-      return;
+    if (!headPose || !faceBounds) {
+      return; // No head pose or bounds available
     }
 
     // Get current target position
     const targetPosition = session.currentTargetPosition;
     if (!targetPosition) {
       // All positions captured - complete session
-      if (session.captures.length === DEFAULT_SCAN_POSITIONS.length) {
+      const positions = config?.positions ?? DEFAULT_SCAN_POSITIONS;
+      if (session.captures.length === positions.length) {
         store.setState({
           scanningSession: {
             ...session,
@@ -389,10 +584,31 @@ export function createFaceScannerModel() {
       return;
     }
 
+    // Check if face is in start box (tight constraint for capture)
+    const inStartBox = isFaceInBox(
+      faceBounds,
+      canvas.width,
+      canvas.height,
+      faceBoxConfig.startFaceBox
+    );
+
+    if (!inStartBox) {
+      // Reset hold timer if not in start box
+      if (session.holdStartTime !== null) {
+        store.setState({
+          scanningSession: {
+            ...session,
+            holdStartTime: null,
+          },
+        });
+      }
+      return;
+    }
+
     // Check if current head pose matches target position
     const isMatch = matchesPosition(headPose, targetPosition);
 
-    // Handle center position (requires holding for 1 second)
+    // Handle center position (requires holding for duration)
     if (targetPosition.position === 'center') {
       if (isMatch) {
         if (session.holdStartTime === null) {
@@ -405,10 +621,17 @@ export function createFaceScannerModel() {
           });
         } else if (
           now - session.holdStartTime >=
-          (config.holdDuration ?? 1000)
+          (config?.holdDuration ?? 1000)
         ) {
           // Held long enough - capture!
-          capturePosition(targetPosition, headPose, landmarks, canvas, config);
+          capturePosition(
+            targetPosition,
+            headPose,
+            detectionResult.faces[0],
+            faceBounds,
+            canvas,
+            config
+          );
         }
       } else {
         // Not matching - reset hold timer
@@ -424,7 +647,14 @@ export function createFaceScannerModel() {
     } else {
       // Non-center positions - instant capture when matching
       if (isMatch) {
-        capturePosition(targetPosition, headPose, landmarks, canvas, config);
+        capturePosition(
+          targetPosition,
+          headPose,
+          detectionResult.faces[0],
+          faceBounds,
+          canvas,
+          config
+        );
       }
     }
   }
@@ -435,9 +665,10 @@ export function createFaceScannerModel() {
   function capturePosition(
     position: PositionTarget,
     headPose: HeadPose,
-    landmarks: NormalizedLandmark[],
+    face: FaceResult,
+    faceBounds: FaceBounds,
     canvas: HTMLCanvasElement,
-    config: ScanningConfig
+    config: ScanningConfig | null
   ) {
     const state = store.getState();
     const session = state.scanningSession;
@@ -455,15 +686,15 @@ export function createFaceScannerModel() {
       // Capture full image
       const fullImage = captureCanvasImage(
         canvas,
-        config.captureQuality ?? 0.92
+        config?.captureQuality ?? 0.92
       );
 
       // Capture cropped head image
       const headImage = cropHeadImage(
         canvas,
-        landmarks,
-        config.cropMultiplier ?? 1.5,
-        config.captureQuality ?? 0.92
+        faceBounds,
+        config?.cropMultiplier ?? 1.5,
+        config?.captureQuality ?? 0.92
       );
 
       // Create capture result
@@ -472,7 +703,7 @@ export function createFaceScannerModel() {
         fullImage,
         headImage,
         headPose: { ...headPose },
-        landmarks: [[...landmarks]],
+        face,
         timestamp: Date.now(),
       };
 
@@ -483,8 +714,9 @@ export function createFaceScannerModel() {
       const newCaptures = [...session.captures, capture];
 
       // Get next position to capture
+      const positions = config?.positions ?? DEFAULT_SCAN_POSITIONS;
       const nextPosition = getNextUncapturedPosition(
-        DEFAULT_SCAN_POSITIONS,
+        positions,
         newCapturedPositions
       );
 
@@ -499,7 +731,7 @@ export function createFaceScannerModel() {
       });
 
       console.log(
-        `Captured position: ${position.position} (${newCaptures.length}/9)`
+        `Captured position: ${position.position} (${newCaptures.length}/${positions.length})`
       );
     } catch (error) {
       console.error('Error capturing position:', error);
@@ -507,86 +739,6 @@ export function createFaceScannerModel() {
         error: error instanceof Error ? error.message : 'Capture failed',
       });
     }
-  }
-
-  /**
-   * Internal function: Start frame processing loop
-   */
-  function startFrameProcessing() {
-    const processFrame = () => {
-      const state = store.getState();
-
-      if (
-        !state.isCameraActive ||
-        !state.videoElement ||
-        !state.canvasElement
-      ) {
-        return;
-      }
-
-      const video = state.videoElement;
-      const canvas = state.canvasElement;
-
-      // Check if video is ready and has new frame
-      if (
-        video.readyState < 2 ||
-        video.currentTime === internal.lastVideoTime
-      ) {
-        internal.animationFrameId = requestAnimationFrame(processFrame);
-        return;
-      }
-
-      internal.lastVideoTime = video.currentTime;
-
-      try {
-        // Draw mirrored video frame to canvas
-        drawMirroredVideoFrame(canvas, video);
-
-        // Detect faces with MediaPipe
-        if (internal.faceLandmarker) {
-          const timestamp = performance.now();
-          const results = internal.faceLandmarker.detectForVideo(
-            video,
-            timestamp
-          );
-
-          // Process detection results
-          const detectionResult: FaceDetectionResult = {
-            landmarks: results.faceLandmarks || [],
-            headPose: null,
-            faceCount: results.faceLandmarks?.length || 0,
-            timestamp,
-          };
-
-          // Calculate head pose for first detected face
-          if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-            const firstFaceLandmarks = results.faceLandmarks[0];
-            detectionResult.headPose = calculateHeadPose(
-              firstFaceLandmarks,
-              video.videoWidth,
-              video.videoHeight
-            );
-          }
-
-          // Update state with detection results
-          store.setState({ lastDetectionResult: detectionResult });
-
-          // Process scanning session if active
-          processScanningSession(detectionResult, canvas);
-        }
-      } catch (error) {
-        console.error('Error processing frame:', error);
-        const errorMessage =
-          error instanceof Error ? error.message : 'Frame processing error';
-        store.setState({ error: errorMessage });
-      }
-
-      // Continue processing
-      internal.animationFrameId = requestAnimationFrame(processFrame);
-    };
-
-    // Start the loop
-    internal.animationFrameId = requestAnimationFrame(processFrame);
   }
 
   return store;

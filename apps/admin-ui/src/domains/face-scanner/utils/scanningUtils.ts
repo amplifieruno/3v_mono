@@ -2,55 +2,105 @@
  * Scanning Utilities
  *
  * Helper functions for face enrollment scanning
+ * Based on proven implementation with 5 positions and ±0.3 tolerance
  */
 
-import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
-import type { HeadPose } from '../types';
+import type { FaceResult } from '@vladmandic/human';
+import type { HeadPose, FaceBounds } from '../types';
 import type {
   HeadPosePosition,
   PositionTarget,
   CaptureResult,
-  ScanningError
+  ScanningError,
+  FaceBoxConfig,
 } from '../types/scanning';
 
 /**
- * Default 9-position targets for face enrollment
- * Angles are in degrees relative to neutral position
- * NOTE: Angles are reduced for easier achievement, tolerance is increased
+ * Default 5-position targets for face enrollment
+ * Uses normalized -1 to 1 range (not degrees)
+ * Tolerance: ±0.3 for constrained axes, unlimited for primary axis
  */
 export const DEFAULT_SCAN_POSITIONS: PositionTarget[] = [
-  // Center position (straight ahead)
-  { position: 'center', yaw: 0, pitch: 0, tolerance: 15, angle: 0 },
+  // Center position - must be first
+  {
+    position: 'center',
+    yawMin: -0.3,
+    yawMax: 0.3,
+    pitchMin: -0.3,
+    pitchMax: 0.3,
+    angle: 0, // Center has no specific visual angle
+  },
 
-  // Cardinal directions - reduced angles for easier achievement
-  { position: 'up', yaw: 0, pitch: 15, tolerance: 15, angle: 0 },
-  { position: 'right', yaw: 20, pitch: 0, tolerance: 15, angle: 90 },
-  { position: 'down', yaw: 0, pitch: -15, tolerance: 15, angle: 180 },
-  { position: 'left', yaw: -20, pitch: 0, tolerance: 15, angle: 270 },
+  // Top - pitch unlimited upward, yaw constrained
+  {
+    position: 'top',
+    yawMin: -0.3,
+    yawMax: 0.3,
+    pitchMax: -0.3, // No pitchMin = unlimited upward
+    angle: 0,
+  },
 
-  // Diagonal directions - reduced angles and increased tolerance
-  { position: 'up-right', yaw: 15, pitch: 12, tolerance: 18, angle: 45 },
-  { position: 'down-right', yaw: 15, pitch: -12, tolerance: 18, angle: 135 },
-  { position: 'down-left', yaw: -15, pitch: -12, tolerance: 18, angle: 225 },
-  { position: 'up-left', yaw: -15, pitch: 12, tolerance: 18, angle: 315 }
+  // Right - yaw unlimited rightward, pitch constrained
+  {
+    position: 'right',
+    yawMin: 0.3, // No yawMax = unlimited rightward
+    pitchMin: -0.3,
+    pitchMax: 0.3,
+    angle: 90,
+  },
+
+  // Bottom - pitch unlimited downward, yaw constrained
+  {
+    position: 'bottom',
+    yawMin: -0.3,
+    yawMax: 0.3,
+    pitchMin: 0.3, // No pitchMax = unlimited downward
+    angle: 180,
+  },
+
+  // Left - yaw unlimited leftward, pitch constrained
+  {
+    position: 'left',
+    yawMax: -0.3, // No yawMin = unlimited leftward
+    pitchMin: -0.3,
+    pitchMax: 0.3,
+    angle: 270,
+  },
 ];
 
 /**
+ * Default face box configuration (dual-boundary system)
+ * startFaceBox: Tight constraint for initial positioning (10% insets)
+ * exitFaceBox: Looser boundary for reset trigger (5% insets)
+ */
+export const DEFAULT_FACE_BOX_CONFIG: FaceBoxConfig = {
+  startFaceBox: [0.1, 0.1, 0.1, 0.1], // [top, right, bottom, left]
+  exitFaceBox: [0.05, 0.05, 0.05, 0.05],
+};
+
+/**
  * Check if current head pose matches a target position
+ * Uses optional min/max bounds (undefined = unlimited)
  */
 export function matchesPosition(
   currentPose: HeadPose,
   target: PositionTarget
 ): boolean {
-  const yawDiff = Math.abs(currentPose.yaw - target.yaw);
-  const pitchDiff = Math.abs(currentPose.pitch - target.pitch);
+  const yawMatch =
+    (target.yawMin === undefined || currentPose.yaw >= target.yawMin) &&
+    (target.yawMax === undefined || currentPose.yaw <= target.yawMax);
 
-  return yawDiff <= target.tolerance && pitchDiff <= target.tolerance;
+  const pitchMatch =
+    (target.pitchMin === undefined || currentPose.pitch >= target.pitchMin) &&
+    (target.pitchMax === undefined || currentPose.pitch <= target.pitchMax);
+
+  return yawMatch && pitchMatch;
 }
 
 /**
  * Find next uncaptured position from available positions
  * Returns null if all positions are captured
+ * Center position MUST be captured first
  */
 export function getNextUncapturedPosition(
   allPositions: PositionTarget[],
@@ -59,11 +109,11 @@ export function getNextUncapturedPosition(
   // First, check if center is captured (must be first)
   const centerCaptured = capturedPositions.has('center');
   if (!centerCaptured) {
-    return allPositions.find(p => p.position === 'center') || null;
+    return allPositions.find((p) => p.position === 'center') || null;
   }
 
   // Find any uncaptured position (order doesn't matter after center)
-  return allPositions.find(p => !capturedPositions.has(p.position)) || null;
+  return allPositions.find((p) => !capturedPositions.has(p.position)) || null;
 }
 
 /**
@@ -77,29 +127,43 @@ export function getCurrentTargetFromPose(
 ): PositionTarget | null {
   // Get uncaptured positions
   const uncapturedPositions = allPositions.filter(
-    p => !capturedPositions.has(p.position)
+    (p) => !capturedPositions.has(p.position)
   );
 
   if (uncapturedPositions.length === 0) {
     return null;
   }
 
-  // Find closest uncaptured position to current pose
-  let closestPosition: PositionTarget | null = null;
-  let minDistance = Infinity;
+  // Find position that matches current pose
+  const matchingPosition = uncapturedPositions.find((p) =>
+    matchesPosition(currentPose, p)
+  );
 
-  for (const position of uncapturedPositions) {
-    const yawDiff = Math.abs(currentPose.yaw - position.yaw);
-    const pitchDiff = Math.abs(currentPose.pitch - position.pitch);
-    const distance = Math.sqrt(yawDiff * yawDiff + pitchDiff * pitchDiff);
+  return matchingPosition || uncapturedPositions[0];
+}
 
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestPosition = position;
-    }
-  }
+/**
+ * Check if face bounds are within specified insets
+ */
+export function isFaceInBox(
+  faceBounds: FaceBounds,
+  canvasWidth: number,
+  canvasHeight: number,
+  boxInsets: [number, number, number, number]
+): boolean {
+  const [topInset, rightInset, bottomInset, leftInset] = boxInsets;
 
-  return closestPosition;
+  const minX = canvasWidth * leftInset;
+  const maxX = canvasWidth * (1 - rightInset);
+  const minY = canvasHeight * topInset;
+  const maxY = canvasHeight * (1 - bottomInset);
+
+  return (
+    faceBounds.left >= minX &&
+    faceBounds.right <= maxX &&
+    faceBounds.top >= minY &&
+    faceBounds.bottom <= maxY
+  );
 }
 
 /**
@@ -113,45 +177,28 @@ export function captureCanvasImage(
 }
 
 /**
- * Crop head region from canvas
+ * Crop head region from canvas based on face bounds
  * Returns base64 JPEG of cropped head (square, centered on face)
  */
 export function cropHeadImage(
   canvas: HTMLCanvasElement,
-  landmarks: NormalizedLandmark[],
+  faceBounds: FaceBounds,
   cropMultiplier: number = 1.5,
   quality: number = 0.92
 ): string {
-  // Calculate bounding box from landmarks
-  let minX = 1, maxX = 0, minY = 1, maxY = 0;
-  landmarks.forEach(landmark => {
-    minX = Math.min(minX, landmark.x);
-    maxX = Math.max(maxX, landmark.x);
-    minY = Math.min(minY, landmark.y);
-    maxY = Math.max(maxY, landmark.y);
-  });
-
-  // Convert to pixel coordinates
-  const width = canvas.width;
-  const height = canvas.height;
-
-  const faceWidth = (maxX - minX) * width;
-  const faceHeight = (maxY - minY) * height;
-  const faceCenterX = ((minX + maxX) / 2) * width;
-  const faceCenterY = ((minY + maxY) / 2) * height;
-
-  // Calculate crop size (square, 150% of face size)
-  const cropSize = Math.max(faceWidth, faceHeight) * cropMultiplier;
+  // Calculate crop size (square, based on face dimensions)
+  const cropSize =
+    Math.max(faceBounds.width, faceBounds.height) * cropMultiplier;
 
   // Calculate crop position (centered on face)
-  // Note: X is mirrored, so we need to flip it
-  const cropX = width - faceCenterX - cropSize / 2;
-  const cropY = faceCenterY - cropSize / 2;
+  // Note: Canvas is mirrored horizontally for selfie view
+  const cropX = canvas.width - faceBounds.centerX - cropSize / 2;
+  const cropY = faceBounds.centerY - cropSize / 2;
 
   // Ensure crop stays within canvas bounds
-  const clampedX = Math.max(0, Math.min(width - cropSize, cropX));
-  const clampedY = Math.max(0, Math.min(height - cropSize, cropY));
-  const clampedSize = Math.min(cropSize, width, height);
+  const clampedX = Math.max(0, Math.min(canvas.width - cropSize, cropX));
+  const clampedY = Math.max(0, Math.min(canvas.height - cropSize, cropY));
+  const clampedSize = Math.min(cropSize, canvas.width, canvas.height);
 
   // Create temporary canvas for cropping
   const tempCanvas = document.createElement('canvas');
@@ -180,50 +227,18 @@ export function cropHeadImage(
 }
 
 /**
- * Check if face is within bounds (with margin)
- * Returns true if face is within the specified margin of canvas
- */
-export function isWithinBounds(
-  landmarks: NormalizedLandmark[],
-  boundsMargin: number = 0.9
-): boolean {
-  if (!landmarks || landmarks.length === 0) {
-    return false;
-  }
-
-  // Calculate bounding box
-  let minX = 1, maxX = 0, minY = 1, maxY = 0;
-  landmarks.forEach(landmark => {
-    minX = Math.min(minX, landmark.x);
-    maxX = Math.max(maxX, landmark.x);
-    minY = Math.min(minY, landmark.y);
-    maxY = Math.max(maxY, landmark.y);
-  });
-
-  // Calculate margins
-  const marginX = (1 - boundsMargin) / 2;
-  const marginY = (1 - boundsMargin) / 2;
-
-  // Check if face is within bounds
-  return (
-    minX >= marginX &&
-    maxX <= (1 - marginX) &&
-    minY >= marginY &&
-    maxY <= (1 - marginY)
-  );
-}
-
-/**
- * Validate scanning conditions
+ * Validate scanning conditions using Human library results
  * Returns error type if conditions are invalid, null if valid
  */
 export function validateScanningConditions(
   faceCount: number,
-  landmarks: NormalizedLandmark[][] | null,
-  boundsMargin: number = 0.9
+  faceBounds: FaceBounds | null,
+  canvasWidth: number,
+  canvasHeight: number,
+  faceBoxConfig: FaceBoxConfig
 ): ScanningError | null {
   // Check if no face detected
-  if (faceCount === 0 || !landmarks || landmarks.length === 0) {
+  if (faceCount === 0 || !faceBounds) {
     return 'face_lost' as ScanningError;
   }
 
@@ -232,9 +247,15 @@ export function validateScanningConditions(
     return 'multiple_faces' as ScanningError;
   }
 
-  // Check if face is out of bounds
-  const firstFaceLandmarks = landmarks[0];
-  if (!isWithinBounds(firstFaceLandmarks, boundsMargin)) {
+  // Check if face is out of exit box (reset boundary)
+  if (
+    !isFaceInBox(
+      faceBounds,
+      canvasWidth,
+      canvasHeight,
+      faceBoxConfig.exitFaceBox
+    )
+  ) {
     return 'out_of_bounds' as ScanningError;
   }
 
@@ -242,66 +263,42 @@ export function validateScanningConditions(
 }
 
 /**
- * Calculate distance between face and ideal center position
+ * Calculate distance between face center and canvas center
  * Returns value from 0 (perfect center) to 1 (edge of frame)
  * Can be used to give "move closer/further" feedback
  */
 export function calculateFaceCenterDistance(
-  landmarks: NormalizedLandmark[]
+  faceBounds: FaceBounds,
+  canvasWidth: number,
+  canvasHeight: number
 ): number {
-  if (!landmarks || landmarks.length === 0) {
-    return 1; // Maximum distance if no landmarks
-  }
+  const centerX = canvasWidth / 2;
+  const centerY = canvasHeight / 2;
 
-  // Calculate face center
-  let sumX = 0, sumY = 0;
-  landmarks.forEach(landmark => {
-    sumX += landmark.x;
-    sumY += landmark.y;
-  });
-  const centerX = sumX / landmarks.length;
-  const centerY = sumY / landmarks.length;
+  const dx = (faceBounds.centerX - centerX) / centerX;
+  const dy = (faceBounds.centerY - centerY) / centerY;
 
-  // Calculate distance from ideal center (0.5, 0.5)
-  const dx = centerX - 0.5;
-  const dy = centerY - 0.5;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  // Normalize to 0-1 range (diagonal distance is ~0.707)
-  return Math.min(1, distance / 0.707);
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 /**
- * Calculate face size relative to frame
- * Returns value from 0 (tiny face) to 1 (face fills frame)
+ * Calculate face size relative to canvas
+ * Returns value from 0 (tiny) to 1 (fills entire canvas)
  * Can be used to give "move closer/further" feedback
  */
-export function calculateFaceSize(
-  landmarks: NormalizedLandmark[]
+export function calculateFaceSizeRatio(
+  faceBounds: FaceBounds,
+  canvasWidth: number,
+  canvasHeight: number
 ): number {
-  if (!landmarks || landmarks.length === 0) {
-    return 0;
-  }
-
-  // Calculate bounding box
-  let minX = 1, maxX = 0, minY = 1, maxY = 0;
-  landmarks.forEach(landmark => {
-    minX = Math.min(minX, landmark.x);
-    maxX = Math.max(maxX, landmark.x);
-    minY = Math.min(minY, landmark.y);
-    maxY = Math.max(maxY, landmark.y);
-  });
-
-  const width = maxX - minX;
-  const height = maxY - minY;
-
-  // Face size as percentage of frame (average of width and height)
-  return (width + height) / 2;
+  const faceArea = faceBounds.width * faceBounds.height;
+  const canvasArea = canvasWidth * canvasHeight;
+  return faceArea / canvasArea;
 }
 
 /**
  * Generate unique session ID
  */
 export function generateSessionId(): string {
-  return `scan_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `scan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }

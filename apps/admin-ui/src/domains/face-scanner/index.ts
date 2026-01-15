@@ -28,6 +28,7 @@ export type { FaceScannerStore } from './model/face-scanner-model';
 // Types
 export type {
   HeadPose,
+  FaceBounds,
   FaceDetectionResult,
   CameraConfig,
   FaceScannerConfig,
@@ -42,25 +43,31 @@ export type {
   PositionTarget,
   CaptureResult,
   ScanningSession,
-  ScanningConfig
+  ScanningConfig,
+  FaceBoxConfig
 } from './types/scanning';
 
 export { ScanningInstruction, ScanningError } from './types/scanning';
 
 // Utilities (if needed externally)
 export {
-  getSimplifiedHeadPose,
-  calculateHeadPose
+  calculateHeadPoseFromHuman,
+  calculateFaceBounds,
+  isFaceInBounds
 } from './utils/headPoseCalculation';
 
 export {
   DEFAULT_SCAN_POSITIONS,
+  DEFAULT_FACE_BOX_CONFIG,
   matchesPosition,
   getNextUncapturedPosition,
+  isFaceInBox,
   captureCanvasImage,
   cropHeadImage,
   validateScanningConditions,
   calculateFaceCenterDistance,
-  calculateFaceSize,
+  calculateFaceSizeRatio,
   generateSessionId
 } from './utils/scanningUtils';
+
+export { initializeHuman, createHumanConfig } from './utils/humanUtils';

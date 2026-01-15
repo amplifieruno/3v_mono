@@ -51,6 +51,7 @@
     "@tanstack/react-table": "^8.2.6",
     "@tbmc/opencv-js": "4.9.0-release.3-custom1",
     "@types/lodash": "^4.17.20",
+    "@vladmandic/human": "^3.3.6",
     "camelcase": "^8.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
