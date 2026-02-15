@@ -26,12 +26,12 @@ export default defineConfig({
         ws: true,
       },
       '/auth': {
-        target: 'http://local.auth.local.nhost.run',
+        target: 'http://localhost:4100',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/auth/, ''),
       },
       '/gql': {
-        target: 'http://local.graphql.local.nhost.run',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         ws: true,
         rewrite: (path) => path.replace(/^\/gql/, ''),

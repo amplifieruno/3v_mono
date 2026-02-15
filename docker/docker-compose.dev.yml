@@ -71,6 +71,11 @@ services:
       - ${FUNCTIONS_URL}:host-gateway
       - ${GRAPHQL_URL}:host-gateway
       - ${STORAGE_URL}:host-gateway
+    ports:
+      - mode: ingress
+        target: 4000
+        published: '4100'
+        protocol: tcp
     healthcheck:
       test:
         - CMD
@@ -245,6 +250,11 @@ services:
       - ${FUNCTIONS_URL}:host-gateway
       - ${GRAPHQL_URL}:host-gateway
       - ${STORAGE_URL}:host-gateway
+    ports:
+      - mode: ingress
+        target: 8080
+        published: '8080'
+        protocol: tcp
     healthcheck:
       test:
         - CMD-SHELL
@@ -391,7 +401,9 @@ services:
     mem_limit: 4g
 
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.3
+    environment:
+      DOCKER_API_VERSION: '1.44'
     command:
       - --api.insecure=true
       - --providers.docker=true

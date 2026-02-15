@@ -7,14 +7,13 @@ import { useForm } from '@refinedev/react-hook-form';
 import { ListIcon, Camera } from 'lucide-react';
 import { FC, useState } from 'react';
 import { Link } from 'react-router';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { FaceScannerModal } from '@/domains/face-scanner';
 import { ProfileOneQuery, ProfileUpdateOneMutation } from '../../queries';
 
 export const EditPage: FC = () => {
   const { identifier } = useResourceParams();
   const { listUrl } = useNavigation();
-  const { toast } = useToast();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -66,19 +65,12 @@ export const EditPage: FC = () => {
         0
       );
 
-      toast({
-        title: 'Success',
-        description: `Face ID created successfully. ${totalIdentities} identities linked to profile.`,
-      });
+      toast.success(`Face ID created successfully. ${totalIdentities} identities linked to profile.`);
 
       setScannerOpen(false);
     } catch (error) {
       console.error('Failed to create Face ID:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create Face ID. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to create Face ID. Please try again.');
     } finally {
       setUploading(false);
     }
