@@ -1,0 +1,39 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == *.ts ]] || [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == *.tsx ]]; then cd /home/dev/Projects/3v/3v_mono && npx prettier --write \"$CLAUDE_TOOL_ARG_FILE_PATH\" 2>/dev/null; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == */@gql/* ]] || [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == */node_modules/* ]] || [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == */pnpm-lock.yaml ]] || [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == */dist/* ]] || [[ \"$CLAUDE_TOOL_ARG_FILE_PATH\" == */build/* ]]; then echo '{\"decision\": \"deny\", \"reason\": \"Cannot edit generated/dependency files (@gql/*, node_modules/*, pnpm-lock.yaml, dist/*, build/*)\"}'; fi"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Check if all your assigned tasks are completed. If not, continue working on them.'"
+          }
+        ]
+      }
+    ]
+  }
+}

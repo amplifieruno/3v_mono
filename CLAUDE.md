@@ -23,7 +23,12 @@ bd sync               # Sync with git
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
+2. **Run quality gates** (if code changed):
+   ```bash
+   pnpm lint            # Linting
+   pnpm typecheck       # TypeScript type checking
+   pnpm build           # Build verification
+   ```
 3. **Update issue status** - Close finished work, update in-progress items
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
@@ -43,213 +48,318 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+---
+
+## DEMO Project Mindset
+
+**THIS IS A DEMO PROJECT.** We do NOT build production-grade infrastructure. We build something that:
+
+- **Demonstrates** the functionality described in the specs (`docs/base/`)
+- **Looks real** through proper UI and data structures
+- Uses **simple, lightweight solutions** instead of complex distributed systems
+- Prioritizes **visual demo** over backend scalability
+- Uses **Hasura for data layer** (CRUD, permissions, GraphQL) — no custom ORM logic
+- Uses **open-source face recognition** (Human library) for real demos, not fakes
+
+**Decision framework:** If there are two ways to implement something, choose the one that:
+1. Gets to a working demo faster
+2. Requires less infrastructure
+3. Can be shown to stakeholders
+
+---
+
 ## Project Overview
 
-This is the Identity Tracking and Access Platform (ITAP) monorepo - a comprehensive platform leveraging advanced computer vision technologies to detect and identify individuals in video streams and images. The platform is designed to be adaptable, scalable, and privacy-conscious, supporting various use cases across different industries.
-
-**Current Status**: This project is transitioning from design to implementation phase. We are building a working MVP to validate the market hypothesis using open-source face recognition solutions before developing our own models.
-
-## Architecture Overview
-
-Based on the functional specification, ITAP will consist of the following core modules:
+Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging computer vision to detect and identify individuals in video streams and images.
 
 ### Core Functional Modules
 
-- **Identity Database Management**: Centralized storage and management of Identity records
-- **Profile Management**: Management of known individuals with personal data linked to Identities
-- **Segment Management**: Creation and management of logical groups of Identities
-- **Face-Based Authorization Tools**: Integration APIs and SDKs for face recognition-based authentication
-- **Identity Search**: Fast and accurate search capabilities using facial data and attributes
-- **Facility and Area Management**: Hierarchical mapping of physical locations
-- **Device Management**: Registration and configuration of video sources and hardware
-- **Real-Time Tracking**: Visualization and monitoring of Identity movements
-- **Analytics and Reporting**: Tools for analyzing flows, behaviors, and trends
-- **Notification System**: Configurable alerts for security and operational events
+- **Identity Database Management**: CRUD for Identity records
+- **Profile Management**: Known individuals with personal data
+- **Segment Management**: Logical groups of Identities
+- **Face-Based Authorization**: Face recognition-based authentication
+- **Facility and Area Management**: Physical locations hierarchy
+- **Device Management**: Video sources and hardware
+- **Real-Time Tracking**: Identity movement monitoring
+- **Analytics and Reporting**: Flows, behaviors, trends
+- **Notification System**: Configurable alerts
 
 ### Key Domain Entities
 
-- **Identity**: Any entity tracked by the platform (known/unknown individuals)
-- **Profile**: Supplementary record with personal data for known individuals
-- **Segment**: Logical grouping of Identities based on conditions/attributes
-- **Facility**: Physical site (warehouse, factory, retail store, etc.)
-- **Area**: Hierarchical subdivision of Facilities into zones
-- **Device**: Hardware components (cameras, sensors, access control terminals)
+- **Identity**: Any tracked entity (known/unknown individuals)
+- **Profile**: Personal data for known individuals
+- **Segment**: Logical grouping based on conditions
+- **Facility**: Physical site
+- **Area**: Subdivision of Facilities into zones
+- **Device**: Cameras, sensors, access control terminals
+
+---
 
 ## Technology Stack
 
-### Frontend
+### Frontend (`apps/admin-ui/`)
+- **Framework**: React 19 + TypeScript + Vite
+- **UI**: TailwindCSS v4 + shadcn/ui + Radix UI
+- **Data**: Refine framework + React Query + GraphQL
+- **State**: Zustand for client state
+- **Forms**: react-hook-form + Zod validation
+- **Real-time**: Socket.io client
+- **Face Recognition**: Human library (`@vladmandic/human`)
 
-- **Framework**: React + TypeScript + TailwindCSS v4 + shadcn/ui
-- **Routing**: React Router (client-side routing, no SSR needed)
-- **State Management**: React Query for server state, Zustand for client state
-- **Real-time**: WebSocket connection for live tracking updates
-
-### Backend
-
+### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL (via Docker) + TypeORM for development simplicity
-- **Cache/Sessions**: Redis
-- **Authentication**: JWT-based authentication
-- **Real-time**: Socket.io for WebSocket connections
+- **Database**: PostgreSQL via TypeORM
+- **Cache**: Redis
+- **Real-time**: Socket.io
+- **Face Recognition**: face-api.js, TensorFlow.js
 
-### Face Recognition
-
-- **Primary Service**: CompreFace (self-hosted open-source solution)
-- **Fallback**: FaceAPI.js for client-side processing
-- **Image Processing**: OpenCV for preprocessing
-- **Alternative**: InsightFace for high-quality embeddings
+### Data Layer (`apps/nhost/`)
+- **GraphQL Engine**: Hasura (via Nhost)
+- **Database**: PostgreSQL
+- **Auth**: Nhost authentication
+- **Migrations**: Hasura CLI migrations
+- **Type Generation**: graphql-codegen
 
 ### Infrastructure
+- **Docker Compose**: PostgreSQL, Redis, MinIO, Hasura, Traefik
+- **File Storage**: MinIO (S3-compatible)
+- **Face Recognition**: InsightFace REST API (Docker)
 
-- **Containerization**: Docker + Docker Compose
-- **Database**: PostgreSQL container for local and production
-- **File Storage**: Minio (S3-compatible) for images and reports
-- **Reverse Proxy**: nginx for load balancing and static files
-
-## Development Commands
-
-### Local Development Setup
-
-```bash
-# Install dependencies
-npm install
-
-# Setup backend (install deps + download face recognition models)
-cd apps/backend && pnpm setup
-
-# Start development environment
-docker-compose up -d postgres redis minio  # Start infrastructure
-npm run dev:backend    # Start backend server
-npm run dev:frontend   # Start frontend development server
-
-# Database operations
-npm run db:migrate     # Run database migrations
-npm run db:seed        # Seed initial data
-
-# Face recognition models
-cd apps/backend && pnpm download-models  # Download face-api.js models
-```
-
-### Production Commands
-
-```bash
-# Build and deploy
-docker-compose up -d   # Full production stack
-npm run build          # Build frontend for production
-npm run start          # Start production server
-```
-
-### Testing
-
-```bash
-npm run test           # Run all tests
-npm run test:e2e       # Run end-to-end tests
-npm run lint           # Run linting
-npm run typecheck      # Run type checking
-```
-
-## Documentation Structure
-
-The project documentation is organized as follows:
-
-- `docs/Vision_and_Scope.md`: High-level project vision, scope, application domains, and architectural principles
-- `docs/Functional_Specification.md`: Detailed functional requirements with user stories, acceptance criteria, domain entities, and interface specifications
-
-## Key Architectural Principles
-
-- **Modularity**: Independent modules for flexible deployment and expansion
-- **Scalability**: Support for both vertical and horizontal scaling
-- **Privacy by Design**: Data minimization, anonymization, and encryption
-- **Security First**: Integrated security considerations throughout development
-- **Interoperability**: Open APIs and standard protocols for third-party integration
-
-## Implementation Roadmap
-
-### Phase 1: Core Foundation (MVP)
-
-1. **Identity Database Management**: Basic CRUD operations for Identity records
-2. **Device Management**: Single camera integration with CompreFace
-3. **Facility/Area Management**: Simple hierarchical structure
-4. **Basic Face Recognition**: Identity enrollment and recognition
-5. **Simple Dashboard**: Basic management interface
-
-### Phase 2: Real-time Features
-
-1. **Real-time Tracking**: Live Identity movement monitoring
-2. **Multiple Camera Support**: Scale to multiple video sources
-3. **Analytics Dashboard**: Basic reporting and visualization
-4. **Notification System**: Configurable alerts and notifications
-
-### Phase 3: Advanced Features
-
-1. **Advanced Analytics**: Heatmaps, flow analysis, behavioral patterns
-2. **Profile Management**: Enhanced personal data management
-3. **Segment Management**: Dynamic grouping and targeting
-4. **API/SDK**: Third-party integration capabilities
-5. **Export/Import**: Data portability and backup features
-
-## Development Guidelines
-
-1. **Follow the Domain Model**: Refer to the functional specification for detailed entity definitions and relationships
-2. **Implement Privacy Controls**: Ensure data minimization, anonymization options, and GDPR/CCPA compliance
-3. **Focus on Modularity**: Design independent, loosely-coupled modules that can be deployed flexibly
-4. **Plan for Scale**: Consider horizontal scaling and distributed architecture from the start
-5. **Security Integration**: Implement security controls at every layer (authentication, authorization, audit trails)
-6. **English Only**: All code, comments, and documentation must be in English
-7. **Docker First**: Ensure everything can be deployed via Docker Compose
-8. **Local Development**: Support local development with hot reload and debugging
+---
 
 ## Project Structure
 
 ```
 3v_mono/
+├── .claude/                # Agent configurations
+│   ├── agents/             # Specialized agent definitions
+│   ├── skills/             # Reusable skills (multi-agent, commit, ship, etc.)
+│   ├── rules/              # Code quality rules
+│   ├── AGENTS.md           # Agent role definitions
+│   └── settings.json       # Hooks, environment, permissions
 ├── apps/
-│   ├── frontend/          # React dashboard application
-│   ├── backend/           # Express API server
-│   └── face-service/      # Face recognition microservice
+│   ├── admin-ui/           # React dashboard (Refine + shadcn/ui)
+│   ├── backend/            # Express API server
+│   └── nhost/              # Hasura/Nhost configuration
 ├── packages/
-│   ├── shared/           # Shared types and utilities
-│   └── database/         # Database schemas and migrations
-├── docker/               # Docker configurations
-├── docs/                 # Project documentation
-└── scripts/              # Build and deployment scripts
+│   └── shared/             # Shared types and utilities
+├── libs/
+│   └── InsightFace-REST/   # Face recognition (git submodule)
+├── docker/                 # Docker configurations
+├── docs/
+│   ├── base/               # Project specs (Vision, Functional Spec)
+│   └── stages/             # Implementation stages (SA_2, SA_3, SA_4)
+├── tasks/                  # Task documentation (see below)
+├── .beads/                 # Issue tracking database
+├── CLAUDE.md               # This file
+├── Makefile                # Development commands
+└── package.json            # Root monorepo config
 ```
+
+---
+
+## Documentation Structure
+
+### Project Specs (`docs/base/`)
+- `Vision_and_Scope.md` — High-level project vision and scope
+- `Functional_Specification.md` — Detailed functional requirements, user stories, acceptance criteria
+
+### Implementation Stages (`docs/stages/`)
+- `SA_2_EN.md` — Stage 2: Infrastructure + Face Recognition
+- `SA_3_EN.md` — Stage 3: Advanced features
+- `SA_4_EN.md` — Stage 4: Analytics + Integrations
+
+**Priority**: What's in `docs/stages/` takes priority over `docs/base/` for implementation order.
+
+### Task Documentation (`tasks/`)
+
+Each task is documented in its own folder:
+
+```
+tasks/
+├── README.md                    # Workflow explanation
+├── <task-name>/
+│   ├── overview.md              # Task description, goals, context
+│   ├── specs/                   # Implementation specifications
+│   │   ├── 01-data-model.md     # Spec for data model work
+│   │   ├── 02-api-endpoints.md  # Spec for API work
+│   │   └── 03-ui-pages.md       # Spec for UI work
+│   └── summary.md               # Post-completion: what was done, how, decisions made
+```
+
+**Workflow:**
+1. Create `overview.md` from the goal/bd issue
+2. Generate specs in `specs/` (one per subtask; small tasks = one spec)
+3. Link specs to bd issues for tracking
+4. After completion, write `summary.md` for documentation
+
+---
+
+## Development Commands
+
+### Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start dev environment (Docker + dev servers)
+make dev
+
+# Or manually:
+make dev-compose                    # Start Docker infrastructure
+pnpm run dev                        # Start all dev servers
+```
+
+### Quality Gates
+
+```bash
+pnpm lint                           # Run linting
+pnpm typecheck                      # TypeScript type checking
+pnpm build                          # Build all packages
+pnpm test                           # Run tests
+```
+
+### Hasura / Database
+
+```bash
+make hasura_apply                   # Apply Hasura migrations + metadata
+cd apps/admin-ui && pnpm gql        # Generate GraphQL types
+cd apps/admin-ui && pnpm gql-w      # Watch mode for GraphQL codegen
+```
+
+### Docker
+
+```bash
+make dev-compose                    # Start dev infrastructure
+make prod                           # Start production stack
+make prod-down                      # Stop production
+make prod-rebuild                   # Rebuild production
+```
+
+### Agent Teams
+
+```bash
+make agent GOAL="..."               # Start agent team
+make agent-safe GOAL="..."          # Agent team with plan approval
+make agent-classic GOAL="..."       # Legacy multi-agent daemon
+make agent-resume GOAL="..."        # Resume multi-agent daemon
+make agent-status                   # Show task status
+make claude                         # Start Claude in team mode
+```
+
+---
+
+## Architecture Rules
+
+### 1. Hasura-First Data Layer
+
+- **ALL data access via Hasura GraphQL** — never direct PostgreSQL queries from app code
+- Manage schema via Hasura console, export metadata to git
+- Permissions and RLS live in Hasura metadata, not in application code
+- Use graphql-codegen for type-safe operations
+
+### 2. Simple CRUD via Hasura
+
+- Standard CRUD operations → use Hasura directly (no custom backend needed)
+- Complex business logic → Express handler calling Hasura via GraphQL
+- Never duplicate Hasura's built-in capabilities
+
+### 3. Frontend Patterns
+
+- **Components**: shadcn/ui from the library, never raw HTML when component exists
+- **Styling**: TailwindCSS v4 utility classes, no inline `style={}`
+- **State**: React Query for server state, Zustand for client state
+- **Forms**: react-hook-form + Zod validation
+- **Data fetching**: Never `useEffect` for fetching — use React Query hooks
+- **Icons**: lucide-react only
+
+### 4. File Organization
+
+- File size limit: ~300 lines (split if larger)
+- One component per file
+- Named exports (exception: pages use `export default` for lazy loading)
+- No `any` — use `unknown` + type narrowing or proper generics
+
+### 5. English Only
+
+All code, comments, documentation, and commit messages MUST be in English.
+
+---
+
+## Quality Gates (Before Commit)
+
+```bash
+pnpm lint                    # Must pass
+pnpm typecheck               # Must pass
+pnpm build                   # Must succeed
+```
+
+If ALL gates pass, commit and push. If any fail, fix before committing.
+
+---
+
+## Commit Format
+
+```
+<type>(<scope>): <subject>
+
+<optional body>
+
+<optional footer>
+Closes mono-xxx
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+```
+
+**Types**: feat, fix, refactor, perf, test, docs, chore
+**Scopes**: ui, backend, hasura, shared, docker, ci, docs
+
+---
+
+## Code Review Checklist
+
+- [ ] No security vulnerabilities (XSS, injection, secrets in code)
+- [ ] TypeScript types are correct (no `any`)
+- [ ] Hasura permissions reviewed (if metadata changed)
+- [ ] UI follows shadcn/ui patterns
+- [ ] No over-engineering (remember: DEMO project)
+- [ ] Quality gates pass (lint, typecheck, build)
+- [ ] Files under ~300 lines
+
+---
+
+## Anti-Patterns (Avoid These)
+
+- Direct PostgreSQL connections from app code (use Hasura)
+- Manual auth/permission checks in TypeScript (use Hasura metadata)
+- `useEffect` for data fetching (use React Query)
+- `useState` for form state (use react-hook-form)
+- Raw HTML elements when shadcn component exists
+- Inline styles instead of TailwindCSS
+- Over-engineering for "future scalability" — this is a DEMO
+- Console.log in committed code
+- `any` type in TypeScript
+
+---
+
+## Verification with Playwright
+
+After UI changes, verify visually using Playwright MCP tools:
+1. `mcp__playwright__browser_navigate` to the relevant page
+2. `mcp__playwright__browser_snapshot` to verify accessibility tree
+3. `mcp__playwright__browser_take_screenshot` for visual verification
+4. Test interactions with `mcp__playwright__browser_click`, etc.
+
+This ensures UI changes work correctly without manual testing.
+
+---
 
 ## Face Recognition Strategy
 
-Since this is an MVP to validate market hypothesis, we're using proven open-source solutions:
+Using proven open-source solutions for DEMO:
 
-1. **CompreFace**: Primary self-hosted face recognition service
-   - Docker-based deployment
-   - REST API for face detection and recognition
-   - Good accuracy for MVP validation
+1. **Human Library** (`@vladmandic/human`): Primary client-side face detection/recognition
+2. **InsightFace REST**: Docker-based face recognition service for server-side processing
+3. **face-api.js**: Fallback for backend face processing
 
-2. **Fallback Options**:
-   - FaceAPI.js for client-side processing
-   - MediaPipe for real-time face detection
-   - InsightFace for high-quality embeddings
-
-3. **Future Migration Path**:
-   - Once market hypothesis is validated, integrate custom models
-   - Maintain same API interface for seamless transition
-   - Consider cloud solutions (AWS Rekognition, Azure Face API) for scaling
-
-## Key Implementation Notes
-
-The functional specification includes detailed user stories with:
-
-- Acceptance criteria in Gherkin format
-- Complete domain entity schemas
-- Interface specifications
-- Sequence diagrams
-- Performance metrics and SLIs/SLOs
-- Real-world use cases
-
-## Compliance and Security Considerations
-
-- Must comply with data protection regulations (GDPR, CCPA)
-- Implement privacy-by-design principles
-- Support data anonymization and pseudonymization
-- Maintain comprehensive audit trails
-- Encrypt sensitive data in transit and at rest
-- Implement strict access controls
+Focus on real functionality with lightweight solutions, not fake demos.
