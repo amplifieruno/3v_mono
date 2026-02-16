@@ -391,6 +391,8 @@ services:
       dockerfile: dockerfiles/Dockerfile_cpu
     env_file:
       - insightface-cpu.env
+    security_opt:
+      - seccomp=unconfined
     volumes:
       - ../libs/InsightFace-REST/models:/models
       - ../libs/InsightFace-REST/if_rest:/app/if_rest

@@ -120,13 +120,13 @@ class RecognitionSession {
       this.statusInterval = null
     }
 
-    // Normalize stream URL: allow RTSP_HOST override for Docker networking
+    // Normalize stream URL: resolve Docker hostnames to localhost for local dev
     let url = this.streamUrl
-    if (process.env.RTSP_HOST) {
-      url = url.replace(/localhost|127\.0\.0\.1/, process.env.RTSP_HOST)
-    }
+    const rtspHost = process.env.RTSP_HOST || 'localhost'
+    url = url.replace(/mediamtx|localhost|127\.0\.0\.1/, rtspHost)
 
     const args = [
+      '-rtsp_transport', 'tcp',
       '-i', url,
       '-vf', `fps=${this.fps}`,
       '-f', 'image2pipe',
@@ -141,6 +141,20 @@ class RecognitionSession {
 
     this.ffmpegProcess = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
     this._isRunning = true
+
+    this.ffmpegProcess.on('error', (err) => {
+      console.error(`[Recognition] ffmpeg spawn error for ${this.deviceId}: ${err.message}`)
+      this._isRunning = false
+      this.ffmpegProcess = null
+      if (this.statusInterval) {
+        clearInterval(this.statusInterval)
+        this.statusInterval = null
+      }
+      this.io?.to(`device:${this.deviceId}`).emit('recognition:error', {
+        device_id: this.deviceId,
+        error: `ffmpeg not available: ${err.message}`,
+      })
+    })
 
     let buffer = Buffer.alloc(0)
 
