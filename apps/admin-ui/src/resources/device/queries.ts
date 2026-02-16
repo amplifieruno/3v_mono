@@ -17,6 +17,8 @@ const fragment = gql(`
     health_status
     last_seen
     configuration
+    recognition_enabled
+    recognition_fps
     area {
       id
       name
@@ -82,6 +84,34 @@ export const DeviceDeleteOneMutation = gql(`
   mutation DeviceDeleteOneMutation($id: uuid!) {
     delete_itap_devices_by_pk(id: $id) {
       ...itap_device
+    }
+  }
+`);
+
+export const DeviceDetectionsQuery = gql(`
+  query DeviceDetectionsQuery($device_id: uuid!, $limit: Int = 50) {
+    itap_detections(
+      where: { device_id: { _eq: $device_id } }
+      order_by: { created_at: desc }
+      limit: $limit
+    ) {
+      id
+      created_at
+      confidence
+      similarity
+      is_new_identity
+      bbox
+      thumbnail
+      identity {
+        id
+        status
+        attributes
+      }
+    }
+    itap_detections_aggregate(where: { device_id: { _eq: $device_id } }) {
+      aggregate {
+        count
+      }
     }
   }
 `);

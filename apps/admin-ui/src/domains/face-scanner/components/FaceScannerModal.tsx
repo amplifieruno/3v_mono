@@ -53,7 +53,7 @@ export function FaceScannerModal({
   open,
   onOpenChange,
   onComplete,
-  profileId,
+  profileId: _profileId,
   debug = false,
 }: FaceScannerModalProps) {
   const [step, setStep] = useState<ModalStep>('instructions')

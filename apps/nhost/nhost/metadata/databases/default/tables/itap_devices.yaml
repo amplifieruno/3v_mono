@@ -13,6 +13,13 @@ array_relationships:
         table:
           name: device_health_metrics
           schema: itap
+  - name: detections
+    using:
+      foreign_key_constraint_on:
+        column: device_id
+        table:
+          name: detections
+          schema: itap
 insert_permissions:
   - role: staff
     permission:
@@ -29,6 +36,8 @@ insert_permissions:
         - health_status
         - last_seen
         - configuration
+        - recognition_enabled
+        - recognition_fps
     comment: ""
 select_permissions:
   - role: staff
@@ -48,6 +57,8 @@ select_permissions:
         - health_status
         - last_seen
         - configuration
+        - recognition_enabled
+        - recognition_fps
       filter: {}
       allow_aggregations: true
     comment: ""
@@ -66,6 +77,8 @@ update_permissions:
         - health_status
         - last_seen
         - configuration
+        - recognition_enabled
+        - recognition_fps
       filter: {}
       check: null
     comment: ""

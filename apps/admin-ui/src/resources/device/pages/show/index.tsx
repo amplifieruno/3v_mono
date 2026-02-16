@@ -16,6 +16,9 @@ import { Link } from 'react-router';
 import { DeviceOneQuery, DeviceDeleteOneMutation } from '../../queries';
 import { deviceTypes, deviceStatusColor, healthStatusColor } from '../../data/enums';
 import { StreamPreview } from '../../components/StreamPreview';
+import { RecognitionToggle } from '../../components/RecognitionToggle';
+import { RecognitionStatus } from '../../components/RecognitionStatus';
+import { LiveDetections } from '../../components/LiveDetections';
 
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return '—';
@@ -62,6 +65,9 @@ export const ShowPage: FC = () => {
     frame_rate: number | null;
     error_count: number | null;
   }>;
+
+  const recognitionEnabled = Boolean(record.recognition_enabled);
+  const recognitionFps = (record.recognition_fps as number) ?? 2;
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this device?')) {
@@ -123,24 +129,37 @@ export const ShowPage: FC = () => {
         </div>
       </div>
 
-      {/* Stream Preview */}
+      {/* Stream Preview with Recognition Status overlay */}
       <div className='mt-4'>
         <Card>
           <CardHeader>
             <CardTitle>Stream Preview</CardTitle>
           </CardHeader>
           <CardContent>
-            <StreamPreview
-              streamUrl={record.stream_url as string | null}
-              deviceName={record.name as string}
-              status={record.status as string}
-            />
+            <div className='relative'>
+              <StreamPreview
+                streamUrl={record.stream_url as string | null}
+                deviceName={record.name as string}
+                status={record.status as string}
+              />
+              {/* Recognition status overlay — bottom right */}
+              <div className='absolute bottom-2 right-2'>
+                <RecognitionStatus recognitionEnabled={recognitionEnabled} />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Details + Health Metrics */}
+      {/* Recognition Toggle + Device Details */}
       <div className='mt-4 grid gap-4 md:grid-cols-2'>
+        <RecognitionToggle
+          deviceId={String(id ?? '')}
+          recognitionEnabled={recognitionEnabled}
+          recognitionFps={recognitionFps}
+          streamUrl={record.stream_url as string | null}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle>Device Details</CardTitle>
@@ -216,7 +235,18 @@ export const ShowPage: FC = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      {/* Live Detections */}
+      <div className='mt-4'>
+        <LiveDetections
+          deviceId={String(id ?? '')}
+          recognitionEnabled={recognitionEnabled}
+        />
+      </div>
+
+      {/* Health Metrics */}
+      <div className='mt-4'>
         <Card>
           <CardHeader>
             <CardTitle>Health Metrics</CardTitle>

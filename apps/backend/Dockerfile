@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 
 # Install pnpm and required system dependencies
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    apk add --no-cache python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev
+    apk add --no-cache python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev ffmpeg
 
 # Dependencies stage
 FROM base AS deps
@@ -38,7 +38,7 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN apk add --no-cache cairo jpeg pango giflib && \
+RUN apk add --no-cache cairo jpeg pango giflib ffmpeg && \
     corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy workspace files and dependencies from builder

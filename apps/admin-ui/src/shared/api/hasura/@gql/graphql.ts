@@ -586,6 +586,388 @@ export type Itap_Areas_Variance_Order_By = {
   capacity?: InputMaybe<Order_By>;
 };
 
+/** columns and relationships of "itap.detections" */
+export type Itap_Detections = {
+  __typename?: 'itap_detections';
+  bbox?: Maybe<Scalars['jsonb']['output']>;
+  confidence: Scalars['Float']['output'];
+  created_at: Scalars['timestamptz']['output'];
+  /** An object relationship */
+  device: Itap_Devices;
+  device_id: Scalars['uuid']['output'];
+  id: Scalars['uuid']['output'];
+  /** An object relationship */
+  identity?: Maybe<Itap_Identities>;
+  identity_id?: Maybe<Scalars['uuid']['output']>;
+  is_new_identity: Scalars['Boolean']['output'];
+  similarity?: Maybe<Scalars['Float']['output']>;
+  thumbnail?: Maybe<Scalars['String']['output']>;
+};
+
+
+/** columns and relationships of "itap.detections" */
+export type Itap_DetectionsBboxArgs = {
+  path?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** aggregated selection of "itap.detections" */
+export type Itap_Detections_Aggregate = {
+  __typename?: 'itap_detections_aggregate';
+  aggregate?: Maybe<Itap_Detections_Aggregate_Fields>;
+  nodes: Array<Itap_Detections>;
+};
+
+export type Itap_Detections_Aggregate_Bool_Exp = {
+  bool_and?: InputMaybe<Itap_Detections_Aggregate_Bool_Exp_Bool_And>;
+  bool_or?: InputMaybe<Itap_Detections_Aggregate_Bool_Exp_Bool_Or>;
+  count?: InputMaybe<Itap_Detections_Aggregate_Bool_Exp_Count>;
+};
+
+export type Itap_Detections_Aggregate_Bool_Exp_Bool_And = {
+  arguments: Itap_Detections_Select_Column_Itap_Detections_Aggregate_Bool_Exp_Bool_And_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Detections_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
+};
+
+export type Itap_Detections_Aggregate_Bool_Exp_Bool_Or = {
+  arguments: Itap_Detections_Select_Column_Itap_Detections_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Detections_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
+};
+
+export type Itap_Detections_Aggregate_Bool_Exp_Count = {
+  arguments?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Detections_Bool_Exp>;
+  predicate: Int_Comparison_Exp;
+};
+
+/** aggregate fields of "itap.detections" */
+export type Itap_Detections_Aggregate_Fields = {
+  __typename?: 'itap_detections_aggregate_fields';
+  avg?: Maybe<Itap_Detections_Avg_Fields>;
+  count: Scalars['Int']['output'];
+  max?: Maybe<Itap_Detections_Max_Fields>;
+  min?: Maybe<Itap_Detections_Min_Fields>;
+  stddev?: Maybe<Itap_Detections_Stddev_Fields>;
+  stddev_pop?: Maybe<Itap_Detections_Stddev_Pop_Fields>;
+  stddev_samp?: Maybe<Itap_Detections_Stddev_Samp_Fields>;
+  sum?: Maybe<Itap_Detections_Sum_Fields>;
+  var_pop?: Maybe<Itap_Detections_Var_Pop_Fields>;
+  var_samp?: Maybe<Itap_Detections_Var_Samp_Fields>;
+  variance?: Maybe<Itap_Detections_Variance_Fields>;
+};
+
+
+/** aggregate fields of "itap.detections" */
+export type Itap_Detections_Aggregate_FieldsCountArgs = {
+  columns?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** order by aggregate values of table "itap.detections" */
+export type Itap_Detections_Aggregate_Order_By = {
+  avg?: InputMaybe<Itap_Detections_Avg_Order_By>;
+  count?: InputMaybe<Order_By>;
+  max?: InputMaybe<Itap_Detections_Max_Order_By>;
+  min?: InputMaybe<Itap_Detections_Min_Order_By>;
+  stddev?: InputMaybe<Itap_Detections_Stddev_Order_By>;
+  stddev_pop?: InputMaybe<Itap_Detections_Stddev_Pop_Order_By>;
+  stddev_samp?: InputMaybe<Itap_Detections_Stddev_Samp_Order_By>;
+  sum?: InputMaybe<Itap_Detections_Sum_Order_By>;
+  var_pop?: InputMaybe<Itap_Detections_Var_Pop_Order_By>;
+  var_samp?: InputMaybe<Itap_Detections_Var_Samp_Order_By>;
+  variance?: InputMaybe<Itap_Detections_Variance_Order_By>;
+};
+
+/** input type for inserting array relation for remote table "itap.detections" */
+export type Itap_Detections_Arr_Rel_Insert_Input = {
+  data: Array<Itap_Detections_Insert_Input>;
+  /** upsert condition */
+  on_conflict?: InputMaybe<Itap_Detections_On_Conflict>;
+};
+
+/** aggregate avg on columns */
+export type Itap_Detections_Avg_Fields = {
+  __typename?: 'itap_detections_avg_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by avg() on columns of table "itap.detections" */
+export type Itap_Detections_Avg_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** Boolean expression to filter rows from the table "itap.detections". All fields are combined with a logical 'AND'. */
+export type Itap_Detections_Bool_Exp = {
+  _and?: InputMaybe<Array<Itap_Detections_Bool_Exp>>;
+  _not?: InputMaybe<Itap_Detections_Bool_Exp>;
+  _or?: InputMaybe<Array<Itap_Detections_Bool_Exp>>;
+  bbox?: InputMaybe<Jsonb_Comparison_Exp>;
+  confidence?: InputMaybe<Float_Comparison_Exp>;
+  created_at?: InputMaybe<Timestamptz_Comparison_Exp>;
+  device?: InputMaybe<Itap_Devices_Bool_Exp>;
+  device_id?: InputMaybe<Uuid_Comparison_Exp>;
+  id?: InputMaybe<Uuid_Comparison_Exp>;
+  identity?: InputMaybe<Itap_Identities_Bool_Exp>;
+  identity_id?: InputMaybe<Uuid_Comparison_Exp>;
+  is_new_identity?: InputMaybe<Boolean_Comparison_Exp>;
+  similarity?: InputMaybe<Float_Comparison_Exp>;
+  thumbnail?: InputMaybe<String_Comparison_Exp>;
+};
+
+/** unique or primary key constraints on table "itap.detections" */
+export enum Itap_Detections_Constraint {
+  /** unique or primary key constraint on columns "id" */
+  DetectionsPkey = 'detections_pkey'
+}
+
+/** input type for inserting data into table "itap.detections" */
+export type Itap_Detections_Insert_Input = {
+  bbox?: InputMaybe<Scalars['jsonb']['input']>;
+  confidence?: InputMaybe<Scalars['Float']['input']>;
+  device?: InputMaybe<Itap_Devices_Obj_Rel_Insert_Input>;
+  device_id?: InputMaybe<Scalars['uuid']['input']>;
+  identity?: InputMaybe<Itap_Identities_Obj_Rel_Insert_Input>;
+  identity_id?: InputMaybe<Scalars['uuid']['input']>;
+  is_new_identity?: InputMaybe<Scalars['Boolean']['input']>;
+  similarity?: InputMaybe<Scalars['Float']['input']>;
+  thumbnail?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** aggregate max on columns */
+export type Itap_Detections_Max_Fields = {
+  __typename?: 'itap_detections_max_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+  device_id?: Maybe<Scalars['uuid']['output']>;
+  id?: Maybe<Scalars['uuid']['output']>;
+  identity_id?: Maybe<Scalars['uuid']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+  thumbnail?: Maybe<Scalars['String']['output']>;
+};
+
+/** order by max() on columns of table "itap.detections" */
+export type Itap_Detections_Max_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+  device_id?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  identity_id?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+  thumbnail?: InputMaybe<Order_By>;
+};
+
+/** aggregate min on columns */
+export type Itap_Detections_Min_Fields = {
+  __typename?: 'itap_detections_min_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+  device_id?: Maybe<Scalars['uuid']['output']>;
+  id?: Maybe<Scalars['uuid']['output']>;
+  identity_id?: Maybe<Scalars['uuid']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+  thumbnail?: Maybe<Scalars['String']['output']>;
+};
+
+/** order by min() on columns of table "itap.detections" */
+export type Itap_Detections_Min_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+  device_id?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  identity_id?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+  thumbnail?: InputMaybe<Order_By>;
+};
+
+/** response of any mutation on the table "itap.detections" */
+export type Itap_Detections_Mutation_Response = {
+  __typename?: 'itap_detections_mutation_response';
+  /** number of rows affected by the mutation */
+  affected_rows: Scalars['Int']['output'];
+  /** data from the rows affected by the mutation */
+  returning: Array<Itap_Detections>;
+};
+
+/** on_conflict condition type for table "itap.detections" */
+export type Itap_Detections_On_Conflict = {
+  constraint: Itap_Detections_Constraint;
+  update_columns?: Array<Itap_Detections_Update_Column>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+/** Ordering options when selecting data from "itap.detections". */
+export type Itap_Detections_Order_By = {
+  bbox?: InputMaybe<Order_By>;
+  confidence?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+  device?: InputMaybe<Itap_Devices_Order_By>;
+  device_id?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  identity?: InputMaybe<Itap_Identities_Order_By>;
+  identity_id?: InputMaybe<Order_By>;
+  is_new_identity?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+  thumbnail?: InputMaybe<Order_By>;
+};
+
+/** select columns of table "itap.detections" */
+export enum Itap_Detections_Select_Column {
+  /** column name */
+  Bbox = 'bbox',
+  /** column name */
+  Confidence = 'confidence',
+  /** column name */
+  CreatedAt = 'created_at',
+  /** column name */
+  DeviceId = 'device_id',
+  /** column name */
+  Id = 'id',
+  /** column name */
+  IdentityId = 'identity_id',
+  /** column name */
+  IsNewIdentity = 'is_new_identity',
+  /** column name */
+  Similarity = 'similarity',
+  /** column name */
+  Thumbnail = 'thumbnail'
+}
+
+/** select "itap_detections_aggregate_bool_exp_bool_and_arguments_columns" columns of table "itap.detections" */
+export enum Itap_Detections_Select_Column_Itap_Detections_Aggregate_Bool_Exp_Bool_And_Arguments_Columns {
+  /** column name */
+  IsNewIdentity = 'is_new_identity'
+}
+
+/** select "itap_detections_aggregate_bool_exp_bool_or_arguments_columns" columns of table "itap.detections" */
+export enum Itap_Detections_Select_Column_Itap_Detections_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns {
+  /** column name */
+  IsNewIdentity = 'is_new_identity'
+}
+
+/** aggregate stddev on columns */
+export type Itap_Detections_Stddev_Fields = {
+  __typename?: 'itap_detections_stddev_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev() on columns of table "itap.detections" */
+export type Itap_Detections_Stddev_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** aggregate stddev_pop on columns */
+export type Itap_Detections_Stddev_Pop_Fields = {
+  __typename?: 'itap_detections_stddev_pop_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev_pop() on columns of table "itap.detections" */
+export type Itap_Detections_Stddev_Pop_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** aggregate stddev_samp on columns */
+export type Itap_Detections_Stddev_Samp_Fields = {
+  __typename?: 'itap_detections_stddev_samp_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev_samp() on columns of table "itap.detections" */
+export type Itap_Detections_Stddev_Samp_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** Streaming cursor of the table "itap_detections" */
+export type Itap_Detections_Stream_Cursor_Input = {
+  /** Stream column input with initial value */
+  initial_value: Itap_Detections_Stream_Cursor_Value_Input;
+  /** cursor ordering */
+  ordering?: InputMaybe<Cursor_Ordering>;
+};
+
+/** Initial value of the column from where the streaming should start */
+export type Itap_Detections_Stream_Cursor_Value_Input = {
+  bbox?: InputMaybe<Scalars['jsonb']['input']>;
+  confidence?: InputMaybe<Scalars['Float']['input']>;
+  created_at?: InputMaybe<Scalars['timestamptz']['input']>;
+  device_id?: InputMaybe<Scalars['uuid']['input']>;
+  id?: InputMaybe<Scalars['uuid']['input']>;
+  identity_id?: InputMaybe<Scalars['uuid']['input']>;
+  is_new_identity?: InputMaybe<Scalars['Boolean']['input']>;
+  similarity?: InputMaybe<Scalars['Float']['input']>;
+  thumbnail?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** aggregate sum on columns */
+export type Itap_Detections_Sum_Fields = {
+  __typename?: 'itap_detections_sum_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by sum() on columns of table "itap.detections" */
+export type Itap_Detections_Sum_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** placeholder for update columns of table "itap.detections" (current role has no relevant permissions) */
+export enum Itap_Detections_Update_Column {
+  /** placeholder (do not use) */
+  Placeholder = '_PLACEHOLDER'
+}
+
+/** aggregate var_pop on columns */
+export type Itap_Detections_Var_Pop_Fields = {
+  __typename?: 'itap_detections_var_pop_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by var_pop() on columns of table "itap.detections" */
+export type Itap_Detections_Var_Pop_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** aggregate var_samp on columns */
+export type Itap_Detections_Var_Samp_Fields = {
+  __typename?: 'itap_detections_var_samp_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by var_samp() on columns of table "itap.detections" */
+export type Itap_Detections_Var_Samp_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
+/** aggregate variance on columns */
+export type Itap_Detections_Variance_Fields = {
+  __typename?: 'itap_detections_variance_fields';
+  confidence?: Maybe<Scalars['Float']['output']>;
+  similarity?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by variance() on columns of table "itap.detections" */
+export type Itap_Detections_Variance_Order_By = {
+  confidence?: InputMaybe<Order_By>;
+  similarity?: InputMaybe<Order_By>;
+};
+
 /** columns and relationships of "itap.device_health_metrics" */
 export type Itap_Device_Health_Metrics = {
   __typename?: 'itap_device_health_metrics';
@@ -1011,6 +1393,10 @@ export type Itap_Devices = {
   configuration?: Maybe<Scalars['jsonb']['output']>;
   created_at: Scalars['timestamptz']['output'];
   credentials?: Maybe<Scalars['jsonb']['output']>;
+  /** An array relationship */
+  detections: Array<Itap_Detections>;
+  /** An aggregate relationship */
+  detections_aggregate: Itap_Detections_Aggregate;
   device_type: Scalars['String']['output'];
   fps?: Maybe<Scalars['Int']['output']>;
   /** An array relationship */
@@ -1021,6 +1407,8 @@ export type Itap_Devices = {
   id: Scalars['uuid']['output'];
   last_seen?: Maybe<Scalars['timestamptz']['output']>;
   name: Scalars['String']['output'];
+  recognition_enabled: Scalars['Boolean']['output'];
+  recognition_fps: Scalars['Int']['output'];
   resolution?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
   stream_url?: Maybe<Scalars['String']['output']>;
@@ -1037,6 +1425,26 @@ export type Itap_DevicesConfigurationArgs = {
 /** columns and relationships of "itap.devices" */
 export type Itap_DevicesCredentialsArgs = {
   path?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+/** columns and relationships of "itap.devices" */
+export type Itap_DevicesDetectionsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+
+/** columns and relationships of "itap.devices" */
+export type Itap_DevicesDetections_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
 };
 
 
@@ -1067,7 +1475,23 @@ export type Itap_Devices_Aggregate = {
 };
 
 export type Itap_Devices_Aggregate_Bool_Exp = {
+  bool_and?: InputMaybe<Itap_Devices_Aggregate_Bool_Exp_Bool_And>;
+  bool_or?: InputMaybe<Itap_Devices_Aggregate_Bool_Exp_Bool_Or>;
   count?: InputMaybe<Itap_Devices_Aggregate_Bool_Exp_Count>;
+};
+
+export type Itap_Devices_Aggregate_Bool_Exp_Bool_And = {
+  arguments: Itap_Devices_Select_Column_Itap_Devices_Aggregate_Bool_Exp_Bool_And_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Devices_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
+};
+
+export type Itap_Devices_Aggregate_Bool_Exp_Bool_Or = {
+  arguments: Itap_Devices_Select_Column_Itap_Devices_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Devices_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
 };
 
 export type Itap_Devices_Aggregate_Bool_Exp_Count = {
@@ -1132,11 +1556,13 @@ export type Itap_Devices_Arr_Rel_Insert_Input = {
 export type Itap_Devices_Avg_Fields = {
   __typename?: 'itap_devices_avg_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by avg() on columns of table "itap.devices" */
 export type Itap_Devices_Avg_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** Boolean expression to filter rows from the table "itap.devices". All fields are combined with a logical 'AND'. */
@@ -1149,6 +1575,8 @@ export type Itap_Devices_Bool_Exp = {
   configuration?: InputMaybe<Jsonb_Comparison_Exp>;
   created_at?: InputMaybe<Timestamptz_Comparison_Exp>;
   credentials?: InputMaybe<Jsonb_Comparison_Exp>;
+  detections?: InputMaybe<Itap_Detections_Bool_Exp>;
+  detections_aggregate?: InputMaybe<Itap_Detections_Aggregate_Bool_Exp>;
   device_type?: InputMaybe<String_Comparison_Exp>;
   fps?: InputMaybe<Int_Comparison_Exp>;
   health_metrics?: InputMaybe<Itap_Device_Health_Metrics_Bool_Exp>;
@@ -1157,6 +1585,8 @@ export type Itap_Devices_Bool_Exp = {
   id?: InputMaybe<Uuid_Comparison_Exp>;
   last_seen?: InputMaybe<Timestamptz_Comparison_Exp>;
   name?: InputMaybe<String_Comparison_Exp>;
+  recognition_enabled?: InputMaybe<Boolean_Comparison_Exp>;
+  recognition_fps?: InputMaybe<Int_Comparison_Exp>;
   resolution?: InputMaybe<String_Comparison_Exp>;
   status?: InputMaybe<String_Comparison_Exp>;
   stream_url?: InputMaybe<String_Comparison_Exp>;
@@ -1190,6 +1620,7 @@ export type Itap_Devices_Delete_Key_Input = {
 /** input type for incrementing numeric columns in table "itap.devices" */
 export type Itap_Devices_Inc_Input = {
   fps?: InputMaybe<Scalars['Int']['input']>;
+  recognition_fps?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** input type for inserting data into table "itap.devices" */
@@ -1198,12 +1629,15 @@ export type Itap_Devices_Insert_Input = {
   area_id?: InputMaybe<Scalars['uuid']['input']>;
   configuration?: InputMaybe<Scalars['jsonb']['input']>;
   credentials?: InputMaybe<Scalars['jsonb']['input']>;
+  detections?: InputMaybe<Itap_Detections_Arr_Rel_Insert_Input>;
   device_type?: InputMaybe<Scalars['String']['input']>;
   fps?: InputMaybe<Scalars['Int']['input']>;
   health_metrics?: InputMaybe<Itap_Device_Health_Metrics_Arr_Rel_Insert_Input>;
   health_status?: InputMaybe<Scalars['String']['input']>;
   last_seen?: InputMaybe<Scalars['timestamptz']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  recognition_enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  recognition_fps?: InputMaybe<Scalars['Int']['input']>;
   resolution?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   stream_url?: InputMaybe<Scalars['String']['input']>;
@@ -1220,6 +1654,7 @@ export type Itap_Devices_Max_Fields = {
   id?: Maybe<Scalars['uuid']['output']>;
   last_seen?: Maybe<Scalars['timestamptz']['output']>;
   name?: Maybe<Scalars['String']['output']>;
+  recognition_fps?: Maybe<Scalars['Int']['output']>;
   resolution?: Maybe<Scalars['String']['output']>;
   status?: Maybe<Scalars['String']['output']>;
   stream_url?: Maybe<Scalars['String']['output']>;
@@ -1236,6 +1671,7 @@ export type Itap_Devices_Max_Order_By = {
   id?: InputMaybe<Order_By>;
   last_seen?: InputMaybe<Order_By>;
   name?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
   resolution?: InputMaybe<Order_By>;
   status?: InputMaybe<Order_By>;
   stream_url?: InputMaybe<Order_By>;
@@ -1253,6 +1689,7 @@ export type Itap_Devices_Min_Fields = {
   id?: Maybe<Scalars['uuid']['output']>;
   last_seen?: Maybe<Scalars['timestamptz']['output']>;
   name?: Maybe<Scalars['String']['output']>;
+  recognition_fps?: Maybe<Scalars['Int']['output']>;
   resolution?: Maybe<Scalars['String']['output']>;
   status?: Maybe<Scalars['String']['output']>;
   stream_url?: Maybe<Scalars['String']['output']>;
@@ -1269,6 +1706,7 @@ export type Itap_Devices_Min_Order_By = {
   id?: InputMaybe<Order_By>;
   last_seen?: InputMaybe<Order_By>;
   name?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
   resolution?: InputMaybe<Order_By>;
   status?: InputMaybe<Order_By>;
   stream_url?: InputMaybe<Order_By>;
@@ -1305,6 +1743,7 @@ export type Itap_Devices_Order_By = {
   configuration?: InputMaybe<Order_By>;
   created_at?: InputMaybe<Order_By>;
   credentials?: InputMaybe<Order_By>;
+  detections_aggregate?: InputMaybe<Itap_Detections_Aggregate_Order_By>;
   device_type?: InputMaybe<Order_By>;
   fps?: InputMaybe<Order_By>;
   health_metrics_aggregate?: InputMaybe<Itap_Device_Health_Metrics_Aggregate_Order_By>;
@@ -1312,6 +1751,8 @@ export type Itap_Devices_Order_By = {
   id?: InputMaybe<Order_By>;
   last_seen?: InputMaybe<Order_By>;
   name?: InputMaybe<Order_By>;
+  recognition_enabled?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
   resolution?: InputMaybe<Order_By>;
   status?: InputMaybe<Order_By>;
   stream_url?: InputMaybe<Order_By>;
@@ -1352,6 +1793,10 @@ export enum Itap_Devices_Select_Column {
   /** column name */
   Name = 'name',
   /** column name */
+  RecognitionEnabled = 'recognition_enabled',
+  /** column name */
+  RecognitionFps = 'recognition_fps',
+  /** column name */
   Resolution = 'resolution',
   /** column name */
   Status = 'status',
@@ -1359,6 +1804,18 @@ export enum Itap_Devices_Select_Column {
   StreamUrl = 'stream_url',
   /** column name */
   UpdatedAt = 'updated_at'
+}
+
+/** select "itap_devices_aggregate_bool_exp_bool_and_arguments_columns" columns of table "itap.devices" */
+export enum Itap_Devices_Select_Column_Itap_Devices_Aggregate_Bool_Exp_Bool_And_Arguments_Columns {
+  /** column name */
+  RecognitionEnabled = 'recognition_enabled'
+}
+
+/** select "itap_devices_aggregate_bool_exp_bool_or_arguments_columns" columns of table "itap.devices" */
+export enum Itap_Devices_Select_Column_Itap_Devices_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns {
+  /** column name */
+  RecognitionEnabled = 'recognition_enabled'
 }
 
 /** input type for updating data in table "itap.devices" */
@@ -1371,6 +1828,8 @@ export type Itap_Devices_Set_Input = {
   health_status?: InputMaybe<Scalars['String']['input']>;
   last_seen?: InputMaybe<Scalars['timestamptz']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  recognition_enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  recognition_fps?: InputMaybe<Scalars['Int']['input']>;
   resolution?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   stream_url?: InputMaybe<Scalars['String']['input']>;
@@ -1380,33 +1839,39 @@ export type Itap_Devices_Set_Input = {
 export type Itap_Devices_Stddev_Fields = {
   __typename?: 'itap_devices_stddev_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by stddev() on columns of table "itap.devices" */
 export type Itap_Devices_Stddev_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** aggregate stddev_pop on columns */
 export type Itap_Devices_Stddev_Pop_Fields = {
   __typename?: 'itap_devices_stddev_pop_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by stddev_pop() on columns of table "itap.devices" */
 export type Itap_Devices_Stddev_Pop_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** aggregate stddev_samp on columns */
 export type Itap_Devices_Stddev_Samp_Fields = {
   __typename?: 'itap_devices_stddev_samp_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by stddev_samp() on columns of table "itap.devices" */
 export type Itap_Devices_Stddev_Samp_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** Streaming cursor of the table "itap_devices" */
@@ -1429,6 +1894,8 @@ export type Itap_Devices_Stream_Cursor_Value_Input = {
   id?: InputMaybe<Scalars['uuid']['input']>;
   last_seen?: InputMaybe<Scalars['timestamptz']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  recognition_enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  recognition_fps?: InputMaybe<Scalars['Int']['input']>;
   resolution?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   stream_url?: InputMaybe<Scalars['String']['input']>;
@@ -1439,11 +1906,13 @@ export type Itap_Devices_Stream_Cursor_Value_Input = {
 export type Itap_Devices_Sum_Fields = {
   __typename?: 'itap_devices_sum_fields';
   fps?: Maybe<Scalars['Int']['output']>;
+  recognition_fps?: Maybe<Scalars['Int']['output']>;
 };
 
 /** order by sum() on columns of table "itap.devices" */
 export type Itap_Devices_Sum_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** update columns of table "itap.devices" */
@@ -1464,6 +1933,10 @@ export enum Itap_Devices_Update_Column {
   LastSeen = 'last_seen',
   /** column name */
   Name = 'name',
+  /** column name */
+  RecognitionEnabled = 'recognition_enabled',
+  /** column name */
+  RecognitionFps = 'recognition_fps',
   /** column name */
   Resolution = 'resolution',
   /** column name */
@@ -1495,33 +1968,39 @@ export type Itap_Devices_Updates = {
 export type Itap_Devices_Var_Pop_Fields = {
   __typename?: 'itap_devices_var_pop_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by var_pop() on columns of table "itap.devices" */
 export type Itap_Devices_Var_Pop_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** aggregate var_samp on columns */
 export type Itap_Devices_Var_Samp_Fields = {
   __typename?: 'itap_devices_var_samp_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by var_samp() on columns of table "itap.devices" */
 export type Itap_Devices_Var_Samp_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** aggregate variance on columns */
 export type Itap_Devices_Variance_Fields = {
   __typename?: 'itap_devices_variance_fields';
   fps?: Maybe<Scalars['Float']['output']>;
+  recognition_fps?: Maybe<Scalars['Float']['output']>;
 };
 
 /** order by variance() on columns of table "itap.devices" */
 export type Itap_Devices_Variance_Order_By = {
   fps?: InputMaybe<Order_By>;
+  recognition_fps?: InputMaybe<Order_By>;
 };
 
 /** columns and relationships of "itap.facilities" */
@@ -2808,6 +3287,10 @@ export type Mutation_Root = {
   delete_itap_areas?: Maybe<Itap_Areas_Mutation_Response>;
   /** delete single row from the table: "itap.areas" */
   delete_itap_areas_by_pk?: Maybe<Itap_Areas>;
+  /** delete data from the table: "itap.detections" */
+  delete_itap_detections?: Maybe<Itap_Detections_Mutation_Response>;
+  /** delete single row from the table: "itap.detections" */
+  delete_itap_detections_by_pk?: Maybe<Itap_Detections>;
   /** delete data from the table: "itap.devices" */
   delete_itap_devices?: Maybe<Itap_Devices_Mutation_Response>;
   /** delete single row from the table: "itap.devices" */
@@ -2836,6 +3319,10 @@ export type Mutation_Root = {
   insert_itap_areas?: Maybe<Itap_Areas_Mutation_Response>;
   /** insert a single row into the table: "itap.areas" */
   insert_itap_areas_one?: Maybe<Itap_Areas>;
+  /** insert data into the table: "itap.detections" */
+  insert_itap_detections?: Maybe<Itap_Detections_Mutation_Response>;
+  /** insert a single row into the table: "itap.detections" */
+  insert_itap_detections_one?: Maybe<Itap_Detections>;
   /** insert data into the table: "itap.device_health_metrics" */
   insert_itap_device_health_metrics?: Maybe<Itap_Device_Health_Metrics_Mutation_Response>;
   /** insert a single row into the table: "itap.device_health_metrics" */
@@ -2917,6 +3404,18 @@ export type Mutation_RootDelete_Itap_AreasArgs = {
 
 /** mutation root */
 export type Mutation_RootDelete_Itap_Areas_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
+/** mutation root */
+export type Mutation_RootDelete_Itap_DetectionsArgs = {
+  where: Itap_Detections_Bool_Exp;
+};
+
+
+/** mutation root */
+export type Mutation_RootDelete_Itap_Detections_By_PkArgs = {
   id: Scalars['uuid']['input'];
 };
 
@@ -3004,6 +3503,20 @@ export type Mutation_RootInsert_Itap_AreasArgs = {
 export type Mutation_RootInsert_Itap_Areas_OneArgs = {
   object: Itap_Areas_Insert_Input;
   on_conflict?: InputMaybe<Itap_Areas_On_Conflict>;
+};
+
+
+/** mutation root */
+export type Mutation_RootInsert_Itap_DetectionsArgs = {
+  objects: Array<Itap_Detections_Insert_Input>;
+  on_conflict?: InputMaybe<Itap_Detections_On_Conflict>;
+};
+
+
+/** mutation root */
+export type Mutation_RootInsert_Itap_Detections_OneArgs = {
+  object: Itap_Detections_Insert_Input;
+  on_conflict?: InputMaybe<Itap_Detections_On_Conflict>;
 };
 
 
@@ -3302,6 +3815,12 @@ export type Query_Root = {
   itap_areas_aggregate: Itap_Areas_Aggregate;
   /** fetch data from the table: "itap.areas" using primary key columns */
   itap_areas_by_pk?: Maybe<Itap_Areas>;
+  /** fetch data from the table: "itap.detections" */
+  itap_detections: Array<Itap_Detections>;
+  /** fetch aggregated fields from the table: "itap.detections" */
+  itap_detections_aggregate: Itap_Detections_Aggregate;
+  /** fetch data from the table: "itap.detections" using primary key columns */
+  itap_detections_by_pk?: Maybe<Itap_Detections>;
   /** fetch data from the table: "itap.device_health_metrics" */
   itap_device_health_metrics: Array<Itap_Device_Health_Metrics>;
   /** fetch aggregated fields from the table: "itap.device_health_metrics" */
@@ -3366,6 +3885,29 @@ export type Query_RootItap_Areas_AggregateArgs = {
 
 
 export type Query_RootItap_Areas_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
+export type Query_RootItap_DetectionsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+
+export type Query_RootItap_Detections_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+
+export type Query_RootItap_Detections_By_PkArgs = {
   id: Scalars['uuid']['input'];
 };
 
@@ -3540,6 +4082,14 @@ export type Subscription_Root = {
   itap_areas_by_pk?: Maybe<Itap_Areas>;
   /** fetch data from the table in a streaming manner: "itap.areas" */
   itap_areas_stream: Array<Itap_Areas>;
+  /** fetch data from the table: "itap.detections" */
+  itap_detections: Array<Itap_Detections>;
+  /** fetch aggregated fields from the table: "itap.detections" */
+  itap_detections_aggregate: Itap_Detections_Aggregate;
+  /** fetch data from the table: "itap.detections" using primary key columns */
+  itap_detections_by_pk?: Maybe<Itap_Detections>;
+  /** fetch data from the table in a streaming manner: "itap.detections" */
+  itap_detections_stream: Array<Itap_Detections>;
   /** fetch data from the table: "itap.device_health_metrics" */
   itap_device_health_metrics: Array<Itap_Device_Health_Metrics>;
   /** fetch aggregated fields from the table: "itap.device_health_metrics" */
@@ -3626,6 +4176,36 @@ export type Subscription_RootItap_Areas_StreamArgs = {
   batch_size: Scalars['Int']['input'];
   cursor: Array<InputMaybe<Itap_Areas_Stream_Cursor_Input>>;
   where?: InputMaybe<Itap_Areas_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_DetectionsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_Detections_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Detections_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Detections_Order_By>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_Detections_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
+export type Subscription_RootItap_Detections_StreamArgs = {
+  batch_size: Scalars['Int']['input'];
+  cursor: Array<InputMaybe<Itap_Detections_Stream_Cursor_Input>>;
+  where?: InputMaybe<Itap_Detections_Bool_Exp>;
 };
 
 
@@ -3931,7 +4511,7 @@ export type AreasByFacilityQueryQueryVariables = Exact<{
 
 export type AreasByFacilityQueryQuery = { __typename?: 'query_root', itap_areas: Array<{ __typename?: 'itap_areas', id: any, name: string, parent_id?: any | null, area_type: string }>, itap_areas_aggregate: { __typename?: 'itap_areas_aggregate', aggregate?: { __typename?: 'itap_areas_aggregate_fields', count: number } | null } };
 
-export type Itap_DeviceFragment = { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null };
+export type Itap_DeviceFragment = { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null };
 
 export type DeviceListQueryQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -3941,21 +4521,21 @@ export type DeviceListQueryQueryVariables = Exact<{
 }>;
 
 
-export type DeviceListQueryQuery = { __typename?: 'query_root', itap_devices: Array<{ __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null }>, itap_devices_aggregate: { __typename?: 'itap_devices_aggregate', aggregate?: { __typename?: 'itap_devices_aggregate_fields', count: number } | null } };
+export type DeviceListQueryQuery = { __typename?: 'query_root', itap_devices: Array<{ __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null }>, itap_devices_aggregate: { __typename?: 'itap_devices_aggregate', aggregate?: { __typename?: 'itap_devices_aggregate_fields', count: number } | null } };
 
 export type DeviceOneQueryQueryVariables = Exact<{
   id: Scalars['uuid']['input'];
 }>;
 
 
-export type DeviceOneQueryQuery = { __typename?: 'query_root', itap_devices_by_pk?: { __typename?: 'itap_devices', credentials?: any | null, id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, health_metrics: Array<{ __typename?: 'itap_device_health_metrics', id: any, timestamp: any, cpu_usage?: number | null, memory_usage?: number | null, disk_usage?: number | null, network_latency?: number | null, frame_rate?: number | null, error_count?: number | null }>, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
+export type DeviceOneQueryQuery = { __typename?: 'query_root', itap_devices_by_pk?: { __typename?: 'itap_devices', credentials?: any | null, id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, health_metrics: Array<{ __typename?: 'itap_device_health_metrics', id: any, timestamp: any, cpu_usage?: number | null, memory_usage?: number | null, disk_usage?: number | null, network_latency?: number | null, frame_rate?: number | null, error_count?: number | null }>, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
 
 export type DeviceInsertOneMutationMutationVariables = Exact<{
   object: Itap_Devices_Insert_Input;
 }>;
 
 
-export type DeviceInsertOneMutationMutation = { __typename?: 'mutation_root', insert_itap_devices_one?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
+export type DeviceInsertOneMutationMutation = { __typename?: 'mutation_root', insert_itap_devices_one?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
 
 export type DeviceUpdateOneMutationMutationVariables = Exact<{
   id: Scalars['uuid']['input'];
@@ -3963,14 +4543,22 @@ export type DeviceUpdateOneMutationMutationVariables = Exact<{
 }>;
 
 
-export type DeviceUpdateOneMutationMutation = { __typename?: 'mutation_root', update_itap_devices_by_pk?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
+export type DeviceUpdateOneMutationMutation = { __typename?: 'mutation_root', update_itap_devices_by_pk?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
 
 export type DeviceDeleteOneMutationMutationVariables = Exact<{
   id: Scalars['uuid']['input'];
 }>;
 
 
-export type DeviceDeleteOneMutationMutation = { __typename?: 'mutation_root', delete_itap_devices_by_pk?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
+export type DeviceDeleteOneMutationMutation = { __typename?: 'mutation_root', delete_itap_devices_by_pk?: { __typename?: 'itap_devices', id: any, created_at: any, updated_at: any, name: string, device_type: string, area_id?: any | null, stream_url?: string | null, resolution?: string | null, fps?: number | null, status: string, health_status: string, last_seen?: any | null, configuration?: any | null, recognition_enabled: boolean, recognition_fps: number, area?: { __typename?: 'itap_areas', id: any, name: string, facility: { __typename?: 'itap_facilities', id: any, name: string } } | null } | null };
+
+export type DeviceDetectionsQueryQueryVariables = Exact<{
+  device_id: Scalars['uuid']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type DeviceDetectionsQueryQuery = { __typename?: 'query_root', itap_detections: Array<{ __typename?: 'itap_detections', id: any, created_at: any, confidence: number, similarity?: number | null, is_new_identity: boolean, bbox?: any | null, thumbnail?: string | null, identity?: { __typename?: 'itap_identities', id: any, status: string, attributes: any } | null }>, itap_detections_aggregate: { __typename?: 'itap_detections_aggregate', aggregate?: { __typename?: 'itap_detections_aggregate_fields', count: number } | null } };
 
 export type AreasWithFacilityQueryQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4189,7 +4777,7 @@ export type SegmentMatchingIdentitiesQueryQueryVariables = Exact<{
 export type SegmentMatchingIdentitiesQueryQuery = { __typename?: 'query_root', itap_identities: Array<{ __typename?: 'itap_identities', id: any }> };
 
 export const Itap_AreaFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<Itap_AreaFragment, unknown>;
-export const Itap_DeviceFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<Itap_DeviceFragment, unknown>;
+export const Itap_DeviceFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<Itap_DeviceFragment, unknown>;
 export const Itap_FacilityFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_facility"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"timezone"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<Itap_FacilityFragment, unknown>;
 export const Itap_IdentityFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_identity"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_identities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"attributes"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"embedding"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"profile_id"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<Itap_IdentityFragment, unknown>;
 export const Itap_ProfileFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<Itap_ProfileFragment, unknown>;
@@ -4201,11 +4789,12 @@ export const AreaInsertOneMutationDocument = {"kind":"Document","definitions":[{
 export const AreaUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AreaUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_areas_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_area"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<AreaUpdateOneMutationMutation, AreaUpdateOneMutationMutationVariables>;
 export const AreaDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AreaDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_areas_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_area"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<AreaDeleteOneMutationMutation, AreaDeleteOneMutationMutationVariables>;
 export const AreasByFacilityQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AreasByFacilityQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_areas"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_areas_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]} as unknown as DocumentNode<AreasByFacilityQueryQuery, AreasByFacilityQueryQueryVariables>;
-export const DeviceListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DeviceListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_devices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_devices_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceListQueryQuery, DeviceListQueryQueryVariables>;
-export const DeviceOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DeviceOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}},{"kind":"Field","name":{"kind":"Name","value":"credentials"}},{"kind":"Field","name":{"kind":"Name","value":"health_metrics"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"20"}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"timestamp"},"value":{"kind":"EnumValue","value":"desc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}},{"kind":"Field","name":{"kind":"Name","value":"cpu_usage"}},{"kind":"Field","name":{"kind":"Name","value":"memory_usage"}},{"kind":"Field","name":{"kind":"Name","value":"disk_usage"}},{"kind":"Field","name":{"kind":"Name","value":"network_latency"}},{"kind":"Field","name":{"kind":"Name","value":"frame_rate"}},{"kind":"Field","name":{"kind":"Name","value":"error_count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceOneQueryQuery, DeviceOneQueryQueryVariables>;
-export const DeviceInsertOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceInsertOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_insert_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_devices_one"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"object"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceInsertOneMutationMutation, DeviceInsertOneMutationMutationVariables>;
-export const DeviceUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceUpdateOneMutationMutation, DeviceUpdateOneMutationMutationVariables>;
-export const DeviceDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceDeleteOneMutationMutation, DeviceDeleteOneMutationMutationVariables>;
+export const DeviceListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DeviceListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_devices"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_devices_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceListQueryQuery, DeviceListQueryQueryVariables>;
+export const DeviceOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DeviceOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}},{"kind":"Field","name":{"kind":"Name","value":"credentials"}},{"kind":"Field","name":{"kind":"Name","value":"health_metrics"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"20"}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"timestamp"},"value":{"kind":"EnumValue","value":"desc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}},{"kind":"Field","name":{"kind":"Name","value":"cpu_usage"}},{"kind":"Field","name":{"kind":"Name","value":"memory_usage"}},{"kind":"Field","name":{"kind":"Name","value":"disk_usage"}},{"kind":"Field","name":{"kind":"Name","value":"network_latency"}},{"kind":"Field","name":{"kind":"Name","value":"frame_rate"}},{"kind":"Field","name":{"kind":"Name","value":"error_count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceOneQueryQuery, DeviceOneQueryQueryVariables>;
+export const DeviceInsertOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceInsertOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_insert_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_devices_one"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"object"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceInsertOneMutationMutation, DeviceInsertOneMutationMutationVariables>;
+export const DeviceUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceUpdateOneMutationMutation, DeviceUpdateOneMutationMutationVariables>;
+export const DeviceDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeviceDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_devices_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_device"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceDeleteOneMutationMutation, DeviceDeleteOneMutationMutationVariables>;
+export const DeviceDetectionsQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DeviceDetectionsQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"device_id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"50"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_detections"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"device_id"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"Variable","name":{"kind":"Name","value":"device_id"}}}]}}]}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"similarity"}},{"kind":"Field","name":{"kind":"Name","value":"is_new_identity"}},{"kind":"Field","name":{"kind":"Name","value":"bbox"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"identity"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"attributes"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_detections_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"device_id"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"Variable","name":{"kind":"Name","value":"device_id"}}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]} as unknown as DocumentNode<DeviceDetectionsQueryQuery, DeviceDetectionsQueryQueryVariables>;
 export const AreasWithFacilityQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AreasWithFacilityQuery"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_areas"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"name"},"value":{"kind":"EnumValue","value":"asc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_areas_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]} as unknown as DocumentNode<AreasWithFacilityQueryQuery, AreasWithFacilityQueryQueryVariables>;
 export const FacilityListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FacilityListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_facilities"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_facility"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_facilities_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_facility"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"timezone"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<FacilityListQueryQuery, FacilityListQueryQueryVariables>;
 export const FacilityOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"FacilityOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_facilities_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_facility"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_facility"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"timezone"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<FacilityOneQueryQuery, FacilityOneQueryQueryVariables>;

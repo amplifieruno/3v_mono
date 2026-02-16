@@ -16,7 +16,9 @@ import { authRoutes } from './routes/auth.js'
 import { identityRoutes } from './routes/identities.js'
 import { profileRoutes } from './routes/profiles.js'
 import faceRoutes from './routes/face.js'
+import recognitionRoutes from './routes/recognition.js'
 import { insightFaceService } from './services/insightFaceService.js'
+import { recognitionManager } from './services/recognitionManager.js'
 
 // Load environment variables
 dotenv.config()
@@ -73,6 +75,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/identities', identityRoutes)
 app.use('/api/profiles', profileRoutes)
 app.use('/api/face', faceRoutes)
+app.use('/api/recognition', recognitionRoutes)
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
@@ -86,6 +89,17 @@ io.on('connection', (socket) => {
   socket.on('leave-room', (roomId: string) => {
     socket.leave(roomId)
     console.log(`Client ${socket.id} left room ${roomId}`)
+  })
+
+  // Device recognition rooms
+  socket.on('join-device', (data: { deviceId: string }) => {
+    socket.join(`device:${data.deviceId}`)
+    console.log(`Client ${socket.id} joined device room device:${data.deviceId}`)
+  })
+
+  socket.on('leave-device', (data: { deviceId: string }) => {
+    socket.leave(`device:${data.deviceId}`)
+    console.log(`Client ${socket.id} left device room device:${data.deviceId}`)
   })
 
   // Real-time face detection
@@ -153,7 +167,16 @@ async function startServer() {
       console.warn('InsightFace service initialization failed:', error.message)
       console.warn('Will fall back to basic face detection if available')
     }
-    
+
+    // Initialize recognition manager for continuous video processing
+    recognitionManager.setIo(io)
+    try {
+      await recognitionManager.initialize()
+      console.log('Recognition manager initialized')
+    } catch (error) {
+      console.warn('Recognition manager initialization failed:', error instanceof Error ? error.message : error)
+    }
+
     // Start server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`)
@@ -175,6 +198,7 @@ process.on('SIGTERM', async () => {
   })
   
   try {
+    await recognitionManager.shutdown()
     await AppDataSource.destroy()
     console.log('Database connections closed')
     process.exit(0)
