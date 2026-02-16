@@ -20,6 +20,15 @@ export const DashboardMetricsQuery = gql(`
     segments_total: itap_segments_aggregate {
       aggregate { count }
     }
+    devices_total: itap_devices_aggregate {
+      aggregate { count }
+    }
+    devices_online: itap_devices_aggregate(where: { status: { _eq: "active" }, health_status: { _in: ["healthy", "warning"] } }) {
+      aggregate { count }
+    }
+    devices_error: itap_devices_aggregate(where: { _or: [{ status: { _eq: "error" } }, { status: { _eq: "inactive" } }] }) {
+      aggregate { count }
+    }
     recent_identities: itap_identities(order_by: { created_at: desc }, limit: 10) {
       id
       status

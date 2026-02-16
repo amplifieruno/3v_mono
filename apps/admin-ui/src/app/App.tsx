@@ -32,6 +32,8 @@ import { areaConfig } from '@/resources/area/resourceConfig';
 import { AreaRouter } from '@/resources/area/router';
 import { segmentConfig } from '@/resources/segment/resourceConfig';
 import { SegmentRouter } from '@/resources/segment/router';
+import { deviceConfig } from '@/resources/device/resourceConfig';
+import { DeviceRouter } from '@/resources/device/router';
 import { gqlClient } from '@/shared/api';
 import dataProvider from '@refinedev/hasura';
 import { ThemeProvider } from '@/components/refine-ui/theme/theme-provider';
@@ -56,7 +58,7 @@ const App: FC = () => {
                 routerProvider={routerBindings}
                 authProvider={authProvider}
                 notificationProvider={notificationProvider}
-                resources={[identityConfig, profileConfig, facilityConfig, areaConfig, segmentConfig]}
+                resources={[identityConfig, profileConfig, facilityConfig, areaConfig, segmentConfig, deviceConfig]}
                 options={{
                   // reactQuery: {
                   //   clientConfig: queryClient,
@@ -104,6 +106,10 @@ const App: FC = () => {
                       <Route
                         path={`/${segmentConfig.list}/*`}
                         element={<SegmentRouter />}
+                      />
+                      <Route
+                        path={`/${deviceConfig.list}/*`}
+                        element={<DeviceRouter />}
                       />
 
                       {/* Custom pages */}

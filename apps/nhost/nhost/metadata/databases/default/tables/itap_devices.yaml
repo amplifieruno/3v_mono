@@ -1,41 +1,34 @@
 table:
-  name: areas
+  name: devices
   schema: itap
 object_relationships:
-  - name: facility
+  - name: area
     using:
-      foreign_key_constraint_on: facility_id
-  - name: parent
-    using:
-      foreign_key_constraint_on: parent_id
+      foreign_key_constraint_on: area_id
 array_relationships:
-  - name: children
+  - name: health_metrics
     using:
       foreign_key_constraint_on:
-        column: parent_id
+        column: device_id
         table:
-          name: areas
-          schema: itap
-  - name: devices
-    using:
-      foreign_key_constraint_on:
-        column: area_id
-        table:
-          name: devices
+          name: device_health_metrics
           schema: itap
 insert_permissions:
   - role: staff
     permission:
       check: {}
       columns:
-        - facility_id
-        - parent_id
         - name
-        - description
-        - area_type
-        - access_level
-        - capacity
+        - device_type
+        - area_id
+        - stream_url
+        - credentials
+        - resolution
+        - fps
         - status
+        - health_status
+        - last_seen
+        - configuration
     comment: ""
 select_permissions:
   - role: staff
@@ -44,14 +37,17 @@ select_permissions:
         - id
         - created_at
         - updated_at
-        - facility_id
-        - parent_id
         - name
-        - description
-        - area_type
-        - access_level
-        - capacity
+        - device_type
+        - area_id
+        - stream_url
+        - credentials
+        - resolution
+        - fps
         - status
+        - health_status
+        - last_seen
+        - configuration
       filter: {}
       allow_aggregations: true
     comment: ""
@@ -59,14 +55,17 @@ update_permissions:
   - role: staff
     permission:
       columns:
-        - facility_id
-        - parent_id
         - name
-        - description
-        - area_type
-        - access_level
-        - capacity
+        - device_type
+        - area_id
+        - stream_url
+        - credentials
+        - resolution
+        - fps
         - status
+        - health_status
+        - last_seen
+        - configuration
       filter: {}
       check: null
     comment: ""

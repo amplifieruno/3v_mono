@@ -1,0 +1,26 @@
+logLevel: info
+logDestinations: [stdout]
+
+api: yes
+apiAddress: :9997
+
+rtsp: yes
+rtspAddress: :8554
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcICEServers2: []
+
+paths:
+  entrance-cam:
+    source: publisher
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/entrance.mp4 -c copy -f rtsp rtsp://localhost:8554/entrance-cam
+    runOnInitRestart: yes
+  lobby-cam:
+    source: publisher
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/lobby.mp4 -c copy -f rtsp rtsp://localhost:8554/lobby-cam
+    runOnInitRestart: yes
+  parking-cam:
+    source: publisher
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/parking.mp4 -c copy -f rtsp rtsp://localhost:8554/parking-cam
+    runOnInitRestart: yes

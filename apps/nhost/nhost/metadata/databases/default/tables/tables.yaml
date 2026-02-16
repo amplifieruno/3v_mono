@@ -8,6 +8,8 @@
 - "!include auth_user_security_keys.yaml"
 - "!include auth_users.yaml"
 - "!include itap_areas.yaml"
+- "!include itap_device_health_metrics.yaml"
+- "!include itap_devices.yaml"
 - "!include itap_facilities.yaml"
 - "!include itap_identities.yaml"
 - "!include itap_profiles.yaml"

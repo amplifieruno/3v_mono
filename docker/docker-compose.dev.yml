@@ -405,6 +405,24 @@ services:
       start_period: 180s
     mem_limit: 4g
 
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: 3v_mediamtx
+    ports:
+      - "8554:8554"       # RTSP
+      - "8889:8889"       # WebRTC HTTP
+      - "8189:8189/udp"   # WebRTC ICE
+    volumes:
+      - type: bind
+        source: ./mediamtx/mediamtx.yml
+        target: /mediamtx.yml
+        read_only: true
+      - type: bind
+        source: ./mediamtx/videos
+        target: /videos
+        read_only: true
+    restart: unless-stopped
+
   traefik:
     image: traefik:v3.3
     environment:

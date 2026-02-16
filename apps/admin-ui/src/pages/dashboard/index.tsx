@@ -7,6 +7,9 @@ import {
   LinkIcon,
   Building2Icon,
   TagsIcon,
+  CameraIcon,
+  WifiIcon,
+  WifiOffIcon,
 } from 'lucide-react';
 import { DashboardMetricsQuery } from './queries';
 import { MetricCard } from './components/MetricCard';
@@ -22,6 +25,9 @@ interface DashboardData {
   profiles_total: { aggregate: { count: number } };
   facilities_total: { aggregate: { count: number } };
   segments_total: { aggregate: { count: number } };
+  devices_total: { aggregate: { count: number } };
+  devices_online: { aggregate: { count: number } };
+  devices_error: { aggregate: { count: number } };
   recent_identities: Array<{
     id: string;
     status: string;
@@ -48,6 +54,9 @@ export const DashboardPage: FC = () => {
   const linkedProfiles = metrics?.identities_linked?.aggregate?.count ?? 0;
   const totalFacilities = metrics?.facilities_total?.aggregate?.count ?? 0;
   const totalSegments = metrics?.segments_total?.aggregate?.count ?? 0;
+  const totalDevices = metrics?.devices_total?.aggregate?.count ?? 0;
+  const onlineDevices = metrics?.devices_online?.aggregate?.count ?? 0;
+  const errorDevices = metrics?.devices_error?.aggregate?.count ?? 0;
 
   if (isLoading) {
     return (
@@ -71,7 +80,7 @@ export const DashboardPage: FC = () => {
         Dashboard
       </h1>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'>
+      <div className='grid gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-9'>
         <MetricCard
           title='Identities'
           value={totalIdentities}
@@ -107,6 +116,24 @@ export const DashboardPage: FC = () => {
           value={totalSegments}
           icon={TagsIcon}
           description='Identity groups'
+        />
+        <MetricCard
+          title='Devices'
+          value={totalDevices}
+          icon={CameraIcon}
+          description='Total devices'
+        />
+        <MetricCard
+          title='Online'
+          value={onlineDevices}
+          icon={WifiIcon}
+          description='Active devices'
+        />
+        <MetricCard
+          title='Offline'
+          value={errorDevices}
+          icon={WifiOffIcon}
+          description='Inactive/error'
         />
       </div>
 

@@ -4,7 +4,7 @@ import {
   CommandIcon,
   Camera,
   Building2,
-  Monitor,
+
   Bell,
   FileText,
   Settings,
@@ -59,16 +59,6 @@ export const NavMenu = () => {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip='Devices'>
-                <NavLink to='/'>
-                  <Monitor />
-                  <span>Devices</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
         </SidebarMenu>
       </SidebarGroup>
       <SidebarGroup>

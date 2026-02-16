@@ -1,0 +1,37 @@
+table:
+  name: device_health_metrics
+  schema: itap
+object_relationships:
+  - name: device
+    using:
+      foreign_key_constraint_on: device_id
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - device_id
+        - timestamp
+        - cpu_usage
+        - memory_usage
+        - disk_usage
+        - network_latency
+        - frame_rate
+        - error_count
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - id
+        - device_id
+        - timestamp
+        - cpu_usage
+        - memory_usage
+        - disk_usage
+        - network_latency
+        - frame_rate
+        - error_count
+      filter: {}
+      allow_aggregations: true
+    comment: ""
