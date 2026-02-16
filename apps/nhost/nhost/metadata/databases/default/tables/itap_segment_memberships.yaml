@@ -1,0 +1,44 @@
+table:
+  name: segment_memberships
+  schema: itap
+object_relationships:
+  - name: segment
+    using:
+      foreign_key_constraint_on: segment_id
+  - name: identity
+    using:
+      foreign_key_constraint_on: identity_id
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - segment_id
+        - identity_id
+        - is_active
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - id
+        - created_at
+        - segment_id
+        - identity_id
+        - is_active
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: staff
+    permission:
+      columns:
+        - is_active
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: staff
+    permission:
+      filter: {}
+    comment: ""

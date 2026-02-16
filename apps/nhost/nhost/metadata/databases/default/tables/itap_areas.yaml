@@ -1,0 +1,70 @@
+table:
+  name: areas
+  schema: itap
+object_relationships:
+  - name: facility
+    using:
+      foreign_key_constraint_on: facility_id
+  - name: parent
+    using:
+      foreign_key_constraint_on: parent_id
+array_relationships:
+  - name: children
+    using:
+      foreign_key_constraint_on:
+        column: parent_id
+        table:
+          name: areas
+          schema: itap
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - facility_id
+        - parent_id
+        - name
+        - description
+        - area_type
+        - access_level
+        - capacity
+        - status
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - id
+        - created_at
+        - updated_at
+        - facility_id
+        - parent_id
+        - name
+        - description
+        - area_type
+        - access_level
+        - capacity
+        - status
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: staff
+    permission:
+      columns:
+        - facility_id
+        - parent_id
+        - name
+        - description
+        - area_type
+        - access_level
+        - capacity
+        - status
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: staff
+    permission:
+      filter: {}
+    comment: ""

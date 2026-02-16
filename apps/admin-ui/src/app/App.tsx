@@ -17,7 +17,7 @@ import { DetectionDebugPage } from '../pages/detection-debug/detection-debug-pag
 // import { TooltipProvider } from '../shadcn/components/ui/tooltip';
 // import { ThemeProvider } from '../shadcn/components/ThemeProvider';
 // import hasuraDataProvider from '@/shared/api/hasuraApi/hasuraDataProvider';
-// import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { DashboardPage } from '@/pages/dashboard';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/shared/api/query-client';
 import { Toaster } from '@/components/ui/sonner';
@@ -26,6 +26,12 @@ import { identityConfig } from '@/resources/identity/resourceConfig';
 import { IdentityRouter } from '@/resources/identity/router';
 import { profileConfig } from '@/resources/profile/resourceConfig';
 import { ProfileRouter } from '@/resources/profile/router';
+import { facilityConfig } from '@/resources/facility/resourceConfig';
+import { FacilityRouter } from '@/resources/facility/router';
+import { areaConfig } from '@/resources/area/resourceConfig';
+import { AreaRouter } from '@/resources/area/router';
+import { segmentConfig } from '@/resources/segment/resourceConfig';
+import { SegmentRouter } from '@/resources/segment/router';
 import { gqlClient } from '@/shared/api';
 import dataProvider from '@refinedev/hasura';
 import { ThemeProvider } from '@/components/refine-ui/theme/theme-provider';
@@ -50,7 +56,7 @@ const App: FC = () => {
                 routerProvider={routerBindings}
                 authProvider={authProvider}
                 notificationProvider={notificationProvider}
-                resources={[identityConfig, profileConfig]}
+                resources={[identityConfig, profileConfig, facilityConfig, areaConfig, segmentConfig]}
                 options={{
                   // reactQuery: {
                   //   clientConfig: queryClient,
@@ -76,13 +82,7 @@ const App: FC = () => {
                         </Authenticated>
                       }
                     >
-                      {/* <Route index element={<DashboardPage />} /> */}
-                      <Route
-                        index
-                        element={
-                          <NavigateToResource resource='itap_identities' />
-                        }
-                      />
+                      <Route index element={<DashboardPage />} />
 
                       {/* Resouces */}
                       <Route
@@ -92,6 +92,18 @@ const App: FC = () => {
                       <Route
                         path={`/${profileConfig.list}/*`}
                         element={<ProfileRouter />}
+                      />
+                      <Route
+                        path={`/${facilityConfig.list}/*`}
+                        element={<FacilityRouter />}
+                      />
+                      <Route
+                        path={`/${areaConfig.list}/*`}
+                        element={<AreaRouter />}
+                      />
+                      <Route
+                        path={`/${segmentConfig.list}/*`}
+                        element={<SegmentRouter />}
                       />
 
                       {/* Custom pages */}

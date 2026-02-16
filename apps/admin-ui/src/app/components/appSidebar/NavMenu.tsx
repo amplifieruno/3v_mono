@@ -61,14 +61,6 @@ export const NavMenu = () => {
           ))}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip='Facilities'>
-                <NavLink to='/'>
-                  <Building2 />
-                  <span>Facilities</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip='Devices'>
                 <NavLink to='/'>
                   <Monitor />

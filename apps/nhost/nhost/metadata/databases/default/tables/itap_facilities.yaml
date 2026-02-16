@@ -1,0 +1,54 @@
+table:
+  name: facilities
+  schema: itap
+array_relationships:
+  - name: areas
+    using:
+      foreign_key_constraint_on:
+        column: facility_id
+        table:
+          name: areas
+          schema: itap
+insert_permissions:
+  - role: staff
+    permission:
+      check: {}
+      columns:
+        - name
+        - description
+        - address
+        - timezone
+        - status
+    comment: ""
+select_permissions:
+  - role: staff
+    permission:
+      columns:
+        - id
+        - created_at
+        - updated_at
+        - name
+        - description
+        - address
+        - timezone
+        - status
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: staff
+    permission:
+      columns:
+        - name
+        - description
+        - address
+        - timezone
+        - status
+      filter: {}
+      check: null
+    comment: ""
+delete_permissions:
+  - role: staff
+    permission:
+      filter: {}
+    comment: ""
