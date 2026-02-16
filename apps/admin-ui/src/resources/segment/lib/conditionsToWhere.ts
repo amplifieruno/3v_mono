@@ -21,8 +21,37 @@ export function createEmptyRule(): RuleCondition {
   return { field: 'status', operator: 'equals', value: 'verified' };
 }
 
+const ALLOWED_FIELDS = new Set([
+  'status',
+  'has_profile',
+  'created_at',
+  'profile.first_name',
+  'profile.last_name',
+  'profile.email',
+]);
+
+const ALLOWED_OPERATORS = new Set([
+  'equals',
+  'not_equals',
+  'contains',
+  'is_true',
+  'is_false',
+  'is_not_empty',
+  'after',
+  'before',
+  'last_n_days',
+]);
+
+function escapeILike(value: string): string {
+  return value.replace(/[%_\\]/g, '\\$&');
+}
+
 function ruleToWhere(rule: RuleCondition): Record<string, unknown> {
   const { field, operator, value } = rule;
+
+  if (!ALLOWED_FIELDS.has(field) || !ALLOWED_OPERATORS.has(operator)) {
+    return {};
+  }
 
   if (field === 'has_profile') {
     if (operator === 'is_true') {
@@ -40,6 +69,7 @@ function ruleToWhere(rule: RuleCondition): Record<string, unknown> {
     }
     if (operator === 'last_n_days') {
       const days = parseInt(value ?? '7', 10);
+      if (isNaN(days) || days < 0) return {};
       const date = new Date();
       date.setDate(date.getDate() - days);
       return { created_at: { _gte: date.toISOString() } };
@@ -56,7 +86,7 @@ function ruleToWhere(rule: RuleCondition): Record<string, unknown> {
       return { profile: { [profileField]: { _eq: value } } };
     }
     if (operator === 'contains') {
-      return { profile: { [profileField]: { _ilike: `%${value}%` } } };
+      return { profile: { [profileField]: { _ilike: `%${escapeILike(value ?? '')}%` } } };
     }
     if (operator === 'not_equals') {
       return { profile: { [profileField]: { _neq: value } } };
@@ -71,7 +101,7 @@ function ruleToWhere(rule: RuleCondition): Record<string, unknown> {
     return { [field]: { _neq: value } };
   }
   if (operator === 'contains') {
-    return { [field]: { _ilike: `%${value}%` } };
+    return { [field]: { _ilike: `%${escapeILike(value ?? '')}%` } };
   }
   if (operator === 'is_not_empty') {
     return { [field]: { _is_null: false } };

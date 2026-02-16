@@ -26,14 +26,13 @@ interface DashboardData {
     id: string;
     status: string;
     created_at: string;
-    images: string[];
     profile: { first_name: string; last_name: string } | null;
   }>;
   identity_timeline: Array<{ created_at: string }>;
 }
 
 export const DashboardPage: FC = () => {
-  const { data: metrics, isLoading } = useQuery<DashboardData>({
+  const { data: metrics, isLoading, isError } = useQuery<DashboardData>({
     queryKey: ['dashboard-metrics'],
     queryFn: async () => {
       const result = await gqlClient.request(DashboardMetricsQuery);
@@ -54,6 +53,14 @@ export const DashboardPage: FC = () => {
     return (
       <div className='flex items-center justify-center py-20'>
         <p className='text-muted-foreground'>Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className='flex items-center justify-center py-20'>
+        <p className='text-destructive'>Failed to load dashboard. Please refresh the page.</p>
       </div>
     );
   }

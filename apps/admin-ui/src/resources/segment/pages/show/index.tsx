@@ -156,7 +156,7 @@ export const ShowPage: FC = () => {
                     className='flex items-center gap-3 py-2 px-3 rounded-md bg-muted/50'
                   >
                     <div className='w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium'>
-                      {m.identity.profile
+                      {m.identity.profile?.first_name && m.identity.profile?.last_name
                         ? `${m.identity.profile.first_name[0]}${m.identity.profile.last_name[0]}`
                         : '?'}
                     </div>

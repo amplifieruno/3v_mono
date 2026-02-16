@@ -6,7 +6,6 @@ interface RecentIdentity {
   id: string;
   status: string;
   created_at: string;
-  images: string[];
   profile: { first_name: string; last_name: string } | null;
 }
 
@@ -42,7 +41,7 @@ export const RecentActivity: FC<RecentActivityProps> = ({ identities }) => {
                 className='flex items-center gap-3 py-1.5'
               >
                 <div className='w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0'>
-                  {identity.profile
+                  {identity.profile?.first_name && identity.profile?.last_name
                     ? `${identity.profile.first_name[0]}${identity.profile.last_name[0]}`
                     : '?'}
                 </div>

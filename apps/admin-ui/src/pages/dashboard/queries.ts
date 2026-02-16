@@ -24,13 +24,12 @@ export const DashboardMetricsQuery = gql(`
       id
       status
       created_at
-      images
       profile {
         first_name
         last_name
       }
     }
-    identity_timeline: itap_identities(order_by: { created_at: asc }) {
+    identity_timeline: itap_identities(order_by: { created_at: asc }, limit: 365) {
       created_at
     }
   }
