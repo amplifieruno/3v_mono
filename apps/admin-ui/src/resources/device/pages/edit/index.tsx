@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useNavigation, useResourceParams, useList } from '@refinedev/core';
 import { useForm } from '@refinedev/react-hook-form';
 import { ListIcon } from 'lucide-react';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 import { Link } from 'react-router';
 import { DeviceOneQuery, DeviceUpdateOneMutation, AreasWithFacilityQuery } from '../../queries';
 import { deviceTypes, deviceStatuses } from '../../data/enums';
@@ -43,6 +43,20 @@ export const EditPage: FC = () => {
     setValue,
     watch,
   } = form;
+
+  // Stringify JSON fields when form data loads from Hasura (they come as objects)
+  const credentials = watch('credentials');
+  const configuration = watch('configuration');
+  useEffect(() => {
+    if (credentials && typeof credentials === 'object') {
+      setValue('credentials', JSON.stringify(credentials, null, 2));
+    }
+  }, [credentials, setValue]);
+  useEffect(() => {
+    if (configuration && typeof configuration === 'object') {
+      setValue('configuration', JSON.stringify(configuration, null, 2));
+    }
+  }, [configuration, setValue]);
 
   const areasResult = useList({
     resource: 'itap_areas',

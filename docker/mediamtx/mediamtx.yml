@@ -12,15 +12,19 @@ webrtcAddress: :8889
 webrtcICEServers2: []
 
 paths:
-  entrance-cam:
+  entrance:
     source: publisher
-    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/entrance.mp4 -c copy -f rtsp rtsp://localhost:8554/entrance-cam
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/entrance.mp4 -c copy -f rtsp rtsp://localhost:8554/entrance
     runOnInitRestart: yes
-  lobby-cam:
+  lobby:
     source: publisher
-    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/lobby.mp4 -c copy -f rtsp rtsp://localhost:8554/lobby-cam
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/lobby.mp4 -c copy -f rtsp rtsp://localhost:8554/lobby
     runOnInitRestart: yes
-  parking-cam:
+  serverroom:
     source: publisher
-    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/parking.mp4 -c copy -f rtsp rtsp://localhost:8554/parking-cam
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/serverroom.mp4 -c copy -f rtsp rtsp://localhost:8554/serverroom
+    runOnInitRestart: yes
+  warehouse:
+    source: publisher
+    runOnInit: ffmpeg -re -stream_loop -1 -i /videos/warehouse.mp4 -c copy -f rtsp rtsp://localhost:8554/warehouse
     runOnInitRestart: yes

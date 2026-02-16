@@ -28,7 +28,7 @@ type Documents = {
     "\n  mutation DeviceInsertOneMutation($object: itap_devices_insert_input!) {\n    insert_itap_devices_one(object: $object) {\n      ...itap_device\n    }\n  }\n": typeof types.DeviceInsertOneMutationDocument,
     "\n  mutation DeviceUpdateOneMutation($id: uuid!, $object: itap_devices_set_input!) {\n    update_itap_devices_by_pk(pk_columns: {id: $id}, _set: $object) {\n      ...itap_device\n    }\n  }\n": typeof types.DeviceUpdateOneMutationDocument,
     "\n  mutation DeviceDeleteOneMutation($id: uuid!) {\n    delete_itap_devices_by_pk(id: $id) {\n      ...itap_device\n    }\n  }\n": typeof types.DeviceDeleteOneMutationDocument,
-    "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n  }\n": typeof types.AreasWithFacilityQueryDocument,
+    "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n    itap_areas_aggregate {\n      aggregate {\n        count\n      }\n    }\n  }\n": typeof types.AreasWithFacilityQueryDocument,
     "\n  fragment itap_facility on itap_facilities {\n    id\n    created_at\n    updated_at\n    name\n    description\n    address\n    timezone\n    status\n  }\n": typeof types.Itap_FacilityFragmentDoc,
     "\n  query FacilityListQuery($limit: Int = 10, $offset: Int = 0, $where: itap_facilities_bool_exp = {}, $order_by: [itap_facilities_order_by!] = {}) {\n    itap_facilities(limit: $limit, offset: $offset, order_by: $order_by, where: $where) {\n      ...itap_facility\n    }\n    itap_facilities_aggregate(order_by: $order_by, where: $where) {\n      aggregate {\n        count\n      }\n    }\n  }\n": typeof types.FacilityListQueryDocument,
     "\n  query FacilityOneQuery($id: uuid!) {\n    itap_facilities_by_pk(id: $id) {\n      ...itap_facility\n    }\n  }\n": typeof types.FacilityOneQueryDocument,
@@ -76,7 +76,7 @@ const documents: Documents = {
     "\n  mutation DeviceInsertOneMutation($object: itap_devices_insert_input!) {\n    insert_itap_devices_one(object: $object) {\n      ...itap_device\n    }\n  }\n": types.DeviceInsertOneMutationDocument,
     "\n  mutation DeviceUpdateOneMutation($id: uuid!, $object: itap_devices_set_input!) {\n    update_itap_devices_by_pk(pk_columns: {id: $id}, _set: $object) {\n      ...itap_device\n    }\n  }\n": types.DeviceUpdateOneMutationDocument,
     "\n  mutation DeviceDeleteOneMutation($id: uuid!) {\n    delete_itap_devices_by_pk(id: $id) {\n      ...itap_device\n    }\n  }\n": types.DeviceDeleteOneMutationDocument,
-    "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n  }\n": types.AreasWithFacilityQueryDocument,
+    "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n    itap_areas_aggregate {\n      aggregate {\n        count\n      }\n    }\n  }\n": types.AreasWithFacilityQueryDocument,
     "\n  fragment itap_facility on itap_facilities {\n    id\n    created_at\n    updated_at\n    name\n    description\n    address\n    timezone\n    status\n  }\n": types.Itap_FacilityFragmentDoc,
     "\n  query FacilityListQuery($limit: Int = 10, $offset: Int = 0, $where: itap_facilities_bool_exp = {}, $order_by: [itap_facilities_order_by!] = {}) {\n    itap_facilities(limit: $limit, offset: $offset, order_by: $order_by, where: $where) {\n      ...itap_facility\n    }\n    itap_facilities_aggregate(order_by: $order_by, where: $where) {\n      aggregate {\n        count\n      }\n    }\n  }\n": types.FacilityListQueryDocument,
     "\n  query FacilityOneQuery($id: uuid!) {\n    itap_facilities_by_pk(id: $id) {\n      ...itap_facility\n    }\n  }\n": types.FacilityOneQueryDocument,
@@ -183,7 +183,7 @@ export function gql(source: "\n  mutation DeviceDeleteOneMutation($id: uuid!) {\
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n  }\n"): (typeof documents)["\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n  }\n"];
+export function gql(source: "\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n    itap_areas_aggregate {\n      aggregate {\n        count\n      }\n    }\n  }\n"): (typeof documents)["\n  query AreasWithFacilityQuery {\n    itap_areas(order_by: { name: asc }) {\n      id\n      name\n      facility {\n        id\n        name\n      }\n    }\n    itap_areas_aggregate {\n      aggregate {\n        count\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

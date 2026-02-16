@@ -406,7 +406,9 @@ services:
     mem_limit: 4g
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    build:
+      context: ./mediamtx
+      dockerfile: Dockerfile
     container_name: 3v_mediamtx
     ports:
       - "8554:8554"       # RTSP

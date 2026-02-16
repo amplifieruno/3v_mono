@@ -96,5 +96,10 @@ export const AreasWithFacilityQuery = gql(`
         name
       }
     }
+    itap_areas_aggregate {
+      aggregate {
+        count
+      }
+    }
   }
 `);
