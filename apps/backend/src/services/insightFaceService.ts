@@ -62,9 +62,10 @@ interface FaceDetectionResult {
 class InsightFaceService {
   private baseUrl: string
   private isInitialized = false
-  private processingQueue: Array<{ buffer: Buffer, resolve: Function, reject: Function }> = []
   private isProcessing = false
-  
+  private lastProcessedAt = 0
+  private readonly MIN_INTERVAL_MS = 500 // minimum gap between frames
+
   constructor() {
     this.baseUrl = process.env.INSIGHTFACE_API_URL || 'http://localhost:18080'
   }
@@ -96,41 +97,24 @@ class InsightFaceService {
     }
   }
   
-  async detectFaces(imageBuffer: Buffer, fileName = 'image.jpg'): Promise<FaceDetectionResult> {
-    // Queue processing to prevent memory overflow in realtime scenarios
-    return new Promise((resolve, reject) => {
-      this.processingQueue.push({ buffer: imageBuffer, resolve, reject })
-      this.processQueue()
-    })
-  }
-  
-  private async processQueue(): Promise<void> {
-    if (this.isProcessing || this.processingQueue.length === 0) return
-    
-    this.isProcessing = true
-    
-    while (this.processingQueue.length > 0) {
-      const { buffer, resolve, reject } = this.processingQueue.shift()!
-      
-      try {
-        const result = await this.performDetection(buffer)
-        resolve(result)
-      } catch (error) {
-        reject(error)
-      }
-      
-      // Skip frames if queue is getting too long (> 3 frames)
-      if (this.processingQueue.length > 3) {
-        console.log(`⚡ Dropping ${this.processingQueue.length - 1} frames to maintain performance`)
-        const latest = this.processingQueue[this.processingQueue.length - 1]
-        this.processingQueue.splice(0, this.processingQueue.length - 1)
-        for (let i = 0; i < this.processingQueue.length - 1; i++) {
-          this.processingQueue[i].reject(new Error('Frame dropped due to high load'))
-        }
-      }
+  async detectFaces(imageBuffer: Buffer): Promise<FaceDetectionResult> {
+    // Simple backpressure: reject if already processing or too soon after last frame
+    if (this.isProcessing) {
+      throw new Error('Frame dropped: already processing')
     }
-    
-    this.isProcessing = false
+    const elapsed = Date.now() - this.lastProcessedAt
+    if (elapsed < this.MIN_INTERVAL_MS) {
+      throw new Error('Frame dropped: cooldown')
+    }
+
+    this.isProcessing = true
+    try {
+      const result = await this.performDetection(imageBuffer)
+      this.lastProcessedAt = Date.now()
+      return result
+    } finally {
+      this.isProcessing = false
+    }
   }
   
   private async performDetection(imageBuffer: Buffer, fileName = 'image.jpg'): Promise<FaceDetectionResult> {
@@ -141,7 +125,6 @@ class InsightFaceService {
     }
     
     try {
-      console.log(`🖼️ Processing image with InsightFace...`)
       
       // Convert image buffer to base64
       const base64Image = imageBuffer.toString('base64')
@@ -179,78 +162,68 @@ class InsightFaceService {
 
       // InsightFace returns [[face1, face2, ...]] - array of arrays
       if (!result || result.data.length === 0 || !result.data[0] || result.data[0].faces.length === 0) {
-        console.log('📷 No faces detected')
         return {
           faces: [],
           processing_time: Date.now() - startTime
         }
       }
       
-      const detectedFaces = result.data[0].faces // Get first (and only) image's faces
-      console.log(`👤 Detected ${detectedFaces.length} face(s)`)
+      const detectedFaces = result.data[0].faces
       
-      // Process faces with identity matching
-      const faces: DetectedFace[] = await Promise.all(
-        detectedFaces.map(async (face) => {
-          const processedFace: DetectedFace = {
-            confidence: face.prob,
-            x_min: Math.round(face.bbox[0]), // x1
-            y_min: Math.round(face.bbox[1]), // y1  
-            x_max: Math.round(face.bbox[2]), // x2
-            y_max: Math.round(face.bbox[3]), // y2
-            landmarks: face.landmarks || [],
-            embedding: face.vec || [],
-            age: undefined, // Age/Gender отключены для производительности
-            gender: undefined,
-            genderConfidence: undefined
-          }
-          
-          // Match with existing identities using high-quality embeddings
-          if (processedFace.embedding && processedFace.embedding.length > 0) {
-            try {
-              // Extract face crop from original image
-              const faceCrop = await this.extractFaceCrop(
-                imageBuffer,
-                processedFace.x_min,
-                processedFace.y_min,
-                processedFace.x_max,
-                processedFace.y_max
-              )
+      // Process faces sequentially to avoid CPU spikes from parallel sharp/pgvector/hasura
+      // Limit to first 3 faces per frame to cap resource usage
+      const facesToProcess = detectedFaces.slice(0, 3)
+      const faces: DetectedFace[] = []
 
-              const identityMatch = await identityService.findOrCreateIdentity({
-                embedding: processedFace.embedding,
-                confidence: processedFace.confidence,
-                x_min: processedFace.x_min,
-                y_min: processedFace.y_min,
-                x_max: processedFace.x_max,
-                y_max: processedFace.y_max,
-                image_data: faceCrop // Добавляем изображение лица
-              })
-              
-              processedFace.identity = {
-                id: identityMatch.identity.id,
-                similarity: identityMatch.similarity,
-                isNewIdentity: identityMatch.isNewIdentity,
-                detectionCount: identityMatch.identity.detectionCount,
-                firstSeen: identityMatch.identity.firstSeen?.toISOString() || new Date().toISOString(),
-                lastSeen: identityMatch.identity.lastSeen?.toISOString() || new Date().toISOString(),
-                status: identityMatch.identity.status
-              }
-              
-              console.log(`🆔 Identity: ${processedFace.identity.id} (${processedFace.identity.isNewIdentity ? 'NEW' : 'EXISTING'})`)
-              console.log(`📊 Similarity: ${processedFace.identity.similarity.toFixed(3)}`)
-              
-            } catch (error) {
-              console.error('❌ Error matching identity:', error)
+      for (const face of facesToProcess) {
+        const processedFace: DetectedFace = {
+          confidence: face.prob,
+          x_min: Math.round(face.bbox[0]),
+          y_min: Math.round(face.bbox[1]),
+          x_max: Math.round(face.bbox[2]),
+          y_max: Math.round(face.bbox[3]),
+          landmarks: face.landmarks || [],
+          embedding: face.vec || [],
+        }
+
+        if (processedFace.embedding && processedFace.embedding.length > 0) {
+          try {
+            const faceCrop = await this.extractFaceCrop(
+              imageBuffer,
+              processedFace.x_min,
+              processedFace.y_min,
+              processedFace.x_max,
+              processedFace.y_max
+            )
+
+            const identityMatch = await identityService.findOrCreateIdentity({
+              embedding: processedFace.embedding,
+              confidence: processedFace.confidence,
+              x_min: processedFace.x_min,
+              y_min: processedFace.y_min,
+              x_max: processedFace.x_max,
+              y_max: processedFace.y_max,
+              image_data: faceCrop,
+            })
+
+            processedFace.identity = {
+              id: identityMatch.identity.id,
+              similarity: identityMatch.similarity,
+              isNewIdentity: identityMatch.isNewIdentity,
+              detectionCount: identityMatch.identity.detectionCount,
+              firstSeen: identityMatch.identity.firstSeen?.toISOString() || new Date().toISOString(),
+              lastSeen: identityMatch.identity.lastSeen?.toISOString() || new Date().toISOString(),
+              status: identityMatch.identity.status,
             }
+          } catch (error) {
+            console.error('[InsightFace] Identity match error:', error instanceof Error ? error.message : error)
           }
-          
-          return processedFace
-        })
-      )
+        }
+
+        faces.push(processedFace)
+      }
       
       const processingTime = Date.now() - startTime
-      console.log(`⏱️ InsightFace processing completed in ${processingTime}ms`)
       
       return {
         faces,

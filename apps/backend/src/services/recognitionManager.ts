@@ -284,9 +284,12 @@ class RecognitionSession {
 
       this.stats.framesProcessed++
     } catch (error) {
-      this.stats.errors++
       const msg = error instanceof Error ? error.message : String(error)
-      console.error(`[Recognition] Process error for ${this.deviceId}: ${msg}`)
+      // "Frame dropped" errors are expected backpressure — not real errors
+      if (!msg.startsWith('Frame dropped')) {
+        this.stats.errors++
+        console.error(`[Recognition] Process error for ${this.deviceId}: ${msg}`)
+      }
     } finally {
       this.isProcessing = false
     }
@@ -353,7 +356,7 @@ class RecognitionManager {
       device.id,
       device.name,
       device.stream_url,
-      device.recognition_fps || 2,
+      device.recognition_fps || 1,
       this.io,
     )
     this.sessions.set(device.id, session)

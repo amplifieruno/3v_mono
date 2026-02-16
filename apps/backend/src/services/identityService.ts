@@ -69,7 +69,7 @@ export class IdentityService {
       const matchData = result[0]
       const similarity = 1 - parseFloat(matchData.dist)
 
-      console.log(`🔍 Found matching identity ${matchData.id} with similarity ${similarity.toFixed(3)} using pgvector`)
+      // Matched existing identity
 
       // Преобразуем результат в объект Identity
       const bestMatch = this.identityRepository.create({
@@ -91,7 +91,7 @@ export class IdentityService {
         isNewIdentity: false
       }
     } else {
-      console.log(`✨ Creating new identity (no matches found above threshold ${this.similarityThreshold})`)
+      // No match — creating new identity
 
       // Создаем новый Identity
       const newIdentity = await this.createNewIdentity(faceData)
@@ -140,7 +140,7 @@ export class IdentityService {
       [embeddingVector, savedIdentity.id]
     )
 
-    console.log(`✅ Created new identity: ${savedIdentity.id} with embedding vector`)
+    console.log(`[Identity] New: ${savedIdentity.id}`)
 
     return savedIdentity
   }
@@ -181,7 +181,7 @@ export class IdentityService {
       'UPDATE itap.identities SET embedding = $1::vector WHERE id = $2',
       [embeddingVector, identity.id]
     )
-    console.log(`🔄 Updated identity ${identity.id}, total detections: ${identity.attributes.detectionCount}`)
+    // Updated identity detection count
   }
 
 
