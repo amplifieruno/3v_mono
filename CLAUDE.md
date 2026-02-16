@@ -29,17 +29,21 @@ bd sync               # Sync with git
    pnpm typecheck       # TypeScript type checking
    pnpm build           # Build verification
    ```
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+3. **Record demo** (if UI changed) - See `.claude/skills/demo-record/SKILL.md`:
+   - Use Playwright `browser_run_code` to record a video walkthrough
+   - Video saved to `playwright-output/`
+   - Skip for non-UI changes (Hasura-only, backend-only, config, docs)
+4. **Update issue status** - Close finished work, update in-progress items
+5. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
    bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+6. **Clean up** - Clear stashes, prune remote branches
+7. **Verify** - All changes committed AND pushed
+8. **Hand off** - Provide context for next session (include demo video path if recorded)
 
 **CRITICAL RULES:**
 
@@ -351,6 +355,16 @@ After UI changes, verify visually using Playwright MCP tools:
 4. Test interactions with `mcp__playwright__browser_click`, etc.
 
 This ensures UI changes work correctly without manual testing.
+
+### Recording Demo Videos
+
+For a recorded walkthrough (required for UI changes before closing a task):
+1. Use `mcp__playwright__browser_run_code` with `recordVideo` to capture a `.webm` video
+2. Walk through the implemented feature (login, navigate, demonstrate CRUD/interactions)
+3. Close the context to save the video to `playwright-output/`
+4. Report the video path in the task close comment
+
+See `.claude/skills/demo-record/SKILL.md` for the full recipe.
 
 ---
 

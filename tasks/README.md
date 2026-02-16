@@ -13,6 +13,8 @@ tasks/
 │   │   ├── 01-data-model.md          # Spec for data model changes
 │   │   ├── 02-api-endpoints.md       # Spec for API work
 │   │   └── 03-ui-pages.md            # Spec for frontend work
+│   ├── demo/                         # Demo video recordings (for UI tasks)
+│   │   └── *.webm                    # Playwright video walkthroughs
 │   └── summary.md                    # Post-completion summary
 ```
 
@@ -122,6 +124,8 @@ tasks/
 │   │   ├── 01-hasura-schema.md    # Database tables + Hasura config
 │   │   ├── 02-graphql-ops.md      # GraphQL operations + codegen
 │   │   └── 03-admin-ui-pages.md   # React list/create/edit pages
+│   ├── demo/                # Video recordings of the feature
+│   │   └── identity-crud-demo.webm
 │   └── summary.md           # What was built, decisions made
 ├── face-scanning/
 │   ├── overview.md          # "Add face scanning to profile management"

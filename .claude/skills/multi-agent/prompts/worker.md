@@ -85,6 +85,22 @@ If any gate fails:
 
 If you cannot fix a gate failure because it requires changes outside your file scope, mark yourself as blocked (see Step 7).
 
+## Step 5.5: Record Demo (UI Changes Only)
+
+If your task involves **UI changes** (new pages, components, visual modifications), record a video demo using the Playwright `browser_run_code` MCP tool. **Skip this step** for non-UI work (Hasura-only migrations, backend-only changes, config, docs).
+
+Follow the recipe in `.claude/skills/demo-record/SKILL.md`:
+
+1. Use `mcp__playwright__browser_run_code` to create a browser context with `recordVideo` enabled
+2. Navigate to the implemented feature and demonstrate key flows (CRUD, interactions)
+3. Close the context to save the video to `playwright-output/`
+4. Note the video path for the task close comment
+
+```bash
+# Video will be saved to playwright-output/<filename>.webm
+# Include the path when closing the task
+```
+
 ## Step 6: Commit and Push
 
 ```bash
@@ -105,6 +121,8 @@ Then close the task:
 
 ```bash
 bd close <TASK_ID>
+# Include demo path if recorded
+# bd close <TASK_ID> --comment "Demo: playwright-output/<filename>.webm"
 ```
 
 ## Step 7: If Blocked

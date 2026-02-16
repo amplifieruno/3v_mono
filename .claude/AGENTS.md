@@ -67,6 +67,7 @@ bd update TASK_ID --status in_progress  # Claim
 pnpm lint                                # Lint
 pnpm typecheck                           # TypeScript
 pnpm build                               # Build
+# Record demo (UI changes only) — see .claude/skills/demo-record/SKILL.md
 git pull --rebase && git push           # Push
 bd close TASK_ID                         # Complete
 ```
@@ -75,6 +76,7 @@ bd close TASK_ID                         # Complete
 - DO: Reuse existing code, follow patterns
 - DO: Run `pnpm lint` and `pnpm typecheck` before every commit
 - DO: Use shadcn/ui components, not raw HTML
+- DO: Record a demo video after quality gates pass (for UI changes)
 - DON'T: Modify files outside task scope
 - DON'T: Skip quality gates
 - DON'T: Over-engineer — this is a DEMO project
@@ -184,6 +186,7 @@ bd update TASK_ID --status in_progress  # Claim
 # ... implement ...
 pnpm lint                                # Lint
 pnpm typecheck                           # TypeScript
+# Record demo video — see .claude/skills/demo-record/SKILL.md
 git pull --rebase && git push           # Push
 bd close TASK_ID                         # Complete
 ```
@@ -192,6 +195,7 @@ bd close TASK_ID                         # Complete
 - DO: Follow existing page patterns as canonical reference
 - DO: Use shadcn/ui components
 - DO: Verify UI with Playwright snapshot/screenshot
+- DO: Record a demo video after quality gates pass
 - DON'T: Use raw HTML elements when shadcn component exists
 - DON'T: Use inline styles — use TailwindCSS
 - DON'T: Import from node_modules directly when a wrapper exists

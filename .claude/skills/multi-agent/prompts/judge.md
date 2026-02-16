@@ -146,6 +146,7 @@ Before making your decision, verify each item:
 - [ ] The original goal is addressed by completed tasks
 - [ ] No files were modified outside of task assignments
 - [ ] No generated files were modified (`@gql/`, `node_modules/`, `dist/`)
+- [ ] Demo video recorded for UI changes (check `playwright-output/` directory)
 
 ## Rules
 

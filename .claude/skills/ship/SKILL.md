@@ -63,9 +63,25 @@ Write `tasks/<task-name>/summary.md`:
 - [x] pnpm typecheck -- passed
 - [x] pnpm build -- passed
 
+## Demo
+- Video: `playwright-output/<filename>.webm` (or "No UI changes -- demo skipped")
+
 ## Notes
 [Any additional context for reviewers]
 ```
+
+### Step 3.5: Record Demo (UI Changes Only)
+
+If the branch includes **UI changes**, record a video walkthrough using Playwright before creating the PR.
+
+Follow the recipe in `.claude/skills/demo-record/SKILL.md`:
+
+1. Use `mcp__playwright__browser_run_code` to create a browser context with `recordVideo` enabled
+2. Walk through the implemented features (navigate, demonstrate CRUD, show key interactions)
+3. Close the context to save the video to `playwright-output/`
+4. Note the video path to include in the PR body and task summary
+
+If no UI changes are included, skip this step and note "No UI changes -- demo skipped."
 
 ### Step 4: Create or Update Pull Request
 
@@ -85,6 +101,9 @@ gh pr create --title "<type>: <brief description>" --body "$(cat <<'EOF'
 - [x] `pnpm lint` passes
 - [x] `pnpm typecheck` passes
 - [x] `pnpm build` passes
+
+## Demo
+- [Demo video](playwright-output/<filename>.webm) (or "No UI changes -- demo skipped")
 
 ## Test Plan
 - [ ] [How to verify change 1]
