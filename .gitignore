@@ -36,3 +36,5 @@ temp
 
 .playwright-mcp/
 playwright-output/
+
+dist/
