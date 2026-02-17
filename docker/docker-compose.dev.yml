@@ -323,10 +323,7 @@ services:
       interval: 5s
       start_period: 60s
     ports:
-      - mode: ingress
-        target: 5432
-        published: '5432'
-        protocol: tcp
+      - '127.0.0.1:5432:5432'
     restart: always
     volumes:
       - type: volume
