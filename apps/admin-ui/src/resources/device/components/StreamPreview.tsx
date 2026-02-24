@@ -10,7 +10,9 @@ interface StreamPreviewProps {
 }
 
 const getWebRtcUrl = (rtspUrl: string): string => {
-  const base = import.meta.env.VITE_MEDIAMTX_WEBRTC_BASE || 'http://localhost:8889';
+  const base =
+    import.meta.env.VITE_MEDIAMTX_WEBRTC_BASE ||
+    `${window.location.protocol}//${window.location.hostname}:8889`;
   try {
     const url = new URL(rtspUrl);
     const streamPath = url.pathname.replace(/^\//, '');
