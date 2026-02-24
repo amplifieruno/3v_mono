@@ -482,7 +482,6 @@ services:
     container_name: itap-mediamtx-prod
     ports:
       - "8554:8554"
-      - "8889:8889"
       - "8189:8189/udp"
     volumes:
       - type: bind
@@ -495,6 +494,12 @@ services:
         read_only: true
     networks:
       - internal
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.mediamtx.entrypoints: web
+      traefik.http.routers.mediamtx.rule: Host(`${STREAM_URL}`)
+      traefik.http.services.mediamtx.loadbalancer.server.port: "8889"
     restart: unless-stopped
 
 volumes:
