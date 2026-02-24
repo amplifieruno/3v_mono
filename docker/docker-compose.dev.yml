@@ -412,8 +412,8 @@ services:
     container_name: 3v_mediamtx
     ports:
       - "8554:8554"       # RTSP
-      - "8889:8889"       # WebRTC HTTP
-      - "8189:8189/udp"   # WebRTC ICE
+      - "8888:8888"       # HLS
+      - "8189:8189/udp"   # WebRTC ICE (legacy)
     volumes:
       - type: bind
         source: ./mediamtx/mediamtx.yml
