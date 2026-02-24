@@ -7,9 +7,11 @@ apiAddress: :9997
 rtsp: yes
 rtspAddress: :8554
 
-webrtc: yes
-webrtcAddress: :8889
-webrtcICEServers2: []
+webrtc: no
+
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
 
 paths:
   entrance:

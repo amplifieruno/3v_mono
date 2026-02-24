@@ -1,4 +1,4 @@
-import { FC, useState, useCallback } from 'react';
+import { FC, useState, useCallback, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VideoOffIcon, RefreshCwIcon } from 'lucide-react';
@@ -9,33 +9,73 @@ interface StreamPreviewProps {
   status: string;
 }
 
-const getWebRtcUrl = (rtspUrl: string): string => {
+const getHlsUrl = (rtspUrl: string): string => {
   const base =
-    import.meta.env.VITE_MEDIAMTX_WEBRTC_BASE ||
+    import.meta.env.VITE_MEDIAMTX_HLS_BASE ||
     `${window.location.protocol}//stream.${window.location.hostname.replace(/^app\./, '')}`;
   try {
     const url = new URL(rtspUrl);
     const streamPath = url.pathname.replace(/^\//, '');
-    return `${base}/${streamPath}`;
+    return `${base}/${streamPath}/index.m3u8`;
   } catch {
     const match = rtspUrl.match(/\/([^/]+)$/);
     const streamPath = match?.[1] ?? rtspUrl;
-    return `${base}/${streamPath}`;
+    return `${base}/${streamPath}/index.m3u8`;
   }
 };
 
 export const StreamPreview: FC<StreamPreviewProps> = ({ streamUrl, deviceName, status }) => {
   const [hasError, setHasError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleRetry = useCallback(() => {
     setHasError(false);
     setRetryKey((k) => k + 1);
   }, []);
 
-  const handleIframeError = useCallback(() => {
-    setHasError(true);
-  }, []);
+  const hlsUrl = streamUrl ? getHlsUrl(streamUrl) : null;
+
+  useEffect(() => {
+    if (!hlsUrl || !videoRef.current) return;
+
+    const video = videoRef.current;
+
+    // Safari supports HLS natively
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = hlsUrl;
+      video.play().catch(() => {});
+      return;
+    }
+
+    // Other browsers need hls.js
+    let hls: import('hls.js').default | null = null;
+
+    import('hls.js').then(({ default: Hls }) => {
+      if (!Hls.isSupported()) {
+        setHasError(true);
+        return;
+      }
+
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) setHasError(true);
+      });
+    });
+
+    return () => {
+      hls?.destroy();
+    };
+  }, [hlsUrl, retryKey]);
 
   // No stream URL
   if (!streamUrl) {
@@ -64,8 +104,6 @@ export const StreamPreview: FC<StreamPreviewProps> = ({ streamUrl, deviceName, s
     );
   }
 
-  const webRtcUrl = getWebRtcUrl(streamUrl);
-
   // Error state
   if (hasError) {
     return (
@@ -91,13 +129,13 @@ export const StreamPreview: FC<StreamPreviewProps> = ({ streamUrl, deviceName, s
   // Active stream
   return (
     <div className='relative aspect-video bg-black rounded-lg overflow-hidden'>
-      <iframe
+      <video
         key={retryKey}
-        src={webRtcUrl}
-        className='w-full h-full border-0'
-        allow='autoplay'
-        title={`Stream: ${deviceName}`}
-        onError={handleIframeError}
+        ref={videoRef}
+        className='w-full h-full'
+        muted
+        autoPlay
+        playsInline
       />
       <div className='absolute top-2 left-2'>
         <div className='flex items-center gap-1.5 bg-black/50 rounded px-2 py-1'>

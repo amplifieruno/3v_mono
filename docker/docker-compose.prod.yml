@@ -499,7 +499,7 @@ services:
       traefik.enable: "true"
       traefik.http.routers.mediamtx.entrypoints: web
       traefik.http.routers.mediamtx.rule: Host(`${STREAM_URL}`)
-      traefik.http.services.mediamtx.loadbalancer.server.port: "8889"
+      traefik.http.services.mediamtx.loadbalancer.server.port: "8888"
     restart: unless-stopped
 
 volumes:
