@@ -27,7 +27,7 @@ interface RecognitionToggleProps {
   streamUrl: string | null;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const FPS_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 const formatDuration = (startedAt: string | null): string => {

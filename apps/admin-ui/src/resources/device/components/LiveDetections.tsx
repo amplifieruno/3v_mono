@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { gqlClient } from '@/shared/api/gql-client';
 import { DeviceDetectionsQuery } from '../queries';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 interface Detection {
   id: string;
