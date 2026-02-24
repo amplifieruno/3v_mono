@@ -59,7 +59,10 @@ export const StreamPreview: FC<StreamPreviewProps> = ({ streamUrl, deviceName, s
 
       hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
+        lowLatencyMode: false,
+        backBufferLength: 30,
+        maxBufferLength: 10,
+        liveSyncDurationCount: 3,
       });
 
       hls.loadSource(hlsUrl);
@@ -68,7 +71,15 @@ export const StreamPreview: FC<StreamPreviewProps> = ({ streamUrl, deviceName, s
         video.play().catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setHasError(true);
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls?.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls?.recoverMediaError();
+          } else {
+            setHasError(true);
+          }
+        }
       });
     });
 

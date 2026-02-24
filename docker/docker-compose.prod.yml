@@ -439,6 +439,10 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      HASURA_GRAPHQL_URL: http://graphql:8080/v1/graphql
+      GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
+      RTSP_HOST: mediamtx
+      CORS_ORIGIN: https://${APP_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
