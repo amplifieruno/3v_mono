@@ -9,7 +9,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VIDEO_DIR="$SCRIPT_DIR/videos"
+VIDEO_DIR="${VIDEO_DIR:-$SCRIPT_DIR/videos}"
 CONTAINER_NAME="itap-stream-server"
 DEPLOY=false
 

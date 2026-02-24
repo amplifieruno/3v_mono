@@ -4,7 +4,15 @@ set -e
 INPUT_DIR="/input"
 OUTPUT_DIR="/videos"
 
-for video in "$INPUT_DIR"/*.mp4; do
+shopt -s nullglob
+mp4_files=("$INPUT_DIR"/*.mp4)
+if [ ${#mp4_files[@]} -eq 0 ]; then
+  echo "ERROR: No .mp4 files found in $INPUT_DIR"
+  echo "Run download-samples.sh first or place videos in videos/ directory"
+  exit 1
+fi
+
+for video in "${mp4_files[@]}"; do
   name=$(basename "$video" .mp4)
   mkdir -p "$OUTPUT_DIR/$name/segments" "$OUTPUT_DIR/$name/frames"
 
