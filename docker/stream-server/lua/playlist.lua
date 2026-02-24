@@ -17,12 +17,19 @@ local now = ngx.now()
 local pos = now % duration
 local current_seg = math.floor(pos / seg_dur)
 
--- Media sequence monotonically increases (wall clock based)
--- This makes hls.js think it's a never-ending live stream
-local media_seq = math.floor(now / seg_dur)
+-- Clamp to valid range (safety for floating-point edge cases)
+if current_seg >= total_segs then
+  current_seg = total_segs - 1
+end
 
--- Sliding window of 3 segments (standard for live HLS)
-local window = 3
+-- Compute media_seq tied to the segment index, not wall clock.
+-- This ensures (media_seq + i) % total_segs == (current_seg + i) % total_segs,
+-- so virtual segment URLs resolve correctly via modulo.
+local loops = math.floor(now / duration)
+local media_seq = loops * total_segs + current_seg
+
+-- 6-segment window for ~6s buffer (more resilient to network latency)
+local window = 6
 
 ngx.header["Content-Type"] = "application/vnd.apple.mpegurl"
 ngx.header["Cache-Control"] = "no-cache, no-store"
@@ -30,12 +37,21 @@ ngx.header["Cache-Control"] = "no-cache, no-store"
 local body = "#EXTM3U\n"
 body = body .. "#EXT-X-VERSION:3\n"
 body = body .. "#EXT-X-TARGETDURATION:" .. seg_dur .. "\n"
-body = body .. "#EXT-X-MEDIA-SEQUENCE:" .. media_seq .. "\n"
+body = body .. "#EXT-X-MEDIA-SEQUENCE:" .. string.format("%.0f", media_seq) .. "\n"
 
 for i = 0, window - 1 do
-  local seg = (current_seg + i) % total_segs
-  body = body .. "#EXTINF:" .. seg_dur .. ".000,\n"
-  body = body .. string.format("/streams/%s/segments/seg%04d.ts", stream_id, seg) .. "\n"
+  local file_idx = (current_seg + i) % total_segs
+  local prev_file_idx = (current_seg + i - 1) % total_segs
+
+  -- Signal discontinuity when looping back to the start of the video
+  if i > 0 and file_idx < prev_file_idx then
+    body = body .. "#EXT-X-DISCONTINUITY\n"
+  end
+
+  body = body .. "#EXTINF:" .. string.format("%.3f", seg_dur) .. ",\n"
+  -- Virtual segment URL: unique per wall-clock second, resolved via modulo on the server
+  body = body .. string.format("/streams/%s/segments/live/%s.ts",
+    stream_id, string.format("%.0f", media_seq + i)) .. "\n"
 end
 
 -- NO #EXT-X-ENDLIST — signals live stream to hls.js
