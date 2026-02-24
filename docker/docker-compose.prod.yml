@@ -441,7 +441,7 @@ services:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       HASURA_GRAPHQL_URL: http://graphql:8080/v1/graphql
       GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
-      RTSP_HOST: mediamtx
+      STREAM_SERVER_URL: http://stream-server:8888
       CORS_ORIGIN: https://${APP_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
@@ -479,33 +479,19 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  mediamtx:
+  stream-server:
     build:
-      context: ./mediamtx
+      context: ./stream-server
       dockerfile: Dockerfile
-    container_name: itap-mediamtx-prod
-    ports:
-      - "8554:8554"
-      - "8189:8189/udp"
-    volumes:
-      - type: bind
-        source: ./mediamtx/mediamtx.yml
-        target: /mediamtx.yml
-        read_only: true
-      - type: bind
-        source: ./mediamtx/videos
-        target: /videos
-        read_only: true
+    container_name: itap-stream-server-prod
     networks:
       - internal
       - proxy
     labels:
       traefik.enable: "true"
-      traefik.http.routers.mediamtx.entrypoints: web
-      traefik.http.routers.mediamtx.rule: Host(`${STREAM_URL}`)
-      traefik.http.services.mediamtx.loadbalancer.server.port: "8888"
-    cpus: 1.0
-    mem_limit: 512m
+      traefik.http.routers.stream-server.entrypoints: web
+      traefik.http.routers.stream-server.rule: Host(`${STREAM_URL}`)
+      traefik.http.services.stream-server.loadbalancer.server.port: "8888"
     restart: unless-stopped
 
 volumes:

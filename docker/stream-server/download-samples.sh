@@ -4,13 +4,13 @@
 #
 # Usage:
 #   ./download-samples.sh              # Download to local videos/ dir
-#   ./download-samples.sh --deploy     # Download + copy to running container + restart
+#   ./download-samples.sh --deploy     # Download + rebuild stream-server container
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VIDEO_DIR="$SCRIPT_DIR/videos"
-CONTAINER_NAME="itap-mediamtx-prod"
+CONTAINER_NAME="itap-stream-server"
 DEPLOY=false
 
 if [ "$1" = "--deploy" ]; then
@@ -54,23 +54,14 @@ echo ""
 echo "Videos in $VIDEO_DIR:"
 ls -lh "$VIDEO_DIR"/*.mp4 2>/dev/null || echo "  (none)"
 
-# Deploy to running container
+# Deploy: rebuild the stream-server container (videos are baked in at build time)
 if [ "$DEPLOY" = true ]; then
   echo ""
-  if docker inspect "$CONTAINER_NAME" &>/dev/null; then
-    echo "Copying videos to container $CONTAINER_NAME..."
-    for f in "$VIDEO_DIR"/*.mp4; do
-      [ -f "$f" ] || continue
-      fname=$(basename "$f")
-      echo "  Copying $fname..."
-      docker cp "$f" "$CONTAINER_NAME:/videos/$fname"
-    done
-
-    echo "Restarting $CONTAINER_NAME..."
-    docker restart "$CONTAINER_NAME"
-    echo "Done! Streams should be available in a few seconds."
-  else
-    echo "Container $CONTAINER_NAME not found. Start it first."
-    exit 1
-  fi
+  echo "Rebuilding stream-server container..."
+  docker compose -f "$SCRIPT_DIR/../../docker/docker-compose.prod.yml" \
+    build stream-server --no-cache
+  echo "Restarting stream-server..."
+  docker compose -f "$SCRIPT_DIR/../../docker/docker-compose.prod.yml" \
+    up -d stream-server
+  echo "Done! Streams should be available in a few seconds."
 fi

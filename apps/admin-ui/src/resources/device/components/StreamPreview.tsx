@@ -11,16 +11,16 @@ interface StreamPreviewProps {
 
 const getHlsUrl = (rtspUrl: string): string => {
   const base =
-    import.meta.env.VITE_MEDIAMTX_HLS_BASE ||
+    import.meta.env.VITE_STREAM_BASE ||
     `${window.location.protocol}//stream.${window.location.hostname.replace(/^app\./, '')}`;
   try {
     const url = new URL(rtspUrl);
     const streamPath = url.pathname.replace(/^\//, '');
-    return `${base}/${streamPath}/index.m3u8`;
+    return `${base}/streams/${streamPath}/live.m3u8`;
   } catch {
     const match = rtspUrl.match(/\/([^/]+)$/);
     const streamPath = match?.[1] ?? rtspUrl;
-    return `${base}/${streamPath}/index.m3u8`;
+    return `${base}/streams/${streamPath}/live.m3u8`;
   }
 };
 

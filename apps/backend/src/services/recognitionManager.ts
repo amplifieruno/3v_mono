@@ -1,4 +1,3 @@
-import { spawn, ChildProcess } from 'child_process'
 import fetch from 'node-fetch'
 import { Server } from 'socket.io'
 import { insightFaceService } from './insightFaceService.js'
@@ -6,9 +5,8 @@ import { insightFaceService } from './insightFaceService.js'
 // Config
 const HASURA_GRAPHQL_URL = process.env.HASURA_GRAPHQL_URL || 'http://localhost:8080/v1/graphql'
 const HASURA_ADMIN_SECRET = process.env.GRAPHQL_ADMIN_SECRET || process.env.HASURA_ADMIN_SECRET || 'change-me'
+const STREAM_SERVER_URL = process.env.STREAM_SERVER_URL || 'http://localhost:8888'
 const POLL_INTERVAL_MS = 10_000
-const MAX_RETRIES = 3
-const RETRY_DELAY_MS = 5_000
 const STATUS_EMIT_INTERVAL_MS = 5_000
 
 // Types
@@ -44,14 +42,15 @@ interface DetectionInput {
   thumbnail: string | null
 }
 
-// Helper: find JPEG end marker (0xFF 0xD9)
-function findJpegEnd(buf: Buffer): number {
-  for (let i = 0; i < buf.length - 1; i++) {
-    if (buf[i] === 0xff && buf[i + 1] === 0xd9) {
-      return i
-    }
+// Helper: extract stream ID from a stream URL (e.g. "rtsp://host:8554/entrance" -> "entrance")
+function extractStreamId(streamUrl: string): string {
+  try {
+    const url = new URL(streamUrl)
+    return url.pathname.replace(/^\//, '')
+  } catch {
+    const match = streamUrl.match(/\/([^/]+)$/)
+    return match?.[1] ?? streamUrl
   }
-  return -1
 }
 
 // Hasura GraphQL helper
@@ -83,12 +82,11 @@ async function logDetection(data: DetectionInput): Promise<{ id: string }> {
 }
 
 class RecognitionSession {
-  private ffmpegProcess: ChildProcess | null = null
+  private fetchInterval: NodeJS.Timeout | null = null
   private isProcessing = false
   private _isRunning = false
-  private retryCount = 0
-  private retryTimeout: NodeJS.Timeout | null = null
   private statusInterval: NodeJS.Timeout | null = null
+  private snapshotUrl: string
   readonly stats: SessionStats
 
   constructor(
@@ -98,6 +96,8 @@ class RecognitionSession {
     private fps: number,
     private io: Server | null,
   ) {
+    const streamId = extractStreamId(streamUrl)
+    this.snapshotUrl = `${STREAM_SERVER_URL}/streams/${streamId}/snapshot.jpg`
     this.stats = {
       framesProcessed: 0,
       facesDetected: 0,
@@ -114,75 +114,25 @@ class RecognitionSession {
   start(): void {
     if (this._isRunning) return
 
-    // Clear any stale interval from a previous run
+    // Clear any stale intervals from a previous run
     if (this.statusInterval) {
       clearInterval(this.statusInterval)
       this.statusInterval = null
     }
+    if (this.fetchInterval) {
+      clearInterval(this.fetchInterval)
+      this.fetchInterval = null
+    }
 
-    // Normalize stream URL: resolve Docker hostnames to localhost for local dev
-    let url = this.streamUrl
-    const rtspHost = process.env.RTSP_HOST || 'localhost'
-    url = url.replace(/mediamtx|localhost|127\.0\.0\.1/, rtspHost)
-
-    const args = [
-      '-rtsp_transport', 'tcp',
-      '-i', url,
-      '-vf', `fps=${this.fps}`,
-      '-f', 'image2pipe',
-      '-vcodec', 'mjpeg',
-      '-q:v', '5',
-      '-an',
-      'pipe:1',
-    ]
-
-    console.log(`[Recognition] Starting ffmpeg for ${this.deviceName} (${this.deviceId})`)
-    console.log(`[Recognition] Stream: ${url}, FPS: ${this.fps}`)
-
-    this.ffmpegProcess = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
     this._isRunning = true
 
-    this.ffmpegProcess.on('error', (err) => {
-      console.error(`[Recognition] ffmpeg spawn error for ${this.deviceId}: ${err.message}`)
-      this._isRunning = false
-      this.ffmpegProcess = null
-      if (this.statusInterval) {
-        clearInterval(this.statusInterval)
-        this.statusInterval = null
-      }
-      this.io?.to(`device:${this.deviceId}`).emit('recognition:error', {
-        device_id: this.deviceId,
-        error: `ffmpeg not available: ${err.message}`,
-      })
-    })
+    const intervalMs = Math.max(1000 / this.fps, 500) // Min 500ms between frames
 
-    let buffer = Buffer.alloc(0)
+    console.log(`[Recognition] Starting snapshot polling for ${this.deviceName} (${this.deviceId})`)
+    console.log(`[Recognition] URL: ${this.snapshotUrl}, interval: ${intervalMs}ms`)
 
-    this.ffmpegProcess.stdout!.on('data', (chunk: Buffer) => {
-      buffer = Buffer.concat([buffer, chunk])
-
-      let eoiIndex: number
-      while ((eoiIndex = findJpegEnd(buffer)) !== -1) {
-        const frame = buffer.subarray(0, eoiIndex + 2)
-        buffer = buffer.subarray(eoiIndex + 2)
-        this.onFrameReceived(frame)
-      }
-
-      // Prevent unbounded buffer growth (>10MB means something is wrong)
-      if (buffer.length > 10 * 1024 * 1024) {
-        buffer = Buffer.alloc(0)
-      }
-    })
-
-    this.ffmpegProcess.stderr!.on('data', (data: Buffer) => {
-      const msg = data.toString().trim()
-      // Suppress noisy progress lines
-      if (msg && !msg.startsWith('frame=') && !msg.startsWith('size=')) {
-        console.log(`[Recognition] ffmpeg ${this.deviceId}: ${msg.slice(0, 200)}`)
-      }
-    })
-
-    this.ffmpegProcess.on('exit', (code) => this.handleFfmpegExit(code))
+    // Fetch frames on interval
+    this.fetchInterval = setInterval(() => this.fetchSnapshot(), intervalMs)
 
     // Emit status every 5 seconds
     this.statusInterval = setInterval(() => {
@@ -201,17 +151,13 @@ class RecognitionSession {
   stop(): void {
     this._isRunning = false
 
-    if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout)
-      this.retryTimeout = null
+    if (this.fetchInterval) {
+      clearInterval(this.fetchInterval)
+      this.fetchInterval = null
     }
     if (this.statusInterval) {
       clearInterval(this.statusInterval)
       this.statusInterval = null
-    }
-    if (this.ffmpegProcess) {
-      this.ffmpegProcess.kill('SIGTERM')
-      this.ffmpegProcess = null
     }
 
     this.io?.to(`device:${this.deviceId}`).emit('recognition:stopped', {
@@ -229,11 +175,24 @@ class RecognitionSession {
     }
   }
 
-  private onFrameReceived(frame: Buffer): void {
-    if (this.isProcessing) return
-    this.processFrame(frame).catch((err) => {
-      console.error(`[Recognition] Frame error for ${this.deviceId}:`, err)
-    })
+  private async fetchSnapshot(): Promise<void> {
+    if (this.isProcessing || !this._isRunning) return
+
+    try {
+      const response = await fetch(this.snapshotUrl)
+      if (!response.ok) {
+        throw new Error(`Snapshot HTTP ${response.status}`)
+      }
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      await this.processFrame(buffer)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      if (!msg.startsWith('Frame dropped')) {
+        this.stats.errors++
+        console.error(`[Recognition] Snapshot error for ${this.deviceId}: ${msg}`)
+      }
+    }
   }
 
   private async processFrame(frameBuffer: Buffer): Promise<void> {
@@ -292,31 +251,6 @@ class RecognitionSession {
       }
     } finally {
       this.isProcessing = false
-    }
-  }
-
-  private handleFfmpegExit(code: number | null): void {
-    if (!this._isRunning) return // Expected stop via stop()
-
-    console.error(`[Recognition] ffmpeg exited (code ${code}) for ${this.deviceId}`)
-    this.io?.to(`device:${this.deviceId}`).emit('recognition:error', {
-      device_id: this.deviceId,
-      error: `ffmpeg exited with code ${code}`,
-    })
-
-    if (this.retryCount < MAX_RETRIES) {
-      this.retryCount++
-      console.log(`[Recognition] Retry ${this.retryCount}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms`)
-      this.retryTimeout = setTimeout(() => {
-        if (this._isRunning) {
-          this._isRunning = false // Reset so start() proceeds
-          this.ffmpegProcess = null
-          this.start()
-        }
-      }, RETRY_DELAY_MS)
-    } else {
-      console.error(`[Recognition] Max retries reached for ${this.deviceId}, stopping`)
-      this._isRunning = false
     }
   }
 }

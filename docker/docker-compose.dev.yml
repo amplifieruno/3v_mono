@@ -405,26 +405,13 @@ services:
     mem_limit: 4g
     cpus: 1.0
 
-  mediamtx:
+  stream-server:
     build:
-      context: ./mediamtx
+      context: ./stream-server
       dockerfile: Dockerfile
-    container_name: 3v_mediamtx
+    container_name: 3v_stream_server
     ports:
-      - "8554:8554"       # RTSP
-      - "8888:8888"       # HLS
-      - "8189:8189/udp"   # WebRTC ICE (legacy)
-    volumes:
-      - type: bind
-        source: ./mediamtx/mediamtx.yml
-        target: /mediamtx.yml
-        read_only: true
-      - type: bind
-        source: ./mediamtx/videos
-        target: /videos
-        read_only: true
-    cpus: 1.0
-    mem_limit: 512m
+      - "8888:8888"
     restart: unless-stopped
 
   traefik:
