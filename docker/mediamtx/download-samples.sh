@@ -1,30 +1,76 @@
 #!/bin/bash
-# Generates sample surveillance-style test videos for demo virtual cameras
+# Downloads sample surveillance-style videos with people for demo streams.
+# Videos are sourced from Pexels (free, no attribution required).
+#
+# Usage:
+#   ./download-samples.sh              # Download to local videos/ dir
+#   ./download-samples.sh --deploy     # Download + copy to running container + restart
+
+set -e
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VIDEO_DIR="$SCRIPT_DIR/videos"
+CONTAINER_NAME="itap-mediamtx-prod"
+DEPLOY=false
+
+if [ "$1" = "--deploy" ]; then
+  DEPLOY=true
+fi
+
 mkdir -p "$VIDEO_DIR"
 
-STREAMS=(entrance lobby serverroom warehouse)
-LABELS=("Main Entrance" "Lobby" "Server Room" "Warehouse")
-COLORS=("0x2d5a27" "0x3a2d5a" "0x5a2d2d" "0x5a4d2d")
+# Pexels video IDs — people walking, faces visible
+# Replace these with your own Pexels video URLs if needed
+# Find videos at: https://www.pexels.com/search/videos/people%20walking/
+declare -A VIDEOS=(
+  [entrance]="https://videos.pexels.com/video-files/18123867/18123867-hd_1920_1080_25fps.mp4"
+  [lobby]="https://videos.pexels.com/video-files/1721303/1721303-hd_1920_1080_25fps.mp4"
+  [serverroom]="https://videos.pexels.com/video-files/20402896/20402896-sd_960_540_25fps.mp4"
+  [warehouse]="https://videos.pexels.com/video-files/3205624/3205624-hd_1920_1080_25fps.mp4"
+)
 
-if command -v ffmpeg &> /dev/null; then
-  for i in "${!STREAMS[@]}"; do
-    name="${STREAMS[$i]}"
-    label="${LABELS[$i]}"
-    color="${COLORS[$i]}"
-    if [ ! -f "$VIDEO_DIR/$name.mp4" ]; then
-      echo "Generating test video: $name.mp4 ($label)"
-      ffmpeg -f lavfi -i "color=c=${color}:s=1280x720:d=30:r=25" \
-             -vf "drawtext=text='${label} - %{pts\\:hms}':fontsize=36:fontcolor=white:x=10:y=10,\
-drawtext=text='ITAP DEMO':fontsize=24:fontcolor=white@0.5:x=w-tw-10:y=10,\
-drawtext=text='$(date +%Y-%m-%d)':fontsize=20:fontcolor=white@0.7:x=10:y=h-30" \
-             -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
-             "$VIDEO_DIR/$name.mp4" -y
-    fi
-  done
-  echo "All test videos generated in $VIDEO_DIR"
-else
-  echo "FFmpeg not found. Please install FFmpeg or manually place MP4 files in $VIDEO_DIR/"
-  echo "Required files: ${STREAMS[*]}"
+echo "Downloading sample videos..."
+for name in entrance lobby serverroom warehouse; do
+  url="${VIDEOS[$name]}"
+  dest="$VIDEO_DIR/$name.mp4"
+
+  if [ -f "$dest" ] && [ "$FORCE" != "true" ]; then
+    echo "  $name.mp4 already exists (use FORCE=true to overwrite)"
+    continue
+  fi
+
+  echo "  Downloading $name.mp4..."
+  if curl -L -f -o "$dest" "$url" 2>/dev/null; then
+    echo "  OK: $name.mp4 ($(du -h "$dest" | cut -f1))"
+  else
+    echo "  FAILED: $name.mp4 — URL may be outdated."
+    echo "  Browse https://www.pexels.com/search/videos/people%20walking/"
+    echo "  and update the URL in this script."
+    rm -f "$dest"
+  fi
+done
+
+echo ""
+echo "Videos in $VIDEO_DIR:"
+ls -lh "$VIDEO_DIR"/*.mp4 2>/dev/null || echo "  (none)"
+
+# Deploy to running container
+if [ "$DEPLOY" = true ]; then
+  echo ""
+  if docker inspect "$CONTAINER_NAME" &>/dev/null; then
+    echo "Copying videos to container $CONTAINER_NAME..."
+    for f in "$VIDEO_DIR"/*.mp4; do
+      [ -f "$f" ] || continue
+      fname=$(basename "$f")
+      echo "  Copying $fname..."
+      docker cp "$f" "$CONTAINER_NAME:/videos/$fname"
+    done
+
+    echo "Restarting $CONTAINER_NAME..."
+    docker restart "$CONTAINER_NAME"
+    echo "Done! Streams should be available in a few seconds."
+  else
+    echo "Container $CONTAINER_NAME not found. Start it first."
+    exit 1
+  fi
 fi
