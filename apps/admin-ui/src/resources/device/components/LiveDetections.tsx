@@ -126,8 +126,13 @@ export const LiveDetections: FC<LiveDetectionsProps> = ({
 
     socket.emit('join-device', { deviceId });
 
-    socket.on('detection', (data: Detection) => {
-      setLiveDetections((prev) => [data, ...prev].slice(0, 50));
+    socket.on('detection', (data: Detection & { timestamp?: string }) => {
+      // Backend sends 'timestamp', DB returns 'created_at' — normalize
+      const normalized: Detection = {
+        ...data,
+        created_at: data.created_at || data.timestamp || new Date().toISOString(),
+      };
+      setLiveDetections((prev) => [normalized, ...prev].slice(0, 50));
     });
 
     return () => {

@@ -129,8 +129,9 @@ export const ShowPage: FC = () => {
         </div>
       </div>
 
-      {/* Stream Preview with Recognition Status overlay */}
-      <div className='mt-4'>
+      {/* Stream + Details: 2-column on lg */}
+      <div className='mt-4 grid gap-4 lg:grid-cols-[1fr_380px]'>
+        {/* Left: Stream Preview */}
         <Card>
           <CardHeader>
             <CardTitle>Stream Preview</CardTitle>
@@ -142,99 +143,98 @@ export const ShowPage: FC = () => {
                 deviceName={record.name as string}
                 status={record.status as string}
               />
-              {/* Recognition status overlay — bottom right */}
               <div className='absolute bottom-2 right-2'>
                 <RecognitionStatus recognitionEnabled={recognitionEnabled} />
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Recognition Toggle + Device Details */}
-      <div className='mt-4 grid gap-4 md:grid-cols-2'>
-        <RecognitionToggle
-          deviceId={String(id ?? '')}
-          recognitionEnabled={recognitionEnabled}
-          recognitionFps={recognitionFps}
-          streamUrl={record.stream_url as string | null}
-        />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Device Details</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3'>
-            <div>
-              <span className='text-sm text-muted-foreground'>Type</span>
+        {/* Right: Details + Recognition */}
+        <div className='space-y-4'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Device Details</CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-3'>
               <div>
-                <Badge variant='outline'>{deviceTypeLabel as string}</Badge>
-              </div>
-            </div>
-            <div>
-              <span className='text-sm text-muted-foreground'>Area</span>
-              <p>
-                {area ? (
-                  <>
-                    {area.name}
-                    {area.facility ? (
-                      <span className='text-muted-foreground text-sm ml-1'>
-                        ({area.facility.name})
-                      </span>
-                    ) : null}
-                  </>
-                ) : (
-                  <span className='text-muted-foreground'>—</span>
-                )}
-              </p>
-            </div>
-            {record.stream_url ? (
-              <div>
-                <span className='text-sm text-muted-foreground'>Stream URL</span>
-                <div className='flex items-center gap-2'>
-                  <code className='text-sm font-mono bg-muted px-2 py-1 rounded'>
-                    {record.stream_url as string}
-                  </code>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => copyToClipboard(record.stream_url as string)}
-                  >
-                    <CopyIcon className='h-3 w-3' />
-                  </Button>
+                <span className='text-sm text-muted-foreground'>Type</span>
+                <div>
+                  <Badge variant='outline'>{deviceTypeLabel as string}</Badge>
                 </div>
               </div>
-            ) : null}
-            <div className='grid grid-cols-2 gap-4'>
               <div>
-                <span className='text-sm text-muted-foreground'>Resolution</span>
-                <p>{(record.resolution as string) || '—'}</p>
+                <span className='text-sm text-muted-foreground'>Area</span>
+                <p>
+                  {area ? (
+                    <>
+                      {area.name}
+                      {area.facility ? (
+                        <span className='text-muted-foreground text-sm ml-1'>
+                          ({area.facility.name})
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className='text-muted-foreground'>—</span>
+                  )}
+                </p>
               </div>
-              <div>
-                <span className='text-sm text-muted-foreground'>FPS</span>
-                <p>{record.fps != null ? String(record.fps) : '—'}</p>
+              {record.stream_url ? (
+                <div>
+                  <span className='text-sm text-muted-foreground'>Stream URL</span>
+                  <div className='flex items-center gap-2'>
+                    <code className='text-sm font-mono bg-muted px-2 py-1 rounded break-all'>
+                      {record.stream_url as string}
+                    </code>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => copyToClipboard(record.stream_url as string)}
+                    >
+                      <CopyIcon className='h-3 w-3' />
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <span className='text-sm text-muted-foreground'>Resolution</span>
+                  <p>{(record.resolution as string) || '—'}</p>
+                </div>
+                <div>
+                  <span className='text-sm text-muted-foreground'>FPS</span>
+                  <p>{record.fps != null ? String(record.fps) : '—'}</p>
+                </div>
               </div>
-            </div>
-            {record.configuration ? (
-              <div>
-                <span className='text-sm text-muted-foreground'>Configuration</span>
-                <pre className='text-xs font-mono bg-muted p-2 rounded mt-1 overflow-auto max-h-40'>
-                  {formatJson(record.configuration)}
-                </pre>
+              {record.configuration ? (
+                <div>
+                  <span className='text-sm text-muted-foreground'>Configuration</span>
+                  <pre className='text-xs font-mono bg-muted p-2 rounded mt-1 overflow-auto max-h-40'>
+                    {formatJson(record.configuration)}
+                  </pre>
+                </div>
+              ) : null}
+              <div className='grid grid-cols-2 gap-4 pt-2 border-t'>
+                <div>
+                  <span className='text-sm text-muted-foreground'>Created</span>
+                  <p className='text-sm'>{formatDate(record.created_at as string)}</p>
+                </div>
+                <div>
+                  <span className='text-sm text-muted-foreground'>Updated</span>
+                  <p className='text-sm'>{formatDate(record.updated_at as string)}</p>
+                </div>
               </div>
-            ) : null}
-            <div className='grid grid-cols-2 gap-4 pt-2 border-t'>
-              <div>
-                <span className='text-sm text-muted-foreground'>Created</span>
-                <p className='text-sm'>{formatDate(record.created_at as string)}</p>
-              </div>
-              <div>
-                <span className='text-sm text-muted-foreground'>Updated</span>
-                <p className='text-sm'>{formatDate(record.updated_at as string)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <RecognitionToggle
+            deviceId={String(id ?? '')}
+            recognitionEnabled={recognitionEnabled}
+            recognitionFps={recognitionFps}
+            streamUrl={record.stream_url as string | null}
+          />
+        </div>
       </div>
 
       {/* Live Detections */}

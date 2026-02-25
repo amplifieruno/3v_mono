@@ -229,7 +229,7 @@ class RecognitionSession {
           similarity: face.identity.similarity,
           is_new_identity: face.identity.isNewIdentity,
           thumbnail: null,
-          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString(),
           identity: {
             id: face.identity.id,
             status: face.identity.status,
