@@ -159,132 +159,126 @@ export const ShowPage: FC = () => {
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className='mt-4 grid gap-4 lg:grid-cols-[1fr_380px]'>
-        {/* Left: Photo grid */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Photos ({images.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {images.length === 0 ? (
-              <p className='text-muted-foreground text-sm'>No images available.</p>
-            ) : (
-              <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
-                {images.map((url, index) => (
-                  <div key={index} className='aspect-square rounded-lg overflow-hidden bg-muted'>
-                    <img
-                      src={url}
-                      alt={`Identity photo ${index + 1}`}
-                      className='h-full w-full object-cover'
-                    />
-                  </div>
+      {/* Details card */}
+      <Card className='mt-4'>
+        <CardHeader>
+          <CardTitle>Details</CardTitle>
+        </CardHeader>
+        <CardContent className='space-y-3'>
+          {/* Photos row */}
+          {images.length > 0 && (
+            <div>
+              <span className='text-sm text-muted-foreground'>
+                Photos ({images.length})
+              </span>
+              <div className='mt-1 flex -space-x-2'>
+                {images.slice(0, 6).map((url, index) => (
+                  <Avatar
+                    key={index}
+                    className='h-10 w-10 ring-2 ring-background'
+                  >
+                    <AvatarImage src={url} alt={`Photo ${index + 1}`} />
+                    <AvatarFallback>
+                      <UserIcon className='h-4 w-4' />
+                    </AvatarFallback>
+                  </Avatar>
                 ))}
+                {images.length > 6 && (
+                  <Avatar className='h-10 w-10 ring-2 ring-background'>
+                    <AvatarFallback className='text-xs font-medium'>
+                      +{images.length - 6}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Right: Details + Attributes + Actions */}
-        <div className='space-y-4'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-3'>
-              <div>
-                <span className='text-sm text-muted-foreground'>Status</span>
-                <div>
-                  <Badge>{statusLabel}</Badge>
-                </div>
-              </div>
-              <div>
-                <span className='text-sm text-muted-foreground'>Profile</span>
-                <div>
-                  {profile ? (
-                    <Link
-                      to={`/profiles/show/${profile.id}`}
-                      className='text-primary hover:underline font-medium'
-                    >
-                      {profile.first_name} {profile.last_name}
-                      {profile.email && (
-                        <span className='text-muted-foreground text-sm ml-1'>
-                          ({profile.email})
-                        </span>
-                      )}
-                    </Link>
-                  ) : (
-                    <span className='text-muted-foreground'>Not linked</span>
-                  )}
-                </div>
-              </div>
-              <div className='grid grid-cols-2 gap-4 pt-2 border-t'>
-                <div>
-                  <span className='text-sm text-muted-foreground'>Created</span>
-                  <p className='text-sm'>{formatDate(record.created_at as string)}</p>
-                </div>
-                <div>
-                  <span className='text-sm text-muted-foreground'>Updated</span>
-                  <p className='text-sm'>{formatDate(record.updated_at as string)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {formattedAttributes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Attributes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <pre className='text-xs font-mono bg-muted p-2 rounded overflow-auto max-h-40'>
-                  {formattedAttributes}
-                </pre>
-              </CardContent>
-            </Card>
+            </div>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-2'>
-              {!profile ? (
-                <>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-full justify-start'
-                    onClick={() => setCreateDialogOpen(true)}
-                  >
-                    <UserPlusIcon className='mr-2 h-4 w-4' />
-                    Create Profile
-                  </Button>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-full justify-start'
-                    onClick={() => setLinkDialogOpen(true)}
-                  >
-                    <LinkIcon className='mr-2 h-4 w-4' />
-                    Link to Profile
-                  </Button>
-                </>
+          <div>
+            <span className='text-sm text-muted-foreground'>Status</span>
+            <div>
+              <Badge>{statusLabel}</Badge>
+            </div>
+          </div>
+          <div>
+            <span className='text-sm text-muted-foreground'>Profile</span>
+            <div>
+              {profile ? (
+                <Link
+                  to={`/profiles/show/${profile.id}`}
+                  className='text-primary hover:underline font-medium'
+                >
+                  {profile.first_name} {profile.last_name}
+                  {profile.email && (
+                    <span className='text-muted-foreground text-sm ml-1'>
+                      ({profile.email})
+                    </span>
+                  )}
+                </Link>
               ) : (
+                <span className='text-muted-foreground'>Not linked</span>
+              )}
+            </div>
+          </div>
+          <div className='grid grid-cols-2 gap-4 pt-2 border-t'>
+            <div>
+              <span className='text-sm text-muted-foreground'>Created</span>
+              <p className='text-sm'>{formatDate(record.created_at as string)}</p>
+            </div>
+            <div>
+              <span className='text-sm text-muted-foreground'>Updated</span>
+              <p className='text-sm'>{formatDate(record.updated_at as string)}</p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className='pt-2 border-t flex gap-2'>
+            {!profile ? (
+              <>
                 <Button
                   variant='outline'
                   size='sm'
-                  className='w-full justify-start'
-                  onClick={handleUnlinkProfile}
+                  onClick={() => setCreateDialogOpen(true)}
                 >
-                  <UnlinkIcon className='mr-2 h-4 w-4' />
-                  Unlink Profile
+                  <UserPlusIcon className='mr-1 h-4 w-4' />
+                  Create Profile
                 </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => setLinkDialogOpen(true)}
+                >
+                  <LinkIcon className='mr-1 h-4 w-4' />
+                  Link to Profile
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleUnlinkProfile}
+              >
+                <UnlinkIcon className='mr-1 h-4 w-4' />
+                Unlink Profile
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Attributes */}
+      {formattedAttributes && (
+        <Card className='mt-4'>
+          <CardHeader>
+            <CardTitle>Attributes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className='text-xs font-mono bg-muted p-2 rounded overflow-auto max-h-40'>
+              {formattedAttributes}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Detection History */}
       <Card className='mt-4'>
@@ -321,7 +315,7 @@ export const ShowPage: FC = () => {
                             {det.device.name}
                           </Link>
                         ) : (
-                          <span className='text-muted-foreground'>\u2014</span>
+                          <span className='text-muted-foreground'>{'\u2014'}</span>
                         )}
                       </TableCell>
                       <TableCell className='text-sm'>

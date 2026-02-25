@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { LinkIcon, SearchIcon } from 'lucide-react';
+import { LinkIcon } from 'lucide-react';
 import { gqlClient } from '@/shared/api/gql-client';
 import {
   ProfileSearchQuery,
@@ -41,33 +41,47 @@ export const LinkProfileDialog: FC<LinkProfileDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
 
-  const handleSearch = async () => {
-    if (!search.trim()) return;
+  const fetchProfiles = useCallback(async (query: string) => {
     setLoading(true);
     try {
-      const pattern = `%${search.trim()}%`;
+      const trimmed = query.trim();
+      const where = trimmed
+        ? {
+            _or: [
+              { first_name: { _ilike: `%${trimmed}%` } },
+              { last_name: { _ilike: `%${trimmed}%` } },
+              { email: { _ilike: `%${trimmed}%` } },
+            ],
+          }
+        : {};
       const data = await gqlClient.request({
         document: ProfileSearchQuery,
-        variables: {
-          where: {
-            _or: [
-              { first_name: { _ilike: pattern } },
-              { last_name: { _ilike: pattern } },
-              { email: { _ilike: pattern } },
-            ],
-          },
-          limit: 10,
-        },
+        variables: { where, limit: trimmed ? 10 : 5 },
       });
       setResults(
         (data as { itap_profiles: ProfileResult[] }).itap_profiles ?? [],
       );
     } catch {
-      toast.error('Failed to search profiles');
+      toast.error('Failed to load profiles');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load profiles when dialog opens and when search changes
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => fetchProfiles(search), search ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [open, search, fetchProfiles]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSearch('');
+      setResults([]);
+    }
+  }, [open]);
 
   const handleLink = async (profileId: string) => {
     setLinking(true);
@@ -78,8 +92,6 @@ export const LinkProfileDialog: FC<LinkProfileDialogProps> = ({
       });
       toast.success('Profile linked successfully');
       onOpenChange(false);
-      setSearch('');
-      setResults([]);
       onLinked();
     } catch {
       toast.error('Failed to link profile');
@@ -98,59 +110,52 @@ export const LinkProfileDialog: FC<LinkProfileDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='flex gap-2'>
-          <Input
-            placeholder='Search by name or email...'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
-          <Button
-            variant='outline'
-            onClick={handleSearch}
-            disabled={loading}
-          >
-            <SearchIcon className='h-4 w-4' />
-          </Button>
-        </div>
+        <Input
+          placeholder='Filter by name or email...'
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         <div className='space-y-2 max-h-[300px] overflow-auto'>
           {loading && (
             <p className='text-sm text-muted-foreground text-center py-4'>
-              Searching...
+              Loading...
             </p>
           )}
-          {!loading && results.length === 0 && search && (
+          {!loading && results.length === 0 && (
             <p className='text-sm text-muted-foreground text-center py-4'>
-              No profiles found
+              {search ? 'No profiles found' : 'No profiles exist yet'}
             </p>
           )}
-          {results.map((profile) => (
-            <div
-              key={profile.id}
-              className='flex items-center justify-between p-3 rounded-lg border'
-            >
-              <div>
-                <p className='font-medium text-sm'>
-                  {profile.first_name} {profile.last_name}
-                </p>
-                {profile.email && (
-                  <p className='text-xs text-muted-foreground'>
-                    {profile.email}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => handleLink(profile.id)}
-                disabled={linking}
+          {!loading &&
+            results.map((profile) => (
+              <div
+                key={profile.id}
+                className='flex items-center justify-between p-3 rounded-lg border'
               >
-                <LinkIcon className='mr-1 h-3 w-3' />
-                Link
-              </Button>
-            </div>
-          ))}
+                <div>
+                  <p className='font-medium text-sm'>
+                    {[profile.first_name, profile.last_name]
+                      .filter(Boolean)
+                      .join(' ') || 'Unnamed'}
+                  </p>
+                  {profile.email && (
+                    <p className='text-xs text-muted-foreground'>
+                      {profile.email}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={() => handleLink(profile.id)}
+                  disabled={linking}
+                >
+                  <LinkIcon className='mr-1 h-3 w-3' />
+                  Link
+                </Button>
+              </div>
+            ))}
         </div>
       </DialogContent>
     </Dialog>
