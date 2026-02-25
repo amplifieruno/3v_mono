@@ -10,16 +10,17 @@ import {
 } from '@/components/ui/select';
 import { XIcon } from 'lucide-react';
 import { RuleCondition } from '../lib/conditionsToWhere';
-import { ruleFields } from '../data/ruleFields';
+import { RuleFieldDef, ruleFields as defaultFields } from '../data/ruleFields';
 
 interface RuleRowProps {
   rule: RuleCondition;
   onChange: (rule: RuleCondition) => void;
   onRemove: () => void;
+  fields?: RuleFieldDef[];
 }
 
-export const RuleRow: FC<RuleRowProps> = ({ rule, onChange, onRemove }) => {
-  const fieldDef = ruleFields.find((f) => f.key === rule.field);
+export const RuleRow: FC<RuleRowProps> = ({ rule, onChange, onRemove, fields = defaultFields }) => {
+  const fieldDef = fields.find((f) => f.key === rule.field);
   const operators = fieldDef?.operators ?? [];
   const needsValue =
     rule.operator !== 'is_true' &&
@@ -32,7 +33,7 @@ export const RuleRow: FC<RuleRowProps> = ({ rule, onChange, onRemove }) => {
       <Select
         value={rule.field}
         onValueChange={(v) => {
-          const newFieldDef = ruleFields.find((f) => f.key === v);
+          const newFieldDef = fields.find((f) => f.key === v);
           const newOp = newFieldDef?.operators[0]?.value ?? 'equals';
           onChange({ field: v, operator: newOp, value: null });
         }}
@@ -41,7 +42,7 @@ export const RuleRow: FC<RuleRowProps> = ({ rule, onChange, onRemove }) => {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {ruleFields.map((f) => (
+          {fields.map((f) => (
             <SelectItem key={f.key} value={f.key}>
               {f.label}
             </SelectItem>

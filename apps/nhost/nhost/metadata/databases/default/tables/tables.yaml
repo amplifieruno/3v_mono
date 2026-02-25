@@ -15,6 +15,7 @@
 - "!include itap_identities.yaml"
 - "!include itap_profiles.yaml"
 - "!include itap_segment_memberships.yaml"
+- "!include itap_segment_profile_memberships.yaml"
 - "!include itap_segments.yaml"
 - "!include storage_buckets.yaml"
 - "!include storage_files.yaml"

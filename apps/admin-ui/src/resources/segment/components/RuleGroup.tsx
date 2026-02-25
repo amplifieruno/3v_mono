@@ -17,12 +17,14 @@ import {
   createEmptyGroup,
 } from '../lib/conditionsToWhere';
 import { RuleRow } from './RuleRow';
+import { RuleFieldDef } from '../data/ruleFields';
 
 interface RuleGroupProps {
   group: RuleGroupType;
   onChange: (group: RuleGroupType) => void;
   onRemove?: () => void;
   depth?: number;
+  fields?: RuleFieldDef[];
 }
 
 export const RuleGroupComponent: FC<RuleGroupProps> = ({
@@ -30,6 +32,7 @@ export const RuleGroupComponent: FC<RuleGroupProps> = ({
   onChange,
   onRemove,
   depth = 0,
+  fields,
 }) => {
   const updateRule = (index: number, updated: RuleCondition | RuleGroupType) => {
     const newRules = [...group.rules];
@@ -95,6 +98,7 @@ export const RuleGroupComponent: FC<RuleGroupProps> = ({
                 onChange={(updated) => updateRule(index, updated)}
                 onRemove={() => removeRule(index)}
                 depth={depth + 1}
+                fields={fields}
               />
             ) : (
               <RuleRow
@@ -102,6 +106,7 @@ export const RuleGroupComponent: FC<RuleGroupProps> = ({
                 rule={rule}
                 onChange={(updated) => updateRule(index, updated)}
                 onRemove={() => removeRule(index)}
+                fields={fields}
               />
             ),
           )}

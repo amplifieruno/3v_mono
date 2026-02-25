@@ -13,6 +13,7 @@ interface SegmentListItem {
   status: string;
   created_at: string;
   memberships_aggregate?: { aggregate?: { count?: number } };
+  profile_memberships_aggregate?: { aggregate?: { count?: number } };
 }
 
 export const columnsInfo = prepareColumns<SegmentListItem>([
@@ -55,11 +56,16 @@ export const columnsInfo = prepareColumns<SegmentListItem>([
     id: 'members',
     enableSorting: false,
     meta: { title: 'Members' },
-    cell: ({ row }) => (
-      <span className='text-muted-foreground'>
-        {row.original.memberships_aggregate?.aggregate?.count ?? 0}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const identityCount = row.original.memberships_aggregate?.aggregate?.count ?? 0;
+      const profileCount = row.original.profile_memberships_aggregate?.aggregate?.count ?? 0;
+      const total = identityCount + profileCount;
+      return (
+        <span className='text-muted-foreground' title={`${identityCount} identities, ${profileCount} profiles`}>
+          {total}
+        </span>
+      );
+    },
   },
   {
     accessorKey: 'status',

@@ -9,6 +9,13 @@ array_relationships:
         table:
           name: segment_memberships
           schema: itap
+  - name: profile_memberships
+    using:
+      foreign_key_constraint_on:
+        column: segment_id
+        table:
+          name: segment_profile_memberships
+          schema: itap
 insert_permissions:
   - role: staff
     permission:
@@ -20,6 +27,7 @@ insert_permissions:
         - icon
         - segment_type
         - conditions
+        - profile_conditions
         - status
     comment: ""
 select_permissions:
@@ -35,6 +43,7 @@ select_permissions:
         - icon
         - segment_type
         - conditions
+        - profile_conditions
         - status
       filter: {}
       allow_aggregations: true
@@ -49,6 +58,7 @@ update_permissions:
         - icon
         - segment_type
         - conditions
+        - profile_conditions
         - status
       filter: {}
       check: null

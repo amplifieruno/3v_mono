@@ -57,6 +57,15 @@ export const ProfileShowQuery = gql(`
           }
         }
       }
+      segment_memberships(where: { is_active: { _eq: true } }) {
+        id
+        segment {
+          id
+          name
+          color
+          status
+        }
+      }
     }
   }
 `);

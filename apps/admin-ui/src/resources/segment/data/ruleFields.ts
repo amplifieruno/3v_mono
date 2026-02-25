@@ -70,3 +70,55 @@ export const ruleFields: RuleFieldDef[] = [
     ],
   },
 ];
+
+export const profileRuleFields: RuleFieldDef[] = [
+  {
+    key: 'first_name',
+    label: 'First Name',
+    type: 'text',
+    operators: [
+      { value: 'equals', label: 'equals' },
+      { value: 'contains', label: 'contains' },
+      { value: 'is_not_empty', label: 'is not empty' },
+    ],
+  },
+  {
+    key: 'last_name',
+    label: 'Last Name',
+    type: 'text',
+    operators: [
+      { value: 'equals', label: 'equals' },
+      { value: 'contains', label: 'contains' },
+      { value: 'is_not_empty', label: 'is not empty' },
+    ],
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'text',
+    operators: [
+      { value: 'equals', label: 'equals' },
+      { value: 'contains', label: 'contains' },
+      { value: 'is_not_empty', label: 'is not empty' },
+    ],
+  },
+  {
+    key: 'created_at',
+    label: 'Created At',
+    type: 'date',
+    operators: [
+      { value: 'after', label: 'after' },
+      { value: 'before', label: 'before' },
+      { value: 'last_n_days', label: 'in the last N days' },
+    ],
+  },
+  {
+    key: 'has_identity',
+    label: 'Has Linked Identity',
+    type: 'boolean',
+    operators: [
+      { value: 'is_true', label: 'is true' },
+      { value: 'is_false', label: 'is false' },
+    ],
+  },
+];

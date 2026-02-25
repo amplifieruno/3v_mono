@@ -20,11 +20,13 @@ import { segmentStatuses } from '../../data/enums';
 import { ColorPicker } from '../../components/ColorPicker';
 import { RuleBuilder } from '../../components/RuleBuilder';
 import { RuleGroup, createEmptyGroup } from '../../lib/conditionsToWhere';
+import { profileRuleFields } from '../../data/ruleFields';
 
 export const EditPage: FC = () => {
   const { identifier } = useResourceParams();
   const { listUrl } = useNavigation();
   const [conditions, setConditions] = useState<RuleGroup>(createEmptyGroup());
+  const [profileConditions, setProfileConditions] = useState<RuleGroup>(createEmptyGroup());
   const [conditionsLoaded, setConditionsLoaded] = useState(false);
 
   const {
@@ -57,6 +59,10 @@ export const EditPage: FC = () => {
       if (savedConditions?.rules) {
         setConditions(savedConditions);
       }
+      const savedProfileConditions = record.profile_conditions as RuleGroup | undefined;
+      if (savedProfileConditions?.rules) {
+        setProfileConditions(savedProfileConditions);
+      }
       setConditionsLoaded(true);
     }
   }, [query?.data?.data, conditionsLoaded]);
@@ -65,8 +71,10 @@ export const EditPage: FC = () => {
     const data: Record<string, unknown> = { ...values };
     if (segmentType === 'rule_based') {
       data.conditions = conditions;
+      data.profile_conditions = profileConditions;
     } else {
       data.conditions = {};
+      data.profile_conditions = {};
     }
     onFinish(data as Parameters<typeof onFinish>[0]);
   });
@@ -147,7 +155,15 @@ export const EditPage: FC = () => {
                 </div>
 
                 {segmentType === 'rule_based' && (
-                  <RuleBuilder value={conditions} onChange={setConditions} />
+                  <div className='space-y-4'>
+                    <RuleBuilder value={conditions} onChange={setConditions} label='Identity Rules' />
+                    <RuleBuilder
+                      value={profileConditions}
+                      onChange={setProfileConditions}
+                      fields={profileRuleFields}
+                      label='Profile Rules'
+                    />
+                  </div>
                 )}
 
                 <div className='mt-4'>

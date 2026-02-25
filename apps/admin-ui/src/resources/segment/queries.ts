@@ -13,6 +13,7 @@ const fragment = gql(`
     icon
     segment_type
     conditions
+    profile_conditions
     status
   }
 `);
@@ -24,6 +25,11 @@ export const SegmentListQuery = gql(`
     itap_segments(limit: $limit, offset: $offset, order_by: $order_by, where: $where) {
       ...itap_segment
       memberships_aggregate {
+        aggregate {
+          count
+        }
+      }
+      profile_memberships_aggregate {
         aggregate {
           count
         }
@@ -63,6 +69,21 @@ export const SegmentWithMembersQuery = gql(`
         }
       }
       memberships_aggregate(where: { is_active: { _eq: true } }) {
+        aggregate {
+          count
+        }
+      }
+      profile_memberships(where: { is_active: { _eq: true } }, order_by: { created_at: desc }, limit: 100) {
+        id
+        created_at
+        profile {
+          id
+          first_name
+          last_name
+          email
+        }
+      }
+      profile_memberships_aggregate(where: { is_active: { _eq: true } }) {
         aggregate {
           count
         }
@@ -125,6 +146,51 @@ export const SegmentMatchingIdentitiesQuery = gql(`
   query SegmentMatchingIdentitiesQuery($where: itap_identities_bool_exp = {}) {
     itap_identities(where: $where) {
       id
+    }
+  }
+`);
+
+export const SegmentAddProfileMembersMutation = gql(`
+  mutation SegmentAddProfileMembersMutation($objects: [itap_segment_profile_memberships_insert_input!]!) {
+    insert_itap_segment_profile_memberships(objects: $objects, on_conflict: { constraint: segment_profile_memberships_segment_id_profile_id_key, update_columns: [is_active] }) {
+      affected_rows
+    }
+  }
+`);
+
+export const SegmentRemoveProfileMemberMutation = gql(`
+  mutation SegmentRemoveProfileMemberMutation($id: uuid!) {
+    delete_itap_segment_profile_memberships_by_pk(id: $id) {
+      id
+    }
+  }
+`);
+
+export const SegmentProfilePreviewCountQuery = gql(`
+  query SegmentProfilePreviewCountQuery($where: itap_profiles_bool_exp = {}) {
+    itap_profiles_aggregate(where: $where) {
+      aggregate {
+        count
+      }
+    }
+  }
+`);
+
+export const SegmentMatchingProfilesQuery = gql(`
+  query SegmentMatchingProfilesQuery($where: itap_profiles_bool_exp = {}) {
+    itap_profiles(where: $where) {
+      id
+    }
+  }
+`);
+
+export const ProfileSearchForSegmentQuery = gql(`
+  query ProfileSearchForSegmentQuery($where: itap_profiles_bool_exp = {}, $limit: Int = 10) {
+    itap_profiles(where: $where, limit: $limit, order_by: { first_name: asc }) {
+      id
+      first_name
+      last_name
+      email
     }
   }
 `);

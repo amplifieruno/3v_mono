@@ -43,6 +43,16 @@ interface FlatDetection extends DetectionRecord {
   identity_id: string;
 }
 
+interface SegmentMembershipRecord {
+  id: string;
+  segment: {
+    id: string;
+    name: string;
+    color: string;
+    status: string;
+  };
+}
+
 export const ShowPage: FC = () => {
   const { identifier, id } = useResourceParams();
   const { listUrl, editUrl, list } = useNavigation();
@@ -56,6 +66,10 @@ export const ShowPage: FC = () => {
   const identities = useMemo(
     () => (record?.identities ?? []) as IdentityRecord[],
     [record?.identities],
+  );
+  const segmentMemberships = useMemo(
+    () => (record?.segment_memberships ?? []) as SegmentMembershipRecord[],
+    [record?.segment_memberships],
   );
 
   // Flatten detections from all identities, sort by date
@@ -183,6 +197,41 @@ export const ShowPage: FC = () => {
               </div>
               <ScrollBar orientation='horizontal' />
             </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Segments */}
+      <Card className='mt-4'>
+        <CardHeader>
+          <CardTitle>Segments ({segmentMemberships.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {segmentMemberships.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>
+              Not a member of any segments.
+            </p>
+          ) : (
+            <div className='space-y-2'>
+              {segmentMemberships.map((sm) => (
+                <Link
+                  key={sm.id}
+                  to={`/segments/show/${sm.segment.id}`}
+                  className='flex items-center gap-3 py-2 px-3 rounded-md border hover:bg-accent transition-colors'
+                >
+                  <span
+                    className='w-3 h-3 rounded-full shrink-0'
+                    style={{ backgroundColor: sm.segment.color }}
+                  />
+                  <span className='text-sm font-medium flex-1'>
+                    {sm.segment.name}
+                  </span>
+                  <Badge variant='outline' className='text-xs'>
+                    {sm.segment.status}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

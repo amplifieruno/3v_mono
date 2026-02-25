@@ -127,3 +127,77 @@ export function conditionsToWhere(
   const key = group.operator === 'AND' ? '_and' : '_or';
   return { [key]: conditions };
 }
+
+// --- Profile conditions ---
+
+const PROFILE_ALLOWED_FIELDS = new Set([
+  'first_name',
+  'last_name',
+  'email',
+  'created_at',
+  'has_identity',
+]);
+
+function profileRuleToWhere(rule: RuleCondition): Record<string, unknown> {
+  const { field, operator, value } = rule;
+
+  if (!PROFILE_ALLOWED_FIELDS.has(field) || !ALLOWED_OPERATORS.has(operator)) {
+    return {};
+  }
+
+  if (field === 'has_identity') {
+    if (operator === 'is_true') {
+      return { identities: {} };
+    }
+    return { _not: { identities: {} } };
+  }
+
+  if (field === 'created_at') {
+    if (operator === 'after') {
+      return { created_at: { _gte: value } };
+    }
+    if (operator === 'before') {
+      return { created_at: { _lte: value } };
+    }
+    if (operator === 'last_n_days') {
+      const days = parseInt(value ?? '7', 10);
+      if (isNaN(days) || days < 0) return {};
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return { created_at: { _gte: date.toISOString() } };
+    }
+  }
+
+  if (operator === 'equals') {
+    return { [field]: { _eq: value } };
+  }
+  if (operator === 'not_equals') {
+    return { [field]: { _neq: value } };
+  }
+  if (operator === 'contains') {
+    return { [field]: { _ilike: `%${escapeILike(value ?? '')}%` } };
+  }
+  if (operator === 'is_not_empty') {
+    return { [field]: { _is_null: false } };
+  }
+
+  return {};
+}
+
+export function profileConditionsToWhere(
+  group: RuleGroup,
+): Record<string, unknown> {
+  if (group.rules.length === 0) return {};
+
+  const conditions = group.rules.map((rule) => {
+    if (isRuleGroup(rule)) {
+      return profileConditionsToWhere(rule);
+    }
+    return profileRuleToWhere(rule);
+  });
+
+  if (conditions.length === 1) return conditions[0];
+
+  const key = group.operator === 'AND' ? '_and' : '_or';
+  return { [key]: conditions };
+}

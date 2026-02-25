@@ -2560,6 +2560,10 @@ export type Itap_Profiles = {
   /** An aggregate relationship */
   identities_aggregate: Itap_Identities_Aggregate;
   last_name?: Maybe<Scalars['String']['output']>;
+  /** An array relationship */
+  segment_memberships: Array<Itap_Segment_Profile_Memberships>;
+  /** An aggregate relationship */
+  segment_memberships_aggregate: Itap_Segment_Profile_Memberships_Aggregate;
   updated_at: Scalars['timestamptz']['output'];
 };
 
@@ -2581,6 +2585,26 @@ export type Itap_ProfilesIdentities_AggregateArgs = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   order_by?: InputMaybe<Array<Itap_Identities_Order_By>>;
   where?: InputMaybe<Itap_Identities_Bool_Exp>;
+};
+
+
+/** columns and relationships of "itap.profiles" */
+export type Itap_ProfilesSegment_MembershipsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+/** columns and relationships of "itap.profiles" */
+export type Itap_ProfilesSegment_Memberships_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
 };
 
 /** aggregated selection of "itap.profiles" */
@@ -2617,6 +2641,8 @@ export type Itap_Profiles_Bool_Exp = {
   identities?: InputMaybe<Itap_Identities_Bool_Exp>;
   identities_aggregate?: InputMaybe<Itap_Identities_Aggregate_Bool_Exp>;
   last_name?: InputMaybe<String_Comparison_Exp>;
+  segment_memberships?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  segment_memberships_aggregate?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp>;
   updated_at?: InputMaybe<Timestamptz_Comparison_Exp>;
 };
 
@@ -2632,6 +2658,7 @@ export type Itap_Profiles_Insert_Input = {
   first_name?: InputMaybe<Scalars['String']['input']>;
   identities?: InputMaybe<Itap_Identities_Arr_Rel_Insert_Input>;
   last_name?: InputMaybe<Scalars['String']['input']>;
+  segment_memberships?: InputMaybe<Itap_Segment_Profile_Memberships_Arr_Rel_Insert_Input>;
 };
 
 /** aggregate max on columns */
@@ -2687,6 +2714,7 @@ export type Itap_Profiles_Order_By = {
   id?: InputMaybe<Order_By>;
   identities_aggregate?: InputMaybe<Itap_Identities_Aggregate_Order_By>;
   last_name?: InputMaybe<Order_By>;
+  segment_memberships_aggregate?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Order_By>;
   updated_at?: InputMaybe<Order_By>;
 };
 
@@ -2988,6 +3016,241 @@ export type Itap_Segment_Memberships_Updates = {
   where: Itap_Segment_Memberships_Bool_Exp;
 };
 
+/** columns and relationships of "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships = {
+  __typename?: 'itap_segment_profile_memberships';
+  created_at: Scalars['timestamptz']['output'];
+  id: Scalars['uuid']['output'];
+  is_active: Scalars['Boolean']['output'];
+  /** An object relationship */
+  profile: Itap_Profiles;
+  profile_id: Scalars['uuid']['output'];
+  /** An object relationship */
+  segment: Itap_Segments;
+  segment_id: Scalars['uuid']['output'];
+};
+
+/** aggregated selection of "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Aggregate = {
+  __typename?: 'itap_segment_profile_memberships_aggregate';
+  aggregate?: Maybe<Itap_Segment_Profile_Memberships_Aggregate_Fields>;
+  nodes: Array<Itap_Segment_Profile_Memberships>;
+};
+
+export type Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp = {
+  bool_and?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_And>;
+  bool_or?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_Or>;
+  count?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Count>;
+};
+
+export type Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_And = {
+  arguments: Itap_Segment_Profile_Memberships_Select_Column_Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_And_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
+};
+
+export type Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_Or = {
+  arguments: Itap_Segment_Profile_Memberships_Select_Column_Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  predicate: Boolean_Comparison_Exp;
+};
+
+export type Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Count = {
+  arguments?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  predicate: Int_Comparison_Exp;
+};
+
+/** aggregate fields of "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Aggregate_Fields = {
+  __typename?: 'itap_segment_profile_memberships_aggregate_fields';
+  count: Scalars['Int']['output'];
+  max?: Maybe<Itap_Segment_Profile_Memberships_Max_Fields>;
+  min?: Maybe<Itap_Segment_Profile_Memberships_Min_Fields>;
+};
+
+
+/** aggregate fields of "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Aggregate_FieldsCountArgs = {
+  columns?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** order by aggregate values of table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Aggregate_Order_By = {
+  count?: InputMaybe<Order_By>;
+  max?: InputMaybe<Itap_Segment_Profile_Memberships_Max_Order_By>;
+  min?: InputMaybe<Itap_Segment_Profile_Memberships_Min_Order_By>;
+};
+
+/** input type for inserting array relation for remote table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Arr_Rel_Insert_Input = {
+  data: Array<Itap_Segment_Profile_Memberships_Insert_Input>;
+  /** upsert condition */
+  on_conflict?: InputMaybe<Itap_Segment_Profile_Memberships_On_Conflict>;
+};
+
+/** Boolean expression to filter rows from the table "itap.segment_profile_memberships". All fields are combined with a logical 'AND'. */
+export type Itap_Segment_Profile_Memberships_Bool_Exp = {
+  _and?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Bool_Exp>>;
+  _not?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  _or?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Bool_Exp>>;
+  created_at?: InputMaybe<Timestamptz_Comparison_Exp>;
+  id?: InputMaybe<Uuid_Comparison_Exp>;
+  is_active?: InputMaybe<Boolean_Comparison_Exp>;
+  profile?: InputMaybe<Itap_Profiles_Bool_Exp>;
+  profile_id?: InputMaybe<Uuid_Comparison_Exp>;
+  segment?: InputMaybe<Itap_Segments_Bool_Exp>;
+  segment_id?: InputMaybe<Uuid_Comparison_Exp>;
+};
+
+/** unique or primary key constraints on table "itap.segment_profile_memberships" */
+export enum Itap_Segment_Profile_Memberships_Constraint {
+  /** unique or primary key constraint on columns "id" */
+  SegmentProfileMembershipsPkey = 'segment_profile_memberships_pkey',
+  /** unique or primary key constraint on columns "segment_id", "profile_id" */
+  SegmentProfileMembershipsSegmentIdProfileIdKey = 'segment_profile_memberships_segment_id_profile_id_key'
+}
+
+/** input type for inserting data into table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Insert_Input = {
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  profile?: InputMaybe<Itap_Profiles_Obj_Rel_Insert_Input>;
+  profile_id?: InputMaybe<Scalars['uuid']['input']>;
+  segment?: InputMaybe<Itap_Segments_Obj_Rel_Insert_Input>;
+  segment_id?: InputMaybe<Scalars['uuid']['input']>;
+};
+
+/** aggregate max on columns */
+export type Itap_Segment_Profile_Memberships_Max_Fields = {
+  __typename?: 'itap_segment_profile_memberships_max_fields';
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+  id?: Maybe<Scalars['uuid']['output']>;
+  profile_id?: Maybe<Scalars['uuid']['output']>;
+  segment_id?: Maybe<Scalars['uuid']['output']>;
+};
+
+/** order by max() on columns of table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Max_Order_By = {
+  created_at?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  profile_id?: InputMaybe<Order_By>;
+  segment_id?: InputMaybe<Order_By>;
+};
+
+/** aggregate min on columns */
+export type Itap_Segment_Profile_Memberships_Min_Fields = {
+  __typename?: 'itap_segment_profile_memberships_min_fields';
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+  id?: Maybe<Scalars['uuid']['output']>;
+  profile_id?: Maybe<Scalars['uuid']['output']>;
+  segment_id?: Maybe<Scalars['uuid']['output']>;
+};
+
+/** order by min() on columns of table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Min_Order_By = {
+  created_at?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  profile_id?: InputMaybe<Order_By>;
+  segment_id?: InputMaybe<Order_By>;
+};
+
+/** response of any mutation on the table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Mutation_Response = {
+  __typename?: 'itap_segment_profile_memberships_mutation_response';
+  /** number of rows affected by the mutation */
+  affected_rows: Scalars['Int']['output'];
+  /** data from the rows affected by the mutation */
+  returning: Array<Itap_Segment_Profile_Memberships>;
+};
+
+/** on_conflict condition type for table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_On_Conflict = {
+  constraint: Itap_Segment_Profile_Memberships_Constraint;
+  update_columns?: Array<Itap_Segment_Profile_Memberships_Update_Column>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+/** Ordering options when selecting data from "itap.segment_profile_memberships". */
+export type Itap_Segment_Profile_Memberships_Order_By = {
+  created_at?: InputMaybe<Order_By>;
+  id?: InputMaybe<Order_By>;
+  is_active?: InputMaybe<Order_By>;
+  profile?: InputMaybe<Itap_Profiles_Order_By>;
+  profile_id?: InputMaybe<Order_By>;
+  segment?: InputMaybe<Itap_Segments_Order_By>;
+  segment_id?: InputMaybe<Order_By>;
+};
+
+/** primary key columns input for table: itap.segment_profile_memberships */
+export type Itap_Segment_Profile_Memberships_Pk_Columns_Input = {
+  id: Scalars['uuid']['input'];
+};
+
+/** select columns of table "itap.segment_profile_memberships" */
+export enum Itap_Segment_Profile_Memberships_Select_Column {
+  /** column name */
+  CreatedAt = 'created_at',
+  /** column name */
+  Id = 'id',
+  /** column name */
+  IsActive = 'is_active',
+  /** column name */
+  ProfileId = 'profile_id',
+  /** column name */
+  SegmentId = 'segment_id'
+}
+
+/** select "itap_segment_profile_memberships_aggregate_bool_exp_bool_and_arguments_columns" columns of table "itap.segment_profile_memberships" */
+export enum Itap_Segment_Profile_Memberships_Select_Column_Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_And_Arguments_Columns {
+  /** column name */
+  IsActive = 'is_active'
+}
+
+/** select "itap_segment_profile_memberships_aggregate_bool_exp_bool_or_arguments_columns" columns of table "itap.segment_profile_memberships" */
+export enum Itap_Segment_Profile_Memberships_Select_Column_Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp_Bool_Or_Arguments_Columns {
+  /** column name */
+  IsActive = 'is_active'
+}
+
+/** input type for updating data in table "itap.segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Set_Input = {
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Streaming cursor of the table "itap_segment_profile_memberships" */
+export type Itap_Segment_Profile_Memberships_Stream_Cursor_Input = {
+  /** Stream column input with initial value */
+  initial_value: Itap_Segment_Profile_Memberships_Stream_Cursor_Value_Input;
+  /** cursor ordering */
+  ordering?: InputMaybe<Cursor_Ordering>;
+};
+
+/** Initial value of the column from where the streaming should start */
+export type Itap_Segment_Profile_Memberships_Stream_Cursor_Value_Input = {
+  created_at?: InputMaybe<Scalars['timestamptz']['input']>;
+  id?: InputMaybe<Scalars['uuid']['input']>;
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  profile_id?: InputMaybe<Scalars['uuid']['input']>;
+  segment_id?: InputMaybe<Scalars['uuid']['input']>;
+};
+
+/** update columns of table "itap.segment_profile_memberships" */
+export enum Itap_Segment_Profile_Memberships_Update_Column {
+  /** column name */
+  IsActive = 'is_active'
+}
+
+export type Itap_Segment_Profile_Memberships_Updates = {
+  /** sets the columns of the filtered rows to the given values */
+  _set?: InputMaybe<Itap_Segment_Profile_Memberships_Set_Input>;
+  /** filter the rows which have to be updated */
+  where: Itap_Segment_Profile_Memberships_Bool_Exp;
+};
+
 /** columns and relationships of "itap.segments" */
 export type Itap_Segments = {
   __typename?: 'itap_segments';
@@ -3002,6 +3265,11 @@ export type Itap_Segments = {
   /** An aggregate relationship */
   memberships_aggregate: Itap_Segment_Memberships_Aggregate;
   name: Scalars['String']['output'];
+  profile_conditions: Scalars['jsonb']['output'];
+  /** An array relationship */
+  profile_memberships: Array<Itap_Segment_Profile_Memberships>;
+  /** An aggregate relationship */
+  profile_memberships_aggregate: Itap_Segment_Profile_Memberships_Aggregate;
   segment_type: Scalars['String']['output'];
   status: Scalars['String']['output'];
   updated_at: Scalars['timestamptz']['output'];
@@ -3033,6 +3301,32 @@ export type Itap_SegmentsMemberships_AggregateArgs = {
   where?: InputMaybe<Itap_Segment_Memberships_Bool_Exp>;
 };
 
+
+/** columns and relationships of "itap.segments" */
+export type Itap_SegmentsProfile_ConditionsArgs = {
+  path?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+/** columns and relationships of "itap.segments" */
+export type Itap_SegmentsProfile_MembershipsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+/** columns and relationships of "itap.segments" */
+export type Itap_SegmentsProfile_Memberships_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
 /** aggregated selection of "itap.segments" */
 export type Itap_Segments_Aggregate = {
   __typename?: 'itap_segments_aggregate';
@@ -3058,6 +3352,7 @@ export type Itap_Segments_Aggregate_FieldsCountArgs = {
 /** append existing jsonb value of filtered columns with new jsonb value */
 export type Itap_Segments_Append_Input = {
   conditions?: InputMaybe<Scalars['jsonb']['input']>;
+  profile_conditions?: InputMaybe<Scalars['jsonb']['input']>;
 };
 
 /** Boolean expression to filter rows from the table "itap.segments". All fields are combined with a logical 'AND'. */
@@ -3074,6 +3369,9 @@ export type Itap_Segments_Bool_Exp = {
   memberships?: InputMaybe<Itap_Segment_Memberships_Bool_Exp>;
   memberships_aggregate?: InputMaybe<Itap_Segment_Memberships_Aggregate_Bool_Exp>;
   name?: InputMaybe<String_Comparison_Exp>;
+  profile_conditions?: InputMaybe<Jsonb_Comparison_Exp>;
+  profile_memberships?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+  profile_memberships_aggregate?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Bool_Exp>;
   segment_type?: InputMaybe<String_Comparison_Exp>;
   status?: InputMaybe<String_Comparison_Exp>;
   updated_at?: InputMaybe<Timestamptz_Comparison_Exp>;
@@ -3088,16 +3386,19 @@ export enum Itap_Segments_Constraint {
 /** delete the field or element with specified path (for JSON arrays, negative integers count from the end) */
 export type Itap_Segments_Delete_At_Path_Input = {
   conditions?: InputMaybe<Array<Scalars['String']['input']>>;
+  profile_conditions?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 /** delete the array element with specified index (negative integers count from the end). throws an error if top level container is not an array */
 export type Itap_Segments_Delete_Elem_Input = {
   conditions?: InputMaybe<Scalars['Int']['input']>;
+  profile_conditions?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** delete key/value pair or string element. key/value pairs are matched based on their key value */
 export type Itap_Segments_Delete_Key_Input = {
   conditions?: InputMaybe<Scalars['String']['input']>;
+  profile_conditions?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** input type for inserting data into table "itap.segments" */
@@ -3108,6 +3409,8 @@ export type Itap_Segments_Insert_Input = {
   icon?: InputMaybe<Scalars['String']['input']>;
   memberships?: InputMaybe<Itap_Segment_Memberships_Arr_Rel_Insert_Input>;
   name?: InputMaybe<Scalars['String']['input']>;
+  profile_conditions?: InputMaybe<Scalars['jsonb']['input']>;
+  profile_memberships?: InputMaybe<Itap_Segment_Profile_Memberships_Arr_Rel_Insert_Input>;
   segment_type?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
 };
@@ -3173,6 +3476,8 @@ export type Itap_Segments_Order_By = {
   id?: InputMaybe<Order_By>;
   memberships_aggregate?: InputMaybe<Itap_Segment_Memberships_Aggregate_Order_By>;
   name?: InputMaybe<Order_By>;
+  profile_conditions?: InputMaybe<Order_By>;
+  profile_memberships_aggregate?: InputMaybe<Itap_Segment_Profile_Memberships_Aggregate_Order_By>;
   segment_type?: InputMaybe<Order_By>;
   status?: InputMaybe<Order_By>;
   updated_at?: InputMaybe<Order_By>;
@@ -3186,6 +3491,7 @@ export type Itap_Segments_Pk_Columns_Input = {
 /** prepend existing jsonb value of filtered columns with new jsonb value */
 export type Itap_Segments_Prepend_Input = {
   conditions?: InputMaybe<Scalars['jsonb']['input']>;
+  profile_conditions?: InputMaybe<Scalars['jsonb']['input']>;
 };
 
 /** select columns of table "itap.segments" */
@@ -3205,6 +3511,8 @@ export enum Itap_Segments_Select_Column {
   /** column name */
   Name = 'name',
   /** column name */
+  ProfileConditions = 'profile_conditions',
+  /** column name */
   SegmentType = 'segment_type',
   /** column name */
   Status = 'status',
@@ -3219,6 +3527,7 @@ export type Itap_Segments_Set_Input = {
   description?: InputMaybe<Scalars['String']['input']>;
   icon?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  profile_conditions?: InputMaybe<Scalars['jsonb']['input']>;
   segment_type?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
 };
@@ -3240,6 +3549,7 @@ export type Itap_Segments_Stream_Cursor_Value_Input = {
   icon?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['uuid']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  profile_conditions?: InputMaybe<Scalars['jsonb']['input']>;
   segment_type?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
   updated_at?: InputMaybe<Scalars['timestamptz']['input']>;
@@ -3257,6 +3567,8 @@ export enum Itap_Segments_Update_Column {
   Icon = 'icon',
   /** column name */
   Name = 'name',
+  /** column name */
+  ProfileConditions = 'profile_conditions',
   /** column name */
   SegmentType = 'segment_type',
   /** column name */
@@ -3339,6 +3651,10 @@ export type Mutation_Root = {
   delete_itap_segment_memberships?: Maybe<Itap_Segment_Memberships_Mutation_Response>;
   /** delete single row from the table: "itap.segment_memberships" */
   delete_itap_segment_memberships_by_pk?: Maybe<Itap_Segment_Memberships>;
+  /** delete data from the table: "itap.segment_profile_memberships" */
+  delete_itap_segment_profile_memberships?: Maybe<Itap_Segment_Profile_Memberships_Mutation_Response>;
+  /** delete single row from the table: "itap.segment_profile_memberships" */
+  delete_itap_segment_profile_memberships_by_pk?: Maybe<Itap_Segment_Profile_Memberships>;
   /** delete data from the table: "itap.segments" */
   delete_itap_segments?: Maybe<Itap_Segments_Mutation_Response>;
   /** delete single row from the table: "itap.segments" */
@@ -3375,6 +3691,10 @@ export type Mutation_Root = {
   insert_itap_segment_memberships?: Maybe<Itap_Segment_Memberships_Mutation_Response>;
   /** insert a single row into the table: "itap.segment_memberships" */
   insert_itap_segment_memberships_one?: Maybe<Itap_Segment_Memberships>;
+  /** insert data into the table: "itap.segment_profile_memberships" */
+  insert_itap_segment_profile_memberships?: Maybe<Itap_Segment_Profile_Memberships_Mutation_Response>;
+  /** insert a single row into the table: "itap.segment_profile_memberships" */
+  insert_itap_segment_profile_memberships_one?: Maybe<Itap_Segment_Profile_Memberships>;
   /** insert data into the table: "itap.segments" */
   insert_itap_segments?: Maybe<Itap_Segments_Mutation_Response>;
   /** insert a single row into the table: "itap.segments" */
@@ -3415,6 +3735,12 @@ export type Mutation_Root = {
   update_itap_segment_memberships_by_pk?: Maybe<Itap_Segment_Memberships>;
   /** update multiples rows of table: "itap.segment_memberships" */
   update_itap_segment_memberships_many?: Maybe<Array<Maybe<Itap_Segment_Memberships_Mutation_Response>>>;
+  /** update data of the table: "itap.segment_profile_memberships" */
+  update_itap_segment_profile_memberships?: Maybe<Itap_Segment_Profile_Memberships_Mutation_Response>;
+  /** update single row of the table: "itap.segment_profile_memberships" */
+  update_itap_segment_profile_memberships_by_pk?: Maybe<Itap_Segment_Profile_Memberships>;
+  /** update multiples rows of table: "itap.segment_profile_memberships" */
+  update_itap_segment_profile_memberships_many?: Maybe<Array<Maybe<Itap_Segment_Profile_Memberships_Mutation_Response>>>;
   /** update data of the table: "itap.segments" */
   update_itap_segments?: Maybe<Itap_Segments_Mutation_Response>;
   /** update single row of the table: "itap.segments" */
@@ -3504,6 +3830,18 @@ export type Mutation_RootDelete_Itap_Segment_MembershipsArgs = {
 
 /** mutation root */
 export type Mutation_RootDelete_Itap_Segment_Memberships_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
+/** mutation root */
+export type Mutation_RootDelete_Itap_Segment_Profile_MembershipsArgs = {
+  where: Itap_Segment_Profile_Memberships_Bool_Exp;
+};
+
+
+/** mutation root */
+export type Mutation_RootDelete_Itap_Segment_Profile_Memberships_By_PkArgs = {
   id: Scalars['uuid']['input'];
 };
 
@@ -3629,6 +3967,20 @@ export type Mutation_RootInsert_Itap_Segment_MembershipsArgs = {
 export type Mutation_RootInsert_Itap_Segment_Memberships_OneArgs = {
   object: Itap_Segment_Memberships_Insert_Input;
   on_conflict?: InputMaybe<Itap_Segment_Memberships_On_Conflict>;
+};
+
+
+/** mutation root */
+export type Mutation_RootInsert_Itap_Segment_Profile_MembershipsArgs = {
+  objects: Array<Itap_Segment_Profile_Memberships_Insert_Input>;
+  on_conflict?: InputMaybe<Itap_Segment_Profile_Memberships_On_Conflict>;
+};
+
+
+/** mutation root */
+export type Mutation_RootInsert_Itap_Segment_Profile_Memberships_OneArgs = {
+  object: Itap_Segment_Profile_Memberships_Insert_Input;
+  on_conflict?: InputMaybe<Itap_Segment_Profile_Memberships_On_Conflict>;
 };
 
 
@@ -3791,6 +4143,26 @@ export type Mutation_RootUpdate_Itap_Segment_Memberships_ManyArgs = {
 
 
 /** mutation root */
+export type Mutation_RootUpdate_Itap_Segment_Profile_MembershipsArgs = {
+  _set?: InputMaybe<Itap_Segment_Profile_Memberships_Set_Input>;
+  where: Itap_Segment_Profile_Memberships_Bool_Exp;
+};
+
+
+/** mutation root */
+export type Mutation_RootUpdate_Itap_Segment_Profile_Memberships_By_PkArgs = {
+  _set?: InputMaybe<Itap_Segment_Profile_Memberships_Set_Input>;
+  pk_columns: Itap_Segment_Profile_Memberships_Pk_Columns_Input;
+};
+
+
+/** mutation root */
+export type Mutation_RootUpdate_Itap_Segment_Profile_Memberships_ManyArgs = {
+  updates: Array<Itap_Segment_Profile_Memberships_Updates>;
+};
+
+
+/** mutation root */
 export type Mutation_RootUpdate_Itap_SegmentsArgs = {
   _append?: InputMaybe<Itap_Segments_Append_Input>;
   _delete_at_path?: InputMaybe<Itap_Segments_Delete_At_Path_Input>;
@@ -3885,6 +4257,12 @@ export type Query_Root = {
   itap_segment_memberships_aggregate: Itap_Segment_Memberships_Aggregate;
   /** fetch data from the table: "itap.segment_memberships" using primary key columns */
   itap_segment_memberships_by_pk?: Maybe<Itap_Segment_Memberships>;
+  /** fetch data from the table: "itap.segment_profile_memberships" */
+  itap_segment_profile_memberships: Array<Itap_Segment_Profile_Memberships>;
+  /** fetch aggregated fields from the table: "itap.segment_profile_memberships" */
+  itap_segment_profile_memberships_aggregate: Itap_Segment_Profile_Memberships_Aggregate;
+  /** fetch data from the table: "itap.segment_profile_memberships" using primary key columns */
+  itap_segment_profile_memberships_by_pk?: Maybe<Itap_Segment_Profile_Memberships>;
   /** fetch data from the table: "itap.segments" */
   itap_segments: Array<Itap_Segments>;
   /** fetch aggregated fields from the table: "itap.segments" */
@@ -4078,6 +4456,29 @@ export type Query_RootItap_Segment_Memberships_By_PkArgs = {
 };
 
 
+export type Query_RootItap_Segment_Profile_MembershipsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+export type Query_RootItap_Segment_Profile_Memberships_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+export type Query_RootItap_Segment_Profile_Memberships_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
 export type Query_RootItap_SegmentsArgs = {
   distinct_on?: InputMaybe<Array<Itap_Segments_Select_Column>>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -4166,6 +4567,14 @@ export type Subscription_Root = {
   itap_segment_memberships_by_pk?: Maybe<Itap_Segment_Memberships>;
   /** fetch data from the table in a streaming manner: "itap.segment_memberships" */
   itap_segment_memberships_stream: Array<Itap_Segment_Memberships>;
+  /** fetch data from the table: "itap.segment_profile_memberships" */
+  itap_segment_profile_memberships: Array<Itap_Segment_Profile_Memberships>;
+  /** fetch aggregated fields from the table: "itap.segment_profile_memberships" */
+  itap_segment_profile_memberships_aggregate: Itap_Segment_Profile_Memberships_Aggregate;
+  /** fetch data from the table: "itap.segment_profile_memberships" using primary key columns */
+  itap_segment_profile_memberships_by_pk?: Maybe<Itap_Segment_Profile_Memberships>;
+  /** fetch data from the table in a streaming manner: "itap.segment_profile_memberships" */
+  itap_segment_profile_memberships_stream: Array<Itap_Segment_Profile_Memberships>;
   /** fetch data from the table: "itap.segments" */
   itap_segments: Array<Itap_Segments>;
   /** fetch aggregated fields from the table: "itap.segments" */
@@ -4414,6 +4823,36 @@ export type Subscription_RootItap_Segment_Memberships_StreamArgs = {
   batch_size: Scalars['Int']['input'];
   cursor: Array<InputMaybe<Itap_Segment_Memberships_Stream_Cursor_Input>>;
   where?: InputMaybe<Itap_Segment_Memberships_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_Segment_Profile_MembershipsArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_Segment_Profile_Memberships_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Itap_Segment_Profile_Memberships_Order_By>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
+};
+
+
+export type Subscription_RootItap_Segment_Profile_Memberships_By_PkArgs = {
+  id: Scalars['uuid']['input'];
+};
+
+
+export type Subscription_RootItap_Segment_Profile_Memberships_StreamArgs = {
+  batch_size: Scalars['Int']['input'];
+  cursor: Array<InputMaybe<Itap_Segment_Profile_Memberships_Stream_Cursor_Input>>;
+  where?: InputMaybe<Itap_Segment_Profile_Memberships_Bool_Exp>;
 };
 
 
@@ -4726,7 +5165,7 @@ export type ProfileShowQueryQueryVariables = Exact<{
 }>;
 
 
-export type ProfileShowQueryQuery = { __typename?: 'query_root', itap_profiles_by_pk?: { __typename?: 'itap_profiles', id: any, created_at: any, updated_at: any, first_name?: string | null, last_name?: string | null, email?: string | null, identities: Array<{ __typename?: 'itap_identities', id: any, images: Array<string>, status: string, created_at: any, detections: Array<{ __typename?: 'itap_detections', id: any, created_at: any, confidence: number, similarity?: number | null, thumbnail?: string | null, device: { __typename?: 'itap_devices', id: any, name: string } }> }> } | null };
+export type ProfileShowQueryQuery = { __typename?: 'query_root', itap_profiles_by_pk?: { __typename?: 'itap_profiles', id: any, created_at: any, updated_at: any, first_name?: string | null, last_name?: string | null, email?: string | null, identities: Array<{ __typename?: 'itap_identities', id: any, images: Array<string>, status: string, created_at: any, detections: Array<{ __typename?: 'itap_detections', id: any, created_at: any, confidence: number, similarity?: number | null, thumbnail?: string | null, device: { __typename?: 'itap_devices', id: any, name: string } }> }>, segment_memberships: Array<{ __typename?: 'itap_segment_profile_memberships', id: any, segment: { __typename?: 'itap_segments', id: any, name: string, color: string, status: string } }> } | null };
 
 export type ProfileInsertOneMutationMutationVariables = Exact<{
   object: Itap_Profiles_Insert_Input;
@@ -4750,7 +5189,7 @@ export type ProfileDeleteOneMutationMutationVariables = Exact<{
 
 export type ProfileDeleteOneMutationMutation = { __typename?: 'mutation_root', delete_itap_profiles_by_pk?: { __typename?: 'itap_profiles', id: any, created_at: any, updated_at: any, first_name?: string | null, last_name?: string | null, email?: string | null } | null };
 
-export type Itap_SegmentFragment = { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string };
+export type Itap_SegmentFragment = { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string };
 
 export type SegmentListQueryQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -4760,28 +5199,28 @@ export type SegmentListQueryQueryVariables = Exact<{
 }>;
 
 
-export type SegmentListQueryQuery = { __typename?: 'query_root', itap_segments: Array<{ __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string, memberships_aggregate: { __typename?: 'itap_segment_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_memberships_aggregate_fields', count: number } | null } }>, itap_segments_aggregate: { __typename?: 'itap_segments_aggregate', aggregate?: { __typename?: 'itap_segments_aggregate_fields', count: number } | null } };
+export type SegmentListQueryQuery = { __typename?: 'query_root', itap_segments: Array<{ __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string, memberships_aggregate: { __typename?: 'itap_segment_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_memberships_aggregate_fields', count: number } | null }, profile_memberships_aggregate: { __typename?: 'itap_segment_profile_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_profile_memberships_aggregate_fields', count: number } | null } }>, itap_segments_aggregate: { __typename?: 'itap_segments_aggregate', aggregate?: { __typename?: 'itap_segments_aggregate_fields', count: number } | null } };
 
 export type SegmentOneQueryQueryVariables = Exact<{
   id: Scalars['uuid']['input'];
 }>;
 
 
-export type SegmentOneQueryQuery = { __typename?: 'query_root', itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string } | null };
+export type SegmentOneQueryQuery = { __typename?: 'query_root', itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string } | null };
 
 export type SegmentWithMembersQueryQueryVariables = Exact<{
   id: Scalars['uuid']['input'];
 }>;
 
 
-export type SegmentWithMembersQueryQuery = { __typename?: 'query_root', itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string, memberships: Array<{ __typename?: 'itap_segment_memberships', id: any, created_at: any, identity: { __typename?: 'itap_identities', id: any, status: string, images: Array<string>, profile?: { __typename?: 'itap_profiles', first_name?: string | null, last_name?: string | null } | null } }>, memberships_aggregate: { __typename?: 'itap_segment_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_memberships_aggregate_fields', count: number } | null } } | null };
+export type SegmentWithMembersQueryQuery = { __typename?: 'query_root', itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string, memberships: Array<{ __typename?: 'itap_segment_memberships', id: any, created_at: any, identity: { __typename?: 'itap_identities', id: any, status: string, images: Array<string>, profile?: { __typename?: 'itap_profiles', first_name?: string | null, last_name?: string | null } | null } }>, memberships_aggregate: { __typename?: 'itap_segment_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_memberships_aggregate_fields', count: number } | null }, profile_memberships: Array<{ __typename?: 'itap_segment_profile_memberships', id: any, created_at: any, profile: { __typename?: 'itap_profiles', id: any, first_name?: string | null, last_name?: string | null, email?: string | null } }>, profile_memberships_aggregate: { __typename?: 'itap_segment_profile_memberships_aggregate', aggregate?: { __typename?: 'itap_segment_profile_memberships_aggregate_fields', count: number } | null } } | null };
 
 export type SegmentInsertOneMutationMutationVariables = Exact<{
   object: Itap_Segments_Insert_Input;
 }>;
 
 
-export type SegmentInsertOneMutationMutation = { __typename?: 'mutation_root', insert_itap_segments_one?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string } | null };
+export type SegmentInsertOneMutationMutation = { __typename?: 'mutation_root', insert_itap_segments_one?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string } | null };
 
 export type SegmentUpdateOneMutationMutationVariables = Exact<{
   id: Scalars['uuid']['input'];
@@ -4789,14 +5228,14 @@ export type SegmentUpdateOneMutationMutationVariables = Exact<{
 }>;
 
 
-export type SegmentUpdateOneMutationMutation = { __typename?: 'mutation_root', update_itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string } | null };
+export type SegmentUpdateOneMutationMutation = { __typename?: 'mutation_root', update_itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string } | null };
 
 export type SegmentDeleteOneMutationMutationVariables = Exact<{
   id: Scalars['uuid']['input'];
 }>;
 
 
-export type SegmentDeleteOneMutationMutation = { __typename?: 'mutation_root', delete_itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, status: string } | null };
+export type SegmentDeleteOneMutationMutation = { __typename?: 'mutation_root', delete_itap_segments_by_pk?: { __typename?: 'itap_segments', id: any, created_at: any, updated_at: any, name: string, description?: string | null, color: string, icon?: string | null, segment_type: string, conditions: any, profile_conditions: any, status: string } | null };
 
 export type SegmentAddMembersMutationMutationVariables = Exact<{
   objects: Array<Itap_Segment_Memberships_Insert_Input> | Itap_Segment_Memberships_Insert_Input;
@@ -4826,12 +5265,48 @@ export type SegmentMatchingIdentitiesQueryQueryVariables = Exact<{
 
 export type SegmentMatchingIdentitiesQueryQuery = { __typename?: 'query_root', itap_identities: Array<{ __typename?: 'itap_identities', id: any }> };
 
+export type SegmentAddProfileMembersMutationMutationVariables = Exact<{
+  objects: Array<Itap_Segment_Profile_Memberships_Insert_Input> | Itap_Segment_Profile_Memberships_Insert_Input;
+}>;
+
+
+export type SegmentAddProfileMembersMutationMutation = { __typename?: 'mutation_root', insert_itap_segment_profile_memberships?: { __typename?: 'itap_segment_profile_memberships_mutation_response', affected_rows: number } | null };
+
+export type SegmentRemoveProfileMemberMutationMutationVariables = Exact<{
+  id: Scalars['uuid']['input'];
+}>;
+
+
+export type SegmentRemoveProfileMemberMutationMutation = { __typename?: 'mutation_root', delete_itap_segment_profile_memberships_by_pk?: { __typename?: 'itap_segment_profile_memberships', id: any } | null };
+
+export type SegmentProfilePreviewCountQueryQueryVariables = Exact<{
+  where?: InputMaybe<Itap_Profiles_Bool_Exp>;
+}>;
+
+
+export type SegmentProfilePreviewCountQueryQuery = { __typename?: 'query_root', itap_profiles_aggregate: { __typename?: 'itap_profiles_aggregate', aggregate?: { __typename?: 'itap_profiles_aggregate_fields', count: number } | null } };
+
+export type SegmentMatchingProfilesQueryQueryVariables = Exact<{
+  where?: InputMaybe<Itap_Profiles_Bool_Exp>;
+}>;
+
+
+export type SegmentMatchingProfilesQueryQuery = { __typename?: 'query_root', itap_profiles: Array<{ __typename?: 'itap_profiles', id: any }> };
+
+export type ProfileSearchForSegmentQueryQueryVariables = Exact<{
+  where?: InputMaybe<Itap_Profiles_Bool_Exp>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ProfileSearchForSegmentQueryQuery = { __typename?: 'query_root', itap_profiles: Array<{ __typename?: 'itap_profiles', id: any, first_name?: string | null, last_name?: string | null, email?: string | null }> };
+
 export const Itap_AreaFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<Itap_AreaFragment, unknown>;
 export const Itap_DeviceFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_device"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_devices"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"device_type"}},{"kind":"Field","name":{"kind":"Name","value":"area_id"}},{"kind":"Field","name":{"kind":"Name","value":"stream_url"}},{"kind":"Field","name":{"kind":"Name","value":"resolution"}},{"kind":"Field","name":{"kind":"Name","value":"fps"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"health_status"}},{"kind":"Field","name":{"kind":"Name","value":"last_seen"}},{"kind":"Field","name":{"kind":"Name","value":"configuration"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_enabled"}},{"kind":"Field","name":{"kind":"Name","value":"recognition_fps"}},{"kind":"Field","name":{"kind":"Name","value":"area"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<Itap_DeviceFragment, unknown>;
 export const Itap_FacilityFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_facility"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_facilities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"address"}},{"kind":"Field","name":{"kind":"Name","value":"timezone"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<Itap_FacilityFragment, unknown>;
 export const Itap_IdentityFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_identity"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_identities"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"attributes"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"embedding"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"profile_id"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<Itap_IdentityFragment, unknown>;
 export const Itap_ProfileFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<Itap_ProfileFragment, unknown>;
-export const Itap_SegmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<Itap_SegmentFragment, unknown>;
+export const Itap_SegmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<Itap_SegmentFragment, unknown>;
 export const DashboardMetricsQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DashboardMetricsQuery"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"identities_total"},"name":{"kind":"Name","value":"itap_identities_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"identities_verified"},"name":{"kind":"Name","value":"itap_identities_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"status"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"StringValue","value":"verified","block":false}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"identities_linked"},"name":{"kind":"Name","value":"itap_identities_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"profile_id"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_is_null"},"value":{"kind":"BooleanValue","value":false}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"profiles_total"},"name":{"kind":"Name","value":"itap_profiles_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"facilities_total"},"name":{"kind":"Name","value":"itap_facilities_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"segments_total"},"name":{"kind":"Name","value":"itap_segments_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"devices_total"},"name":{"kind":"Name","value":"itap_devices_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"devices_online"},"name":{"kind":"Name","value":"itap_devices_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"status"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"StringValue","value":"active","block":false}}]}},{"kind":"ObjectField","name":{"kind":"Name","value":"health_status"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_in"},"value":{"kind":"ListValue","values":[{"kind":"StringValue","value":"healthy","block":false},{"kind":"StringValue","value":"warning","block":false}]}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"devices_error"},"name":{"kind":"Name","value":"itap_devices_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_or"},"value":{"kind":"ListValue","values":[{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"status"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"StringValue","value":"error","block":false}}]}}]},{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"status"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"StringValue","value":"inactive","block":false}}]}}]}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"recent_identities"},"name":{"kind":"Name","value":"itap_identities"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"10"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"identity_timeline"},"name":{"kind":"Name","value":"itap_identities"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"asc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"365"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"created_at"}}]}}]}}]} as unknown as DocumentNode<DashboardMetricsQueryQuery, DashboardMetricsQueryQueryVariables>;
 export const AreaListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AreaListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_areas"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_area"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_areas_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<AreaListQueryQuery, AreaListQueryQueryVariables>;
 export const AreaOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AreaOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_areas_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_area"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_area"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_areas"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"facility_id"}},{"kind":"Field","name":{"kind":"Name","value":"parent_id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"area_type"}},{"kind":"Field","name":{"kind":"Name","value":"access_level"}},{"kind":"Field","name":{"kind":"Name","value":"capacity"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"facility"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"parent"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<AreaOneQueryQuery, AreaOneQueryQueryVariables>;
@@ -4862,17 +5337,22 @@ export const IdentityDeleteOneMutationDocument = {"kind":"Document","definitions
 export const ProfileSearchQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileSearchQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"first_name"},"value":{"kind":"EnumValue","value":"asc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<ProfileSearchQueryQuery, ProfileSearchQueryQueryVariables>;
 export const ProfileListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_profiles_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileListQueryQuery, ProfileListQueryQueryVariables>;
 export const ProfileOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileOneQueryQuery, ProfileOneQueryQueryVariables>;
-export const ProfileShowQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileShowQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}},{"kind":"Field","name":{"kind":"Name","value":"identities"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"detections"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"50"}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"similarity"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"device"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileShowQueryQuery, ProfileShowQueryQueryVariables>;
+export const ProfileShowQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileShowQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}},{"kind":"Field","name":{"kind":"Name","value":"identities"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"detections"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"50"}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"confidence"}},{"kind":"Field","name":{"kind":"Name","value":"similarity"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"device"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"segment_memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"segment"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileShowQueryQuery, ProfileShowQueryQueryVariables>;
 export const ProfileInsertOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ProfileInsertOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_insert_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_profiles_one"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"object"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileInsertOneMutationMutation, ProfileInsertOneMutationMutationVariables>;
 export const ProfileUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ProfileUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_profiles_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileUpdateOneMutationMutation, ProfileUpdateOneMutationMutationVariables>;
 export const ProfileDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ProfileDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_profiles_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_profile"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_profile"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]} as unknown as DocumentNode<ProfileDeleteOneMutationMutation, ProfileDeleteOneMutationMutationVariables>;
-export const SegmentListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}},{"kind":"Field","name":{"kind":"Name","value":"memberships_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_segments_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentListQueryQuery, SegmentListQueryQueryVariables>;
-export const SegmentOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentOneQueryQuery, SegmentOneQueryQueryVariables>;
-export const SegmentWithMembersQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentWithMembersQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}},{"kind":"Field","name":{"kind":"Name","value":"memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"100"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"identity"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"memberships_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentWithMembersQueryQuery, SegmentWithMembersQueryQueryVariables>;
-export const SegmentInsertOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentInsertOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_insert_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_segments_one"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"object"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentInsertOneMutationMutation, SegmentInsertOneMutationMutationVariables>;
-export const SegmentUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentUpdateOneMutationMutation, SegmentUpdateOneMutationMutationVariables>;
-export const SegmentDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentDeleteOneMutationMutation, SegmentDeleteOneMutationMutationVariables>;
+export const SegmentListQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentListQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"0"}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_order_by"}}}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}},{"kind":"Field","name":{"kind":"Name","value":"memberships_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"profile_memberships_aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"itap_segments_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order_by"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentListQueryQuery, SegmentListQueryQueryVariables>;
+export const SegmentOneQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentOneQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentOneQueryQuery, SegmentOneQueryQueryVariables>;
+export const SegmentWithMembersQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentWithMembersQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}},{"kind":"Field","name":{"kind":"Name","value":"memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"100"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"identity"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"images"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"memberships_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"profile_memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"created_at"},"value":{"kind":"EnumValue","value":"desc"}}]}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"IntValue","value":"100"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"profile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"profile_memberships_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"is_active"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"_eq"},"value":{"kind":"BooleanValue","value":true}}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentWithMembersQueryQuery, SegmentWithMembersQueryQueryVariables>;
+export const SegmentInsertOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentInsertOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_insert_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_segments_one"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"object"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentInsertOneMutationMutation, SegmentInsertOneMutationMutationVariables>;
+export const SegmentUpdateOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentUpdateOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"object"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments_set_input"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"update_itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pk_columns"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}},{"kind":"Argument","name":{"kind":"Name","value":"_set"},"value":{"kind":"Variable","name":{"kind":"Name","value":"object"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentUpdateOneMutationMutation, SegmentUpdateOneMutationMutationVariables>;
+export const SegmentDeleteOneMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentDeleteOneMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_segments_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"itap_segment"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"itap_segment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segments"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"created_at"}},{"kind":"Field","name":{"kind":"Name","value":"updated_at"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"segment_type"}},{"kind":"Field","name":{"kind":"Name","value":"conditions"}},{"kind":"Field","name":{"kind":"Name","value":"profile_conditions"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]} as unknown as DocumentNode<SegmentDeleteOneMutationMutation, SegmentDeleteOneMutationMutationVariables>;
 export const SegmentAddMembersMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentAddMembersMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objects"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segment_memberships_insert_input"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_segment_memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objects"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objects"}}},{"kind":"Argument","name":{"kind":"Name","value":"on_conflict"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"constraint"},"value":{"kind":"EnumValue","value":"segment_memberships_segment_id_identity_id_key"}},{"kind":"ObjectField","name":{"kind":"Name","value":"update_columns"},"value":{"kind":"ListValue","values":[{"kind":"EnumValue","value":"is_active"}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"affected_rows"}}]}}]}}]} as unknown as DocumentNode<SegmentAddMembersMutationMutation, SegmentAddMembersMutationMutationVariables>;
 export const SegmentRemoveMemberMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentRemoveMemberMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_segment_memberships_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<SegmentRemoveMemberMutationMutation, SegmentRemoveMemberMutationMutationVariables>;
 export const SegmentPreviewCountQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentPreviewCountQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_identities_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_identities_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]} as unknown as DocumentNode<SegmentPreviewCountQueryQuery, SegmentPreviewCountQueryQueryVariables>;
 export const SegmentMatchingIdentitiesQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentMatchingIdentitiesQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_identities_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_identities"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<SegmentMatchingIdentitiesQueryQuery, SegmentMatchingIdentitiesQueryQueryVariables>;
+export const SegmentAddProfileMembersMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentAddProfileMembersMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objects"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_segment_profile_memberships_insert_input"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"insert_itap_segment_profile_memberships"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objects"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objects"}}},{"kind":"Argument","name":{"kind":"Name","value":"on_conflict"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"constraint"},"value":{"kind":"EnumValue","value":"segment_profile_memberships_segment_id_profile_id_key"}},{"kind":"ObjectField","name":{"kind":"Name","value":"update_columns"},"value":{"kind":"ListValue","values":[{"kind":"EnumValue","value":"is_active"}]}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"affected_rows"}}]}}]}}]} as unknown as DocumentNode<SegmentAddProfileMembersMutationMutation, SegmentAddProfileMembersMutationMutationVariables>;
+export const SegmentRemoveProfileMemberMutationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SegmentRemoveProfileMemberMutation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"uuid"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"delete_itap_segment_profile_memberships_by_pk"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<SegmentRemoveProfileMemberMutationMutation, SegmentRemoveProfileMemberMutationMutationVariables>;
+export const SegmentProfilePreviewCountQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentProfilePreviewCountQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles_aggregate"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"aggregate"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"count"}}]}}]}}]}}]} as unknown as DocumentNode<SegmentProfilePreviewCountQueryQuery, SegmentProfilePreviewCountQueryQueryVariables>;
+export const SegmentMatchingProfilesQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SegmentMatchingProfilesQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<SegmentMatchingProfilesQueryQuery, SegmentMatchingProfilesQueryQueryVariables>;
+export const ProfileSearchForSegmentQueryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ProfileSearchForSegmentQuery"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"itap_profiles_bool_exp"}},"defaultValue":{"kind":"ObjectValue","fields":[]}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}},"defaultValue":{"kind":"IntValue","value":"10"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itap_profiles"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"order_by"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"first_name"},"value":{"kind":"EnumValue","value":"asc"}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"first_name"}},{"kind":"Field","name":{"kind":"Name","value":"last_name"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<ProfileSearchForSegmentQueryQuery, ProfileSearchForSegmentQueryQueryVariables>;
