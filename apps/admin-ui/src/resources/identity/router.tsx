@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { ListPage } from './pages/list';
 import { EditPage } from './pages/edit';
-// import { PaymentTariffCreatePage } from './pages/create';
+import { ShowPage } from './pages/show';
 import { Route, Routes } from 'react-router';
 
 export const IdentityRouter: FC = () => {
@@ -9,7 +9,7 @@ export const IdentityRouter: FC = () => {
     <Routes>
       <Route index element={<ListPage />} />
       <Route path='edit/:id' element={<EditPage />} />
-      {/* <Route path='create' element={<PaymentTariffCreatePage />} /> */}
+      <Route path='show/:id' element={<ShowPage />} />
     </Routes>
   );
 };

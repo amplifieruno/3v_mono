@@ -44,6 +44,25 @@ export const IdentityOneQuery = gql(`
   }
 `);
 
+export const IdentityShowQuery = gql(`
+  query IdentityShowQuery($id: uuid!) {
+    itap_identities_by_pk(id: $id) {
+      ...itap_identity
+      detections(limit: 50, order_by: { created_at: desc }) {
+        id
+        created_at
+        confidence
+        similarity
+        thumbnail
+        device {
+          id
+          name
+        }
+      }
+    }
+  }
+`);
+
 export const IdentityInsertOneMutation = gql(`
   mutation IdentityInsertOneMutation($object: itap_identities_insert_input!) {
     insert_itap_identities_one(object: $object) {
@@ -64,6 +83,17 @@ export const IdentityDeleteOneMutation = gql(`
   mutation IdentityDeleteOneMutation($id: uuid!) {
     delete_itap_identities_by_pk(id: $id) {
       ...itap_identity
+    }
+  }
+`);
+
+export const ProfileSearchQuery = gql(`
+  query ProfileSearchQuery($where: itap_profiles_bool_exp = {}, $limit: Int = 10) {
+    itap_profiles(where: $where, limit: $limit, order_by: { first_name: asc }) {
+      id
+      first_name
+      last_name
+      email
     }
   }
 `);

@@ -2,6 +2,7 @@ import { prepareColumns } from '@/shared/lib/utils/columns';
 import { ProfileDeleteOneMutation, ProfileFragment } from '../../queries';
 import { DataTableRowActions } from '@/components/refine-ui/data-table/data-table-row-actions';
 import { UuidView } from '@/shared/components/uuid-view/uuid-view';
+import { Link } from 'react-router';
 
 export const columnsInfo = prepareColumns<ProfileFragment>([
   {
@@ -11,7 +12,14 @@ export const columnsInfo = prepareColumns<ProfileFragment>([
     meta: {
       title: 'ID',
     },
-    cell: ({ row }) => <UuidView value={row.original.id} />,
+    cell: ({ row }) => (
+      <Link
+        to={`/profiles/show/${row.original.id}`}
+        className='text-primary hover:underline'
+      >
+        <UuidView value={row.original.id} />
+      </Link>
+    ),
   },
   {
     accessorKey: 'first_name',
@@ -43,6 +51,7 @@ export const columnsInfo = prepareColumns<ProfileFragment>([
       <DataTableRowActions
         row={row}
         recordId={row.original.id}
+        show
         edit
         deleteOptions={{
           gqlMutation: ProfileDeleteOneMutation,

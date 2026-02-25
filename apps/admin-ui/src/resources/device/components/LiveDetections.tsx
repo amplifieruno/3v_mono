@@ -32,6 +32,13 @@ interface Detection {
     id: string;
     status: string;
     attributes: Record<string, unknown>;
+    images?: string[];
+    profile_id?: string | null;
+    profile?: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+    } | null;
   } | null;
 }
 
@@ -63,18 +70,29 @@ const getIdentityLabel = (detection: Detection): string => {
   return 'Unknown';
 };
 
+const getProfileName = (detection: Detection): string | null => {
+  const profile = detection.identity?.profile;
+  if (!profile) return null;
+  return [profile.first_name, profile.last_name].filter(Boolean).join(' ') || null;
+};
+
+const getFaceSrc = (detection: Detection): string | null => {
+  if (detection.thumbnail) return `data:image/jpeg;base64,${detection.thumbnail}`;
+  if (detection.identity?.images?.[0]) return detection.identity.images[0];
+  return null;
+};
+
 const FaceThumbnail: FC<{
-  thumbnail: string | null;
+  detection: Detection;
   size?: 'sm' | 'lg';
-}> = ({ thumbnail, size = 'sm' }) => {
+}> = ({ detection, size = 'sm' }) => {
   const sizeClass = size === 'lg' ? 'h-16 w-16' : 'h-8 w-8';
   const iconSize = size === 'lg' ? 'h-6 w-6' : 'h-4 w-4';
+  const src = getFaceSrc(detection);
 
   return (
     <Avatar className={sizeClass}>
-      {thumbnail ? (
-        <AvatarImage src={`data:image/jpeg;base64,${thumbnail}`} />
-      ) : null}
+      {src ? <AvatarImage src={src} /> : null}
       <AvatarFallback>
         <UserIcon className={iconSize} />
       </AvatarFallback>
@@ -203,18 +221,28 @@ export const LiveDetections: FC<LiveDetectionsProps> = ({
                         {formatTime(det.created_at)}
                       </TableCell>
                       <TableCell>
-                        <FaceThumbnail thumbnail={det.thumbnail} />
+                        <FaceThumbnail detection={det} />
                       </TableCell>
                       <TableCell>
                         {det.identity ? (
-                          <Link
-                            to={`/identities/show/${det.identity.id}`}
-                            className='text-sm text-primary hover:underline'
-                          >
-                            {getIdentityLabel(det)}
-                          </Link>
+                          <div className='flex flex-col'>
+                            {getProfileName(det) && (
+                              <Link
+                                to={`/profiles/show/${det.identity.profile!.id}`}
+                                className='text-sm text-primary hover:underline font-medium'
+                              >
+                                {getProfileName(det)}
+                              </Link>
+                            )}
+                            <Link
+                              to={`/identities/show/${det.identity.id}`}
+                              className='text-xs text-muted-foreground hover:underline'
+                            >
+                              {getIdentityLabel(det)}
+                            </Link>
+                          </div>
                         ) : (
-                          <span className='text-sm text-muted-foreground'>—</span>
+                          <span className='text-sm text-muted-foreground'>{'\u2014'}</span>
                         )}
                       </TableCell>
                       <TableCell className='text-sm'>
@@ -241,12 +269,18 @@ export const LiveDetections: FC<LiveDetectionsProps> = ({
 
 const RecentFaceCard: FC<{ detection: Detection }> = ({ detection }) => {
   const label = getIdentityLabel(detection);
+  const profileName = getProfileName(detection);
   const content = (
     <div className='flex flex-col items-center gap-1 min-w-[80px]'>
-      <FaceThumbnail thumbnail={detection.thumbnail} size='lg' />
+      <FaceThumbnail detection={detection} size='lg' />
       <span className='text-xs font-medium truncate max-w-[80px]'>
         {label}
       </span>
+      {profileName && (
+        <span className='text-[10px] text-primary truncate max-w-[80px]'>
+          {profileName}
+        </span>
+      )}
       <span className='text-[10px] text-muted-foreground'>
         {(detection.confidence * 100).toFixed(1)}%
       </span>

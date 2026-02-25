@@ -106,6 +106,13 @@ export const DeviceDetectionsQuery = gql(`
         id
         status
         attributes
+        images
+        profile_id
+        profile {
+          id
+          first_name
+          last_name
+        }
       }
     }
     itap_detections_aggregate(where: { device_id: { _eq: $device_id } }) {

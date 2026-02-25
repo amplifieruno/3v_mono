@@ -36,6 +36,31 @@ export const ProfileOneQuery = gql(`
   }
 `);
 
+export const ProfileShowQuery = gql(`
+  query ProfileShowQuery($id: uuid!) {
+    itap_profiles_by_pk(id: $id) {
+      ...itap_profile
+      identities {
+        id
+        images
+        status
+        created_at
+        detections(limit: 50, order_by: { created_at: desc }) {
+          id
+          created_at
+          confidence
+          similarity
+          thumbnail
+          device {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`);
+
 export const ProfileInsertOneMutation = gql(`
   mutation ProfileInsertOneMutation($object: itap_profiles_insert_input!) {
     insert_itap_profiles_one(object: $object) {

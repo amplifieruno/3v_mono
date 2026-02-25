@@ -6,24 +6,27 @@ import { identityStatuses } from '../../data/enums';
 import { ColumnDef } from '@tanstack/react-table';
 import { User } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Link } from 'react-router';
 
 // Component for displaying identity images using Avatar
-const IdentityImages = ({ images }: { images: string[] }) => {
+const IdentityImages = ({ images, id }: { images: string[]; id: string }) => {
   const displayImages = images.slice(0, 3); // Show max 3 images
   const remainingCount = images.length - displayImages.length;
 
   if (!images || images.length === 0) {
     return (
-      <Avatar>
-        <AvatarFallback>
-          <User className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
+      <Link to={`/identities/show/${id}`}>
+        <Avatar>
+          <AvatarFallback>
+            <User className="h-4 w-4" />
+          </AvatarFallback>
+        </Avatar>
+      </Link>
     );
   }
 
   return (
-    <div className="flex -space-x-2" title={`${images.length} image(s) total`}>
+    <Link to={`/identities/show/${id}`} className="flex -space-x-2" title={`${images.length} image(s) total`}>
       {displayImages.map((imageUrl, index) => (
         <Avatar
           key={index}
@@ -47,7 +50,7 @@ const IdentityImages = ({ images }: { images: string[] }) => {
           </AvatarFallback>
         </Avatar>
       )}
-    </div>
+    </Link>
   );
 };
 
@@ -59,7 +62,14 @@ export const columnsInfo = prepareColumns<IdentityFragment>([
     meta: {
       title: 'ID',
     },
-    cell: ({ row }) => <UuidView value={row.original.id} />,
+    cell: ({ row }) => (
+      <Link
+        to={`/identities/show/${row.original.id}`}
+        className='text-primary hover:underline'
+      >
+        <UuidView value={row.original.id} />
+      </Link>
+    ),
   },
   {
     id: 'images',
@@ -68,7 +78,7 @@ export const columnsInfo = prepareColumns<IdentityFragment>([
     enableHiding: true,
     cell: ({ row }) => {
       const identity = row.original as IdentityFragment;
-      return <IdentityImages images={identity.images || []} />;
+      return <IdentityImages images={identity.images || []} id={identity.id} />;
     },
     meta: {
       title: 'Images',
@@ -110,12 +120,17 @@ export const columnsInfo = prepareColumns<IdentityFragment>([
         return <span className='text-muted-foreground'>No profile</span>;
       }
       return (
-        <div className='flex flex-col'>
-          <span className='font-medium'>
-            {profile.first_name} {profile.last_name}
-          </span>
-          <span className='text-sm text-muted-foreground'>{profile.email}</span>
-        </div>
+        <Link
+          to={`/profiles/show/${profile.id}`}
+          className='hover:underline'
+        >
+          <div className='flex flex-col'>
+            <span className='font-medium text-primary'>
+              {profile.first_name} {profile.last_name}
+            </span>
+            <span className='text-sm text-muted-foreground'>{profile.email}</span>
+          </div>
+        </Link>
       );
     },
     meta: {
@@ -128,6 +143,7 @@ export const columnsInfo = prepareColumns<IdentityFragment>([
       <DataTableRowActions
         row={row}
         recordId={row.original.id}
+        show
         edit
         deleteOptions={{
           gqlMutation: IdentityDeleteOneMutation,
