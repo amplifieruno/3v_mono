@@ -2,7 +2,7 @@
 # ITAP Development Makefile
 # =============================================================================
 
-.PHONY: dev dev-compose hasura_apply prod prod-down prod-rebuild deploy \
+.PHONY: dev dev-compose hasura_apply db_reset prod prod-down prod-rebuild deploy \
 	lint typecheck build test check-all \
 	agent agent-safe agent-classic agent-resume agent-status agent-check \
 	spec ship claude help
@@ -13,13 +13,22 @@
 
 ## Start Docker infrastructure
 dev-compose:
-	docker-compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d
+	docker compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d
+
+HASURA_CLI = docker compose --env-file .env.dev -f docker/docker-compose.dev.yml exec -T console hasura-cli --project /hasura-project --endpoint http://graphql:8080
 
 ## Apply Hasura migrations and metadata
 hasura_apply:
-	docker compose --env-file .env.dev exec console \
-		sh -c "hasura-cli metadata apply --endpoint=http://graphql:8080 && \
-					 hasura-cli migrate apply --database-name 'default' --endpoint=http://graphql:8080"
+	$(HASURA_CLI) metadata apply
+	$(HASURA_CLI) migrate apply --database-name default
+	$(HASURA_CLI) metadata reload
+
+## Reset the data layer: drop itap schemas and migration state, then re-apply
+db_reset:
+	docker compose --env-file .env.dev -f docker/docker-compose.dev.yml exec -T postgres \
+		psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "DROP SCHEMA IF EXISTS itap CASCADE; DROP SCHEMA IF EXISTS itap_results CASCADE;"
+	$(HASURA_CLI) migrate delete --all --server --database-name default --force
+	$(MAKE) hasura_apply
 
 ## Start full development environment
 dev:
@@ -64,15 +73,15 @@ check-all: lint typecheck build
 
 ## Start production stack
 prod:
-	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d
+	docker compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d
 
 ## Stop production stack
 prod-down:
-	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml down
+	docker compose --env-file .env.prod -f docker/docker-compose.prod.yml down
 
 ## Rebuild production stack
 prod-rebuild:
-	docker-compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d --build --force-recreate
+	docker compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d --build --force-recreate
 
 ## Full production deployment
 deploy:

@@ -132,7 +132,7 @@ services:
       HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql,pgdump,config
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log
       HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE: '100'
-      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'true'
+      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'false'
       HASURA_GRAPHQL_JWT_SECRET: ${JWT_SECRET}
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_BATCH_SIZE: '100'
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: '1000'
@@ -144,8 +144,6 @@ services:
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
       HASURA_GRAPHQL_USE_PREPARED_STATEMENTS: 'true'
       HASURA_GRAPHQL_WS_READ_COOKIE: 'false'
-      HASURA_GRAPHQL_MIGRATIONS_DIR: /migrations
-      HASURA_GRAPHQL_METADATA_DIR: /metadata
     extra_hosts:
       - host.docker.internal:host-gateway
       - ${AUTH_URL}:host-gateway
@@ -174,11 +172,8 @@ services:
       traefik.http.services.migrate.loadbalancer.server.port: '80'
     restart: always
     volumes:
-      - type: bind
-        source: ../apps/nhost/nhost
-        target: /app
-        read_only: false
-    working_dir: /app
+      - ../apps/nhost/nhost:/hasura-project
+    working_dir: /hasura-project
 
   dashboard:
     image: nhost/dashboard:2.34.0
@@ -231,8 +226,10 @@ services:
       HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql,pgdump,config
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log
       HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE: '100'
-      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'true'
+      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'false'
       HASURA_GRAPHQL_JWT_SECRET: ${JWT_SECRET}
+      ACTION_SECRET: ${ACTION_SECRET}
+      BACKEND_URL: ${BACKEND_URL}
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_BATCH_SIZE: '100'
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: '1000'
       HASURA_GRAPHQL_LOG_LEVEL: warn
@@ -298,7 +295,7 @@ services:
         target: /data
 
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.0-pg16
     command: ["postgres", "-c", "hba_file=/etc/pg_hba_custom.conf"]
     environment:
       POSTGRES_DB: postgres

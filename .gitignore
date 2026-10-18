@@ -9,6 +9,7 @@ node_modules
 
 # Environment files (contain sensitive data)
 .env
+apps/backend/.env
 .env.dev
 .env.prod
 .env.local

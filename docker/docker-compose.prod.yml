@@ -126,8 +126,10 @@ services:
       HASURA_GRAPHQL_ENABLED_APIS: metadata,graphql
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log
       HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE: '100'
-      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'true'
+      HASURA_GRAPHQL_INFER_FUNCTION_PERMISSIONS: 'false'
       HASURA_GRAPHQL_JWT_SECRET: ${JWT_SECRET}
+      ACTION_SECRET: ${ACTION_SECRET}
+      BACKEND_URL: ${BACKEND_URL}
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_BATCH_SIZE: '100'
       HASURA_GRAPHQL_LIVE_QUERIES_MULTIPLEXED_REFETCH_INTERVAL: '1000'
       HASURA_GRAPHQL_LOG_LEVEL: warn
@@ -205,7 +207,7 @@ services:
         target: /data
 
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.0-pg16
     environment:
       POSTGRES_DB: postgres
       POSTGRES_DEV_INSECURE: 'true'
