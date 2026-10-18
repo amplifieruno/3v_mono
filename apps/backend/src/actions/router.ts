@@ -3,6 +3,7 @@ import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import type { Env } from '../config/env.js';
 import { createHasuraClient, type HasuraSession } from '../hasura/client.js';
+import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
 import { switchOrganization } from './switchOrganization.js';
 import { ActionError, type ActionHandler } from './types.js';
@@ -13,6 +14,8 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   switch_organization: switchOrganization,
   invite_member: inviteMember,
   accept_invitation: acceptInvitation,
+  open_file: openFile,
+  delete_file: deleteFile,
 };
 
 const payloadSchema = z.object({

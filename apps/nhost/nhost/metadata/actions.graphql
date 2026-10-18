@@ -2,6 +2,8 @@ type Mutation {
   switch_organization(organization_id: uuid!): OrgToken!
   invite_member(email: String!, role: String = "admin"): Invitation!
   accept_invitation(token: String!): AcceptedInvitation!
+  open_file(file_id: uuid!): FileUrl!
+  delete_file(file_id: uuid!): DeletedFile!
 }
 
 type OrgToken {
@@ -19,4 +21,13 @@ type Invitation {
 
 type AcceptedInvitation {
   organization_id: uuid!
+}
+
+type FileUrl {
+  url: String!
+  expires_at: timestamptz!
+}
+
+type DeletedFile {
+  file_id: uuid!
 }

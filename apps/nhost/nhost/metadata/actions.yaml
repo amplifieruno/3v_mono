@@ -36,6 +36,30 @@ actions:
     permissions:
       - role: user
     comment: Accepts an invitation addressed to the caller's email and creates or reactivates the membership
+  - name: open_file
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/open_file'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Returns a short-lived download URL for a file in the session organization bucket (or org-logos); audits sensitive kinds
+  - name: delete_file
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/delete_file'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Deletes a file from the session organization bucket
 custom_types:
   enums: []
   input_objects: []
@@ -43,4 +67,6 @@ custom_types:
     - name: OrgToken
     - name: Invitation
     - name: AcceptedInvitation
+    - name: FileUrl
+    - name: DeletedFile
   scalars: []
