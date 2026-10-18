@@ -18,6 +18,7 @@ DECLARE
   org_id uuid;
   changes jsonb := '{}'::jsonb;
   action_name text := lower(TG_OP);
+  actor text := NULLIF(current_setting('hasura.user', true), '')::json ->> 'x-hasura-user-id';
 BEGIN
   FOR i IN 0 .. TG_NARGS - 1 LOOP
     arg := TG_ARGV[i];
@@ -68,7 +69,7 @@ BEGIN
   INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes)
   VALUES (
     org_id,
-    (NULLIF(current_setting('hasura.user', true), '')::json ->> 'x-hasura-user-id')::uuid,
+    CASE WHEN actor ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN actor::uuid END,
     action_name,
     TG_TABLE_NAME,
     COALESCE((row_data ->> 'id')::uuid, (row_data ->> 'organization_id')::uuid),

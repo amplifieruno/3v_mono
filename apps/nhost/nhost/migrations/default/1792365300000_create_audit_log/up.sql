@@ -1,10 +1,20 @@
 CREATE TABLE itap.audit_actions (
-  value text PRIMARY KEY
+  value text PRIMARY KEY,
+  description text
 );
 
-INSERT INTO itap.audit_actions (value) VALUES
-  ('insert'), ('update'), ('delete'), ('switch_org'), ('export'), ('view_sensitive'),
-  ('merge'), ('rollback'), ('approve'), ('reject'), ('publish');
+INSERT INTO itap.audit_actions (value, description) VALUES
+  ('insert', 'Row created'),
+  ('update', 'Row changed'),
+  ('delete', 'Row removed'),
+  ('switch_org', 'User switched the active organization'),
+  ('export', 'Data exported'),
+  ('view_sensitive', 'Sensitive data viewed'),
+  ('merge', 'Records merged'),
+  ('rollback', 'Change rolled back'),
+  ('approve', 'Request approved'),
+  ('reject', 'Request rejected'),
+  ('publish', 'Item published');
 
 -- organization_id has no FK on purpose: audit rows must outlive the organization.
 CREATE TABLE itap.audit_log (
