@@ -1,0 +1,71 @@
+table:
+  schema: itap
+  name: organization_invitations
+configuration:
+  custom_name: organization_invitations
+object_relationships:
+  - name: accepted_by_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: auth
+          name: users
+        column_mapping:
+          accepted_by: id
+  - name: invited_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          invited_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - accepted_at
+        - accepted_by
+        - created_at
+        - email
+        - expires_at
+        - id
+        - invited_by
+        - organization_id
+        - role
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+        status:
+          _eq: pending
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+        status:
+          _eq: revoked
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

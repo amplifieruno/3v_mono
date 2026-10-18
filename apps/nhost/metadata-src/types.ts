@@ -57,6 +57,8 @@ export interface TableSpec {
   /** Writable, never selectable (e.g. hashes). */
   secretColumns?: string[];
   noDelete?: boolean;
+  /** No insert permission for the tenant role (rows are created by a backend action). */
+  noInsert?: boolean;
   /**
    * Relationship name overrides keyed by FK constraint name. An override applies to the relationship end
    * that lives in the table owning this spec: the object end in the child's spec, the array end in the

@@ -91,6 +91,13 @@ describe('buildTableMetadata: permission profiles', () => {
     expect(md.update_permissions).toHaveLength(1);
   });
 
+  it('should drop the insert permission with noInsert', () => {
+    const md = buildTableMetadata({ name: 'things', profile: 'tenant_crud', noInsert: true }, columns, [], []);
+    expect(md.insert_permissions).toBeUndefined();
+    expect(md.update_permissions).toHaveLength(1);
+    expect(md.delete_permissions).toHaveLength(1);
+  });
+
   it('should build select only for tenant_read', () => {
     const md = buildTableMetadata({ name: 'things', profile: 'tenant_read' }, columns, [], []);
     expect(md.select_permissions).toHaveLength(1);

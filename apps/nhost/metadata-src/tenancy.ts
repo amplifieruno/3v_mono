@@ -86,6 +86,7 @@ export const tenancyTables: TableSpec[] = [
   { name: 'organization_statuses', isEnum: true, profile: 'none' },
   { name: 'member_roles', isEnum: true, profile: 'none' },
   { name: 'member_statuses', isEnum: true, profile: 'none' },
+  { name: 'invitation_statuses', isEnum: true, profile: 'none' },
   {
     name: 'organizations',
     profile: 'none',
@@ -142,6 +143,26 @@ export const tenancyTables: TableSpec[] = [
     insertOnlyColumns: ['user_id'],
     extraPermissions: {
       select_permissions: [{ role: USER, permission: { columns: MEMBER_COLUMNS, filter: ownUserRow } }],
+    },
+  },
+  {
+    name: 'organization_invitations',
+    profile: 'tenant_crud',
+    // Created only by the invite_member action; org_admin may only revoke a pending invitation.
+    noInsert: true,
+    secretColumns: ['token_hash'],
+    readOnlyColumns: ['token_hash', 'accepted_by', 'accepted_at'],
+    extraPermissions: {
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['status'],
+            filter: { ...ownOrganizationRow, status: { _eq: 'pending' } },
+            check: { ...ownOrganizationRow, status: { _eq: 'revoked' } },
+          },
+        },
+      ],
     },
   },
   {

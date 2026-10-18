@@ -12,9 +12,35 @@ actions:
       - role: user
       - role: org_admin
     comment: Checks an active membership and returns a short-lived organization token (§4.3)
+  - name: invite_member
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/invite_member'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Creates a pending invitation and returns its one-time token
+  - name: accept_invitation
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/accept_invitation'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: user
+    comment: Accepts an invitation addressed to the caller's email and creates or reactivates the membership
 custom_types:
   enums: []
   input_objects: []
   objects:
     - name: OrgToken
+    - name: Invitation
+    - name: AcceptedInvitation
   scalars: []

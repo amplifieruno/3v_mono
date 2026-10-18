@@ -1,5 +1,7 @@
 type Mutation {
   switch_organization(organization_id: uuid!): OrgToken!
+  invite_member(email: String!, role: String = "admin"): Invitation!
+  accept_invitation(token: String!): AcceptedInvitation!
 }
 
 type OrgToken {
@@ -7,4 +9,14 @@ type OrgToken {
   expires_at: timestamptz!
   organization_id: uuid!
   role: String!
+}
+
+type Invitation {
+  invitation_id: uuid!
+  token: String!
+  expires_at: timestamptz!
+}
+
+type AcceptedInvitation {
+  organization_id: uuid!
 }

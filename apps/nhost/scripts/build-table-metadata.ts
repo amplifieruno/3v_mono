@@ -150,7 +150,9 @@ function tenantPermissions(spec: TableSpec, columns: string[], generatedColumns:
   if (columns.includes('created_by')) set.created_by = 'x-hasura-user-id';
 
   return {
-    insert_permissions: [{ role: TENANT_ROLE, permission: { columns: writable, check: filter, set } }],
+    ...(spec.noInsert
+      ? {}
+      : { insert_permissions: [{ role: TENANT_ROLE, permission: { columns: writable, check: filter, set } }] }),
     ...select,
     update_permissions: [{ role: TENANT_ROLE, permission: { columns: updatable, filter } }],
     ...(spec.noDelete ? {} : { delete_permissions: [{ role: TENANT_ROLE, permission: { filter } }] }),
