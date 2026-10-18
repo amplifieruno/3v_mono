@@ -16,6 +16,7 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "db:migrate": "pnpm --filter database migrate",
+    "seed": "pnpm --filter backend seed",
     "db:seed": "pnpm --filter database seed",
     "db:reset": "pnpm --filter database reset",
     "docker:dev": "docker-compose -f docker/docker-compose.dev.yml up -d",
