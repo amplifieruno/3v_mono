@@ -68,3 +68,16 @@ export function asOrgAdmin(userId: string, orgId: string, ttlSeconds = 300): Has
   );
   return asBearer(token);
 }
+
+/** Real signed org token (role `org_admin`) for callers that need the raw bearer, e.g. storage uploads. */
+export function orgAdminToken(userId: string, orgId: string, ttlSeconds = 300): string {
+  return signOrgToken(
+    { userId, organizationId: orgId, role: 'org_admin', ttlSeconds },
+    testEnv().HASURA_JWT_SECRET,
+  ).token;
+}
+
+/** Base token (role `user`). */
+export function userToken(userId: string, ttlSeconds = 300): string {
+  return signBaseToken({ userId, ttlSeconds }, testEnv().HASURA_JWT_SECRET).token;
+}

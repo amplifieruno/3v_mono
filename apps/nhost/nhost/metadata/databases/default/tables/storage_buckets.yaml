@@ -47,3 +47,35 @@ array_relationships:
         table:
           name: files
           schema: storage
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - id
+        - created_at
+        - updated_at
+        - download_expiration
+        - min_upload_file_size
+        - max_upload_file_size
+        - cache_control
+        - presigned_urls_enabled
+      filter:
+        _or:
+          - id:
+              _eq: X-Hasura-Organization-Id
+          - id:
+              _eq: org-logos
+  - role: user
+    permission:
+      columns:
+        - id
+        - created_at
+        - updated_at
+        - download_expiration
+        - min_upload_file_size
+        - max_upload_file_size
+        - cache_control
+        - presigned_urls_enabled
+      filter:
+        id:
+          _eq: org-logos

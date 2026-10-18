@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { expect } from 'vitest';
 import { HasuraError } from '../../../src/hasura/client.js';
-import { asAdmin } from './clients.js';
+import { asAdmin, testEnv } from './clients.js';
 
 export const TEST_PASSWORD = 'Test-Password-123!';
 
@@ -114,4 +114,32 @@ export async function createTwoOrgs(): Promise<{ orgA: TestOrg; orgB: TestOrg; u
   await addMember(orgA.id, user.id);
   await addMember(orgB.id, other.id);
   return { orgA, orgB, user, other };
+}
+
+export type UploadResult = { id: string } | { status: number };
+
+/**
+ * Uploads a small text file through hasura-storage (multipart `POST {NHOST_STORAGE_URL}/files`).
+ * Form fields: `bucket-id`, `file[]`, and `metadata[]` = JSON `{ name, metadata }` (hasura-storage 0.7 shape).
+ */
+export async function uploadFile(
+  token: string,
+  bucketId: string,
+  metadata?: Record<string, unknown>,
+): Promise<UploadResult> {
+  const name = `test-${randomUUID()}.txt`;
+  const form = new FormData();
+  form.append('bucket-id', bucketId);
+  form.append('metadata[]', JSON.stringify({ name, ...(metadata ? { metadata } : {}) }));
+  form.append('file[]', new Blob(['hello itap'], { type: 'text/plain' }), name);
+  const res = await fetch(`${testEnv().NHOST_STORAGE_URL}/files`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!res.ok) return { status: res.status };
+  const body = (await res.json()) as { processedFiles?: { id: string }[] };
+  const id = body.processedFiles?.[0]?.id;
+  if (!id) throw new Error(`uploadFile: no processed file in response ${JSON.stringify(body)}`);
+  return { id };
 }
