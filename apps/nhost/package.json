@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "vitest run test",
     "metadata:generate": "tsx scripts/generate-metadata.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

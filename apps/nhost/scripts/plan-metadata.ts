@@ -6,15 +6,20 @@ export interface ColumnRow {
   schema: ManagedSchema;
   table: string;
   column: string;
+  /** Generated or identity-always column (never writable). */
+  generated?: boolean;
 }
 
 export interface Introspection {
   columns: ColumnRow[];
-  /** FKs whose both ends are in managed schemas (`schema`/`refSchema` always set). */
+  /** FKs from managed schemas into managed schemas or auth.users / storage.files (`schema`/`refSchema` set). */
   foreignKeys: ForeignKey[];
 }
 
 const GENERATED_PREFIX = 'itap_';
+
+/** Nhost-owned tables that itap tables may reference; only the object end is generated. */
+export const EXTERNAL_TARGETS = new Set(['auth.users', 'storage.files']);
 
 const qualified = (schema: string | undefined, table: string): string => `${schema ?? 'itap'}.${table}`;
 
@@ -45,16 +50,21 @@ function validate(specs: TableSpec[], columnsByTable: Map<string, string[]>): vo
 /** Builds `{ fileName: yaml }` for every spec; throws on spec/database mismatch. */
 export function planMetadata(specs: TableSpec[], intro: Introspection): Map<string, string> {
   const columnsByTable = new Map<string, string[]>();
+  const generatedByTable = new Map<string, string[]>();
   for (const row of intro.columns) {
     const key = qualified(row.schema, row.table);
     columnsByTable.set(key, [...(columnsByTable.get(key) ?? []), row.column]);
+    if (row.generated) generatedByTable.set(key, [...(generatedByTable.get(key) ?? []), row.column]);
   }
   validate(specs, columnsByTable);
 
   // FKs into enum tables get no relationships: Hasura exposes the column as a GraphQL enum instead.
   const relatable = new Set(specs.filter((s) => !s.isEnum).map((s) => qualified(s.schema, s.name)));
   const fks = intro.foreignKeys.filter(
-    (fk) => relatable.has(qualified(fk.schema, fk.table)) && relatable.has(qualified(fk.refSchema, fk.refTable)),
+    (fk) =>
+      relatable.has(qualified(fk.schema, fk.table)) &&
+      (relatable.has(qualified(fk.refSchema, fk.refTable)) ||
+        EXTERNAL_TARGETS.has(qualified(fk.refSchema, fk.refTable))),
   );
 
   const files = new Map<string, string>();
@@ -65,6 +75,7 @@ export function planMetadata(specs: TableSpec[], intro: Introspection): Map<stri
       columnsByTable.get(key) ?? [],
       fks.filter((fk) => qualified(fk.schema, fk.table) === key),
       fks.filter((fk) => qualified(fk.refSchema, fk.refTable) === key),
+      generatedByTable.get(key) ?? [],
     );
     files.set(metadataFileName(spec), stringify(metadata, { lineWidth: 0, aliasDuplicateObjects: false }));
   }

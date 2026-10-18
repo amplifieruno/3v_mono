@@ -93,6 +93,31 @@ describe('planMetadata', () => {
     expect(parse(files.get('itap_kinds.yaml') ?? '').array_relationships).toBeUndefined();
   });
 
+  it('should pass generated columns through and keep auth/storage FKs as object-only relationships', () => {
+    const withExternal: Introspection = {
+      columns: [
+        ...intro.columns,
+        { schema: 'itap', table: 'notes', column: 'user_id' },
+        { schema: 'itap', table: 'notes', column: 'title_lower', generated: true },
+      ],
+      foreignKeys: [
+        ...intro.foreignKeys,
+        {
+          schema: 'itap',
+          table: 'notes',
+          columns: ['user_id'],
+          refSchema: 'auth',
+          refTable: 'users',
+          refColumns: ['id'],
+          constraint: 'notes_user_fkey',
+        },
+      ],
+    };
+    const notes = parse(planMetadata(specs, withExternal).get('itap_notes.yaml') ?? '');
+    expect(notes.object_relationships.map((r: { name: string }) => r.name)).toEqual(['organization', 'user']);
+    expect(notes.insert_permissions[0].permission.columns).toEqual(['user_id']);
+  });
+
   it('should fail when a spec has no table', () => {
     expect(() => planMetadata([...specs, { name: 'ghosts', profile: 'none' }], intro)).toThrow(/itap\.ghosts/);
   });

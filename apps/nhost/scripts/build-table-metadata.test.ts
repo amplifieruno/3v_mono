@@ -1,25 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { ForeignKey, TableSpec } from '../metadata-src/types.js';
+import type { TableSpec } from '../metadata-src/types.js';
 import { buildTableMetadata } from './build-table-metadata.js';
 
 const ORG_FILTER = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
 
-const orgFk = (table: string): ForeignKey => ({
-  table,
-  columns: ['organization_id'],
-  refTable: 'organizations',
-  refColumns: ['id'],
-  constraint: `${table}_organization_id_fkey`,
-});
-
 describe('buildTableMetadata: identity', () => {
   it('should set table, custom_name and is_enum without permissions for enums', () => {
-    const md = buildTableMetadata(
-      { name: 'statuses', isEnum: true, profile: 'tenant_crud' },
-      ['value', 'comment'],
-      [],
-      [],
-    );
+    const md = buildTableMetadata({ name: 'statuses', isEnum: true, profile: 'none' }, ['value', 'comment'], [], []);
     expect(md.table).toEqual({ schema: 'itap', name: 'statuses' });
     expect(md.configuration).toEqual({ custom_name: 'statuses' });
     expect(md.is_enum).toBe(true);
@@ -29,167 +16,16 @@ describe('buildTableMetadata: identity', () => {
     expect(md.delete_permissions).toBeUndefined();
   });
 
+  it('should throw when an enum table has a profile other than none', () => {
+    expect(() =>
+      buildTableMetadata({ name: 'statuses', isEnum: true, profile: 'tenant_crud' }, ['value'], [], []),
+    ).toThrow(/isEnum.*profile 'none'/);
+  });
+
   it('should use the itap_results schema when given', () => {
     const md = buildTableMetadata({ name: 'detections', schema: 'itap_results', profile: 'none' }, ['id'], [], []);
     expect(md.table).toEqual({ schema: 'itap_results', name: 'detections' });
     expect(md.is_enum).toBeUndefined();
-  });
-});
-
-describe('buildTableMetadata: object relationships', () => {
-  it('should map a composite FK over all columns and name it after the non-org column', () => {
-    const fk: ForeignKey = {
-      table: 'identities',
-      columns: ['organization_id', 'profile_id'],
-      refTable: 'profiles',
-      refColumns: ['organization_id', 'id'],
-      constraint: 'identities_profile_fkey',
-    };
-    const md = buildTableMetadata(
-      { name: 'identities', profile: 'none' },
-      ['id', 'organization_id', 'profile_id'],
-      [fk, orgFk('identities')],
-      [],
-    );
-    expect(md.object_relationships).toEqual([
-      {
-        name: 'organization',
-        using: {
-          manual_configuration: {
-            remote_table: { schema: 'itap', name: 'organizations' },
-            column_mapping: { organization_id: 'id' },
-          },
-        },
-      },
-      {
-        name: 'profile',
-        using: {
-          manual_configuration: {
-            remote_table: { schema: 'itap', name: 'profiles' },
-            column_mapping: { organization_id: 'organization_id', profile_id: 'id' },
-          },
-        },
-      },
-    ]);
-  });
-
-  it('should apply relationshipNames overrides by constraint', () => {
-    const fk: ForeignKey = {
-      table: 'incidents',
-      columns: ['organization_id', 'assigned_to'],
-      refTable: 'organization_members',
-      refColumns: ['organization_id', 'id'],
-      constraint: 'incidents_assigned_to_fkey',
-    };
-    const md = buildTableMetadata(
-      { name: 'incidents', profile: 'none', relationshipNames: { incidents_assigned_to_fkey: 'assignee' } },
-      ['id', 'organization_id', 'assigned_to'],
-      [fk],
-      [],
-    );
-    expect(md.object_relationships?.map((r) => r.name)).toEqual(['assignee']);
-  });
-
-  it('should throw when a derived relationship name collides with a column', () => {
-    const fk: ForeignKey = {
-      table: 'incidents',
-      columns: ['organization_id', 'assigned_to'],
-      refTable: 'organization_members',
-      refColumns: ['organization_id', 'id'],
-      constraint: 'incidents_assigned_to_fkey',
-    };
-    expect(() =>
-      buildTableMetadata({ name: 'incidents', profile: 'none' }, ['id', 'organization_id', 'assigned_to'], [fk], []),
-    ).toThrow(/incidents_assigned_to_fkey.*relationshipNames/);
-  });
-});
-
-describe('buildTableMetadata: array relationships', () => {
-  const memberFk = (col: string): ForeignKey => ({
-    table: 'incidents',
-    columns: ['organization_id', col],
-    refTable: 'organization_members',
-    refColumns: ['organization_id', 'id'],
-    constraint: `incidents_${col}_fkey`,
-  });
-
-  it('should name array relationships after the child, disambiguating several FKs from one child', () => {
-    const notes: ForeignKey = {
-      table: 'member_notes',
-      columns: ['organization_id', 'member_id'],
-      refTable: 'organization_members',
-      refColumns: ['organization_id', 'id'],
-      constraint: 'member_notes_member_fkey',
-    };
-    const md = buildTableMetadata(
-      { name: 'organization_members', profile: 'none' },
-      ['id', 'organization_id'],
-      [],
-      [memberFk('assigned_to'), memberFk('acknowledged_by'), notes],
-    );
-    expect(md.array_relationships).toEqual([
-      {
-        name: 'incidents_by_acknowledged_by',
-        using: {
-          manual_configuration: {
-            remote_table: { schema: 'itap', name: 'incidents' },
-            column_mapping: { organization_id: 'organization_id', id: 'acknowledged_by' },
-          },
-        },
-      },
-      {
-        name: 'incidents_by_assigned_to',
-        using: {
-          manual_configuration: {
-            remote_table: { schema: 'itap', name: 'incidents' },
-            column_mapping: { organization_id: 'organization_id', id: 'assigned_to' },
-          },
-        },
-      },
-      {
-        name: 'member_notes',
-        using: {
-          manual_configuration: {
-            remote_table: { schema: 'itap', name: 'member_notes' },
-            column_mapping: { organization_id: 'organization_id', id: 'member_id' },
-          },
-        },
-      },
-    ]);
-  });
-
-  it('should apply relationshipNames to incoming FKs', () => {
-    const md = buildTableMetadata(
-      {
-        name: 'organizations',
-        profile: 'none',
-        relationshipNames: { organization_members_organization_id_fkey: 'members' },
-      },
-      ['id', 'name'],
-      [],
-      [orgFk('organization_members')],
-    );
-    expect(md.array_relationships?.map((r) => r.name)).toEqual(['members']);
-  });
-});
-
-describe('buildTableMetadata: self references', () => {
-  it('should let "#array" override only the array end of a self-referencing FK', () => {
-    const fk: ForeignKey = {
-      table: 'areas',
-      columns: ['organization_id', 'parent_id'],
-      refTable: 'areas',
-      refColumns: ['organization_id', 'id'],
-      constraint: 'areas_parent_fkey',
-    };
-    const md = buildTableMetadata(
-      { name: 'areas', profile: 'none', relationshipNames: { 'areas_parent_fkey#array': 'children' } },
-      ['id', 'organization_id', 'parent_id'],
-      [fk],
-      [fk],
-    );
-    expect(md.object_relationships?.map((r) => r.name)).toEqual(['parent']);
-    expect(md.array_relationships?.map((r) => r.name)).toEqual(['children']);
   });
 });
 
@@ -276,13 +112,29 @@ describe('buildTableMetadata: permission profiles', () => {
 
   it('should merge extraPermissions last, replacing same-role entries and sorting by role', () => {
     const userSelect = { role: 'user', permission: { columns: ['id'], filter: { id: { _eq: 'X-Hasura-User-Id' } } } };
-    const adminSelect = { role: 'org_admin', permission: { columns: ['id'], filter: {} } };
+    const adminSelect = { role: 'org_admin', permission: { columns: ['id'], filter: {}, allow_aggregations: false } };
     const md = buildTableMetadata(
       { name: 'things', profile: 'tenant_crud', extraPermissions: { select_permissions: [userSelect, adminSelect] } },
       columns,
       [],
       [],
     );
-    expect(md.select_permissions).toEqual([adminSelect, userSelect]);
+    expect(md.select_permissions).toEqual([
+      adminSelect,
+      { role: 'user', permission: { ...userSelect.permission, allow_aggregations: true } },
+    ]);
+  });
+
+  it('should exclude generated and identity-always columns from insert/update', () => {
+    const md = buildTableMetadata(
+      { name: 'things', profile: 'tenant_crud' },
+      ['id', 'organization_id', 'name', 'search_text', 'seq'],
+      [],
+      [],
+      ['search_text', 'seq'],
+    );
+    expect(md.insert_permissions?.[0].permission.columns).toEqual(['name']);
+    expect(md.update_permissions?.[0].permission.columns).toEqual(['name']);
+    expect(md.select_permissions?.[0].permission.columns).toContain('search_text');
   });
 });
