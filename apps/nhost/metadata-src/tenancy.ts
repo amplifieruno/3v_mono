@@ -1,0 +1,148 @@
+import type { BoolExp, TableSpec } from './types.js';
+
+const ORG_ADMIN = 'org_admin';
+const USER = 'user';
+
+const ownOrganization: BoolExp = { id: { _eq: 'X-Hasura-Organization-Id' } };
+const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
+const ownUserRow: BoolExp = { user_id: { _eq: 'X-Hasura-User-Id' } };
+
+const ORGANIZATION_COLUMNS = [
+  'id',
+  'name',
+  'slug',
+  'legal_name',
+  'logo_file_id',
+  'timezone',
+  'locale',
+  'status',
+  'created_at',
+  'updated_at',
+];
+
+const SETTINGS_WRITABLE = [
+  'recognition_threshold',
+  'tracking_timeout_seconds',
+  'archive_unknown_after_days',
+  'tailgating_window_seconds',
+  'default_retention_days',
+  'detection_counter_throttle_seconds',
+];
+
+const MEMBER_COLUMNS = [
+  'id',
+  'organization_id',
+  'user_id',
+  'role',
+  'status',
+  'title',
+  'department',
+  'joined_at',
+  'expires_at',
+  'deactivated_at',
+  'deactivated_by',
+  'quiet_hours',
+  'vacation_until',
+  'vacation_delegate_user_id',
+  'created_at',
+  'updated_at',
+];
+
+/** user_settings: same own-row access for both roles; last_organization_id is backend-only. */
+function userSettingsPermissions(role: string): NonNullable<TableSpec['extraPermissions']> {
+  return {
+    select_permissions: [
+      {
+        role,
+        permission: {
+          columns: ['user_id', 'locale', 'timezone', 'last_organization_id', 'updated_at'],
+          filter: ownUserRow,
+        },
+      },
+    ],
+    insert_permissions: [
+      {
+        role,
+        permission: { columns: ['locale', 'timezone'], check: ownUserRow, set: { user_id: 'x-hasura-user-id' } },
+      },
+    ],
+    update_permissions: [
+      { role, permission: { columns: ['locale', 'timezone'], filter: ownUserRow, check: ownUserRow } },
+    ],
+  };
+}
+
+function mergePermissions(
+  ...parts: NonNullable<TableSpec['extraPermissions']>[]
+): NonNullable<TableSpec['extraPermissions']> {
+  return {
+    select_permissions: parts.flatMap((p) => p.select_permissions ?? []),
+    insert_permissions: parts.flatMap((p) => p.insert_permissions ?? []),
+    update_permissions: parts.flatMap((p) => p.update_permissions ?? []),
+  };
+}
+
+export const tenancyTables: TableSpec[] = [
+  { name: 'organization_statuses', isEnum: true, profile: 'none' },
+  { name: 'member_roles', isEnum: true, profile: 'none' },
+  { name: 'member_statuses', isEnum: true, profile: 'none' },
+  {
+    name: 'organizations',
+    profile: 'none',
+    relationshipNames: { 'organization_members_organization_id_fkey#array': 'members' },
+    extraPermissions: {
+      select_permissions: [
+        { role: ORG_ADMIN, permission: { columns: ORGANIZATION_COLUMNS, filter: ownOrganization } },
+        {
+          role: USER,
+          permission: {
+            columns: ['id', 'name', 'slug', 'logo_file_id'],
+            filter: { members: { user_id: { _eq: 'X-Hasura-User-Id' }, status: { _eq: 'active' } } },
+          },
+        },
+      ],
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['name', 'legal_name', 'logo_file_id', 'timezone', 'locale'],
+            filter: ownOrganization,
+            check: ownOrganization,
+          },
+        },
+      ],
+    },
+  },
+  {
+    name: 'organization_settings',
+    profile: 'none',
+    extraPermissions: {
+      select_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: { columns: ['organization_id', ...SETTINGS_WRITABLE, 'updated_at'], filter: ownOrganizationRow },
+        },
+      ],
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: { columns: SETTINGS_WRITABLE, filter: ownOrganizationRow, check: ownOrganizationRow },
+        },
+      ],
+    },
+  },
+  {
+    name: 'organization_members',
+    profile: 'tenant_crud',
+    noDelete: true,
+    readOnlyColumns: ['deactivated_at', 'deactivated_by', 'joined_at'],
+    extraPermissions: {
+      select_permissions: [{ role: USER, permission: { columns: MEMBER_COLUMNS, filter: ownUserRow } }],
+    },
+  },
+  {
+    name: 'user_settings',
+    profile: 'none',
+    extraPermissions: mergePermissions(userSettingsPermissions(USER), userSettingsPermissions(ORG_ADMIN)),
+  },
+];

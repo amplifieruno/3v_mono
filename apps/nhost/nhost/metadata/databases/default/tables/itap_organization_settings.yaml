@@ -1,0 +1,46 @@
+table:
+  schema: itap
+  name: organization_settings
+configuration:
+  custom_name: organization_settings
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - organization_id
+        - recognition_threshold
+        - tracking_timeout_seconds
+        - archive_unknown_after_days
+        - tailgating_window_seconds
+        - default_retention_days
+        - detection_counter_throttle_seconds
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - recognition_threshold
+        - tracking_timeout_seconds
+        - archive_unknown_after_days
+        - tailgating_window_seconds
+        - default_retention_days
+        - detection_counter_throttle_seconds
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

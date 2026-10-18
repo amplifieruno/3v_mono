@@ -1,0 +1,86 @@
+table:
+  schema: itap
+  name: organizations
+configuration:
+  custom_name: organizations
+object_relationships:
+  - name: logo_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          logo_file_id: id
+array_relationships:
+  - name: members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          id: organization_id
+  - name: organization_settings
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_settings
+        column_mapping:
+          id: organization_id
+  - name: user_settings
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: user_settings
+        column_mapping:
+          id: last_organization_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - id
+        - name
+        - slug
+        - legal_name
+        - logo_file_id
+        - timezone
+        - locale
+        - status
+        - created_at
+        - updated_at
+      filter:
+        id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - id
+        - name
+        - slug
+        - logo_file_id
+      filter:
+        members:
+          user_id:
+            _eq: X-Hasura-User-Id
+          status:
+            _eq: active
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - legal_name
+        - logo_file_id
+        - timezone
+        - locale
+      filter:
+        id:
+          _eq: X-Hasura-Organization-Id
+      check:
+        id:
+          _eq: X-Hasura-Organization-Id

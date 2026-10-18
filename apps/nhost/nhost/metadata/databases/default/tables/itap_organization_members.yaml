@@ -1,0 +1,140 @@
+table:
+  schema: itap
+  name: organization_members
+configuration:
+  custom_name: organization_members
+object_relationships:
+  - name: deactivated_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          deactivated_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: auth
+          name: users
+        column_mapping:
+          user_id: id
+  - name: vacation_delegate_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          vacation_delegate_user_id: user_id
+array_relationships:
+  - name: organization_members_by_deactivated_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: deactivated_by
+  - name: organization_members_by_vacation_delegate_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: vacation_delegate_user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - department
+        - expires_at
+        - quiet_hours
+        - role
+        - status
+        - title
+        - user_id
+        - vacation_delegate_user_id
+        - vacation_until
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - deactivated_at
+        - deactivated_by
+        - department
+        - expires_at
+        - id
+        - joined_at
+        - organization_id
+        - quiet_hours
+        - role
+        - status
+        - title
+        - updated_at
+        - user_id
+        - vacation_delegate_user_id
+        - vacation_until
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - id
+        - organization_id
+        - user_id
+        - role
+        - status
+        - title
+        - department
+        - joined_at
+        - expires_at
+        - deactivated_at
+        - deactivated_by
+        - quiet_hours
+        - vacation_until
+        - vacation_delegate_user_id
+        - created_at
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - department
+        - expires_at
+        - quiet_hours
+        - role
+        - status
+        - title
+        - user_id
+        - vacation_delegate_user_id
+        - vacation_until
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

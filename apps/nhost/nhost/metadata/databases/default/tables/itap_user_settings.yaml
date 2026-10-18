@@ -1,0 +1,91 @@
+table:
+  schema: itap
+  name: user_settings
+configuration:
+  custom_name: user_settings
+object_relationships:
+  - name: last_organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          last_organization_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: auth
+          name: users
+        column_mapping:
+          user_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - locale
+        - timezone
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      set:
+        user_id: x-hasura-user-id
+  - role: user
+    permission:
+      columns:
+        - locale
+        - timezone
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      set:
+        user_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - user_id
+        - locale
+        - timezone
+        - last_organization_id
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - user_id
+        - locale
+        - timezone
+        - last_organization_id
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - locale
+        - timezone
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+  - role: user
+    permission:
+      columns:
+        - locale
+        - timezone
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id

@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: member_roles
+is_enum: true
+configuration:
+  custom_name: member_roles

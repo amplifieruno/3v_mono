@@ -48,3 +48,43 @@ export async function expectDenied(promise: Promise<unknown>): Promise<HasuraErr
   expect(DENIED_CODES).toContain(error.code);
   return error;
 }
+
+export type MemberStatus = 'active' | 'suspended' | 'deactivated';
+
+const INSERT_ORG = `
+  mutation InsertTestOrg($object: organizations_insert_input!) {
+    insert_organizations_one(object: $object) { id name slug }
+  }
+`;
+
+/** Creates an organization (admin); its settings row is created by trigger. */
+export async function createTestOrg(name?: string): Promise<{ id: string; name: string; slug: string }> {
+  const suffix = randomUUID();
+  const data = await asAdmin().request<{ insert_organizations_one: { id: string; name: string; slug: string } | null }>(
+    INSERT_ORG,
+    { object: { name: name ?? `Test Org ${suffix.slice(0, 8)}`, slug: `test-${suffix}` } },
+  );
+  if (!data.insert_organizations_one) throw new Error('createTestOrg: insert returned no row');
+  return data.insert_organizations_one;
+}
+
+const INSERT_MEMBER = `
+  mutation InsertTestMember($object: organization_members_insert_input!) {
+    insert_organization_members_one(object: $object) { id }
+  }
+`;
+
+/** Adds `userId` to `orgId` (admin). A deactivated member also gets `deactivated_at` (CHECK constraint). */
+export async function addMember(
+  orgId: string,
+  userId: string,
+  status: MemberStatus = 'active',
+): Promise<{ id: string }> {
+  const object: Record<string, unknown> = { organization_id: orgId, user_id: userId, status };
+  if (status === 'deactivated') object.deactivated_at = new Date().toISOString();
+  const data = await asAdmin().request<{ insert_organization_members_one: { id: string } | null }>(INSERT_MEMBER, {
+    object,
+  });
+  if (!data.insert_organization_members_one) throw new Error('addMember: insert returned no row');
+  return data.insert_organization_members_one;
+}
