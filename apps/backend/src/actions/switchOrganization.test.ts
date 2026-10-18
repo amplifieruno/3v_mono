@@ -31,14 +31,16 @@ function mockAdmin(members: Membership[]) {
 
 function run(members: Membership[], input: unknown = { organization_id: ORG }, userId: string | null = USER) {
   const admin = mockAdmin(members);
+  const actor = mockAdmin([]);
   const promise = switchOrganization({
     env,
     input,
     session: { role: 'user', ...(userId ? { userId } : {}) },
     admin: admin.client,
     asCaller: admin.client,
+    actor: actor.client,
   });
-  return { promise, request: admin.request };
+  return { promise, request: admin.request, actorRequest: actor.request };
 }
 
 async function errorCode(promise: Promise<unknown>): Promise<string> {
@@ -81,7 +83,7 @@ describe('switchOrganization', () => {
 
   it('should record the switch and return an org_admin token for an active membership', async () => {
     const future = new Date(Date.now() + 86_400_000).toISOString();
-    const { promise, request } = run([{ ...activeMember, expires_at: future }], { organization_id: ORG.toUpperCase() });
+    const { promise, request, actorRequest } = run([{ ...activeMember, expires_at: future }], { organization_id: ORG.toUpperCase() });
     const result = await promise;
 
     expect(result).toMatchObject({ organization_id: ORG, role: 'org_admin' });
@@ -93,8 +95,9 @@ describe('switchOrganization', () => {
       'x-hasura-default-role': 'org_admin',
     });
 
-    expect(request).toHaveBeenCalledTimes(2);
-    const [query, variables] = request.mock.calls[1] as unknown as [string, Record<string, unknown>];
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(actorRequest).toHaveBeenCalledTimes(1);
+    const [query, variables] = actorRequest.mock.calls[0] as unknown as [string, Record<string, unknown>];
     expect(query).toContain('insert_user_settings_one');
     expect(query).toContain('insert_audit_log_one');
     expect(variables).toEqual({ user: USER, org: ORG });

@@ -63,9 +63,3 @@ update_permissions:
           _eq: X-Hasura-Organization-Id
         status:
           _eq: revoked
-delete_permissions:
-  - role: org_admin
-    permission:
-      filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id

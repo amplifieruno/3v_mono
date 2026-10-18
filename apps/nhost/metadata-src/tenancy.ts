@@ -150,6 +150,7 @@ export const tenancyTables: TableSpec[] = [
     profile: 'tenant_crud',
     // Created only by the invite_member action; org_admin may only revoke a pending invitation.
     noInsert: true,
+    noDelete: true,
     secretColumns: ['token_hash'],
     readOnlyColumns: ['token_hash', 'accepted_by', 'accepted_at'],
     extraPermissions: {

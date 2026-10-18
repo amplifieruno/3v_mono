@@ -28,53 +28,22 @@ const ACTIVE_MEMBER = `
   }
 `;
 
-const CREATE_INVITATION = `
-  mutation CreateInvitation($object: organization_invitations_insert_input!) {
-    insert_organization_invitations_one(object: $object) { id expires_at }
-  }
-`;
-
-const FIND_BY_HASH = `
-  query FindInvitation($hash: String!, $user: uuid!) {
-    organization_invitations(where: { token_hash: { _eq: $hash } }, limit: 1) {
-      id
-      organization_id
-      email
-      role
-      status
-      expires_at
-    }
+const CALLER_EMAIL = `
+  query AcceptCallerEmail($user: uuid!) {
     users(where: { id: { _eq: $user } }, limit: 1) { email }
   }
 `;
 
-const FIND_MEMBERSHIP = `
-  query FindMembership($org: uuid!, $user: uuid!) {
-    organization_members(where: { organization_id: { _eq: $org }, user_id: { _eq: $user } }, limit: 1) {
-      id
-      status
-    }
+/** Atomic claim-first acceptance (itap.accept_invitation, tracked as claim_invitation, admin only). */
+const CLAIM_INVITATION = `
+  mutation ClaimInvitation($hash: String!, $user: uuid!, $email: citext!) {
+    claim_invitation(args: { p_token_hash: $hash, p_user_id: $user, p_email: $email }) { organization_id }
   }
 `;
 
-const REACTIVATE_MEMBER = `
-  mutation ReactivateMember($id: uuid!, $role: member_roles_enum!) {
-    update_organization_members_by_pk(pk_columns: { id: $id }, _set: { status: active, role: $role }) { id }
-  }
-`;
-
-const CREATE_MEMBER = `
-  mutation CreateMember($org: uuid!, $user: uuid!, $role: member_roles_enum!) {
-    insert_organization_members_one(object: { organization_id: $org, user_id: $user, role: $role }) { id }
-  }
-`;
-
-const MARK_ACCEPTED = `
-  mutation MarkAccepted($id: uuid!, $user: uuid!, $now: timestamptz!) {
-    update_organization_invitations(
-      where: { id: { _eq: $id }, status: { _eq: pending } }
-      _set: { status: accepted, accepted_by: $user, accepted_at: $now }
-    ) { affected_rows }
+const CREATE_INVITATION = `
+  mutation CreateInvitation($object: organization_invitations_insert_input!) {
+    insert_organization_invitations_one(object: $object) { id expires_at }
   }
 `;
 
@@ -98,7 +67,7 @@ const inviteSchema = z.object({
 });
 
 /** Creates a pending invitation (org_admin) and returns the plaintext token exactly once. */
-export const inviteMember = defineAction(inviteSchema, async ({ input, session, admin }): Promise<InvitationOutput> => {
+export const inviteMember = defineAction(inviteSchema, async ({ input, session, admin, actor }): Promise<InvitationOutput> => {
   const { userId, organizationId } = session;
   if (!userId || !organizationId) throw new ActionError('unauthenticated', 'An organization session is required');
 
@@ -112,13 +81,13 @@ export const inviteMember = defineAction(inviteSchema, async ({ input, session, 
 
   const now = new Date();
   // A lapsed pending invitation would otherwise block re-inviting through the partial unique index.
-  await admin.request(EXPIRE_STALE, { org: organizationId, email: input.email, now: now.toISOString() });
+  await actor.request(EXPIRE_STALE, { org: organizationId, email: input.email, now: now.toISOString() });
 
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(now.getTime() + INVITATION_TTL_MS);
   let created: { id: string; expires_at: string } | null;
   try {
-    const data = await admin.request<{ insert_organization_invitations_one: { id: string; expires_at: string } | null }>(
+    const data = await actor.request<{ insert_organization_invitations_one: { id: string; expires_at: string } | null }>(
       CREATE_INVITATION,
       {
         object: {
@@ -144,57 +113,46 @@ export const inviteMember = defineAction(inviteSchema, async ({ input, session, 
 
 const acceptSchema = z.object({ token: z.string().min(1).max(256) });
 
-type InvitationRow = {
-  id: string;
-  organization_id: string;
-  email: string;
-  role: string;
-  status: string;
-  expires_at: string;
+const CLAIM_ERRORS = new Set([
+  'invitation_not_found',
+  'invitation_not_pending',
+  'invitation_expired',
+  'email_mismatch',
+  'already_member',
+]);
+
+const CLAIM_MESSAGES: Record<string, string> = {
+  invitation_not_found: 'Invitation not found',
+  invitation_not_pending: 'This invitation is no longer pending',
+  invitation_expired: 'This invitation has expired',
+  email_mismatch: 'This invitation was sent to a different email address',
+  already_member: 'You are already an active member of this organization',
 };
 
 /** Accepts an invitation as the signed-in user whose account email matches; creates or reactivates the membership. */
 export const acceptInvitation = defineAction(
   acceptSchema,
-  async ({ input, session, admin }): Promise<AcceptedInvitationOutput> => {
+  async ({ input, session, admin, actor }): Promise<AcceptedInvitationOutput> => {
     const userId = session.userId;
     if (!userId) throw new ActionError('unauthenticated', 'x-hasura-user-id is required');
 
-    const found = await admin.request<{ organization_invitations: InvitationRow[]; users: { email: string }[] }>(
-      FIND_BY_HASH,
-      { hash: hashToken(input.token), user: userId },
-    );
-    const invitation = found.organization_invitations[0];
-    if (!invitation) throw new ActionError('invitation_not_found', 'Invitation not found');
-    if (invitation.status !== 'pending') throw new ActionError('invitation_not_pending', 'This invitation is no longer pending');
-    if (new Date(invitation.expires_at).getTime() <= Date.now()) {
-      throw new ActionError('invitation_expired', 'This invitation has expired');
-    }
-    const callerEmail = found.users[0]?.email;
-    if (!callerEmail || callerEmail.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new ActionError('email_mismatch', 'This invitation was sent to a different email address');
-    }
+    const { users } = await admin.request<{ users: { email: string }[] }>(CALLER_EMAIL, { user: userId });
+    const email = users[0]?.email;
+    if (!email) throw new ActionError('email_mismatch', CLAIM_MESSAGES.email_mismatch);
 
-    const orgId = invitation.organization_id;
-    const { organization_members } = await admin.request<{ organization_members: { id: string; status: string }[] }>(
-      FIND_MEMBERSHIP,
-      { org: orgId, user: userId },
-    );
-    const existing = organization_members[0];
-    if (!existing) {
-      await admin.request(CREATE_MEMBER, { org: orgId, user: userId, role: invitation.role });
-    } else if (existing.status !== 'active') {
-      await admin.request(REACTIVATE_MEMBER, { id: existing.id, role: invitation.role });
+    try {
+      const data = await actor.request<{ claim_invitation: { organization_id: string }[] }>(CLAIM_INVITATION, {
+        hash: hashToken(input.token),
+        user: userId,
+        email,
+      });
+      const claimed = data.claim_invitation[0];
+      if (!claimed) throw new Error('accept_invitation: claim returned no row');
+      return { organization_id: claimed.organization_id };
+    } catch (error: unknown) {
+      const code = error instanceof HasuraError ? [...CLAIM_ERRORS].find((c) => (error.detail ?? '').includes(c)) : undefined;
+      if (code) throw new ActionError(code, CLAIM_MESSAGES[code]);
+      throw error;
     }
-
-    const marked = await admin.request<{ update_organization_invitations: { affected_rows: number } }>(MARK_ACCEPTED, {
-      id: invitation.id,
-      user: userId,
-      now: new Date().toISOString(),
-    });
-    if (marked.update_organization_invitations.affected_rows === 0) {
-      throw new ActionError('invitation_not_pending', 'This invitation is no longer pending');
-    }
-    return { organization_id: orgId };
   },
 );

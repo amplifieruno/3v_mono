@@ -9,18 +9,21 @@ export type HasuraClient = {
 export class HasuraError extends Error {
   readonly code: string;
   readonly path?: string;
+  /** Underlying Postgres error message (Hasura exposes it to admin requests as `extensions.internal.error.message`). */
+  readonly detail?: string;
 
-  constructor(code: string, message: string, path?: string) {
+  constructor(code: string, message: string, path?: string, detail?: string) {
     super(message);
     this.name = 'HasuraError';
     this.code = code;
     this.path = path;
+    this.detail = detail;
   }
 }
 
 type GraphQLResponse<T> = {
   data?: T;
-  errors?: { message: string; extensions?: { code?: string; path?: string } }[];
+  errors?: { message: string; extensions?: { code?: string; path?: string; internal?: { error?: { message?: string } } } }[];
   // Hasura top-level (non-GraphQL) error shape, e.g. a wrong admin secret
   code?: string;
   error?: string;
@@ -37,7 +40,12 @@ export async function parseHasuraResponse<T>(res: Response): Promise<T> {
   }
   if (body.errors?.length) {
     const [first] = body.errors;
-    throw new HasuraError(first.extensions?.code ?? 'unknown', first.message, first.extensions?.path);
+    throw new HasuraError(
+      first.extensions?.code ?? 'unknown',
+      first.message,
+      first.extensions?.path,
+      first.extensions?.internal?.error?.message,
+    );
   }
   if (body.error || !res.ok || body.data === undefined) {
     throw new HasuraError(

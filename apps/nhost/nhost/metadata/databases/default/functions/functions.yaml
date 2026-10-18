@@ -1,0 +1,6 @@
+- function:
+    schema: itap
+    name: accept_invitation
+  configuration:
+    custom_name: claim_invitation
+    exposed_as: mutation

@@ -37,19 +37,20 @@ async function errorCode(promise: Promise<unknown>): Promise<string> {
 afterEach(() => vi.restoreAllMocks());
 
 function runInvite(responder: Responder, input: unknown = { email: ' New@Itap.Test ' }, organizationId: string | null = ORG) {
-  const admin = mockAdmin(responder);
+  const admin = mockAdmin((q) => (q.includes('InviteActiveMember') ? { organization_members: [] } : {}));
+  const actor = mockAdmin(responder);
   const promise = inviteMember({
     env,
     input,
     session: { role: 'org_admin', userId: USER, ...(organizationId ? { organizationId } : {}) },
     admin: admin.client,
     asCaller: admin.client,
+    actor: actor.client,
   });
-  return { promise, request: admin.request };
+  return { promise, request: admin.request, actorRequest: actor.request };
 }
 
 const inviteResponder: Responder = (query) => {
-  if (query.includes('InviteActiveMember')) return { organization_members: [] };
   if (query.includes('CreateInvitation')) return { insert_organization_invitations_one: { id: INV, expires_at: 'x' } };
   return {};
 };
@@ -57,7 +58,7 @@ const inviteResponder: Responder = (query) => {
 describe('inviteMember', () => {
   it('should store the sha256 of the returned token, normalized email and a 7-day expiry', async () => {
     const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
-    const { promise, request } = runInvite(inviteResponder);
+    const { promise, actorRequest: request } = runInvite(inviteResponder);
     const out = await promise;
 
     expect(out.invitation_id).toBe(INV);
@@ -77,8 +78,18 @@ describe('inviteMember', () => {
   });
 
   it('should reject an active member with already_member', async () => {
-    const { promise } = runInvite((q) => (q.includes('InviteActiveMember') ? { organization_members: [{ id: 'm' }] } : {}));
+    const admin = mockAdmin(() => ({ organization_members: [{ id: 'm' }] }));
+    const actor = mockAdmin(inviteResponder);
+    const promise = inviteMember({
+      env,
+      input: { email: 'a@b.co' },
+      session: { role: 'org_admin', userId: USER, organizationId: ORG },
+      admin: admin.client,
+      asCaller: admin.client,
+      actor: actor.client,
+    });
     expect(await errorCode(promise)).toBe('already_member');
+    expect(actor.request).not.toHaveBeenCalled();
   });
 
   it('should map a unique violation to already_invited', async () => {
@@ -107,76 +118,67 @@ describe('inviteMember', () => {
   });
 });
 
-type Inv = { id: string; organization_id: string; email: string; role: string; status: string; expires_at: string };
-const future = new Date(Date.now() + 3_600_000).toISOString();
-const pending: Inv = { id: INV, organization_id: ORG, email: 'Me@itap.test', role: 'admin', status: 'pending', expires_at: future };
-
-function runAccept(opts: { inv?: Inv; email?: string; member?: { id: string; status: string }; affected?: number }) {
-  const admin = mockAdmin((q) => {
-    if (q.includes('FindInvitation')) {
-      return { organization_invitations: opts.inv ? [opts.inv] : [], users: [{ email: opts.email ?? 'me@itap.test' }] };
-    }
-    if (q.includes('FindMembership')) return { organization_members: opts.member ? [opts.member] : [] };
-    if (q.includes('MarkAccepted')) return { update_organization_invitations: { affected_rows: opts.affected ?? 1 } };
-    return {};
-  });
+function runAccept(opts: { email?: string | null; claim?: () => unknown }) {
+  const admin = mockAdmin(() => ({ users: opts.email === null ? [] : [{ email: opts.email ?? 'me@itap.test' }] }));
+  const actor = mockAdmin(opts.claim ?? (() => ({ claim_invitation: [{ organization_id: ORG }] })));
   const promise = acceptInvitation({
     env,
     input: { token: 'tok' },
     session: { role: 'user', userId: USER },
     admin: admin.client,
     asCaller: admin.client,
+    actor: actor.client,
   });
-  return { promise, request: admin.request };
+  return { promise, actorRequest: actor.request };
 }
 
-const called = (request: ReturnType<typeof mockAdmin>['request'], name: string) =>
-  request.mock.calls.some(([q]) => q.includes(name));
-
 describe('acceptInvitation', () => {
-  it('should look up by token hash and create the membership', async () => {
-    const { promise, request } = runAccept({ inv: pending });
+  it('should claim by token hash with the caller email via the actor client', async () => {
+    const { promise, actorRequest } = runAccept({});
     await expect(promise).resolves.toEqual({ organization_id: ORG });
-    const lookup = request.mock.calls.find(([q]) => q.includes('FindInvitation'));
-    expect((lookup?.[1] as { hash: string }).hash).toBe(createHash('sha256').update('tok').digest('hex'));
-    expect(called(request, 'CreateMember')).toBe(true);
-    expect(called(request, 'MarkAccepted')).toBe(true);
+    const [query, variables] = actorRequest.mock.calls[0] as unknown as [string, Record<string, unknown>];
+    expect(query).toContain('claim_invitation');
+    expect(variables).toEqual({ hash: createHash('sha256').update('tok').digest('hex'), user: USER, email: 'me@itap.test' });
   });
 
-  it('should reactivate a deactivated membership instead of inserting', async () => {
-    const { promise, request } = runAccept({ inv: pending, member: { id: 'm1', status: 'deactivated' } });
-    await promise;
-    expect(called(request, 'ReactivateMember')).toBe(true);
-    expect(called(request, 'CreateMember')).toBe(false);
+  it.each([
+    'invitation_not_found',
+    'invitation_not_pending',
+    'invitation_expired',
+    'email_mismatch',
+    'already_member',
+  ])('should map the %s database error to an action error', async (code) => {
+    const { promise } = runAccept({
+      claim: () => {
+        throw new HasuraError('unexpected', 'database query error', '$', code);
+      },
+    });
+    expect(await errorCode(promise)).toBe(code);
   });
 
-  it('should leave an already active membership untouched', async () => {
-    const { promise, request } = runAccept({ inv: pending, member: { id: 'm1', status: 'active' } });
-    await promise;
-    expect(called(request, 'ReactivateMember')).toBe(false);
-    expect(called(request, 'CreateMember')).toBe(false);
+  it('should rethrow unrecognized errors', async () => {
+    const { promise } = runAccept({
+      claim: () => {
+        throw new HasuraError('unexpected', 'boom', '$', 'something else');
+      },
+    });
+    await expect(promise).rejects.toThrow('boom');
   });
 
-  it('should reject an unknown token', async () => {
-    expect(await errorCode(runAccept({}).promise)).toBe('invitation_not_found');
+  it('should report email_mismatch when the caller has no account email', async () => {
+    expect(await errorCode(runAccept({ email: null }).promise)).toBe('email_mismatch');
   });
 
-  it('should reject a non-pending invitation', async () => {
-    expect(await errorCode(runAccept({ inv: { ...pending, status: 'revoked' } }).promise)).toBe('invitation_not_pending');
-  });
-
-  it('should reject an expired invitation', async () => {
-    const past = new Date(Date.now() - 1000).toISOString();
-    expect(await errorCode(runAccept({ inv: { ...pending, expires_at: past } }).promise)).toBe('invitation_expired');
-  });
-
-  it('should reject a different email without touching memberships', async () => {
-    const { promise, request } = runAccept({ inv: pending, email: 'other@itap.test' });
-    expect(await errorCode(promise)).toBe('email_mismatch');
-    expect(called(request, 'CreateMember')).toBe(false);
-  });
-
-  it('should report invitation_not_pending when a concurrent accept wins the claim', async () => {
-    expect(await errorCode(runAccept({ inv: pending, affected: 0 }).promise)).toBe('invitation_not_pending');
+  it('should require a user id', async () => {
+    const admin = mockAdmin(() => ({}));
+    const promise = acceptInvitation({
+      env,
+      input: { token: 'tok' },
+      session: { role: 'user' },
+      admin: admin.client,
+      asCaller: admin.client,
+      actor: admin.client,
+    });
+    expect(await errorCode(promise)).toBe('unauthenticated');
   });
 });

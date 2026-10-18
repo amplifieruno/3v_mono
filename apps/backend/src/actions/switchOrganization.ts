@@ -48,7 +48,7 @@ const inputSchema = z.object({ organization_id: z.string().uuid() });
  * Checks the caller's active membership in the organization and returns a short-lived
  * organization token (§4.3). Records `user_settings.last_organization_id` and an audit row.
  */
-export const switchOrganization = defineAction(inputSchema, async ({ env, input, session, admin }): Promise<OrgToken> => {
+export const switchOrganization = defineAction(inputSchema, async ({ env, input, session, admin, actor }): Promise<OrgToken> => {
   const userId = session.userId;
   if (!userId) throw new ActionError('unauthenticated', 'x-hasura-user-id is required');
   const organizationId = input.organization_id.toLowerCase();
@@ -71,7 +71,7 @@ export const switchOrganization = defineAction(inputSchema, async ({ env, input,
   const role = TOKEN_ROLES[membership.role];
   if (!role) throw new ActionError('unsupported_role', `Membership role ${membership.role} cannot sign in`);
 
-  await admin.request(RECORD_SWITCH, { user: userId, org: organizationId });
+  await actor.request(RECORD_SWITCH, { user: userId, org: organizationId });
 
   const { token, expiresAt } = signOrgToken(
     { userId, organizationId, role, ttlSeconds: env.ORG_TOKEN_TTL_SECONDS },

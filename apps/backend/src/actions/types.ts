@@ -16,6 +16,8 @@ export type ActionContext<I> = {
   admin: HasuraClient;
   /** Admin-secret client carrying the caller's role/user/org: Hasura permissions apply. */
   asCaller: HasuraClient;
+  /** Admin rights plus the caller's user/org headers: use for writes so audit rows record the actor. */
+  actor: HasuraClient;
 };
 
 export type ActionHandler<I, O> = (ctx: ActionContext<I>) => Promise<O>;

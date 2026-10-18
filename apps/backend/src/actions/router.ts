@@ -80,6 +80,7 @@ export function actionsRouter(
         session,
         admin: createHasuraClient(env),
         asCaller: createHasuraClient(env, session),
+        actor: createHasuraClient(env, { ...session, role: 'admin' }),
       });
       res.status(200).json(output);
     } catch (error: unknown) {
