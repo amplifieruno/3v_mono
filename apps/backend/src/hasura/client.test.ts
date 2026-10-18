@@ -11,8 +11,8 @@ const env: Env = {
   ORG_TOKEN_TTL_SECONDS: 900,
 };
 
-function stubFetch(body: unknown) {
-  const fn = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+function stubFetch(body: unknown, status = 200) {
+  const fn = vi.fn(async () => new Response(JSON.stringify(body), { status }));
   vi.stubGlobal('fetch', fn);
   return fn;
 }
@@ -48,5 +48,34 @@ describe('createHasuraClient', () => {
     const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
     expect(err).toBeInstanceOf(HasuraError);
     expect(err).toMatchObject({ code: 'permission-error', message: 'm', path: '$.x' });
+  });
+
+  it('should map a top-level Hasura error ({code,error}) to HasuraError', async () => {
+    stubFetch({ code: 'access-denied', error: 'invalid x-hasura-admin-secret', path: '$' }, 401);
+    const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HasuraError);
+    expect(err).toMatchObject({ code: 'access-denied', message: 'invalid x-hasura-admin-secret' });
+  });
+
+  it('should throw HasuraError on a non-JSON body', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>Bad Gateway</html>', { status: 502 })));
+    const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HasuraError);
+    expect(err).toMatchObject({ code: 'http-502' });
+    expect((err as HasuraError).message).toContain('Bad Gateway');
+  });
+
+  it('should throw HasuraError on a non-2xx JSON body without errors', async () => {
+    stubFetch({ unexpected: true }, 500);
+    const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HasuraError);
+    expect(err).toMatchObject({ code: 'http-500' });
+  });
+
+  it('should throw HasuraError when a 2xx body has no data', async () => {
+    stubFetch({});
+    const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(HasuraError);
+    expect(err).toMatchObject({ code: 'http-200' });
   });
 });

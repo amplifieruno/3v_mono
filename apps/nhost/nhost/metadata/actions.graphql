@@ -1,0 +1,10 @@
+type Mutation {
+  switch_organization(organization_id: uuid!): OrgToken!
+}
+
+type OrgToken {
+  access_token: String!
+  expires_at: timestamptz!
+  organization_id: uuid!
+  role: String!
+}

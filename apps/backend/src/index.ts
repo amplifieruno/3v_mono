@@ -1,15 +1,12 @@
 import 'reflect-metadata'
 import 'dotenv/config';
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet'
-import compression from 'compression'
-import morgan from 'morgan'
 import dotenv from 'dotenv'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import rateLimit from 'express-rate-limit'
 
+import { createApp } from './app.js'
+import { loadEnv } from './config/env.js'
 import { AppDataSource } from './config/database.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { authRoutes } from './routes/auth.js'
@@ -23,7 +20,8 @@ import { recognitionManager } from './services/recognitionManager.js'
 // Load environment variables
 dotenv.config()
 
-const app = express()
+// Base app: middleware, /health and Hasura Actions (no DB dependency)
+const app = createApp(loadEnv())
 const server = createServer(app)
 const io = new Server(server, {
   cors: {
@@ -40,34 +38,6 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
-})
-
-// Middleware
-app.use(helmet())
-app.use(compression())
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-  credentials: true
-}))
-app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ extended: true, limit: '10mb' }))
-// app.use(limiter)
-
-// Logging
-if (NODE_ENV === 'development') {
-  app.use(morgan('dev'))
-} else {
-  app.use(morgan('combined'))
-}
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: NODE_ENV
-  })
 })
 
 // API Routes
@@ -152,41 +122,38 @@ app.use('*', (req, res) => {
   })
 })
 
-// Initialize database and start server
+// Start listening first so /health and Hasura Actions work without the legacy DB,
+// then initialize the legacy TypeORM stack (its failure only affects the legacy /api routes).
 async function startServer() {
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`📍 Environment: ${NODE_ENV}`)
+    console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || "http://localhost:5173"}`)
+  })
+
   try {
-    // Initialize database connection
     await AppDataSource.initialize()
     console.log('Database connection initialized successfully')
-    
-    // Initialize InsightFace-REST service for high-quality face recognition
-    try {
-      await insightFaceService.initialize()
-      console.log('InsightFace-REST service initialized successfully')
-    } catch (error) {
-      console.warn('InsightFace service initialization failed:', error.message)
-      console.warn('Will fall back to basic face detection if available')
-    }
-
-    // Initialize recognition manager for continuous video processing
-    recognitionManager.setIo(io)
-    try {
-      await recognitionManager.initialize()
-      console.log('Recognition manager initialized')
-    } catch (error) {
-      console.warn('Recognition manager initialization failed:', error instanceof Error ? error.message : error)
-    }
-
-    // Start server
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`)
-      console.log(`📍 Environment: ${NODE_ENV}`)
-      console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || "http://localhost:5173"}`)
-    })
-    
   } catch (error) {
-    console.error('Error starting server:', error)
-    process.exit(1)
+    console.error('Legacy database initialization failed (legacy /api routes unavailable):', error)
+  }
+
+  // Initialize InsightFace-REST service for high-quality face recognition
+  try {
+    await insightFaceService.initialize()
+    console.log('InsightFace-REST service initialized successfully')
+  } catch (error) {
+    console.warn('InsightFace service initialization failed:', error instanceof Error ? error.message : error)
+    console.warn('Will fall back to basic face detection if available')
+  }
+
+  // Initialize recognition manager for continuous video processing
+  recognitionManager.setIo(io)
+  try {
+    await recognitionManager.initialize()
+    console.log('Recognition manager initialized')
+  } catch (error) {
+    console.warn('Recognition manager initialization failed:', error instanceof Error ? error.message : error)
   }
 }
 
@@ -199,7 +166,7 @@ process.on('SIGTERM', async () => {
   
   try {
     await recognitionManager.shutdown()
-    await AppDataSource.destroy()
+    if (AppDataSource.isInitialized) await AppDataSource.destroy()
     console.log('Database connections closed')
     process.exit(0)
   } catch (error) {

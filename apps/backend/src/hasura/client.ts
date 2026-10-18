@@ -21,7 +21,32 @@ export class HasuraError extends Error {
 type GraphQLResponse<T> = {
   data?: T;
   errors?: { message: string; extensions?: { code?: string; path?: string } }[];
+  // Hasura top-level (non-GraphQL) error shape, e.g. a wrong admin secret
+  code?: string;
+  error?: string;
 };
+
+/** Parses a Hasura GraphQL HTTP response; every failure shape becomes a HasuraError. */
+export async function parseHasuraResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  let body: GraphQLResponse<T>;
+  try {
+    body = JSON.parse(text) as GraphQLResponse<T>;
+  } catch {
+    throw new HasuraError(`http-${res.status}`, `Non-JSON response from Hasura: ${text.slice(0, 200)}`);
+  }
+  if (body.errors?.length) {
+    const [first] = body.errors;
+    throw new HasuraError(first.extensions?.code ?? 'unknown', first.message, first.extensions?.path);
+  }
+  if (body.error || !res.ok || body.data === undefined) {
+    throw new HasuraError(
+      body.code ?? `http-${res.status}`,
+      body.error ?? `Unexpected response from Hasura: ${text.slice(0, 200)}`,
+    );
+  }
+  return body.data;
+}
 
 export function createHasuraClient(env: Env, session?: HasuraSession): HasuraClient {
   const headers: Record<string, string> = {
@@ -41,12 +66,7 @@ export function createHasuraClient(env: Env, session?: HasuraSession): HasuraCli
         headers,
         body: JSON.stringify({ query, variables }),
       });
-      const body = (await res.json()) as GraphQLResponse<T>;
-      if (body.errors?.length) {
-        const [first] = body.errors;
-        throw new HasuraError(first.extensions?.code ?? 'unknown', first.message, first.extensions?.path);
-      }
-      return body.data as T;
+      return parseHasuraResponse<T>(res);
     },
   };
 }

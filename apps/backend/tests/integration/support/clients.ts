@@ -1,6 +1,6 @@
 import { loadEnv, type Env } from '../../../src/config/env.js';
 import { signBaseToken, signOrgToken } from '../../../src/auth/hasuraJwt.js';
-import { createHasuraClient, HasuraError, type HasuraClient } from '../../../src/hasura/client.js';
+import { createHasuraClient, parseHasuraResponse, type HasuraClient } from '../../../src/hasura/client.js';
 
 let cachedEnv: Env | undefined;
 
@@ -8,14 +8,6 @@ export function testEnv(): Env {
   cachedEnv ??= loadEnv();
   return cachedEnv;
 }
-
-type GraphQLBody = {
-  data?: unknown;
-  errors?: { message: string; extensions?: { code?: string; path?: string } }[];
-  // Hasura top-level (non-GraphQL) error shape
-  code?: string;
-  error?: string;
-};
 
 /** Client that authenticates with a bearer token only (no admin secret) — exercises real JWT validation. */
 export function asBearer(token: string): HasuraClient {
@@ -27,24 +19,7 @@ export function asBearer(token: string): HasuraClient {
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({ query, variables }),
       });
-      const text = await res.text();
-      let body: GraphQLBody;
-      try {
-        body = JSON.parse(text) as GraphQLBody;
-      } catch {
-        throw new HasuraError(`http-${res.status}`, `Non-JSON response: ${text.slice(0, 200)}`);
-      }
-      if (body.errors?.length) {
-        const [first] = body.errors;
-        throw new HasuraError(first.extensions?.code ?? 'unknown', first.message, first.extensions?.path);
-      }
-      if (body.error || !res.ok || body.data === undefined) {
-        throw new HasuraError(
-          body.code ?? `http-${res.status}`,
-          body.error ?? `Unexpected response: ${text.slice(0, 200)}`,
-        );
-      }
-      return body.data as T;
+      return parseHasuraResponse<T>(res);
     },
   };
 }
