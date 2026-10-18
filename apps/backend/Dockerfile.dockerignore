@@ -1,0 +1,9 @@
+# Used by BuildKit for apps/backend/Dockerfile (build context is the repo root).
+# Never bake local env files (dev secrets) into images; never copy host-built artifacts.
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+.git
+playwright-output

@@ -30,10 +30,10 @@ db_reset:
 	$(HASURA_CLI) migrate delete --all --server --database-name default --force
 	$(MAKE) hasura_apply
 
-## Start full development environment
+## Start full development environment (backend runs in the compose `backend` service)
 dev:
 	make dev-compose
-	pnpm run dev
+	pnpm run dev:admin
 
 ## Generate GraphQL types for admin-ui
 gql:

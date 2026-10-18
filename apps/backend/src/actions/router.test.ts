@@ -109,6 +109,7 @@ describe('actionsRouter', () => {
   });
 
   it('should map unexpected errors to 500 without leaking details', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const url = await start({
       ping: async () => {
         throw new Error('secret internals');
@@ -117,5 +118,7 @@ describe('actionsRouter', () => {
     const res = await call(`${url}/ping`, payload('ping'), env.ACTION_SECRET);
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ message: 'Internal error', extensions: { code: 'internal' } });
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
   });
 });

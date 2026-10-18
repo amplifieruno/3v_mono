@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { asAdmin, asBearer, asUser } from './support/clients.js';
 import { addMember, createTestOrg, createTestUser, createTwoOrgs, expectError } from './support/fixtures.js';
-import { startBackend, type RunningBackend } from './support/backend.js';
+import { requireBackend } from './support/backend.js';
 
 type OrgToken = { access_token: string; expires_at: string; organization_id: string; role: string };
 
@@ -15,15 +15,7 @@ function switchOrg(userId: string, orgId: string): Promise<{ switch_organization
   return asUser(userId).request<{ switch_organization: OrgToken }>(SWITCH, { id: orgId });
 }
 
-let backend: RunningBackend;
-
-beforeAll(async () => {
-  backend = await startBackend();
-});
-
-afterAll(async () => {
-  await backend?.close();
-});
+beforeAll(requireBackend);
 
 describe('switch_organization action', () => {
   it('should return an org token that scopes organizations to the chosen org', async () => {
