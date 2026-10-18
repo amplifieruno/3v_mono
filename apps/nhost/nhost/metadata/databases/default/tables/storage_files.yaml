@@ -60,18 +60,22 @@ insert_permissions:
           - _and:
               - bucket_id:
                   _eq: X-Hasura-Organization-Id
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: profile_document
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: dsr_export
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: auth_capture
+              - _or:
+                  - metadata:
+                      _is_null: true
+                  - _and:
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: profile_document
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: dsr_export
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: auth_capture
           - bucket_id:
               _eq: org-logos
       columns:
@@ -104,18 +108,22 @@ select_permissions:
           - _and:
               - bucket_id:
                   _eq: X-Hasura-Organization-Id
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: profile_document
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: dsr_export
-              - _not:
-                  metadata:
-                    _contains:
-                      kind: auth_capture
+              - _or:
+                  - metadata:
+                      _is_null: true
+                  - _and:
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: profile_document
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: dsr_export
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: auth_capture
           - bucket_id:
               _eq: org-logos
   - role: user

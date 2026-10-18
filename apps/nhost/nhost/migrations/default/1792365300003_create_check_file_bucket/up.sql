@@ -12,6 +12,9 @@ DECLARE
   file_bucket text;
 BEGIN
   FOREACH col IN ARRAY TG_ARGV LOOP
+    IF NOT (to_jsonb(NEW) ? col) THEN
+      RAISE EXCEPTION USING ERRCODE = 'undefined_column', MESSAGE = 'check_file_bucket: unknown column ' || col;
+    END IF;
     new_value := (to_jsonb(NEW) ->> col)::uuid;
     IF TG_OP = 'UPDATE' THEN
       old_value := (to_jsonb(OLD) ->> col)::uuid;

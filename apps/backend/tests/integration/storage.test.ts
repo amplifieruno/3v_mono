@@ -46,6 +46,15 @@ describe('per-organization storage', () => {
     expect(data.file).toMatchObject({ bucketId: orgA.id, metadata: { kind: 'photo' } });
   });
 
+  it('should show an org admin a file uploaded with no metadata', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id);
+    expect('id' in result).toBe(true);
+    if (!('id' in result)) return;
+    const data = await asOrgAdmin(user.id, orgA.id).request<{ file: { id: string } | null }>(FILE, { id: result.id });
+    expect(data.file?.id).toBe(result.id);
+  });
+
   it("should reject an upload to another organization's bucket", async () => {
     const { orgA, orgB, user } = await createTwoOrgs();
     const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgB.id);
@@ -72,7 +81,9 @@ describe('per-organization storage', () => {
     async (kind) => {
       const { orgA, user } = await createTwoOrgs();
       const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id, { kind });
-      if (!('id' in result)) return; // rejected outright is also acceptable
+      if (!('id' in result)) throw new Error(`expected the upload to succeed, got status ${result.status}`);
+      const raw = await asAdmin().request<{ file: { metadata: { kind: string } } | null }>(FILE, { id: result.id });
+      expect(raw.file?.metadata.kind).toBe(kind);
       const seen = await asOrgAdmin(user.id, orgA.id).request<{ file: unknown }>(FILE, { id: result.id });
       expect(seen.file).toBeNull();
     },
@@ -113,6 +124,14 @@ describe('per-organization storage', () => {
     await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { deleteFiles(where: {}) { affected_rows } }`),
     );
+    const denied = await expectDenied(
+      asOrgAdmin(user.id, orgA.id).request(`mutation { updateFile(pk_columns: {id: "${randomUUID()}"}, _set: {name: "x"}) { id } }`),
+    );
+    expect(denied.message).toMatch(/updateFile.*not found in type: 'mutation_root'/);
+    const deniedMany = await expectDenied(
+      asOrgAdmin(user.id, orgA.id).request(`mutation { updateFiles(where: {}, _set: {name: "x"}) { affected_rows } }`),
+    );
+    expect(deniedMany.message).toMatch(/updateFiles.*not found in type: 'mutation_root'/);
   });
 
   it('should let org_admin read only own bucket and org-logos', async () => {
@@ -161,6 +180,21 @@ describe('itap.check_file_bucket', () => {
     await expect(
       runSql(`INSERT INTO itap.file_scratch (organization_id, file_id) VALUES ('${orgA.id}', '${randomUUID()}');`),
     ).rejects.toThrow(/file_not_in_org_bucket:file_id/);
+  });
+
+  it('should fail loudly when a trigger argument is not a column of the table', async () => {
+    const org = await createTestOrg();
+    await runSql(`
+      CREATE TRIGGER file_scratch_typo BEFORE INSERT ON itap.file_scratch
+        FOR EACH ROW EXECUTE FUNCTION itap.check_file_bucket('file_idd');
+    `);
+    try {
+      await expect(
+        runSql(`INSERT INTO itap.file_scratch (organization_id, file_id) VALUES ('${org.id}', NULL);`),
+      ).rejects.toThrow(/check_file_bucket: unknown column file_idd/);
+    } finally {
+      await runSql('DROP TRIGGER file_scratch_typo ON itap.file_scratch;');
+    }
   });
 });
 
