@@ -23,6 +23,7 @@ select_permissions:
         - tailgating_window_seconds
         - default_retention_days
         - detection_counter_throttle_seconds
+        - created_at
         - updated_at
       filter:
         organization_id:

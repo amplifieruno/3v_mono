@@ -4,6 +4,7 @@ CREATE TABLE itap.user_settings (
   locale text,
   timezone text,
   last_organization_id uuid REFERENCES itap.organizations (id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 

@@ -29,6 +29,8 @@ CREATE TABLE itap.organization_members (
 );
 
 CREATE INDEX organization_members_user_id_idx ON itap.organization_members (user_id);
+CREATE INDEX organization_members_role_idx ON itap.organization_members (organization_id, role);
+CREATE INDEX organization_members_status_idx ON itap.organization_members (organization_id, status);
 CREATE INDEX organization_members_deactivated_by_idx
   ON itap.organization_members (organization_id, deactivated_by);
 CREATE INDEX organization_members_vacation_delegate_user_id_idx

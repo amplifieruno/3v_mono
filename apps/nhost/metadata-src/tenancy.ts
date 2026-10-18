@@ -55,7 +55,7 @@ function userSettingsPermissions(role: string): NonNullable<TableSpec['extraPerm
       {
         role,
         permission: {
-          columns: ['user_id', 'locale', 'timezone', 'last_organization_id', 'updated_at'],
+          columns: ['user_id', 'locale', 'timezone', 'last_organization_id', 'created_at', 'updated_at'],
           filter: ownUserRow,
         },
       },
@@ -120,7 +120,10 @@ export const tenancyTables: TableSpec[] = [
       select_permissions: [
         {
           role: ORG_ADMIN,
-          permission: { columns: ['organization_id', ...SETTINGS_WRITABLE, 'updated_at'], filter: ownOrganizationRow },
+          permission: {
+            columns: ['organization_id', ...SETTINGS_WRITABLE, 'created_at', 'updated_at'],
+            filter: ownOrganizationRow,
+          },
         },
       ],
       update_permissions: [
@@ -136,6 +139,7 @@ export const tenancyTables: TableSpec[] = [
     profile: 'tenant_crud',
     noDelete: true,
     readOnlyColumns: ['deactivated_at', 'deactivated_by', 'joined_at'],
+    insertOnlyColumns: ['user_id'],
     extraPermissions: {
       select_permissions: [{ role: USER, permission: { columns: MEMBER_COLUMNS, filter: ownUserRow } }],
     },

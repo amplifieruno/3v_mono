@@ -88,3 +88,30 @@ export async function addMember(
   if (!data.insert_organization_members_one) throw new Error('addMember: insert returned no row');
   return data.insert_organization_members_one;
 }
+
+/** Resolves to the HasuraError the operation fails with (fails the test if it succeeds). */
+export async function expectError(promise: Promise<unknown>): Promise<HasuraError> {
+  const outcome = await promise.then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
+  if (outcome.ok) throw new Error(`Expected an error, got data: ${JSON.stringify(outcome.value)}`);
+  expect(outcome.error).toBeInstanceOf(HasuraError);
+  return outcome.error as HasuraError;
+}
+
+type TestOrg = { id: string; name: string; slug: string };
+type TestUser = { id: string; email: string };
+
+/** Two orgs; `user` is an active member of A, `other` an active member of B. */
+export async function createTwoOrgs(): Promise<{ orgA: TestOrg; orgB: TestOrg; user: TestUser; other: TestUser }> {
+  const [orgA, orgB, user, other] = await Promise.all([
+    createTestOrg('Org A'),
+    createTestOrg('Org B'),
+    createTestUser(),
+    createTestUser(),
+  ]);
+  await addMember(orgA.id, user.id);
+  await addMember(orgB.id, other.id);
+  return { orgA, orgB, user, other };
+}

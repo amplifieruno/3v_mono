@@ -120,7 +120,11 @@ function assertKnownOverrides(spec: TableSpec, outgoing: ForeignKey[], incoming:
 }
 
 function assertKnownColumns(spec: TableSpec, columns: string[]): void {
-  for (const col of [...(spec.readOnlyColumns ?? []), ...(spec.secretColumns ?? [])]) {
+  for (const col of [
+    ...(spec.readOnlyColumns ?? []),
+    ...(spec.insertOnlyColumns ?? []),
+    ...(spec.secretColumns ?? []),
+  ]) {
     if (!columns.includes(col)) throw new Error(`Table ${spec.name}: unknown column "${col}" in spec`);
   }
 }
@@ -140,13 +144,15 @@ function tenantPermissions(spec: TableSpec, columns: string[], generatedColumns:
   if (spec.profile === 'tenant_read') return select;
 
   const writable = columns.filter((c) => !readOnly.has(c) && !NEVER_WRITABLE.has(c) && !generatedColumns.has(c));
+  const insertOnly = new Set(spec.insertOnlyColumns ?? []);
+  const updatable = writable.filter((c) => !insertOnly.has(c));
   const set: Record<string, string> = { [ORG_COLUMN]: 'x-hasura-organization-id' };
   if (columns.includes('created_by')) set.created_by = 'x-hasura-user-id';
 
   return {
     insert_permissions: [{ role: TENANT_ROLE, permission: { columns: writable, check: filter, set } }],
     ...select,
-    update_permissions: [{ role: TENANT_ROLE, permission: { columns: writable, filter } }],
+    update_permissions: [{ role: TENANT_ROLE, permission: { columns: updatable, filter } }],
     ...(spec.noDelete ? {} : { delete_permissions: [{ role: TENANT_ROLE, permission: { filter } }] }),
   };
 }

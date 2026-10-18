@@ -6,6 +6,7 @@ CREATE TABLE itap.organization_settings (
   tailgating_window_seconds int NOT NULL DEFAULT 5,
   default_retention_days int NOT NULL DEFAULT 90,
   detection_counter_throttle_seconds int NOT NULL DEFAULT 10,
+  created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 

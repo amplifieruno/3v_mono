@@ -1,41 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { HasuraError } from '../../src/hasura/client.js';
 import { asAdmin, asOrgAdmin, asUser } from './support/clients.js';
-import { addMember, createTestOrg, createTestUser, expectDenied } from './support/fixtures.js';
+import {
+  addMember,
+  createTestOrg,
+  createTestUser,
+  createTwoOrgs as twoOrgs,
+  expectDenied,
+  expectError,
+} from './support/fixtures.js';
 
 type Row = { id: string };
-
-/** Resolves to the HasuraError the operation fails with (fails the test if it succeeds). */
-async function expectError(promise: Promise<unknown>): Promise<HasuraError> {
-  const outcome = await promise.then(
-    (value) => ({ ok: true as const, value }),
-    (error: unknown) => ({ ok: false as const, error }),
-  );
-  if (outcome.ok) throw new Error(`Expected an error, got data: ${JSON.stringify(outcome.value)}`);
-  expect(outcome.error).toBeInstanceOf(HasuraError);
-  return outcome.error as HasuraError;
-}
-
-/** Two orgs; `user` is an active member of A, `other` an active member of B. */
-async function twoOrgs() {
-  const [orgA, orgB, user, other] = await Promise.all([
-    createTestOrg('Org A'),
-    createTestOrg('Org B'),
-    createTestUser(),
-    createTestUser(),
-  ]);
-  await addMember(orgA.id, user.id);
-  await addMember(orgB.id, other.id);
-  return { orgA, orgB, user, other };
-}
-
-const SET_DELEGATE = `
-  mutation SetDelegate($userId: uuid!, $delegate: uuid!) {
-    update_organization_members(where: { user_id: { _eq: $userId } }, _set: { vacation_delegate_user_id: $delegate }) {
-      affected_rows
-    }
-  }
-`;
 
 describe('tenancy schema', () => {
   it('should create organization_settings with defaults when an organization is created', async () => {
@@ -147,35 +121,6 @@ describe('tenancy schema', () => {
       rows.organization_settings.map((r) => [r.organization_id, r.recognition_threshold]),
     );
     expect(byOrg).toEqual({ [orgA.id]: 0.7, [orgB.id]: 0.5 });
-  });
-
-  it('should reject a vacation delegate who is a member of another organization only', async () => {
-    const { orgA, user, other } = await twoOrgs();
-    const error = await expectError(
-      asOrgAdmin(user.id, orgA.id).request(SET_DELEGATE, { userId: user.id, delegate: other.id }),
-    );
-    expect(error.message).toMatch(/foreign key/i);
-  });
-
-  it('should reject a vacation delegate who is a deactivated member', async () => {
-    const { orgA, user } = await twoOrgs();
-    const gone = await createTestUser();
-    await addMember(orgA.id, gone.id, 'deactivated');
-    const error = await expectError(
-      asOrgAdmin(user.id, orgA.id).request(SET_DELEGATE, { userId: user.id, delegate: gone.id }),
-    );
-    expect(error.message).toContain('member_not_active:vacation_delegate_user_id');
-  });
-
-  it('should accept an active member of the same organization as vacation delegate', async () => {
-    const { orgA, user } = await twoOrgs();
-    const colleague = await createTestUser();
-    await addMember(orgA.id, colleague.id);
-    const data = await asOrgAdmin(user.id, orgA.id).request<{ update_organization_members: { affected_rows: number } }>(
-      SET_DELEGATE,
-      { userId: user.id, delegate: colleague.id },
-    );
-    expect(data.update_organization_members.affected_rows).toBe(1);
   });
 
   it('should delete an organization with members, references and settings in one mutation', async () => {

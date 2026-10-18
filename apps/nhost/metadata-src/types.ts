@@ -52,6 +52,8 @@ export interface TableSpec {
   profile: PermissionProfile;
   /** Visible on select, never writable (trigger/backend maintained). */
   readOnlyColumns?: string[];
+  /** Writable on insert, never updatable (e.g. the member's `user_id`). */
+  insertOnlyColumns?: string[];
   /** Writable, never selectable (e.g. hashes). */
   secretColumns?: string[];
   noDelete?: boolean;

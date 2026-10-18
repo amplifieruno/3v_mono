@@ -132,7 +132,6 @@ update_permissions:
         - role
         - status
         - title
-        - user_id
         - vacation_delegate_user_id
         - vacation_until
       filter:

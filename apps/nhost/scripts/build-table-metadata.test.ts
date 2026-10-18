@@ -137,4 +137,27 @@ describe('buildTableMetadata: permission profiles', () => {
     expect(md.update_permissions?.[0].permission.columns).toEqual(['name']);
     expect(md.select_permissions?.[0].permission.columns).toContain('search_text');
   });
+
+  it('should keep insertOnlyColumns insertable but not updatable', () => {
+    const md = buildTableMetadata(
+      { name: 'things', profile: 'tenant_crud', insertOnlyColumns: ['user_id'] },
+      ['id', 'organization_id', 'name', 'user_id'],
+      [],
+      [],
+    );
+    expect(md.insert_permissions?.[0].permission.columns).toEqual(['name', 'user_id']);
+    expect(md.update_permissions?.[0].permission.columns).toEqual(['name']);
+    expect(md.select_permissions?.[0].permission.columns).toContain('user_id');
+  });
+
+  it('should throw for an unknown insertOnlyColumns entry', () => {
+    expect(() =>
+      buildTableMetadata(
+        { name: 'things', profile: 'tenant_crud', insertOnlyColumns: ['nope'] },
+        ['id', 'organization_id'],
+        [],
+        [],
+      ),
+    ).toThrow(/unknown column "nope"/);
+  });
 });
