@@ -1,0 +1,24 @@
+table:
+  schema: itap
+  name: audit_log
+configuration:
+  custom_name: audit_log
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - changes
+        - entity
+        - entity_id
+        - id
+        - ip
+        - occurred_at
+        - organization_id
+        - reason
+        - user_agent
+        - user_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
