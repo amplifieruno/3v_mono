@@ -1,12 +1,21 @@
 {
-  "name": "@nhost-examples/docker-compose",
+  "name": "nhost",
   "version": "0.4.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "e2e": "vitest run"
+    "e2e": "vitest run test",
+    "metadata:generate": "tsx scripts/generate-metadata.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "cross-fetch": "^3.1.8"
+    "@types/node": "^20.14.10",
+    "cross-fetch": "^3.1.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "yaml": "^2.6.1"
   },
   "dependencies": {
     "graphql": "16.8.1"

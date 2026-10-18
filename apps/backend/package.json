@@ -14,6 +14,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
     "download-models": "chmod +x scripts/download-models.sh && ./scripts/download-models.sh",
     "sync-db": "tsx src/scripts/sync-db.ts",
     "setup": "pnpm install && pnpm download-models",
