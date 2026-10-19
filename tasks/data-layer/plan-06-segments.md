@@ -31,6 +31,6 @@
 
 ### Task 1: Schema — segments, members, templates, daily stats, activity stats tables, validation
 ### Task 2: Translator (backend) + preview_segment / evaluate_segment actions + sync_segment_members SQL
-### Task 3: Evaluation triggers — segment_inputs_changed event trigger (debounced per org), evaluate_segments hourly cron (active windows/schedules), refresh_activity_stats, segment_daily_stats aggregation; event rule segment scopes effective
+### Task 3: Evaluation triggers — segment_inputs_changed event trigger (debounced per org), evaluate_segments hourly cron (active windows/schedules), refresh_activity_stats, segment_daily_stats aggregation; event rule segment scopes effective; notification rule conditions gain a `segment_id` key (validation in validate_notification_rule_conditions, matching in notification_conditions_match via active membership at event time) — carried from slice 5; `itap.test_notification_rule(hasura_session, rule)` dry-run against the last N events returning would-be recipients (spec §8.1) — carried from slice 5
 ### Task 4: Seed — templates (system), segments (Night Shift via work schedule, Frequent visitors, VIP, Contractors with expiring access, Unknown frequent faces (identity target), manual "Executive floor access"), 30-day segment daily stats history consistent with replay; tests
 ### Task 5: Docs, summary, gates
