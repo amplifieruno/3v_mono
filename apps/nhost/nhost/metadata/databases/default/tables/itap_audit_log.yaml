@@ -19,6 +19,15 @@ select_permissions:
         - user_agent
         - user_id
       filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - entity:
+                  _nin:
+                    - notification_subscriptions
+                    - operator_workspaces
+                    - user_notifications
+              - user_id:
+                  _eq: X-Hasura-User-Id
       allow_aggregations: true

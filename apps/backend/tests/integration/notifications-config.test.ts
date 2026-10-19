@@ -298,6 +298,12 @@ describe('notification subscriptions', () => {
     expect((await expectError(insertOne(s.a, 'notification_subscriptions', { facility_id: foreignFacility.id, channel: 'email' }))).message).toMatch(FK);
   });
 
+  it('should reject the webhook channel (webhooks have their own subscriptions)', async () => {
+    const s = await setup();
+    const err = await expectError(insertOne(s.a, 'notification_subscriptions', { event_type: 'tailgating', channel: 'webhook' }));
+    expect(err.message).toMatch(/notification_subscriptions_channel_not_webhook/);
+  });
+
   it('should refuse a deactivated owner for new subscriptions and cascade with the watched facility', async () => {
     const s = await setup();
     const facility = await insertOne(s.a, 'facilities', { name: 'F2', timezone: 'UTC' });

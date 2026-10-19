@@ -61,6 +61,21 @@ describe('itap.on_call_member', () => {
     expect(await onCall(x.s.id, hours(12))).toBe(u0);
   });
 
+  it('should skip a member whose membership has expired at the queried instant (deterministic on p_at)', async () => {
+    const x = await schedule(12, 3);
+    const [u0, u1, u2] = x.users.map((u) => u.id);
+    await runSqlRows(`update itap.organization_members set expires_at='${hours(10)}' where organization_id='${x.orgA.id}' and user_id='${u1}'`);
+    expect(await onCall(x.s.id, hours(12))).toBe(u2); // u1 expired at hour 10
+    await runSqlRows(`update itap.organization_members set expires_at='${hours(13)}' where organization_id='${x.orgA.id}' and user_id='${u1}'`);
+    expect(await onCall(x.s.id, hours(12.5))).toBe(u1); // not yet expired at p_at
+    expect(await onCall(x.s.id, hours(13))).toBe(u2); // expires_at <= p_at is expired
+    await runSqlRows(`update itap.organization_members set expires_at='${hours(10)}' where organization_id='${x.orgA.id}' and user_id='${u1}'`);
+    expect(await onCall(x.s.id, hours(9))).toBe(u0);
+    await runSqlRows(`update itap.organization_members set expires_at='${hours(24)}' where organization_id='${x.orgA.id}' and user_id='${u2}'`);
+    expect(await onCall(x.s.id, hours(24))).toBe(u0); // u2 expires exactly at the instant: wraps to u0
+    expect(await onCall(x.s.id, hours(23.99))).toBe(u2);
+  });
+
   it('should return NULL for no active member, no members or an unknown schedule', async () => {
     const x = await schedule(24, 1);
     expect(await onCall(x.s.id, hours(5))).toBe(x.users[0].id);
