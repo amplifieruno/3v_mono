@@ -84,6 +84,21 @@ describe('visits table', () => {
   });
 });
 
+describe('visit editing', () => {
+  it('should allow editing a visit only while it is scheduled', async () => {
+    const s = await setup();
+    const visit = await createVisit(s.a, s.visitor.profile, 0, HOUR);
+    const other = await personOfType(s.a, 'employee');
+    await updateByPk(s.a, 'visits', visit.id, { host_profile_id: other.profile, expected_end: at(2 * HOUR), purpose: 'Moved' });
+    expect(await visitById(visit.id)).toMatchObject({ host_profile_id: other.profile, purpose: 'Moved' });
+    await visitFn(s.a, 'check_in_visit', visit.id);
+    expect(await updateByPk(s.a, 'visits', visit.id, { purpose: 'Late edit' })).toBeNull();
+    expect((await visitById(visit.id)).purpose).toBe('Moved');
+    await visitFn(s.a, 'check_out_visit', visit.id);
+    expect(await updateByPk(s.a, 'visits', visit.id, { badge_number: 'X' })).toBeNull();
+  });
+});
+
 describe('visit functions', () => {
   it('should check in, check out and cancel with validated transitions', async () => {
     const s = await setup();
@@ -146,6 +161,8 @@ describe('Stage A visit linking', () => {
     const scheduled = await createVisit(s.a, s.visitor.profile, -HOUR, 5 * HOUR);
     const checkedIn = await createVisit(s.a, s.visitor.profile, 20 * HOUR, 21 * HOUR);
     await visitFn(s.a, 'check_in_visit', checkedIn.id);
+    // check-in happened (replayed) before the detection; the visit window itself is far away
+    await runSql(`UPDATE itap.visits SET checked_in_at = '${at(0)}' WHERE id = '${checkedIn.id}'`);
     await detect(s.orgA.id, s.lobbyCam, s.visitor.identity, HOUR);
     expect(await sessionVisit(s.visitor.identity)).toBe(checkedIn.id);
     expect(scheduled.id).not.toBe(checkedIn.id);
@@ -189,6 +206,30 @@ describe('Stage A visit linking', () => {
     );
     await detect(s.orgA.id, s.lobbyCam, s.visitor.identity, HOUR + 60);
     expect(await sessionVisit(s.visitor.identity)).toBe(visit.id);
+  });
+});
+
+describe('Stage A checked-in bound', () => {
+  it('should not link a checked-in visit more than 4 hours after expected_end, nor before check-in', async () => {
+    const s = await setup();
+    const visit = await createVisit(s.a, s.visitor.profile, 0, HOUR);
+    await visitFn(s.a, 'check_in_visit', visit.id);
+    // check-in time is now(); replay the checked_in_at into the past to exercise the bound.
+    await runSql(`UPDATE itap.visits SET checked_in_at = '${at(0)}' WHERE id = '${visit.id}'`);
+    await detect(s.orgA.id, s.lobbyCam, s.visitor.identity, HOUR + 4 * HOUR - 1);
+    expect(await sessionVisit(s.visitor.identity)).toBe(visit.id);
+    const late = await personOfType(s.a, 'visitor');
+    const lateVisit = await createVisit(s.a, late.profile, 0, HOUR);
+    await visitFn(s.a, 'check_in_visit', lateVisit.id);
+    await runSql(`UPDATE itap.visits SET checked_in_at = '${at(0)}' WHERE id = '${lateVisit.id}'`);
+    await detect(s.orgA.id, s.lobbyCam, late.identity, HOUR + 4 * HOUR + 1);
+    expect(await sessionVisit(late.identity)).toBeNull();
+    const before = await personOfType(s.a, 'visitor');
+    const beforeVisit = await createVisit(s.a, before.profile, 0, HOUR);
+    await visitFn(s.a, 'check_in_visit', beforeVisit.id);
+    await runSql(`UPDATE itap.visits SET checked_in_at = '${at(100)}' WHERE id = '${beforeVisit.id}'`);
+    await detect(s.orgA.id, s.lobbyCam, before.identity, 50);
+    expect(await sessionVisit(before.identity)).toBeNull();
   });
 });
 
@@ -241,6 +282,40 @@ describe('run_lifecycle_jobs', () => {
     expect(await status(expired.id)).toBe('inactive');
     await runLifecycle(s.orgA.id, '2026-03-10T12:00:00Z');
     expect(await status(lastDay.id)).toBe('inactive');
+  });
+
+  it('should archive unlinked unverified identities unseen for archive_unknown_after_days, once', async () => {
+    const s = await setup();
+    await runSql(`UPDATE itap.organization_settings SET archive_unknown_after_days = 30 WHERE organization_id = '${s.orgA.id}'`);
+    const mk = async (set: string): Promise<string> => {
+      const i = await insertOne(s.a, 'identities', {});
+      await runSql(`UPDATE itap.identities SET ${set} WHERE id = '${i.id}'`);
+      return i.id;
+    };
+    const old = '2026-01-01T00:00:00Z';
+    const stale = await mk(`last_seen_at = '${old}'`);
+    const staleNeverSeen = await mk(`created_at = '${old}'`);
+    const stalePending = await mk(`status = 'pending_verification', last_seen_at = '${old}'`);
+    const recent = await mk(`last_seen_at = '2026-02-20T00:00:00Z'`);
+    const suspended = await mk(`status = 'suspended', last_seen_at = '${old}'`);
+    const linked = await mk(`profile_id = '${s.host.profile}', last_seen_at = '${old}'`);
+    const verified = await mk(`status = 'verified', last_seen_at = '${old}'`);
+    const foreign = await insertOne(asOrgAdmin(s.other.id, s.orgB.id), 'identities', {});
+    await runSql(`UPDATE itap.identities SET last_seen_at = '${old}' WHERE id = '${foreign.id}'`);
+    const status = async (id: string) => (await runSqlRows(`SELECT status FROM itap.identities WHERE id = '${id}'`))[0].status;
+    // 2026-03-10 minus 30 days = 2026-02-08.
+    await runLifecycle(s.orgA.id, NOW);
+    expect(await status(stale)).toBe('archived');
+    expect(await status(staleNeverSeen)).toBe('archived');
+    expect(await status(stalePending)).toBe('archived');
+    expect(await status(recent)).toBe('unverified');
+    expect(await status(suspended)).toBe('suspended');
+    expect(await status(linked)).toBe('unverified');
+    expect(await status(verified)).toBe('verified');
+    expect(await status(foreign.id)).toBe('unverified');
+    const updated = (await runSqlRows(`SELECT updated_at FROM itap.identities WHERE id = '${stale}'`))[0].updated_at;
+    await runLifecycle(s.orgA.id, NOW);
+    expect((await runSqlRows(`SELECT updated_at FROM itap.identities WHERE id = '${stale}'`))[0].updated_at).toBe(updated);
   });
 
   it('should leave other organizations alone and be callable with the admin secret only', async () => {

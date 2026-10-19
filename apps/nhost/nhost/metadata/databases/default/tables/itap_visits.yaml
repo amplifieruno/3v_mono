@@ -114,5 +114,11 @@ update_permissions:
         - purpose
         - visitor_profile_id
       filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _eq: scheduled
+      check:
         organization_id:
           _eq: X-Hasura-Organization-Id
