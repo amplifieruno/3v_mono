@@ -94,3 +94,8 @@ export function replayDays(now: Date, timezone: string): ReplayDay[] {
   }
   return days;
 }
+
+/** When the Nova Tower configuration (watch lists, rules, notifications) is dated: two days before the replay. */
+export function configurationTime(now: Date, timezone: string): number {
+  return (replayDays(now, timezone)[0]?.start ?? now.getTime()) - 2 * DAY_MS;
+}

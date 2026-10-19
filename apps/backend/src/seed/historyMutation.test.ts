@@ -40,11 +40,14 @@ describe('buildDayMutation', () => {
       'dwEnd:evaluate_dwell_rules',
       'csEnd:close_stale_sessions',
       'lifecycle:run_lifecycle_jobs',
+      'notifications:seed_finalize_notifications',
     ]);
     // Window times: start of the 5-minute window that holds the detections; the day closes at its end.
     expect(built.query).toContain(`p_at: "${new Date(START).toISOString()}"`);
     expect(built.query).toContain(`p_at: "${new Date(START + 10 * MIN).toISOString()}"`);
     expect(built.query).toContain(`p_at: "${new Date(day.end).toISOString()}"`);
+    // The day's notification rows are dated at their simulated times in the same transaction.
+    expect(built.query).toContain(`seed_finalize_notifications(args: { p_organization: $org, p_until: "${new Date(day.end).toISOString()}" })`);
   });
 
   it('should insert each window sorted by identity then time and evaluate in time order', () => {

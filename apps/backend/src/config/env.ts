@@ -17,6 +17,9 @@ const envSchema = z.object({
   INSIGHTFACE_API_URL: z.string().url(),
   STREAM_SERVER_URL: z.string().url().default('http://stream-server:8888'),
   SEED_PASSWORD: z.string().min(1).optional(),
+  // The backend as Hasura and the backend container reach it (compose service name); the seed points its webhook
+  // subscription at the dev sink under it.
+  BACKEND_URL: z.string().url().default('http://backend:3001'),
   ORG_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   // Live camera recognition (src/recognition) runs in the server process unless set to 'false'.
   RECOGNITION_ENABLED: z

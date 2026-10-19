@@ -84,7 +84,7 @@ export type RuleSpec = {
  * two), "Watch & blacklist match" (watch-list kinds blacklist + watch, incidents), "VIP arrival" (kind vip,
  * announcement only) and "Long wait in the lobby lounge" (unusual_dwell after 40 minutes). One draft: lobby loitering.
  */
-const WATCH_RULE = 'Watch & blacklist match';
+export const WATCH_RULE = 'Watch & blacklist match';
 /** Rules renamed since earlier seeds (old name -> new name), renamed in place so a re-run does not duplicate them. */
 const RENAMED_RULES: Record<string, string> = { 'Blacklist match': WATCH_RULE };
 

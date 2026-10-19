@@ -9,6 +9,7 @@ import { seedDevices, type SeedDevicesResult } from './devices.js';
 import { seedFacilities, type SeedFacilitiesResult } from './facilities.js';
 import { seedFaces, type SeedIdentitiesResult } from './faces.js';
 import { seedHistory, type SeedHistoryResult } from './history.js';
+import { seedNotifications, type SeedNotificationsResult } from './notifications.js';
 import { seedPeople, type SeedPeopleResult } from './people.js';
 import { resetTenancy, seedTenancy, type SeedContext, type SeedTenancyResult } from './tenancy.js';
 
@@ -20,6 +21,7 @@ export type SeedResults = {
   identities: SeedIdentitiesResult;
   facilities: SeedFacilitiesResult;
   devices: SeedDevicesResult;
+  notifications: SeedNotificationsResult;
   deviceHealth: SeedDeviceHealthResult;
   history: SeedHistoryResult;
 };
@@ -58,9 +60,11 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   devices: step(['tenancy', 'facilities', 'profiles', 'identities'], (ctx, { tenancy, facilities, profiles }) =>
     seedDevices(ctx, tenancy, facilities, profiles),
   ),
-  deviceHealth: step(['tenancy', 'devices'], (ctx, { tenancy, devices }) => seedDeviceHealth(ctx, tenancy, devices)),
-  history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities'], (ctx, r) =>
-    seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles, r.identities),
+  // Before the device health history and the replay: Stage C fans their events out through this configuration.
+  notifications: step(['tenancy', 'facilities'], (ctx, { tenancy, facilities }) => seedNotifications(ctx, tenancy, facilities)),
+  deviceHealth: step(['tenancy', 'devices', 'notifications'], (ctx, { tenancy, devices }) => seedDeviceHealth(ctx, tenancy, devices)),
+  history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities', 'notifications'], (ctx, r) =>
+    seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles, r.identities, r.notifications),
   ),
 };
 
@@ -99,6 +103,9 @@ async function main(): Promise<void> {
     } else if (replay.skipped === 'seeded') log('History: replay skipped (already seeded).');
     else log(`History: ${replay.days} days, ${replay.detections} detections, ${replay.visits} visits in ${Math.round(replay.durationMs / 1000)} s.`);
     if (history.riverside.skipped === 'needs_reset') log('History: Riverside replay needs `pnpm seed --reset`.');
+    const { escalations, demoIncident } = history.incidents;
+    log(`Notifications: ${escalations} history escalations, ${history.notifications.webhooksSigned} webhook deliveries signed` +
+      (demoIncident ? `; open demo incident ${demoIncident} escalates live in about 4 minutes.` : '.'));
   }
   log(`Seed complete in ${Math.round((Date.now() - ctx.now.getTime()) / 1000)} s.`);
 }

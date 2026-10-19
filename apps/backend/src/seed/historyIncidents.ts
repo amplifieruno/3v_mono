@@ -1,4 +1,6 @@
 import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
+import { escalationFields } from './historyNotifications.js';
+import { escalationTimes } from './notificationPlan.js';
 import type { SeedContext } from './tenancy.js';
 
 /**
@@ -9,10 +11,19 @@ import type { SeedContext } from './tenancy.js';
  * escalated at, later activities, notes) are moved to the simulated operator times after the triggering event. updated_at
  * keeps the seed time (set by trigger). Newest incidents stay open; older ones are progressively further along.
  * Idempotent: skipped once any incident has been acknowledged.
+ *
+ * Escalation (slice 5): incidents of the escalating rule get the escalation policy together with their automatic
+ * escalations at the simulated cron instants before their acknowledgement (notificationPlan.escalationTimes), in the
+ * acknowledgement's transaction, so the live escalate cron never sees one unacknowledged under a policy. The newest
+ * critical one (not the false-positive persona) stays open as the live demo: its first pass is history, then a second
+ * cycle's steps 1-2 at 7 and 6 minutes before the request, so its on-call step is due about 4 minutes later and the
+ * policy keeps repeating until someone acknowledges it (the intermediate cycles are not simulated). Other occurrences
+ * then start at 'acknowledged' on the status ladder.
  */
 type IncidentRow = {
   id: string;
   status: string;
+  severity: string;
   created_at: string;
   dedup_key: string | null;
   acknowledged_at: string | null;
@@ -30,13 +41,16 @@ type Step =
 const INCIDENTS = `
   query SeedHistoryIncidents($org: uuid!) {
     incidents(where: { organization_id: { _eq: $org } }) {
-      id status created_at dedup_key acknowledged_at incident_identities { identity_id }
+      id status severity created_at dedup_key acknowledged_at incident_identities { identity_id }
     }
   }
 `;
 const ACTIVITIES = `
   query SeedIncidentActivities($id: uuid!) {
-    incident_activities(where: { incident_id: { _eq: $id } }, order_by: [{ occurred_at: asc }, { created_at: asc }]) { id }
+    incident_activities(
+      where: { incident_id: { _eq: $id }, _not: { kind: { _eq: escalated }, actor_id: { _is_null: true } } }
+      order_by: [{ occurred_at: asc }, { created_at: asc }]
+    ) { id }
     incident_notes(where: { incident_id: { _eq: $id } }, order_by: { created_at: asc }) { id }
   }
 `;
@@ -74,9 +88,10 @@ const STEP_DELAY: Record<Step['kind'], [number, number]> = {
   close: [1440, 1800],
 };
 
-async function runStep(actor: HasuraClient, org: string, incident: string, step: Step, assignee: string): Promise<void> {
+/** `before`: fields run first in the same request (the escalations before an acknowledgement). */
+async function runStep(actor: HasuraClient, org: string, incident: string, step: Step, assignee: string, before: string[] = []): Promise<void> {
   const call = (field: string, extra = '') =>
-    actor.request(`mutation SeedIncidentStep($id: uuid!) { ${field}(args: { p_incident: $id${extra} }) { id } }`, { id: incident });
+    actor.request(`mutation SeedIncidentStep($id: uuid!) { ${before.join('\n')} ${field}(args: { p_incident: $id${extra} }) { id } }`, { id: incident });
   switch (step.kind) {
     case 'assign':
       await actor.request(`mutation SeedAssign($id: uuid!, $to: uuid!) { update_incidents_by_pk(pk_columns: { id: $id }, _set: { assigned_to: $to }) { id } }`, { id: incident, to: assignee });
@@ -129,6 +144,8 @@ async function backdate(ctx: SeedContext, incident: string, opened: number, step
   if (resolved) set.resolved_at = resolved;
   const escalated = at('escalate');
   if (escalated) set.last_escalated_at = escalated;
+  // An escalating open incident has no operator steps: nothing to move.
+  if (Object.keys(set).length === 0 && fields.length === 0) return;
   await ctx.admin.request(
     `mutation SeedBackdateIncident($id: uuid!, $set: incidents_set_input!) {
       incident: update_incidents_by_pk(pk_columns: { id: $id }, _set: $set) { id }
@@ -146,31 +163,45 @@ function occurrence(i: IncidentRow): string {
 
 export async function seedIncidentHistory(
   ctx: SeedContext,
-  args: { org: string; users: [string, string]; falsePositiveIdentity: string | null },
-): Promise<{ incidents: number; processed: number; byStatus: Record<string, number> }> {
+  args: {
+    org: string;
+    users: [string, string];
+    falsePositiveIdentity: string | null;
+    /** The rule whose incidents escalate under the policy (incident dedup keys end with `:rule:<id>`). */
+    escalation: { ruleId: string; policyId: string } | null;
+  },
+): Promise<{ incidents: number; processed: number; byStatus: Record<string, number>; escalations: number; demoIncident: string | null }> {
   const { incidents } = await ctx.admin.request<{ incidents: IncidentRow[] }>(INCIDENTS, { org: args.org });
   const byStatus: Record<string, number> = {};
   if (incidents.length === 0 || incidents.some((i) => i.acknowledged_at !== null)) {
-    return { incidents: incidents.length, processed: 0, byStatus };
+    return { incidents: incidents.length, processed: 0, byStatus, escalations: 0, demoIncident: null };
   }
   const opened = (i: IncidentRow) => Date.parse(i.created_at);
-  // Statuses per occurrence, newest first: the latest still open, older ones further along.
-  const occurrences = [...new Set([...incidents].sort((a, b) => opened(b) - opened(a)).map(occurrence))];
-  const ladder = ['open', 'acknowledged', 'investigating', 'resolved'];
   // The watch-list persona's earliest incident turned out to be a false positive.
   const persona = incidents
     .filter((i) => args.falsePositiveIdentity && i.incident_identities.some((x) => x.identity_id === args.falsePositiveIdentity))
     .sort((a, b) => opened(a) - opened(b))[0];
+  const escalation = args.escalation;
+  const escalates = (i: IncidentRow) => escalation !== null && (i.dedup_key ?? '').endsWith(`:rule:${escalation.ruleId}`);
+  const demo = incidents
+    .filter((i) => escalates(i) && i.severity === 'critical' && i !== persona)
+    .sort((a, b) => opened(b) - opened(a))[0];
+  const demoOccurrence = demo ? occurrence(demo) : null;
+  // Statuses per occurrence, newest first: the latest still open (or the demo incident), older ones further along.
+  const occurrences = [...new Set([...incidents].sort((a, b) => opened(b) - opened(a)).map(occurrence))].filter((o) => o !== demoOccurrence);
+  const ladder = demo ? ['acknowledged', 'investigating', 'resolved'] : ['open', 'acknowledged', 'investigating', 'resolved'];
+  let escalations = 0;
   const actors = args.users.map((user) => createHasuraClient(ctx.env, { role: 'admin', userId: user, organizationId: args.org }));
 
   const ordered = [...incidents].sort((a, b) => opened(b) - opened(a) || a.id.localeCompare(b.id));
   for (const [n, incident] of ordered.entries()) {
-    const rank = occurrences.indexOf(occurrence(incident));
-    let status = ladder[rank] ?? 'closed';
+    const rank = occurrence(incident) === demoOccurrence ? -1 : occurrences.indexOf(occurrence(incident));
+    let status = rank < 0 ? 'open' : (ladder[rank] ?? 'closed');
     const falsePositive = incident === persona;
     if (falsePositive) status = 'resolved';
     byStatus[status] = (byStatus[status] ?? 0) + 1;
-    const steps = stepsFor(status, falsePositive);
+    // Escalating incidents escalate automatically instead of the manual escalation of an open incident.
+    const steps = escalates(incident) && status === 'open' ? [] : stepsFor(status, falsePositive);
     const start = opened(incident);
     const latest = ctx.now.getTime() - 5 * MINUTE;
     let previous = start;
@@ -180,8 +211,22 @@ export async function seedIncidentHistory(
       previous = Math.min(Math.max(planned, previous + MINUTE), latest);
       return previous;
     });
-    for (const step of steps) await runStep(actors[rank % 2 === 0 ? 0 : 1], args.org, incident.id, step, args.users[rank % 2 === 0 ? 1 : 0]);
+    const actor = actors[rank % 2 === 0 ? 0 : 1];
+    const ackIndex = steps.findIndex((s) => s.kind === 'acknowledge');
+    let escalateAt: number[] = [];
+    if (escalation && escalates(incident)) {
+      escalateAt = escalationTimes(start, ackIndex < 0 ? null : times[ackIndex]).filter((t) => t <= latest);
+      if (incident === demo) escalateAt.push(Date.now() - 7 * MINUTE, Date.now() - 6 * MINUTE);
+      escalations += escalateAt.length;
+    }
+    const escalate = escalation
+      ? escalationFields({ org: args.org, incident: incident.id, policy: escalation.policyId, times: escalateAt, until: Date.now() })
+      : [];
+    for (const [i, step] of steps.entries()) {
+      await runStep(actor, args.org, incident.id, step, args.users[rank % 2 === 0 ? 1 : 0], i === ackIndex ? escalate : []);
+    }
+    if (ackIndex < 0 && escalate.length > 0) await actor.request(`mutation SeedIncidentEscalations { ${escalate.join('\n')} }`);
     await backdate(ctx, incident.id, start, steps, times);
   }
-  return { incidents: incidents.length, processed: ordered.length, byStatus };
+  return { incidents: incidents.length, processed: ordered.length, byStatus, escalations, demoIncident: demo?.id ?? null };
 }

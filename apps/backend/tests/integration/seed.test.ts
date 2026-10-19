@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { asAdmin, asBearer, testEnv } from './support/clients.js';
 import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
+import { expectSeededNotifications } from './support/seedNotifications.js';
 import { seedCounts, seededTemplate } from './support/seedState.js';
 import { runSqlRows } from './support/sql.js';
 
@@ -55,7 +56,8 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(secondCounts).toEqual(firstCounts);
 
     expect(first.orgs.map((o) => o.slug)).toEqual(SLUGS);
-    expect(first.members).toBe(4);
+    // 3 admins (one in both orgs) and the Nova security operator.
+    expect(first.members).toBe(5);
     expect(second).toEqual(first);
 
     const res = await fetch(`${authUrl()}/signin/email-password`, {
@@ -293,7 +295,14 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
                   where x.incident_id = i.id and itap.profile_is_blacklisted((select p from itap.profiles p where p.id = y.profile_id)))) as persona_fp`,
     );
     expect(Number(extra.unlinked)).toBeGreaterThanOrEqual(8);
-    expect(extra).toMatchObject({ by_kind: '2', doubled: '0', late_entries: '0', unrounded: '0', persona_fp: '1' });
+    // by_kind: the watch rule's second version (escalation policy) keeps its watch_list_kinds.
+    expect(extra).toMatchObject({ by_kind: '3', doubled: '0', late_entries: '0', unrounded: '0', persona_fp: '1' });
+  });
+
+  it('should seed notification configuration and replay-compatible notification history', async () => {
+    await expectSeededNotifications(SLUGS[0]);
+    // Riverside has no notification configuration: Stage C wrote nothing there.
+    expect((await seedCounts(SLUGS[1])).seeded_deliveries).toBe(0);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {
@@ -315,7 +324,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     await seed('--reset');
     const after = await state();
     expect(after.orgs.map((o) => o.slug)).toEqual(SLUGS);
-    expect(after.members).toBe(4);
+    expect(after.members).toBe(5);
     expect(after.orgs.map((o) => o.id)).not.toEqual(before.orgs.map((o) => o.id));
     expect(testEnv().SEED_PASSWORD).toBeTruthy();
     expect((await seedCounts(SLUGS[0])).profiles).toBeGreaterThanOrEqual(150);

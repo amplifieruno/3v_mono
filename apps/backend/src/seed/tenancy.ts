@@ -6,7 +6,7 @@ import type { StorageClient } from '../storage/storageClient.js';
 export type SeedContext = { env: Env; admin: HasuraClient; storage: StorageClient; now: Date };
 
 export type SeedTenancyResult = {
-  users: { admin: string; novaAdmin: string; riversideAdmin: string };
+  users: { admin: string; novaAdmin: string; riversideAdmin: string; operator: string };
   orgs: { nova: string; riverside: string };
 };
 
@@ -14,6 +14,8 @@ export const SEED_EMAILS = {
   admin: 'admin@itap.demo',
   novaAdmin: 'nova.admin@itap.demo',
   riversideAdmin: 'riverside.admin@itap.demo',
+  // Nova Tower security operator (third member of the on-call rotation, slice 5); Russian interface locale.
+  operator: 'operator@itap.demo',
 } as const;
 
 export const SEED_ORGS = {
@@ -91,6 +93,14 @@ const ADD_MEMBERS = `
   }
 `;
 
+const OPERATOR_LOCALE = `
+  mutation SeedOperatorLocale($user: uuid!) {
+    insert_user_settings_one(object: { user_id: $user, locale: "ru" }, on_conflict: { constraint: user_settings_pkey, update_columns: [] }) {
+      user_id
+    }
+  }
+`;
+
 export async function seedTenancy(ctx: SeedContext): Promise<SeedTenancyResult> {
   const password = ctx.env.SEED_PASSWORD;
   if (!password) throw new Error('SEED_PASSWORD is required to seed users');
@@ -99,21 +109,25 @@ export async function seedTenancy(ctx: SeedContext): Promise<SeedTenancyResult> 
     admin: await upsertUser(ctx, SEED_EMAILS.admin, password),
     novaAdmin: await upsertUser(ctx, SEED_EMAILS.novaAdmin, password),
     riversideAdmin: await upsertUser(ctx, SEED_EMAILS.riversideAdmin, password),
+    operator: await upsertUser(ctx, SEED_EMAILS.operator, password),
   };
   const orgs = {
     nova: await upsertOrg(ctx, SEED_ORGS.nova),
     riverside: await upsertOrg(ctx, SEED_ORGS.riverside),
   };
 
-  const member = (organization_id: string, user_id: string) => ({ organization_id, user_id, role: 'admin' });
+  const member = (organization_id: string, user_id: string, extra: Record<string, string> = {}) => ({ organization_id, user_id, role: 'admin', ...extra });
   await ctx.admin.request(ADD_MEMBERS, {
     objects: [
       member(orgs.nova, users.admin),
       member(orgs.riverside, users.admin),
       member(orgs.nova, users.novaAdmin),
       member(orgs.riverside, users.riversideAdmin),
+      member(orgs.nova, users.operator, { title: 'Security operator', department: 'Security' }),
     ],
   });
+  // Notification templates are chosen by the recipient's locale: the operator reads Russian.
+  await ctx.admin.request(OPERATOR_LOCALE, { user: users.operator });
 
   return { users, orgs };
 }

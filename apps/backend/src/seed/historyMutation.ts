@@ -7,7 +7,9 @@ import type { ReplayDay } from './historyTime.js';
  * start (what the live crons would have done by then; dwell first, so a stay is measured before its session closes),
  * the window's detections (one multi-row insert sorted by identity then detected_at: Stage A runs per row in that
  * order, rows of one identity in time order), then evaluate_detection (Stage B) for each detection in time order.
- * The day ends with dwell rules and stale sessions at its end and the daily lifecycle job.
+ * The day ends with dwell rules and stale sessions at its end, the daily lifecycle job and the notification finalizer
+ * (itap.seed_finalize_notifications: the deliveries, inbox rows and webhook deliveries Stage C wrote get their
+ * simulated times and outcomes).
  *
  * One transaction per day keeps the live crons out of a simulated day: they run against wall-clock now and would
  * close every replayed session that is still open between two requests. Days start at 04:00 local, when nobody is on
@@ -74,6 +76,9 @@ export function buildDayMutation(args: {
     });
   crons('End', day.end);
   fields.push(`lifecycle: run_lifecycle_jobs(args: { p_organization: $org, p_at: "${iso(day.end)}" }) { id }`);
+  // Stage C wrote the day's notifications with the transaction time: date and settle them (digests at their hourly
+  // runs, stub sending, inbox reads) at the simulated times before the commit fires the sending triggers.
+  fields.push(`notifications: seed_finalize_notifications(args: { p_organization: $org, p_until: "${iso(day.end)}" }) { id }`);
 
   const query = `mutation SeedHistoryDay($org: uuid!${defs.length > 0 ? `, ${defs.join(', ')}` : ''}) {\n  ${fields.join('\n  ')}\n}`;
   return { query, variables, detections: count };

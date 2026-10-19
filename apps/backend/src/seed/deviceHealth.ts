@@ -37,8 +37,15 @@ function historyMutation(calls: HealthCall[]): string {
     (c, i) => `r${i}: record_device_health(args: { p_device: $device, p_reachable: ${c.reachable}, p_latency_ms: ${c.reachable ? 12 : 'null'},
                 p_frame_ok: ${c.reachable}, p_checked_at: "${c.at}" }) { id }`,
   );
-  const restore = calls.length > 0 ? ['seen: update_devices_by_pk(pk_columns: { id: $device }, _set: { last_seen_at: $seen }) { id }'] : [];
-  const vars = calls.length > 0 ? '$device: uuid!, $seen: timestamptz!, ' : '';
+  // The outage events went through Stage C: date their notifications (device status digests) at the simulated times.
+  const restore =
+    calls.length > 0
+      ? [
+          'seen: update_devices_by_pk(pk_columns: { id: $device }, _set: { last_seen_at: $seen }) { id }',
+          'notifications: seed_finalize_notifications(args: { p_organization: $org, p_until: $seen }) { id }',
+        ]
+      : [];
+  const vars = calls.length > 0 ? '$device: uuid!, $seen: timestamptz!, $org: uuid!, ' : '';
   return `mutation SeedHealthHistory(${vars}$metrics: [device_health_metrics_insert_input!]!, $events: [device_events_insert_input!]!) {
     ${[...recorded, ...restore].join('\n    ')}
     insert_device_health_metrics(
@@ -79,7 +86,7 @@ export async function seedDeviceHealth(
     const history = buildHealthHistory(key, device.camera ? 'camera' : 'host', ctx.now, incidents);
     const owner = { organization_id: tenancy.orgs[device.org], device_id: device.id };
     const data = await ctx.admin.request<{ insert_device_health_metrics: { affected_rows: number } }>(historyMutation(history.pipeline), {
-      ...(history.pipeline.length > 0 ? { device: device.id, seen: lastWholeHour(ctx.now).toISOString() } : {}),
+      ...(history.pipeline.length > 0 ? { device: device.id, seen: lastWholeHour(ctx.now).toISOString(), org: owner.organization_id } : {}),
       metrics: history.metrics.map((m) => ({ ...owner, ...m })),
       events: history.events.map((e) => ({ ...owner, ...e })),
     });

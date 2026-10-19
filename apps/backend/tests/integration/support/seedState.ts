@@ -29,7 +29,6 @@ const TABLES = [
   'tracking_sessions',
   'identity_locations',
   'incidents',
-  'incident_activities',
   'incident_notes',
   'watch_lists',
   'watch_list_entries',
@@ -39,8 +38,21 @@ const TABLES = [
   'shift_handovers',
   'shift_handover_incidents',
   'operator_workspaces',
-  // A second run must write nothing at all, so no new audit rows either.
-  'audit_log',
+  // Notifications (slice 5): configuration keyed by name; history rows below.
+  'notification_templates',
+  'recipient_groups',
+  'recipient_group_members',
+  'on_call_schedules',
+  'on_call_schedule_members',
+  'escalation_policies',
+  'escalation_policy_steps',
+  'notification_rules',
+  'notification_rule_event_types',
+  'notification_rule_channels',
+  'notification_subscriptions',
+  'webhook_subscriptions',
+  'webhook_subscription_event_types',
+  'webhook_deliveries',
 ];
 
 /** Counts every seeded table of the organization with the given slug, plus storage files and derived counts. */
@@ -79,6 +91,20 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
     `(select count(*) from itap.floor_plans where organization_id = ${org} and image_file_id is not null) as floor_plans_with_image`,
   );
   parts.push(`(select count(*) from itap.areas where organization_id = ${org} and shape is not null) as areas_with_shape`);
+  // A second run must write nothing at all, so no new audit rows or activities either. The live escalate cron keeps
+  // escalating the open demo incident (activity with no actor, an audited incident update with no user) and live
+  // device events fan out: rows the crons write after the organization was created are left out.
+  const created = `(select created_at from itap.organizations where id = ${org})`;
+  parts.push(
+    `(select count(*) from itap.incident_activities where organization_id = ${org}
+       and not (kind = 'escalated' and actor_id is null and occurred_at > ${created})) as incident_activities`,
+  );
+  parts.push(
+    `(select count(*) from itap.audit_log where organization_id = ${org}
+       and not (entity = 'incidents' and user_id is null and occurred_at > ${created})) as audit_log`,
+  );
+  parts.push(`(select count(*) from itap.notification_deliveries where organization_id = ${org} and created_at < ${created}) as seeded_deliveries`);
+  parts.push(`(select count(*) from itap.user_notifications where organization_id = ${org} and created_at < ${created}) as seeded_inbox`);
   // Pipeline events only (the live device health cron adds device platform events at any time).
   parts.push(`(select count(*) from itap.events where organization_id = ${org} and session_id is not null) as history_events`);
   const [row] = await runSqlRows(`select ${parts.join(', ')}`);

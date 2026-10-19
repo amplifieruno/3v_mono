@@ -1,15 +1,17 @@
 import type { SeedDevicesResult } from './devices.js';
 import type { SeedFacilitiesResult } from './facilities.js';
 import { floorName, SEED_FACILITIES } from './facilityPlan.js';
-import { seedHistoryConfig } from './historyConfig.js';
+import { seedHistoryConfig, WATCH_RULE } from './historyConfig.js';
 import { seedIncidentHistory } from './historyIncidents.js';
+import { attachEscalationPolicy, ruleId, signHistoryWebhooks } from './historyNotifications.js';
 import { seedOperatorHistory } from './historyOperators.js';
 import { historyPeople } from './historyPeople.js';
 import { buildHistoryPlan } from './historyPlan.js';
 import { replayHistory, resolveNovaPoints, type ReplayResult } from './historyReplay.js';
-import { replayDays } from './historyTime.js';
+import { configurationTime } from './historyTime.js';
 import { seedRiversideHistory, type RiversideHistoryResult } from './historyRiverside.js';
 import type { SeedIdentitiesResult } from './faces.js';
+import { seedSubscriptions, type SeedNotificationsResult } from './notifications.js';
 import type { SeedPeopleResult } from './people.js';
 import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 
@@ -17,11 +19,15 @@ import type { SeedContext, SeedTenancyResult } from './tenancy.js';
  * Nova Tower history (design §9, slice 4): configuration (threshold, watch lists, event rules), the tracked people's
  * identities, 30 days of detections replayed through the pipeline with visits, then the operator side (incident
  * lifecycle, shift handovers, workspaces, estimated locations); then a week of light Riverside history.
+ * Notifications (slice 5): the personal subscriptions are written before the replay, so Stage C produces the history's
+ * deliveries, inbox rows and webhook deliveries; incidents of the watch rule escalate at simulated times; afterwards
+ * the watch rule gets the escalation policy for live incidents and the replayed webhook deliveries are signed.
  */
 export type SeedHistoryResult = {
   replay: ReplayResult;
   rulesCreated: number;
-  incidents: { incidents: number; processed: number; byStatus: Record<string, number> };
+  incidents: { incidents: number; processed: number; byStatus: Record<string, number>; escalations: number; demoIncident: string | null };
+  notifications: { subscriptionsCreated: number; webhooksSigned: number };
   operators: { handovers: number; workspaces: number; estimatedLocations: number };
   riverside: RiversideHistoryResult;
 };
@@ -33,6 +39,7 @@ export async function seedHistory(
   devices: SeedDevicesResult,
   people: SeedPeopleResult,
   identities: SeedIdentitiesResult,
+  notifications: SeedNotificationsResult,
 ): Promise<SeedHistoryResult> {
   const org = tenancy.orgs.nova;
   const facility = facilities.facilities.nova;
@@ -44,27 +51,38 @@ export async function seedHistory(
   };
 
   const tracked = await historyPeople(ctx, org, people, identities);
-  const days = replayDays(ctx.now, timezone);
   const { rulesCreated } = await seedHistoryConfig(ctx, {
     org,
     adminUser: tenancy.users.admin,
     facility,
-    configuredAt: (days[0]?.start ?? ctx.now.getTime()) - 2 * 86_400_000,
+    configuredAt: configurationTime(ctx.now, timezone),
     areas: { lobbyLounge: area('Lobby/Lobby Lounge'), secureFloors: [area(floorName(3)), area(floorName(24))] },
     blacklistedProfile: people.byRole.blacklisted[0] ?? null,
     vipProfiles: people.byRole.vip,
     watchedIdentity: tracked.watchedIdentity,
   });
 
+  const users = { admin: tenancy.users.admin, novaAdmin: tenancy.users.novaAdmin };
+  const subscriptionsCreated = await seedSubscriptions(ctx, {
+    org,
+    users,
+    facility,
+    watchedIdentity: tracked.watchedIdentity,
+    configuredAt: configurationTime(ctx.now, timezone),
+  });
+
   const plan = buildHistoryPlan({ ...tracked, now: ctx.now, timezone });
   const points = await resolveNovaPoints(ctx, facility, facilities, devices);
   const replay = await replayHistory(ctx, { org, facility, plan, points });
-  const users = { admin: tenancy.users.admin, novaAdmin: tenancy.users.novaAdmin };
+  const watchRule = await ruleId(ctx, org, WATCH_RULE);
   const incidents = await seedIncidentHistory(ctx, {
     org,
     users: [users.admin, users.novaAdmin],
     falsePositiveIdentity: tracked.blacklistedIdentity,
+    escalation: watchRule ? { ruleId: watchRule, policyId: notifications.policyId } : null,
   });
+  await attachEscalationPolicy(ctx, { org, adminUser: users.admin, ruleName: WATCH_RULE, policyId: notifications.policyId });
+  const webhooksSigned = await signHistoryWebhooks(ctx, org);
   const operators = await seedOperatorHistory(ctx, {
     org,
     users,
@@ -74,5 +92,5 @@ export async function seedHistory(
     companyByIdentity: tracked.companyByIdentity,
   });
   const riverside = await seedRiversideHistory(ctx, tenancy, facilities, devices);
-  return { replay, rulesCreated, incidents, operators, riverside };
+  return { replay, rulesCreated, incidents, operators, riverside, notifications: { subscriptionsCreated, webhooksSigned } };
 }
