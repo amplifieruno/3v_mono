@@ -57,7 +57,7 @@ export const resumeBulkJobs = defineCronHandler(async (payload, ctx) => {
   if (Number.isNaN(at.getTime())) throw new Error(`Invalid scheduled_time: ${payload.scheduled_time}`);
   const { close_stale_search_requests: closed } = await ctx.admin.request<{ close_stale_search_requests: { id: string }[] }>(
     CLOSE_STALE_SEARCHES,
-    { at: new Date().toISOString() },
+    { at: at.toISOString() },
   );
   const { due_bulk_jobs: due } = await ctx.admin.request<{ due_bulk_jobs: { id: string }[] }>(DUE, {
     at: at.toISOString(),

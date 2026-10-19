@@ -9,6 +9,12 @@ const TRANSIENT_STATES = new Set(['40P01', '40001', '55P03']);
 /** Waits before the 1st, 2nd and 3rd retry of a row; a 4th transient error fails the attempt. */
 export const ROW_RETRY_DELAYS_MS = [100, 400, 1000];
 
+/** By SQLSTATE when Hasura exposes it, else by the message code bulk_apply_profile_row raises for those states. */
+function isTransient(error: HasuraError): boolean {
+  if (error.sqlState !== undefined && TRANSIENT_STATES.has(error.sqlState)) return true;
+  return `${error.message} ${error.detail ?? ''}`.includes('bulk_row_transient');
+}
+
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -98,7 +104,7 @@ export async function applyRow(ctx: RowContext, rowNo: number, cells: string[]):
       await owner.request(APPLY_PROFILE_ROW, { id: ctx.job.id, attempt: ctx.attempt, row: rowNo, data: parsed.values });
       return;
     } catch (error: unknown) {
-      const transient = error instanceof HasuraError && error.sqlState !== undefined && TRANSIENT_STATES.has(error.sqlState);
+      const transient = error instanceof HasuraError && isTransient(error);
       if (!transient || retry >= ROW_RETRY_DELAYS_MS.length) throw stopIfNotMine(error);
       await sleep(ROW_RETRY_DELAYS_MS[retry]);
     }

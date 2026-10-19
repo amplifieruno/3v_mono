@@ -233,6 +233,15 @@ describe('runBulkJob', () => {
     always.deps.sleep = async () => undefined;
     expect(await runBulkJob(JOB, always.deps)).toEqual({ job_id: JOB, status: 'failed', error: 'deadlock detected' });
     expect(always.calls.filter((c) => c.op === 'BulkApplyProfileRow')).toHaveLength(4);
+    // Without the SQLSTATE (production hides Hasura internals) the SQL message code marks a transient row error.
+    let coded = 0;
+    const hidden = world(rows(1), {
+      applyError: () => ((coded += 1) <= 2 ? new HasuraError('constraint-violation', 'bulk_row_transient') : undefined),
+    });
+    hidden.deps.sleep = async () => undefined;
+    expect(await runBulkJob(JOB, hidden.deps)).toEqual({ job_id: JOB, status: 'completed' });
+    expect(hidden.applied).toEqual([1]);
+    expect(hidden.calls.filter((c) => c.op === 'BulkApplyProfileRow')).toHaveLength(3);
     // Other errors are not retried.
     const once = world(rows(1), { applyError: () => new HasuraError('unexpected', 'database query error', '$', 'boom', 'XX000') });
     once.deps.sleep = async () => undefined;
