@@ -40,6 +40,7 @@ interface DetectedFace {
   y_max: number
   landmarks?: number[][]
   embedding?: number[]
+  face_crop?: string
   age?: number
   gender?: string
   genderConfidence?: number
@@ -97,7 +98,7 @@ class InsightFaceService {
     }
   }
   
-  async detectFaces(imageBuffer: Buffer): Promise<FaceDetectionResult> {
+  async detectFaces(imageBuffer: Buffer, _filename?: string): Promise<FaceDetectionResult> {
     // Simple backpressure: reject if already processing or too soon after last frame
     if (this.isProcessing) {
       throw new Error('Frame dropped: already processing')

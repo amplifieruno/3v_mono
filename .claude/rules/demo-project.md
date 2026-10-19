@@ -25,6 +25,8 @@ This is a **demonstration project** built to validate the ITAP market hypothesis
 
 6. **Do not fake functionality.** If a feature is shown in the demo, it must actually work -- but it can use a lightweight real implementation rather than a production-grade one. A SQLite fallback is better than a mocked API that returns hardcoded data.
 
+   **Exception (external side effects):** delivery to the outside world (email/SMS/push, HR/SIEM/BMS connectors, terminal sync, liveness) may be stubbed in a backend handler when the data flow around it is real: the request is validated, persisted, audited and its result rows are written exactly as a real implementation would. See `tasks/data-layer/design.md` section 8.5.
+
 7. **Keep the dependency footprint small.** Every added library is maintenance burden. Prefer what is already in the stack. Do not add a library for something that can be done in 20 lines of code.
 
 ## Technology Boundaries

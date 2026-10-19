@@ -15,6 +15,7 @@
 dev-compose:
 	docker compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d
 
+# Note: the hasura-cli inside the console container authenticates with the container's own HASURA_GRAPHQL_ADMIN_SECRET env var (no --admin-secret flag needed).
 HASURA_CLI = docker compose --env-file .env.dev -f docker/docker-compose.dev.yml exec -T console hasura-cli --project /hasura-project --endpoint http://graphql:8080
 
 ## Apply Hasura migrations and metadata

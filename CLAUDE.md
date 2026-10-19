@@ -112,10 +112,11 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 
 ### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL via TypeORM
-- **Cache**: Redis
+- **Data access**: Hasura GraphQL client with the admin secret (`src/hasura/`); legacy TypeORM code (identities/profiles) remains only until slice 2 removes it
+- **Role**: Hasura Actions handlers (`src/actions/`), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
+- **Runs in Docker** (dev compose service `backend`, port 3001) so Hasura can reach it; no Redis
 - **Real-time**: Socket.io
-- **Face Recognition**: face-api.js, TensorFlow.js
+- **Face Recognition**: InsightFace REST client (legacy face-api.js/TensorFlow.js deps are removed in slice 2)
 
 ### Data Layer (`apps/nhost/`)
 - **GraphQL Engine**: Hasura (via Nhost)
@@ -125,7 +126,7 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 - **Type Generation**: graphql-codegen
 
 ### Infrastructure
-- **Docker Compose**: PostgreSQL, Redis, MinIO, Hasura, Traefik
+- **Docker Compose**: PostgreSQL (pgvector), MinIO, Hasura, Nhost auth/storage, backend, Traefik
 - **File Storage**: MinIO (S3-compatible)
 - **Face Recognition**: InsightFace REST API (Docker)
 
@@ -224,10 +225,19 @@ pnpm build                          # Build all packages
 pnpm test                           # Run tests
 ```
 
-### Hasura / Database
+### Data Layer (Hasura / Postgres / backend)
+
+Spec, roadmap and per-slice plans/summaries live in `tasks/data-layer/` (`design.md`, `roadmap.md`, `plan-NN-*.md`, `summary-NN-*.md`). Conventions: `.claude/rules/hasura-conventions.md`.
 
 ```bash
+make dev-compose                    # Start infra incl. the backend container (Hasura Actions call it)
 make hasura_apply                   # Apply Hasura migrations + metadata
+make db_reset                       # Recreate itap schemas, re-apply migrations (dev only; keeps auth/storage)
+pnpm --filter nhost metadata:generate  # Regenerate itap.* Hasura metadata (never hand-edit it)
+pnpm --filter nhost test            # Metadata generator unit tests
+pnpm --filter backend exec vitest run src   # Backend unit tests
+pnpm --filter backend test:integration      # Integration tests against the running dev stack
+pnpm seed                           # Seed demo organizations/users (add --reset to wipe seed data)
 cd apps/admin-ui && pnpm gql        # Generate GraphQL types
 cd apps/admin-ui && pnpm gql-w      # Watch mode for GraphQL codegen
 ```
@@ -374,6 +384,6 @@ Using proven open-source solutions for DEMO:
 
 1. **Human Library** (`@vladmandic/human`): Primary client-side face detection/recognition
 2. **InsightFace REST**: Docker-based face recognition service for server-side processing
-3. **face-api.js**: Fallback for backend face processing
+3. **face-api.js**: Legacy backend fallback, scheduled for removal in slice 2
 
 Focus on real functionality with lightweight solutions, not fake demos.

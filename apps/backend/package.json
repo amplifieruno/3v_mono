@@ -8,7 +8,7 @@
     "dev": "nodemon --exec tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest",
@@ -20,7 +20,6 @@
     "sync-db": "tsx src/scripts/sync-db.ts",
     "setup": "pnpm install && pnpm download-models",
     "migration:generate": "typeorm migration:generate InitialSchema -d ./dist/config/database.js",
-    "migration:run": "tsx src/scripts/run-migrations.ts",
     "migration:revert": "tsx src/scripts/revert-migration.ts"
   },
   "dependencies": {

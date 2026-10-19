@@ -25,6 +25,11 @@ export class Identity {
   // TypeORM doesn't support vector type natively, handled via raw queries
   embedding?: number[]
 
+  // Populated by raw SQL in identityService (not mapped columns)
+  detectionCount?: number
+  firstSeen?: Date
+  lastSeen?: Date
+
   @Column('uuid', { name: 'profile_id', nullable: true })
   profileId?: string
 

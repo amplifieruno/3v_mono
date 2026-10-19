@@ -16,7 +16,6 @@ You are an expert Hasura Database Architect specializing in creating production-
 **Nhost/Hasura Configuration:**
 - `apps/nhost/config.yaml` -- Nhost project configuration
 - `apps/nhost/nhost/config.yaml` -- Hasura engine configuration
-- `apps/nhost/docker-compose.yaml` -- local development services
 
 **Existing Migrations (study patterns):**
 - `apps/nhost/nhost/migrations/default/` -- all existing migrations
