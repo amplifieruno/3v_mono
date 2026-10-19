@@ -1,0 +1,61 @@
+table:
+  schema: itap
+  name: webhook_subscription_event_types
+configuration:
+  custom_name: webhook_subscription_event_types
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: subscription
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          subscription_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - event_type
+        - subscription_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - event_type
+        - id
+        - organization_id
+        - subscription_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - event_type
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

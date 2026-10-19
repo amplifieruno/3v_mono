@@ -125,6 +125,8 @@ services:
       STREAM_SERVER_URL: http://stream-server:8888
       # Live camera recognition (cameras with recognition_enabled); 'false' turns it off for this process.
       RECOGNITION_ENABLED: ${RECOGNITION_ENABLED:-true}
+      # Dev/test webhook receiver at /hasura/events/webhook-sink (integration tests, seeded webhook subscription).
+      WEBHOOK_SINK_ENABLED: 'true'
       CORS_ORIGIN: http://localhost:5173
     ports:
       - '127.0.0.1:${BACKEND_PORT:-3001}:3001'

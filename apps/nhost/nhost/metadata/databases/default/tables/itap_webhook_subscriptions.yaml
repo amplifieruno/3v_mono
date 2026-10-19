@@ -1,0 +1,80 @@
+table:
+  schema: itap
+  name: webhook_subscriptions
+configuration:
+  custom_name: webhook_subscriptions
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: webhook_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_deliveries
+        column_mapping:
+          organization_id: organization_id
+          id: subscription_id
+  - name: webhook_subscription_event_types
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_subscription_event_types
+        column_mapping:
+          organization_id: organization_id
+          id: subscription_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - is_active
+        - secret
+        - url
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - description
+        - id
+        - is_active
+        - last_delivery_at
+        - last_delivery_status
+        - organization_id
+        - updated_at
+        - url
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - is_active
+        - secret
+        - url
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

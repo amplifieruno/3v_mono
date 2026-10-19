@@ -128,4 +128,8 @@
 - "!include itap_watch_list_entries.yaml"
 - "!include itap_watch_list_kinds.yaml"
 - "!include itap_watch_lists.yaml"
+- "!include itap_webhook_deliveries.yaml"
+- "!include itap_webhook_delivery_statuses.yaml"
+- "!include itap_webhook_subscription_event_types.yaml"
+- "!include itap_webhook_subscriptions.yaml"
 - "!include itap_work_schedules.yaml"

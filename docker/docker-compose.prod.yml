@@ -453,6 +453,8 @@ services:
       NHOST_STORAGE_URL: http://storage:5000/v1
       ORG_TOKEN_TTL_SECONDS: ${ORG_TOKEN_TTL_SECONDS:-900}
       PORT: ${BACKEND_PORT:-3001}
+      # The dev/test webhook sink never runs in production.
+      WEBHOOK_SINK_ENABLED: 'false'
     depends_on:
       postgres:
         condition: service_healthy

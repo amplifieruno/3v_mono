@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: webhook_delivery_statuses
+is_enum: true
+configuration:
+  custom_name: webhook_delivery_statuses

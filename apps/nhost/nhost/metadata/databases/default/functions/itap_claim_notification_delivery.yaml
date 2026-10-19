@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: claim_notification_delivery
+configuration:
+  custom_name: claim_notification_delivery
+  exposed_as: mutation

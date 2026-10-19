@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_notification_deliveries
+configuration:
+  custom_name: due_notification_deliveries
+  exposed_as: query

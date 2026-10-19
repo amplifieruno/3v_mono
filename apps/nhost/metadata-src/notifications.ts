@@ -25,7 +25,9 @@ const INBOX_COLUMNS = [
 ];
 const userEditableTemplate: BoolExp = { _and: [ownOrganizationRow, { is_system: { _eq: false } }] };
 
-const SUBSCRIPTION_INPUT = ['channel', 'event_type', 'facility_id', 'identity_id', 'min_severity', 'profile_id', 'watch_list_id'];
+const SUBSCRIPTION_INPUT = [
+  'channel', 'event_type', 'facility_id', 'identity_id', 'is_active', 'min_severity', 'profile_id', 'watch_list_id',
+];
 
 /** Notification configuration (spec §6.12): templates, recipients, escalation, on-call, rules, subscriptions. */
 export const notificationTables: TableSpec[] = [
@@ -102,6 +104,15 @@ export const notificationTables: TableSpec[] = [
     // Subscriptions are private (like their audit rows): a subscription delivery is visible to its recipient only.
     name: 'notification_deliveries',
     profile: 'tenant_read',
+    eventTriggers: [
+      {
+        // Non in_app channels: stubbed providers (email log, sms/push delivered). The handler claims the row, so
+        // in_app, deferred (deliver_after) and digest rows are skipped; failures retry via the retry_deliveries cron.
+        name: 'send_delivery',
+        operations: ['insert'],
+        retry: { num_retries: 5, retry_interval_seconds: 15, timeout_seconds: 30 },
+      },
+    ],
     extraPermissions: {
       select_permissions: [
         { role: ORG_ADMIN, permission: { columns: DELIVERY_COLUMNS, filter: visibleDelivery, allow_aggregations: true } },

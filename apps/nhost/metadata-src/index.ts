@@ -11,6 +11,7 @@ import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
 import { lifecycleFunctions, trackingFunctions, trackingTables } from './tracking.js';
 import { visitFunctions, visitTables } from './visits.js';
+import { sendingFunctions, webhookTables } from './webhooks.js';
 import type { FunctionSpec, TableSpec } from './types.js';
 
 /**
@@ -31,6 +32,7 @@ export const tables: TableSpec[] = [
   ...visitTables,
   ...maintenanceTables,
   ...notificationTables,
+  ...webhookTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -47,4 +49,5 @@ export const functions: FunctionSpec[] = [
   ...lifecycleFunctions,
   ...maintenanceFunctions,
   ...notificationFunctions,
+  ...sendingFunctions,
 ];

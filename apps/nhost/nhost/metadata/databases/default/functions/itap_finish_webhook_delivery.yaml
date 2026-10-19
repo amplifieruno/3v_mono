@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: finish_webhook_delivery
+configuration:
+  custom_name: finish_webhook_delivery
+  exposed_as: mutation

@@ -517,6 +517,30 @@ array_relationships:
           name: watch_lists
         column_mapping:
           id: organization_id
+  - name: webhook_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_deliveries
+        column_mapping:
+          id: organization_id
+  - name: webhook_subscription_event_types
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_subscription_event_types
+        column_mapping:
+          id: organization_id
+  - name: webhook_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: webhook_subscriptions
+        column_mapping:
+          id: organization_id
   - name: work_schedules
     using:
       manual_configuration:

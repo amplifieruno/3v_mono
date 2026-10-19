@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: claim_webhook_delivery
+configuration:
+  custom_name: claim_webhook_delivery
+  exposed_as: mutation

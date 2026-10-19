@@ -6,6 +6,7 @@ import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
 import { purgeTriggerLogs } from './purgeTriggerLogs.js';
+import { retryDeliveries, retryWebhooks, sendDelivery, sendWebhook } from './sending.js';
 import { closeStaleSessions, evaluateDwellRules, lifecycleJobs } from './trackingCrons.js';
 import {
   cronTriggerPayloadSchema,
@@ -34,6 +35,10 @@ export const defaultEventHandlers: EventHandlers = {
   evaluate_dwell_rules: evaluateDwellRules,
   lifecycle_jobs: lifecycleJobs,
   purge_trigger_logs: purgeTriggerLogs,
+  send_delivery: sendDelivery,
+  send_webhook: sendWebhook,
+  retry_deliveries: retryDeliveries,
+  retry_webhooks: retryWebhooks,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

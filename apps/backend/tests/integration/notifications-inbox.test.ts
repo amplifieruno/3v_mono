@@ -86,6 +86,8 @@ describe('subscriptions', () => {
     await insertOne(bob, 'notification_subscriptions', { event_type: 'blacklist_match', channel: 'in_app' });
     const idSub = await insertOne(w.a, 'notification_subscriptions', { identity_id: w.identity, channel: 'email' });
     await insertOne(carol, 'notification_subscriptions', { event_type: 'detection_unknown', channel: 'in_app' });
+    // An inactive (unsubscribed) subscription keeps its history but receives nothing.
+    await insertOne(bob, 'notification_subscriptions', { event_type: 'detection_unknown', channel: 'push', is_active: false });
     await setMember(w.orgA.id, w.carol, `status = 'suspended'`);
     const event = await unknownArrival(w);
     const rows = await orgDeliveries(w.orgA.id);

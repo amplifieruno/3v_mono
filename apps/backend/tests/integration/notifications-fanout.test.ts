@@ -51,7 +51,9 @@ describe('Stage C: rule fan-out', () => {
     const deliveries = await orgDeliveries(w.orgA.id);
     const email = deliveries.find((x) => x.channel === 'email');
     const inApp = deliveries.find((x) => x.channel === 'in_app');
-    expect(email).toMatchObject({ rule_id: rule, event_id: event.id, status: 'pending', priority: 'high', deliver_after: null });
+    expect(email).toMatchObject({ rule_id: rule, event_id: event.id, priority: 'high', deliver_after: null });
+    // Written pending; the send_delivery trigger (task 3) may already have sent it.
+    expect(['pending', 'sent']).toContain(email?.status);
     expect(inApp).toMatchObject({ status: 'delivered', priority: 'high' });
     expect(inApp?.delivered_at).not.toBeNull();
     const [inbox] = await orgInbox(w.orgA.id);
@@ -99,11 +101,11 @@ describe('Stage C: rule fan-out', () => {
     const rows = await orgDeliveries(w.orgA.id);
     const of = (rule: string, user: string, channel: string) =>
       rows.find((x) => x.rule_id === rule && x.recipient_user_id === user && x.channel === channel);
-    expect(of(normal, w.bob, 'email')).toMatchObject({ status: 'pending' });
     expect(Date.parse(of(normal, w.bob, 'email')?.deliver_after ?? '')).toBe(Date.parse('2026-01-05T09:30:00Z'));
     expect(of(normal, w.bob, 'in_app')).toMatchObject({ status: 'delivered', deliver_after: null });
-    expect(of(normal, w.carol, 'email')).toMatchObject({ status: 'pending', deliver_after: null });
-    expect(of(critical, w.bob, 'email')).toMatchObject({ status: 'pending', deliver_after: null });
+    // Not deferred (the event time is in the past, so even the deferred row is due and may already be sent).
+    expect(of(normal, w.carol, 'email')).toMatchObject({ deliver_after: null });
+    expect(of(critical, w.bob, 'email')).toMatchObject({ deliver_after: null });
   });
 
   it('should match event type, conditions and activity; a rule without a group delivers nothing', async () => {

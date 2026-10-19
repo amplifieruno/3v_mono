@@ -75,6 +75,7 @@ insert_permissions:
         - event_type
         - facility_id
         - identity_id
+        - is_active
         - min_severity
         - profile_id
         - watch_list_id
@@ -94,6 +95,7 @@ select_permissions:
         - facility_id
         - id
         - identity_id
+        - is_active
         - min_severity
         - organization_id
         - profile_id
@@ -115,6 +117,7 @@ update_permissions:
         - event_type
         - facility_id
         - identity_id
+        - is_active
         - min_severity
         - profile_id
         - watch_list_id

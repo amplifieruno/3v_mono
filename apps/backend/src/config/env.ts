@@ -28,6 +28,12 @@ const envSchema = z.object({
   RECOGNITION_HASURA_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   // hasura-storage per-request limit (connect + body read): a hung upload/download fails instead of stalling.
   STORAGE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  // Dev/test webhook receiver at /hasura/events/webhook-sink (src/webhooks/sink.ts); only the exact value 'true'
+  // enables it (dev compose), never in production.
+  WEBHOOK_SINK_ENABLED: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim().toLowerCase() === 'true'),
 });
 
 export type Env = z.output<typeof envSchema>;

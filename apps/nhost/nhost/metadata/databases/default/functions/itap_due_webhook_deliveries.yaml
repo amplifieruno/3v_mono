@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_webhook_deliveries
+configuration:
+  custom_name: due_webhook_deliveries
+  exposed_as: query

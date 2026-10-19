@@ -57,4 +57,21 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Daily: delete delivered/failed event trigger and cron logs older than 3 days',
   },
+  {
+    // Failed notification deliveries (stubbed channels) whose backoff passed: claimed and sent again
+    // (itap.due_notification_deliveries / claim_notification_delivery; apps/backend/src/events/sending.ts).
+    name: 'retry_deliveries',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Retry notification deliveries in retrying state whose deliver_after passed',
+  },
+  {
+    // Webhook deliveries whose backoff (30 s, 2 min, 10 min, 30 min) passed, or whose first attempt never ran.
+    name: 'retry_webhooks',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Retry webhook deliveries whose next_attempt_at passed; dead_letter after 5 attempts',
+  },
 ];
