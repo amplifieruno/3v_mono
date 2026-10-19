@@ -143,7 +143,8 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       ['Server Room Camera', 'rtsp://mediamtx:8554/serverroom'],
       ['Loading Dock Camera', 'rtsp://mediamtx:8554/warehouse'],
     ]);
-    expect(cameras.every((c) => c.recognition_enabled === 't' && c.recognition_fps === '2')).toBe(true);
+    // Live recognition is started on demand (recognition_start); seeded cameras only carry the fps.
+    expect(cameras.every((c) => c.recognition_enabled === 'f' && c.recognition_fps === '2')).toBe(true);
 
     // Floors are zero-padded; seeded camera history has no frame rate (the live probe writes none).
     const floors = await runSqlRows(

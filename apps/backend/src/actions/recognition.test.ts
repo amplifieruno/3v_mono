@@ -9,10 +9,18 @@ import { ActionError, type ActionHandler } from './types.js';
 const ORG = '22222222-2222-4222-8222-222222222222';
 const DEVICE = '11111111-1111-4111-8111-111111111111';
 
-type DeviceRow = { id: string; device_type: string; stream_url: string | null; recognition_enabled: boolean; recognition_fps: number };
+type DeviceRow = {
+  id: string;
+  device_type: string;
+  status: string;
+  stream_url: string | null;
+  recognition_enabled: boolean;
+  recognition_fps: number;
+};
 const camera: DeviceRow = {
   id: DEVICE,
   device_type: 'static_video_camera',
+  status: 'active',
   stream_url: 'rtsp://mediamtx:8554/warehouse',
   recognition_enabled: false,
   recognition_fps: 2,
@@ -112,6 +120,14 @@ describe('recognition actions', () => {
     expect(await errorCode(run(recognitionStart, { device_id: DEVICE }, { device: { ...camera, stream_url: null } }).promise)).toBe(
       'device_no_stream',
     );
+  });
+
+  it('should refuse to start recognition on a camera that is not active, but allow stop and status', async () => {
+    const inactive = { ...camera, status: 'maintenance' };
+    expect(await errorCode(run(recognitionStart, { device_id: DEVICE }, { device: inactive }).promise)).toBe('device_inactive');
+    const stopped = run(recognitionStop, { device_id: DEVICE }, { device: inactive });
+    expect(await stopped.promise).toMatchObject({ enabled: false });
+    expect(await run(recognitionStatus, { device_id: DEVICE }, { device: inactive }).promise).toMatchObject({ running: false });
   });
 
   it('should require an organization session and a valid device id', async () => {

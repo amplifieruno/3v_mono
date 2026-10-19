@@ -9,6 +9,7 @@ import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
 import { createStorageClient } from '../storage/storageClient.js';
 import { processFrame } from './frame.js';
 import { createRecognitionManager, type RecognitionManager } from './manager.js';
+import { createKeyedMutex } from './mutex.js';
 import { setRecognitionManager } from './registry.js';
 import { createRecognitionSession } from './session.js';
 import { attachRecognitionSocket, publishDetection } from './socket.js';
@@ -61,9 +62,12 @@ async function fetchSnapshot(env: Env, streamId: string): Promise<Buffer> {
 
 /** Wires the manager to Hasura, storage, InsightFace, the stream-server and Socket.io, and starts it. */
 export function startRecognition(env: Env, io: Server): RecognitionManager {
-  const admin = createHasuraClient(env);
+  const timeouts = { timeoutMs: env.RECOGNITION_HASURA_TIMEOUT_MS };
+  const admin = createHasuraClient(env, undefined, timeouts);
   const storage = createStorageClient(env);
-  const insightFace = createInsightFaceClient(env.INSIGHTFACE_API_URL);
+  const insightFace = createInsightFaceClient(env.INSIGHTFACE_API_URL, { timeoutMs: env.RECOGNITION_INSIGHTFACE_TIMEOUT_MS });
+  // Shared by every session: identity creation is serialized per organization (see frame.ts resolveFace).
+  const identityLock = createKeyedMutex();
 
   attachRecognitionSocket(io, {
     verifyToken: (token) => verifyOrgToken(token, env.HASURA_JWT_SECRET),
@@ -76,7 +80,7 @@ export function startRecognition(env: Env, io: Server): RecognitionManager {
     log,
     createSession: (device) => {
       // Admin rights with the device organization's session: match_face scope, audited writes without a user.
-      const org = createHasuraClient(env, { role: 'admin', organizationId: device.organizationId });
+      const org = createHasuraClient(env, { role: 'admin', organizationId: device.organizationId }, timeouts);
       const enrollment = { clients: { admin: org, actor: org }, storage, insightFace, organizationId: device.organizationId };
       return createRecognitionSession(device, {
         fetchSnapshot: (streamId) => fetchSnapshot(env, streamId),
@@ -88,6 +92,7 @@ export function startRecognition(env: Env, io: Server): RecognitionManager {
               insightFace,
               modelVersion: DEFAULT_MODEL_VERSION,
               log,
+              withIdentityLock: (task) => identityLock.run(device.organizationId, task),
               createIdentity: async (capture, options) => {
                 const created = await createCameraIdentity(enrollment, [capture], options);
                 return { id: created.id, code: created.code, cropFileId: created.cropFileIds[0] ?? null };

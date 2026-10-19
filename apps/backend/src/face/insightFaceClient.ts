@@ -46,13 +46,18 @@ function toFace(face: z.output<typeof faceSchema>): ExtractedFace {
   return result;
 }
 
+/** Default limit of one /extract call: CPU InsightFace is slow, but a hung call must not stall its caller. */
+export const DEFAULT_EXTRACT_TIMEOUT_MS = 30_000;
+
 /** InsightFace-REST client (`POST /extract`, JSON payload with base64 image data). */
-export function createInsightFaceClient(baseUrl: string): InsightFaceClient {
+export function createInsightFaceClient(baseUrl: string, options: { timeoutMs?: number } = {}): InsightFaceClient {
   const url = `${baseUrl.replace(/\/+$/, '')}/extract`;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_EXTRACT_TIMEOUT_MS;
 
   return {
     async extract(image) {
       const res = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs),
         method: 'POST',
         // InsightFace-REST answers 500 when Accept is absent (it tests `'…msgpack' in accept`).
         headers: { 'content-type': 'application/json', accept: 'application/json' },
@@ -63,6 +68,11 @@ export function createInsightFaceClient(baseUrl: string): InsightFaceClient {
           extract_embedding: true,
           extract_ga: true,
         }),
+      }).catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'TimeoutError') {
+          throw new InsightFaceError(`InsightFace /extract timed out after ${timeoutMs} ms`);
+        }
+        throw error;
       });
       const text = await res.text();
       if (!res.ok) throw new InsightFaceError(`InsightFace /extract failed (${res.status}): ${text.slice(0, 200)}`);

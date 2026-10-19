@@ -21,6 +21,8 @@ export type FrameDeps = {
     capture: AcceptedPhoto,
     options: { deviceId: string; capturedAt: Date },
   ): Promise<{ id: string; code: string; cropFileId: string | null }>;
+  /** Runs `task` under the device organization's identity lock (shared by all sessions of the organization). */
+  withIdentityLock<T>(task: () => Promise<T>): Promise<T>;
   modelVersion: string;
   log(message: string): void;
 };
@@ -70,54 +72,76 @@ type Resolved = {
 
 const toBox = ([x1, y1, x2, y2]: ExtractedFace['bbox']): DetectionBox => ({ x: x1, y: y1, width: x2 - x1, height: y2 - y1 });
 
+type FaceMatch = { identity_id: string; profile_id: string | null; similarity: number };
+
+async function matchFace(deps: FrameDeps, capture: AcceptedPhoto): Promise<FaceMatch | undefined> {
+  const { match_face: matches } = await deps.org.request<{ match_face: FaceMatch[] }>(MATCH, {
+    embedding: vectorLiteral(capture.face.embedding),
+  });
+  return matches[0];
+}
+
+async function known(deps: FrameDeps, capture: AcceptedPhoto, match: FaceMatch): Promise<Resolved> {
+  const { identities_by_pk: info } = await deps.org.request<{ identities_by_pk: IdentityInfo | null }>(IDENTITY, {
+    id: match.identity_id,
+  });
+  const aggregate = info?.identity_embeddings_aggregate.aggregate;
+  return {
+    face: capture.face,
+    quality: capture.quality,
+    identityId: match.identity_id,
+    identityCode: info?.code ?? null,
+    profileId: info?.profile_id ?? match.profile_id,
+    profileName: info?.profile ? `${info.profile.first_name} ${info.profile.last_name}`.trim() : null,
+    similarity: match.similarity,
+    isNew: false,
+    thumbnailFileId: null,
+    templates: aggregate ? { count: aggregate.count, worst: aggregate.min.quality_score } : null,
+  };
+}
+
+/**
+ * Match, else (good enough faces) create a camera identity. Creation runs under the organization's identity lock
+ * and re-matches first, so two cameras of one organization seeing the same new person create one identity.
+ */
 async function resolveFace(
   deps: FrameDeps,
   device: RecognitionDevice,
   capture: AcceptedPhoto,
   capturedAt: Date,
 ): Promise<Resolved> {
-  const base = { face: capture.face, quality: capture.quality };
-  const { match_face: matches } = await deps.org.request<{
-    match_face: { identity_id: string; profile_id: string | null; similarity: number }[];
-  }>(MATCH, { embedding: vectorLiteral(capture.face.embedding) });
-  const match = matches[0];
-  if (match) {
-    const { identities_by_pk: info } = await deps.org.request<{ identities_by_pk: IdentityInfo | null }>(IDENTITY, {
-      id: match.identity_id,
-    });
-    const aggregate = info?.identity_embeddings_aggregate.aggregate;
-    return {
-      ...base,
-      identityId: match.identity_id,
-      identityCode: info?.code ?? null,
-      profileId: info?.profile_id ?? match.profile_id,
-      profileName: info?.profile ? `${info.profile.first_name} ${info.profile.last_name}`.trim() : null,
-      similarity: match.similarity,
-      isNew: false,
-      thumbnailFileId: null,
-      templates: aggregate ? { count: aggregate.count, worst: aggregate.min.quality_score } : null,
-    };
-  }
-  const unidentified = { ...base, identityId: null, identityCode: null, profileId: null, profileName: null };
-  if (capture.quality < MIN_QUALITY) {
-    // Too small/blurry to start a reliable identity: the detection is kept without one.
-    return { ...unidentified, similarity: null, isNew: false, thumbnailFileId: null, templates: null };
-  }
-  const created = await deps.createIdentity(capture, { deviceId: device.id, capturedAt });
-  return {
-    ...unidentified,
-    identityId: created.id,
-    identityCode: created.code,
+  const match = await matchFace(deps, capture);
+  if (match) return known(deps, capture, match);
+  const unidentified = {
+    face: capture.face,
+    quality: capture.quality,
+    identityId: null,
+    identityCode: null,
+    profileId: null,
+    profileName: null,
     similarity: null,
-    isNew: true,
-    thumbnailFileId: created.cropFileId,
     templates: null,
   };
+  if (capture.quality < MIN_QUALITY) {
+    // Too small/blurry to start a reliable identity: the detection is kept without one.
+    return { ...unidentified, isNew: false, thumbnailFileId: null };
+  }
+  return deps.withIdentityLock(async () => {
+    const rematch = await matchFace(deps, capture);
+    if (rematch) return known(deps, capture, rematch);
+    const created = await deps.createIdentity(capture, { deviceId: device.id, capturedAt });
+    return { ...unidentified, identityId: created.id, identityCode: created.code, isNew: true, thumbnailFileId: created.cropFileId };
+  });
 }
 
-/** Whether a capture may become a template: good enough and better than the worst of the top five. */
+/** Quality a capture must gain over the worst of five templates (same rule as itap.consider_template). */
+export const TEMPLATE_MARGIN = 0.05;
+
+/** Whether a capture may become a template: good enough and clearly better than the worst of the top five. */
 const beatsTemplates = (r: Resolved): boolean =>
-  r.templates !== null && r.quality >= MIN_QUALITY && (r.templates.count < 5 || r.quality > (r.templates.worst ?? 0));
+  r.templates !== null &&
+  r.quality >= MIN_QUALITY &&
+  (r.templates.count < 5 || r.quality > (r.templates.worst ?? 0) + TEMPLATE_MARGIN);
 
 /**
  * Template rule (spec §7) for a recognised identity: the crop is stored only when the pre-check says the capture
@@ -177,9 +201,8 @@ function byIdentity(a: { resolved: Resolved }, b: { resolved: Resolved }): numbe
  * organization (match_face with the organization's recognition_threshold); an unmatched face of sufficient quality
  * becomes a camera identity (its crop is the detection thumbnail). Detection rows are inserted one per statement,
  * sorted by identity id (Stage A runs per row in the same transaction). Recognised identities then get the template
- * rule; its failure never loses the detection. An aborted `signal` (session stopped) drops the frame before the next
- * face is matched; once every face is resolved its detections are written (an identity just created keeps its
- * detection).
+ * rule; its failure never loses the detection. An aborted `signal` (session stopped) stops matching further faces; the
+ * faces already resolved still get their detections (an identity just created is never left without one).
  */
 export async function processFrame(
   deps: FrameDeps,
@@ -195,7 +218,7 @@ export async function processFrame(
 
   const items: { capture: AcceptedPhoto; resolved: Resolved }[] = [];
   for (const [index, face] of selected.entries()) {
-    if (signal?.aborted) return { faces: faces.length, detections: [] };
+    if (signal?.aborted) break;
     const capture: AcceptedPhoto = {
       index,
       source: { ref: `${device.id}#${index}`, load: async () => frame },

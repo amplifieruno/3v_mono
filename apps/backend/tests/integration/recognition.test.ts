@@ -141,11 +141,17 @@ describe('live recognition', () => {
 
     const stopped = (await a.request<{ recognition_stop: Status }>(STOP, { d: cameraId })).recognition_stop;
     expect(stopped).toMatchObject({ enabled: false, running: false });
-    await sleep(3000); // a frame in flight at stop time may still land
-    const settled = (await detections(org.id)).length;
-    await sleep(2000);
-    expect((await detections(org.id)).length).toBe(settled);
-  }, 90_000);
+    // A frame in flight at stop time may still land; then the count must stay put (two equal reads ~5 s apart).
+    let previous = (await detections(org.id)).length;
+    let stable = false;
+    for (let i = 0; i < 6 && !stable; i++) {
+      await sleep(5000);
+      const count = (await detections(org.id)).length;
+      stable = count === previous;
+      previous = count;
+    }
+    expect(stable).toBe(true);
+  }, 120_000);
 
   it('should refuse devices of another organization, non-cameras and non-members', async () => {
     const a = asOrgAdmin(user.id, org.id);
@@ -157,6 +163,8 @@ describe('live recognition', () => {
     const ownFacility = await createFacility(a);
     const terminal = await createDevice(a, ownFacility.id, { device_type: 'access_terminal' });
     expect((await expectError(a.request(START, { d: terminal.id }))).code).toBe('device_not_camera');
+    const inactive = await createDevice(a, ownFacility.id, { stream_url: 'rtsp://mediamtx:8554/lobby', status: 'maintenance' });
+    expect((await expectError(a.request(START, { d: inactive.id }))).code).toBe('device_inactive');
     const noStream = await createDevice(a, ownFacility.id);
     expect((await expectError(a.request(START, { d: noStream.id }))).code).toBe('device_no_stream');
 

@@ -83,3 +83,20 @@ describe('createInsightFaceClient.extract', () => {
     await expect(createInsightFaceClient('http://if').extract(Buffer.from('x'))).rejects.toThrow(InsightFaceError);
   });
 });
+
+describe('createInsightFaceClient timeout', () => {
+  it('should fail with an InsightFaceError when /extract does not answer in time', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+          }),
+      ),
+    );
+    const client = createInsightFaceClient('http://insightface:18080', { timeoutMs: 20 });
+    await expect(client.extract(Buffer.from('x'))).rejects.toThrow(/timed out after 20 ms/);
+    await expect(client.extract(Buffer.from('x'))).rejects.toBeInstanceOf(InsightFaceError);
+  });
+});

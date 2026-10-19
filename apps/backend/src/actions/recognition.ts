@@ -22,7 +22,7 @@ const CAMERA_TYPES = new Set(['static_video_camera', 'ptz_camera', 'thermal_came
 const DEVICE = `
   query RecognitionDevice($id: uuid!, $org: uuid!) {
     devices(where: { id: { _eq: $id }, organization_id: { _eq: $org } }) {
-      id device_type stream_url recognition_enabled recognition_fps
+      id device_type status stream_url recognition_enabled recognition_fps
     }
   }
 `;
@@ -35,6 +35,7 @@ const TOGGLE = `
 type DeviceRow = {
   id: string;
   device_type: string;
+  status: string;
   stream_url: string | null;
   recognition_enabled: boolean;
   recognition_fps: number;
@@ -77,6 +78,10 @@ function statusOf(device: DeviceRow, enabled: boolean): RecognitionStatus {
  */
 async function toggle(ctx: ActionContext<Input>, enabled: boolean): Promise<RecognitionStatus> {
   const device = await cameraOf(ctx);
+  // The manager only runs active cameras: starting an inactive/maintenance/error one would silently do nothing.
+  if (enabled && device.status !== 'active') {
+    throw new ActionError('device_inactive', `The camera is ${device.status}; recognition runs on active cameras only`);
+  }
   await ctx.actor.request(TOGGLE, { id: device.id, enabled });
   await getRecognitionManager()?.refresh();
   return statusOf(device, enabled);

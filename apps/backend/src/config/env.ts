@@ -23,6 +23,9 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value?.trim().toLowerCase() !== 'false'),
+  // Recognition request limits: a hung InsightFace or Hasura call fails the frame (lastError) instead of stalling it.
+  RECOGNITION_INSIGHTFACE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  RECOGNITION_HASURA_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
 });
 
 export type Env = z.output<typeof envSchema>;

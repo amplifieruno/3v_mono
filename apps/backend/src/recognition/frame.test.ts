@@ -1,86 +1,11 @@
-import sharp from 'sharp';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-import type { HasuraClient } from '../hasura/client.js';
-import type { ExtractedFace } from '../face/insightFaceClient.js';
-import type { StorageClient } from '../storage/storageClient.js';
-import { processFrame, type FrameDeps } from './frame.js';
-import type { RecognitionDevice } from './types.js';
-
-const DEVICE: RecognitionDevice = {
-  id: '11111111-1111-4111-8111-111111111111',
-  organizationId: '22222222-2222-4222-8222-222222222222',
-  streamId: 'warehouse',
-  fps: 2,
-};
-const KNOWN_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-const KNOWN_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const NEW_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const AT = new Date('2026-10-19T10:00:00.000Z');
+import { beforeAll, describe, expect, it } from 'vitest';
+import { AT, DEVICE, face, KNOWN_A, KNOWN_B, makeFrame, NEW_ID, stubs } from '../../tests/unit/frameStubs.js';
+import { processFrame } from './frame.js';
 
 let frame: Buffer;
 beforeAll(async () => {
-  frame = await sharp({ create: { width: 640, height: 480, channels: 3, background: '#888' } }).jpeg().toBuffer();
+  frame = await makeFrame();
 });
-
-/** A face whose embedding's first value tags it (the stub matcher keys on it). */
-function face(tag: number, score = 0.95, box: [number, number, number, number] = [100, 100, 220, 240]): ExtractedFace {
-  return { bbox: box, score, embedding: [tag, ...new Array<number>(511).fill(0)], age: 30, gender: 'female' };
-}
-
-type Templates = { count: number; worst: number | null };
-type StubOptions = {
-  matches?: Record<number, string>;
-  templates?: Record<string, Templates>;
-  admitTemplate?: boolean;
-};
-
-function stubs(faces: ExtractedFace[], options: StubOptions = {}) {
-  const calls: { op: string; vars: Record<string, unknown> }[] = [];
-  const request = vi.fn(async (query: string, vars: Record<string, unknown> = {}) => {
-    const op = /(?:query|mutation)\s+(\w+)/.exec(query)?.[1] ?? 'unknown';
-    calls.push({ op, vars });
-    switch (op) {
-      case 'RecognitionMatch': {
-        const tag = Number(String(vars.embedding).slice(1).split(',')[0]);
-        const id = options.matches?.[tag];
-        return { match_face: id ? [{ identity_id: id, profile_id: id === KNOWN_A ? 'p-a' : null, similarity: 0.8 }] : [] };
-      }
-      case 'RecognitionIdentity': {
-        const t = options.templates?.[String(vars.id)] ?? { count: 5, worst: 0.99 };
-        return {
-          identities_by_pk: {
-            code: `CODE-${String(vars.id).slice(0, 1)}`,
-            profile_id: vars.id === KNOWN_A ? 'p-a' : null,
-            profile: vars.id === KNOWN_A ? { first_name: 'Ann', last_name: 'Lee' } : null,
-            identity_embeddings_aggregate: { aggregate: { count: t.count, min: { quality_score: t.worst } } },
-          },
-        };
-      }
-      case 'RecognitionInsertDetection':
-        return { insert_detections_one: { id: `det-${calls.filter((c) => c.op === op).length}` } };
-      case 'RecognitionConsiderTemplate':
-        return { consider_template: options.admitTemplate === false ? [] : [{ id: 'emb' }] };
-      default:
-        throw new Error(`unexpected op ${op}`);
-    }
-  });
-  const storage = {
-    upload: vi.fn(async () => ({ id: 'crop-file' })),
-    deleteFile: vi.fn(async () => undefined),
-    download: vi.fn(),
-    presignedUrl: vi.fn(),
-  } satisfies StorageClient;
-  const deps: FrameDeps = {
-    org: { request } as unknown as HasuraClient,
-    storage,
-    insightFace: { extract: vi.fn(async () => faces) },
-    createIdentity: vi.fn(async () => ({ id: NEW_ID, code: 'IDENTITY-00042', cropFileId: 'new-crop' })),
-    modelVersion: 'test-model',
-    log: vi.fn(),
-  };
-  const ops = (op: string) => calls.filter((c) => c.op === op);
-  return { deps, ops, storage };
-}
 
 describe('processFrame', () => {
   it('should create a camera identity for an unknown face and insert a detection with its thumbnail', async () => {
@@ -216,18 +141,6 @@ describe('processFrame', () => {
     const { deps, ops } = stubs([]);
     const result = await processFrame(deps, DEVICE, frame, AT);
     expect(result).toEqual({ faces: 0, detections: [] });
-    expect(ops('RecognitionInsertDetection')).toHaveLength(0);
-  });
-});
-
-describe('processFrame abort', () => {
-  it('should write nothing when the session stopped before the faces were matched', async () => {
-    const { deps, ops } = stubs([face(1)]);
-    const controller = new AbortController();
-    controller.abort();
-    const result = await processFrame(deps, DEVICE, frame, AT, controller.signal);
-    expect(result.detections).toEqual([]);
-    expect(ops('RecognitionMatch')).toHaveLength(0);
     expect(ops('RecognitionInsertDetection')).toHaveLength(0);
   });
 });

@@ -45,20 +45,22 @@ describe('consider_template', () => {
     expect(await qualities(identity.id)).toEqual([0.9, 0.1]);
   });
 
-  it('should add an embedding only when it beats the worst of the top five', async () => {
+  it('should add an embedding only when it beats the worst of the top five by more than 0.05', async () => {
     const { orgA, user } = await createTwoOrgs();
     const identity = await createIdentity(user.id, orgA.id);
     for (const [i, q] of [0.9, 0.8, 0.7, 0.6, 0.5].entries()) await addEmbedding(orgA.id, identity.id, axis(i), q);
 
-    expect(await consider(orgA.id, identity.id, 0.5)).toEqual([]);
     expect(await consider(orgA.id, identity.id, 0.4)).toEqual([]);
-    const added = await consider(orgA.id, identity.id, 0.65);
+    expect(await consider(orgA.id, identity.id, 0.5)).toEqual([]);
+    // Within the margin: camera noise around the worst template is not worth another stored embedding.
+    expect(await consider(orgA.id, identity.id, 0.54)).toEqual([]);
+    const added = await consider(orgA.id, identity.id, 0.56);
     expect(added).toHaveLength(1);
-    expect(await qualities(identity.id)).toEqual([0.9, 0.8, 0.7, 0.65, 0.6, 0.5]);
+    expect(await qualities(identity.id)).toEqual([0.9, 0.8, 0.7, 0.6, 0.56, 0.5]);
     const templates = await runSqlRows(
       `select count(*) as n, min(quality_score) as worst from itap.identity_embeddings where identity_id = '${identity.id}' and is_template`,
     );
-    expect(templates[0]).toEqual({ n: '5', worst: '0.6' });
+    expect(templates[0]).toEqual({ n: '5', worst: '0.56' });
   });
 
   it('should record the capture photo with its device and the source detection', async () => {

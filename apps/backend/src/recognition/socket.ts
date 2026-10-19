@@ -9,22 +9,24 @@ import type { DetectionMessage } from './types.js';
  * - connect with an organization token: `io(url, { auth: { token } })` (or `Authorization: Bearer <token>`);
  *   anything but a valid org token (Hasura JWT secret, role org_admin, organization claim) is refused (`unauthorized`).
  * - `join-device` (deviceId | { deviceId }, ack?) joins room `device:<id>` when the device belongs to the token's
- *   organization; ack `{ ok: true }` or `{ ok: false, error: 'invalid_device' | 'device_not_found' }`.
+ *   organization; ack `{ ok: true }` or `{ ok: false, error: 'invalid_device' | 'device_not_found' | 'token_expired' }`.
+ * - the server disconnects the socket when its token expires; reconnect with a fresh token.
  * - `leave-device` (deviceId | { deviceId }, ack?) leaves it.
  * - server event `detection` (DetectionMessage) per committed detection of the device.
  */
 
 export type SocketDeps = {
-  verifyToken(token: string): { userId: string; organizationId: string } | null;
+  verifyToken(token: string): { userId: string; organizationId: string; expiresAt: Date } | null;
   deviceInOrganization(deviceId: string, organizationId: string): Promise<boolean>;
 };
 
 /** The parts of a socket.io Socket used here (kept structural for tests). */
 export type SocketLike = {
   handshake: { auth: Record<string, unknown>; headers: Record<string, string | string[] | undefined> };
-  data: { organizationId?: string };
+  data: { organizationId?: string; expiresAt?: number };
   join(room: string): unknown;
   leave(room: string): unknown;
+  disconnect(close?: boolean): unknown;
   on(event: string, handler: (...args: never[]) => unknown): unknown;
 };
 
@@ -52,12 +54,19 @@ export function socketAuth(deps: SocketDeps) {
       return;
     }
     socket.data.organizationId = verified.organizationId;
+    socket.data.expiresAt = verified.expiresAt.getTime();
     next();
   };
 }
 
-/** `join-device` / `leave-device` handlers of one connection. */
+/** `join-device` / `leave-device` handlers of one connection; the socket is disconnected when its token expires. */
 export function registerDeviceRooms(socket: SocketLike, deps: SocketDeps): void {
+  const expiresAt = socket.data.expiresAt ?? 0;
+  const expired = (): boolean => Date.now() >= expiresAt;
+  // setTimeout caps at ~24.8 days; org tokens live minutes.
+  const timer = setTimeout(() => socket.disconnect(true), Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647));
+  socket.on('disconnect', () => clearTimeout(timer));
+
   const reply = (ack: unknown, result: Parameters<Ack>[0]): void => {
     if (typeof ack === 'function') (ack as Ack)(result);
   };
@@ -65,6 +74,11 @@ export function registerDeviceRooms(socket: SocketLike, deps: SocketDeps): void 
   socket.on('join-device', async (payload: unknown, ack?: unknown) => {
     const parsed = devicePayload.safeParse(payload);
     if (!parsed.success) return reply(ack, { ok: false, error: 'invalid_device' });
+    if (expired()) {
+      reply(ack, { ok: false, error: 'token_expired' });
+      socket.disconnect(true);
+      return undefined;
+    }
     const organizationId = socket.data.organizationId;
     const allowed = organizationId ? await deps.deviceInOrganization(parsed.data, organizationId).catch(() => false) : false;
     if (!allowed) return reply(ack, { ok: false, error: 'device_not_found' });

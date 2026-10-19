@@ -43,7 +43,12 @@ describe('hasuraJwt', () => {
       { userId: U, organizationId: 'A1B2C3D4-0000-4000-8000-000000000001', role: 'org_admin', ttlSeconds: 60 },
       secret,
     );
-    expect(verifyOrgToken(token, secret)).toEqual({ userId: U, organizationId: 'a1b2c3d4-0000-4000-8000-000000000001' });
+    const decoded = jwt.decode(token) as jwt.JwtPayload;
+    expect(verifyOrgToken(token, secret)).toEqual({
+      userId: U,
+      organizationId: 'a1b2c3d4-0000-4000-8000-000000000001',
+      expiresAt: new Date((decoded.exp as number) * 1000),
+    });
   });
 
   it('rejects base tokens, foreign signatures, wrong issuers and expired tokens', () => {

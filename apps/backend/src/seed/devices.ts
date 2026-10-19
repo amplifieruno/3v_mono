@@ -45,6 +45,14 @@ const RESET_UNPROBED = `
     ) { affected_rows }
   }
 `;
+// Earlier seeds enabled recognition on the stream cameras; a re-run turns it off again (no row changes otherwise).
+const DISABLE_RECOGNITION = `
+  mutation SeedDisableRecognition($ids: [uuid!]!) {
+    update_devices(where: { id: { _in: $ids }, recognition_enabled: { _eq: true } }, _set: { recognition_enabled: false }) {
+      affected_rows
+    }
+  }
+`;
 // Conflicts (an existing binding) do nothing: no update, no audit row.
 const INSERT_BINDINGS = `
   mutation SeedInsertBindings($areas: [device_areas_insert_input!]!, $aps: [access_point_devices_insert_input!]!) {
@@ -87,8 +95,8 @@ function deviceObject(
     firmware_version: spec.firmware,
     ip_address: spec.ip,
     configuration: spec.configuration ?? {},
-    // Slice 4 runs recognition on the stream-server cameras.
-    recognition_enabled: streaming,
+    // Live recognition is started on demand (recognition_start), the real UX; streaming cameras carry its fps.
+    recognition_enabled: false,
     recognition_fps: streaming ? 2 : 1,
     // Streaming cameras get their state from the live health check; a camera without a stream is never probed, so its
     // state stays 'unknown'; the other devices get theirs from the (seeded) heartbeat history.
@@ -159,6 +167,7 @@ export async function seedDevices(
     // Earlier seeds gave a camera without a stream a 'healthy' state; it is never probed, so it stays 'unknown'.
     const unprobed = SEED_DEVICES[key].filter((d) => isCamera(d) && !d.stream).map((d) => lookup(deviceIds, d.name, 'device'));
     if (unprobed.length > 0) await ctx.admin.request(RESET_UNPROBED, { ids: unprobed });
+    await ctx.admin.request(DISABLE_RECOGNITION, { ids: SEED_DEVICES[key].map((d) => lookup(deviceIds, d.name, 'device')) });
 
     for (const spec of SEED_DEVICES[key]) {
       const row = devices.find((d) => d.name === spec.name);

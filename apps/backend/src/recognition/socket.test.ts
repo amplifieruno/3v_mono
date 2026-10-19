@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deviceRoom, publishDetection, registerDeviceRooms, socketAuth, type SocketDeps, type SocketLike } from './socket.js';
 import type { DetectionMessage } from './types.js';
 
@@ -13,6 +13,7 @@ function fakeSocket(auth: Record<string, unknown> = {}, headers: Record<string, 
     data: {},
     join: vi.fn(),
     leave: vi.fn(),
+    disconnect: vi.fn(),
     on: (event, handler) => {
       handlers.set(event, handler);
     },
@@ -23,8 +24,8 @@ function fakeSocket(auth: Record<string, unknown> = {}, headers: Record<string, 
   return socket;
 }
 
-const deps = (): SocketDeps => ({
-  verifyToken: vi.fn((token: string) => (token === 'good' ? { userId: 'u', organizationId: ORG } : null)),
+const deps = (expiresAt = new Date(Date.now() + 60_000)): SocketDeps => ({
+  verifyToken: vi.fn((token: string) => (token === 'good' ? { userId: 'u', organizationId: ORG, expiresAt } : null)),
   deviceInOrganization: vi.fn(async (deviceId: string, organizationId: string) => deviceId === DEVICE && organizationId === ORG),
 });
 
@@ -88,5 +89,46 @@ describe('recognition socket', () => {
     publishDetection({ to }, message);
     expect(to).toHaveBeenCalledWith(`device:${DEVICE}`);
     expect(emit).toHaveBeenCalledWith('detection', message);
+  });
+});
+
+describe('recognition socket token expiry', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should refuse join-device after the token expired and disconnect the socket at expiry', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-19T10:00:00Z'));
+    const d = deps(new Date('2026-10-19T10:01:00Z'));
+    const socket = fakeSocket({ token: 'good' });
+    socketAuth(d)(socket, vi.fn());
+    registerDeviceRooms(socket, d);
+
+    const before = vi.fn();
+    await socket.emitClient('join-device', DEVICE, before);
+    expect(before).toHaveBeenCalledWith({ ok: true });
+    expect(socket.disconnect).not.toHaveBeenCalled();
+
+    vi.setSystemTime(new Date('2026-10-19T10:00:59.999Z'));
+    vi.advanceTimersByTime(59_999);
+    expect(socket.disconnect).not.toHaveBeenCalled();
+    vi.setSystemTime(new Date('2026-10-19T10:01:00Z'));
+    const late = vi.fn();
+    await socket.emitClient('join-device', DEVICE, late);
+    expect(late).toHaveBeenCalledWith({ ok: false, error: 'token_expired' });
+    vi.advanceTimersByTime(1);
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('should clear the expiry timer when the client disconnects first', async () => {
+    vi.useFakeTimers();
+    const d = deps(new Date(Date.now() + 1000));
+    const socket = fakeSocket({ token: 'good' });
+    socketAuth(d)(socket, vi.fn());
+    registerDeviceRooms(socket, d);
+    await socket.emitClient('disconnect');
+    vi.advanceTimersByTime(2000);
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 });

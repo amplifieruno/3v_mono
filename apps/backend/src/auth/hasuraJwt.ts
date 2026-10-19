@@ -66,10 +66,13 @@ export function signBaseToken(
 }
 
 /**
- * Verifies an organization token (HS256 with the Hasura secret and issuer, unexpired, allowed role org_admin, an
- * organization claim) and returns its user and organization; null for anything else (base tokens included).
+ * Verifies an organization token (HS256 with the Hasura secret and issuer, unexpired with an `exp`, allowed role
+ * org_admin, an organization claim) and returns its user, organization and expiry; null for anything else.
  */
-export function verifyOrgToken(token: string, secret: HasuraJwtSecret): { userId: string; organizationId: string } | null {
+export function verifyOrgToken(
+  token: string,
+  secret: HasuraJwtSecret,
+): { userId: string; organizationId: string; expiresAt: Date } | null {
   let decoded: string | jwt.JwtPayload;
   try {
     decoded = jwt.verify(token, secret.key, { algorithms: ['HS256'], ...(secret.issuer ? { issuer: secret.issuer } : {}) });
@@ -85,5 +88,6 @@ export function verifyOrgToken(token: string, secret: HasuraJwtSecret): { userId
   const userId = record['x-hasura-user-id'];
   if (!Array.isArray(roles) || !roles.includes('org_admin')) return null;
   if (typeof organizationId !== 'string' || organizationId === '' || typeof userId !== 'string') return null;
-  return { userId, organizationId: organizationId.toLowerCase() };
+  if (typeof decoded.exp !== 'number') return null;
+  return { userId, organizationId: organizationId.toLowerCase(), expiresAt: new Date(decoded.exp * 1000) };
 }

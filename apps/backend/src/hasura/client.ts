@@ -56,7 +56,12 @@ export async function parseHasuraResponse<T>(res: Response): Promise<T> {
   return body.data;
 }
 
-export function createHasuraClient(env: Env, session?: HasuraSession): HasuraClient {
+export type HasuraClientOptions = {
+  /** Per-request limit; a request still pending then fails with HasuraError code `timeout`. No limit by default. */
+  timeoutMs?: number;
+};
+
+export function createHasuraClient(env: Env, session?: HasuraSession, options: HasuraClientOptions = {}): HasuraClient {
   const headers: Record<string, string> = {
     'content-type': 'application/json',
     'x-hasura-admin-secret': env.GRAPHQL_ADMIN_SECRET,
@@ -69,10 +74,13 @@ export function createHasuraClient(env: Env, session?: HasuraSession): HasuraCli
 
   return {
     async request<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-      const res = await fetch(env.HASURA_GRAPHQL_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ query, variables }),
+      const init: RequestInit = { method: 'POST', headers, body: JSON.stringify({ query, variables }) };
+      if (options.timeoutMs !== undefined) init.signal = AbortSignal.timeout(options.timeoutMs);
+      const res = await fetch(env.HASURA_GRAPHQL_URL, init).catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'TimeoutError') {
+          throw new HasuraError('timeout', `Hasura request timed out after ${options.timeoutMs} ms`);
+        }
+        throw error;
       });
       return parseHasuraResponse<T>(res);
     },

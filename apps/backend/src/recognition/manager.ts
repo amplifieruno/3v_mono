@@ -59,7 +59,10 @@ export function createRecognitionManager(deps: ManagerDeps): RecognitionManager 
   }
 
   function refresh(): Promise<void> {
-    chain = chain.then(poll);
+    // A throwing poll is logged and never wedges the chain: later polls still run.
+    chain = chain.then(poll).catch((error: unknown) => {
+      deps.log(`recognition manager: poll failed: ${error instanceof Error ? error.message : String(error)}`);
+    });
     return chain;
   }
 

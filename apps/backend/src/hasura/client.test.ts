@@ -80,3 +80,28 @@ describe('createHasuraClient', () => {
     expect(err).toMatchObject({ code: 'http-200' });
   });
 });
+
+describe('createHasuraClient timeout', () => {
+  it('should fail with a HasuraError when Hasura does not answer within timeoutMs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+          }),
+      ),
+    );
+    const client = createHasuraClient(env, undefined, { timeoutMs: 20 });
+    const error = await client.request('query { ok }').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HasuraError);
+    expect((error as HasuraError).code).toBe('timeout');
+  });
+
+  it('should not set a timeout unless asked', async () => {
+    const fn = stubFetch({ data: { ok: true } });
+    await createHasuraClient(env).request('query { ok }');
+    const [, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.signal).toBeUndefined();
+  });
+});

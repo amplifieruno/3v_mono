@@ -113,3 +113,27 @@ describe('recognition manager shutdown', () => {
     expect(sessions).toHaveLength(0);
   });
 });
+
+describe('recognition manager resilience', () => {
+  it('should keep polling after a poll throws (a failed poll never wedges the chain)', async () => {
+    const log = vi.fn();
+    let fail = true;
+    const started: string[] = [];
+    const manager = createRecognitionManager({
+      listDevices: async () => [device('a')],
+      createSession: (d) => {
+        if (fail) {
+          fail = false;
+          throw new Error('session setup failed');
+        }
+        started.push(d.id);
+        return fakeSession(d);
+      },
+      log,
+    });
+    await expect(manager.refresh()).resolves.toBeUndefined();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('session setup failed'));
+    await manager.refresh();
+    expect(started).toEqual(['a']);
+  });
+});
