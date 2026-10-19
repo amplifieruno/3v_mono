@@ -15,6 +15,7 @@ import {
   unknownArrival,
 } from './support/notifications.js';
 import { insertOne, updateByPk } from './support/operations.js';
+import { runSqlRows } from './support/sql.js';
 import { evaluate, listEntry, orgEvents, orgIncidents, publishedRule } from './support/stageB.js';
 import { at, createIdentity, detect } from './support/tracking.js';
 
@@ -169,6 +170,32 @@ describe('Stage C: rule fan-out', () => {
     const [delivery] = await orgDeliveries(w.orgA.id);
     expect(delivery).toMatchObject({ incident_id: incident.id, priority: 'critical' });
     expect((await orgInbox(w.orgA.id))[0].incident_id).toBe(incident.id);
+  });
+
+  it("should put a matching rule's escalation policy on the event's incident unless it already has one", async () => {
+    const w = await notificationWorld();
+    // Policies without steps: the live escalate cron never takes a step for them.
+    const fromRule = await insertOne(w.a, 'escalation_policies', { name: `From rule ${Math.random()}` });
+    const fromVersion = await insertOne(w.a, 'escalation_policies', { name: `From version ${Math.random()}` });
+    const list = await insertOne(w.a, 'watch_lists', { name: 'Banned', kind: 'blacklist', severity: 'critical' });
+    const other = await createIdentity(w.a);
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: w.identity });
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: other });
+    // No recipient group: the policy is wired even when the rule delivers to nobody.
+    await notificationRule(w.a, ['blacklist_match'], ['in_app'], { escalation_policy_id: fromRule.id });
+    const plain = await publishedRule(w.a, 'watchlist', { creates_incident: true });
+    await evaluate((await detect(w.orgA.id, w.lobbyCam, w.identity, 0)).id);
+    const policies = async () =>
+      runSqlRows(`select i.dedup_key, i.escalation_policy_id from itap.incidents i where i.organization_id = '${w.orgA.id}' order by i.number`);
+    expect(await policies()).toEqual([{ dedup_key: expect.stringContaining(plain.rule), escalation_policy_id: fromRule.id }]);
+
+    // An incident that got a policy from its event rule version keeps it.
+    await updateByPk(w.a, 'event_rules', plain.rule, { is_enabled: false });
+    const pinned = await publishedRule(w.a, 'watchlist', { creates_incident: true, escalation_policy_id: fromVersion.id });
+    await evaluate((await detect(w.orgA.id, w.lobbyCam, other, 600)).id);
+    const rows = await policies();
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toEqual({ dedup_key: expect.stringContaining(pinned.rule), escalation_policy_id: fromVersion.id });
   });
 
   it('should fan out device events written by record_device_health', async () => {

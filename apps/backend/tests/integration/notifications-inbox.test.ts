@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asOrgAdmin } from './support/clients.js';
+import { escalate, escalationIncident, escalationPolicy, incidentState, minutes } from './support/escalation.js';
 import { expectDenied, expectError } from './support/fixtures.js';
 import {
   INBOX_FIELDS,
@@ -15,7 +16,7 @@ import {
 } from './support/notifications.js';
 import { callFn, insertOne, updateByPk } from './support/operations.js';
 import { runSqlRows } from './support/sql.js';
-import { evaluate, listEntry } from './support/stageB.js';
+import { evaluate, listEntry, publishedRule } from './support/stageB.js';
 import { createIdentity, detect } from './support/tracking.js';
 
 const inboxOf = async (client: ReturnType<typeof asOrgAdmin>): Promise<InboxRow[]> =>
@@ -164,5 +165,48 @@ describe('templates and rendering', () => {
     await setMember(w.orgA.id, gone, `status = 'deactivated', deactivated_at = now()`);
     await unknownArrival(w, 0, await createIdentity(w.a));
     expect(await orgDeliveries(w.orgA.id)).toEqual([]);
+  });
+});
+
+describe('acknowledging an escalation page', () => {
+  it('should acknowledge the open incident when its escalation inbox row is acknowledged, stopping the escalation', async () => {
+    const w = await notificationWorld();
+    const group = await recipientGroup(w.a, [{ user_id: w.user.id, channel: 'in_app' }]);
+    const p = await escalationPolicy(w.a, [
+      { after_minutes: 1, channel: 'in_app', recipient_group_id: group },
+      { after_minutes: 5, channel: 'in_app', recipient_group_id: group },
+    ]);
+    const incident = await escalationIncident(w.a, w.orgA.id, p.id);
+    await escalate(w.orgA.id, minutes(1));
+    const [page] = await inboxOf(w.a);
+    expect(page).toMatchObject({ incident_id: incident, acknowledged_at: null });
+    await callFn(w.a, 'acknowledge_notification', { p_notification: page.id }, 'id');
+    const [state] = await runSqlRows(`select status, acknowledged_by from itap.incidents where id = '${incident}'`);
+    expect(state).toEqual({ status: 'acknowledged', acknowledged_by: w.user.id });
+    expect(await escalate(w.orgA.id, minutes(60))).toEqual([]);
+  });
+
+  it('should leave the incident alone for rule notifications and for incidents no longer open', async () => {
+    const w = await notificationWorld();
+    const group = await recipientGroup(w.a, [{ user_id: w.user.id, channel: 'in_app' }]);
+    const list = await insertOne(w.a, 'watch_lists', { name: 'Banned', kind: 'blacklist', severity: 'critical' });
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: w.identity });
+    await publishedRule(w.a, 'watchlist', { creates_incident: true });
+    await notificationRule(w.a, ['blacklist_match'], ['in_app'], { recipient_group_id: group, priority: 'critical' });
+    await evaluate((await detect(w.orgA.id, w.lobbyCam, w.identity, 0)).id);
+    const [ruleRow] = await inboxOf(w.a);
+    expect(ruleRow.incident_id).not.toBeNull();
+    await callFn(w.a, 'acknowledge_notification', { p_notification: ruleRow.id }, 'id');
+    expect((await incidentState(ruleRow.incident_id ?? '')).status).toBe('open');
+
+    // An escalation page of an incident resolved meanwhile: the page is acknowledged, the incident stays resolved.
+    const p = await escalationPolicy(w.a, [{ after_minutes: 1, channel: 'in_app', recipient_group_id: group }]);
+    const incident = await escalationIncident(w.a, w.orgA.id, p.id);
+    await escalate(w.orgA.id, minutes(1));
+    const page = (await inboxOf(w.a)).find((n) => n.incident_id === incident);
+    await callFn(w.a, 'resolve_incident', { p_incident: incident, p_disposition: 'benign' }, 'id');
+    const acked = await callFn<InboxRow>(w.a, 'acknowledge_notification', { p_notification: page?.id }, INBOX_FIELDS);
+    expect(acked.acknowledged_at).not.toBeNull();
+    expect((await incidentState(incident)).status).toBe('resolved');
   });
 });
