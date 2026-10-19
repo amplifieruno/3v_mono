@@ -29,11 +29,27 @@ const BACKDATE = `
   mutation SeedBulkBackdate($id: uuid!, $created: timestamptz!, $started: timestamptz!, $completed: timestamptz!) {
     update_bulk_jobs_by_pk(pk_columns: { id: $id }, _set: { created_at: $created, started_at: $started, completed_at: $completed }) { id }
     update_bulk_job_rows(where: { bulk_job_id: { _eq: $id } }, _set: { created_at: $started }) { affected_rows }
-    update_search_requests(where: { bulk_job_id: { _eq: $id } }, _set: { created_at: $started, started_at: $started, completed_at: $started }) {
-      affected_rows
-    }
   }
 `;
+const REQUESTS = `
+  query SeedBulkRequests($id: uuid!) { search_requests(where: { bulk_job_id: { _eq: $id } }) { id created_at started_at completed_at } }
+`;
+const MOVE_REQUEST = `
+  mutation SeedBulkRequest($id: uuid!, $created: timestamptz!, $started: timestamptz, $completed: timestamptz) {
+    update_search_requests_by_pk(pk_columns: { id: $id }, _set: { created_at: $created, started_at: $started, completed_at: $completed }) { id }
+  }
+`;
+
+type RequestTimes = { id: string; created_at: string; started_at: string | null; completed_at: string | null };
+
+/** Moves the job's search requests by the job's shift, keeping their measured times and durations. */
+async function moveRequests(ctx: SeedContext, job: string, shiftMs: number): Promise<void> {
+  const { search_requests: rows } = await ctx.admin.request<{ search_requests: RequestTimes[] }>(REQUESTS, { id: job });
+  const move = (t: string | null) => (t === null ? null : iso(Date.parse(t) + shiftMs));
+  for (const r of rows) {
+    await ctx.admin.request(MOVE_REQUEST, { id: r.id, created: move(r.created_at), started: move(r.started_at), completed: move(r.completed_at) });
+  }
+}
 
 const TERMINAL = new Set(['completed', 'partial', 'failed', 'cancelled']);
 const iso = (ms: number): string => new Date(ms).toISOString();
@@ -62,8 +78,10 @@ async function runJob(ctx: SeedContext, org: string, spec: JobSpec): Promise<str
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   if (!state || !TERMINAL.has(state.status)) throw new Error(`seed: bulk job ${job.id} did not finish`);
-  const took = Math.max(1000, Date.parse(state.completed_at ?? '') - Date.parse(state.started_at ?? '') || 1000);
+  const startedAt = Date.parse(state.started_at ?? '');
+  const took = Math.max(1000, Date.parse(state.completed_at ?? '') - startedAt || 1000);
   await ctx.admin.request(BACKDATE, { id: job.id, created: iso(spec.at - 4000), started: iso(spec.at), completed: iso(spec.at + took) });
+  if (!Number.isNaN(startedAt)) await moveRequests(ctx, job.id, spec.at - startedAt);
   return state.status;
 }
 

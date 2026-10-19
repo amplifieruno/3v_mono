@@ -45,6 +45,8 @@ export type PastReport = {
   end_date: string;
   /** When it was generated (epoch ms); requested a few minutes earlier. */
   generatedAt: number;
+  /** Scheduled reports: the schedule's run instant (cron time) that produced it. */
+  runAt: number | null;
   schedule: string | null;
   /** Ad-hoc reports target the facility explicitly; scheduled ones cover the organization. */
   facilityTarget: boolean;
@@ -77,17 +79,19 @@ export function pastReports(now: Date, timezone: string): PastReport[] {
     const t = template(name);
     out.push({
       template: name, report_type: t.report_type, format: t.format, title: title(name, start, end), start_date: start,
-      end_date: end, generatedAt, schedule: null, facilityTarget: true, ...extra,
+      end_date: end, generatedAt, runAt: null, schedule: null, facilityTarget: true, ...extra,
     });
   };
   // Scheduled: the last three weeks (Monday 07:00 after the week) and the last three days (07:00 the next day).
   for (const weeks of [3, 2, 1]) {
     const start = addDays(thisMonday, -7 * weeks);
-    add('Weekly occupancy', start, addDays(start, 6), at(addDays(start, 7), 7 * 60 + 2), { schedule: 'Weekly occupancy', facilityTarget: false });
+    const runAt = at(addDays(start, 7), 7 * 60);
+    add('Weekly occupancy', start, addDays(start, 6), runAt + 2 * MINUTE, { schedule: 'Weekly occupancy', runAt, facilityTarget: false });
   }
   for (const days of [3, 2, 1]) {
     const day = addDays(today, -days);
-    add('Daily incidents', day, day, at(addDays(day, 1), 7 * 60 + 1), { schedule: 'Daily incidents', facilityTarget: false });
+    const runAt = at(addDays(day, 1), 7 * 60);
+    add('Daily incidents', day, day, runAt + MINUTE, { schedule: 'Daily incidents', runAt, facilityTarget: false });
   }
   // Ad hoc, requested by the admin on the latest Monday morning that is over (else the one before).
   const anchor = now.getTime() >= at(thisMonday, 12 * 60) ? thisMonday : addDays(thisMonday, -7);

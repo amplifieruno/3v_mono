@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { nextRun } from '../reports/cron.js';
 import { reportDatasetSchema } from '../reports/dataset.js';
 import { renderReportFile } from '../reports/render/index.js';
 import { pastReports, SCHEDULES, TEMPLATES, type PastReport } from './reportPlan.js';
@@ -7,12 +8,14 @@ import type { SeedContext } from './tenancy.js';
 /**
  * Reports of the seed (slice 7, design §9): system templates (both organizations), the Nova Tower schedules and the
  * past reports (reportPlan). A past report runs through the real pipeline: inserted queued (targets in the same
- * insert, while targets may still change) and claimed in the same transaction (generating, attempt 1, so the live
- * render_report handler leaves it alone), itap.compute_report (metrics + dataset), the report renderer, an upload to
+ * insert, while targets may still change) and claimed in the same transaction (itap.claim_report: generating, attempt 1,
+ * so the live render_report handler finds nothing to claim), itap.compute_report (metrics + dataset), the report renderer, an upload to
  * the organization bucket, then itap.complete_report (report_generated event, schedule deliveries, Stage C). The same
  * request back-dates the report and its event to the planned time, and itap.seed_finalize_notifications dates the
- * deliveries and inbox rows at the event time (email sent; in-app read). The failed report goes queued -> failed with
- * its error. Idempotent: templates and schedules by name; past reports only when the organization has none.
+ * deliveries and inbox rows at the event time (email sent; in-app read). The failed report is claimed and then failed
+ * with its error (itap.fail_report, the generator's failure path). The schedules get last_run_at = their latest seeded
+ * run and next_run_at = the next cron instant. Idempotent: templates and schedules by name; past reports only when the
+ * organization has none.
  */
 export type SeedReportsResult = { templates: number; schedules: number; reports: number; failed: number };
 
@@ -30,10 +33,20 @@ const INSERT_TEMPLATES = `
 const INSERT_SCHEDULES = `
   mutation SeedReportSchedules($objects: [report_schedules_insert_input!]!) { insert_report_schedules(objects: $objects) { affected_rows } }
 `;
+// Inserted queued (targets in the same insert) and claimed in the same transaction: generating, attempt 1, so the
+// live render_report handler finds nothing to claim.
 const START = `
-  mutation SeedReportStart($report: reports_insert_input!, $id: uuid!, $set: reports_set_input!) {
+  mutation SeedReportStart($report: reports_insert_input!, $id: uuid!) {
     insert_reports_one(object: $report) { id }
-    update_reports_by_pk(pk_columns: { id: $id }, _set: $set) { id code }
+    claim_report(args: { p_report: $id }) { id code attempts }
+  }
+`;
+const FAIL = `
+  mutation SeedReportFail($id: uuid!, $error: String!) { fail_report(args: { p_report: $id, p_attempt: 1, p_error: $error }) { id } }
+`;
+const SCHEDULE_RUNS = `
+  mutation SeedScheduleRuns($id: uuid!, $last: timestamptz!, $next: timestamptz!) {
+    update_report_schedules_by_pk(pk_columns: { id: $id }, _set: { last_run_at: $last, next_run_at: $next }) { id }
   }
 `;
 const COMPUTE = `
@@ -95,15 +108,14 @@ async function generatePast(
     created_at: iso(requested),
     ...(plan.facilityTarget ? { report_facilities: { data: [{ facility_id: args.facility }] } } : {}),
   };
+  const { claim_report: claimed } = await ctx.admin.request<{ claim_report: { code: string; attempts: number }[] }>(START, { report, id });
+  const started = claimed[0];
+  if (started?.attempts !== 1) throw new Error(`seed: report ${plan.title} was not claimed`);
   if (plan.error) {
-    await ctx.admin.request(START, { report, id, set: { status: 'failed', attempts: 1, error: plan.error } });
+    // The real failure path: claimed, then failed with the error (as generateReport records a failed upload).
+    await ctx.admin.request(FAIL, { id, error: plan.error });
     return;
   }
-  const { update_reports_by_pk: started } = await ctx.admin.request<{ update_reports_by_pk: { code: string } }>(START, {
-    report,
-    id,
-    set: { status: 'generating', attempts: 1, lease_expires_at: iso(Date.now() + 10 * MINUTE) },
-  });
   const { compute_report: computed } = await ctx.admin.request<{ compute_report: { dataset: unknown }[] }>(COMPUTE, { id });
   const dataset = reportDatasetSchema.parse(computed[0]?.dataset);
   const generated = new Intl.DateTimeFormat('sv-SE', {
@@ -174,6 +186,18 @@ export async function seedReports(
   const plans = pastReports(ctx.now, args.timezone);
   for (const plan of plans) {
     await generatePast(ctx, { ...args, templates: templateIds, schedules: scheduleIds }, plan);
+  }
+  // The schedules ran when their seeded reports were made: last run = the latest of them, next run = the next cron
+  // instant after now (the live cron neither re-initializes them nor replays a run).
+  for (const spec of SCHEDULES) {
+    const runs = plans.filter((p) => p.schedule === spec.name && p.runAt !== null).map((p) => p.runAt ?? 0);
+    const next = nextRun(spec.cron, args.timezone, ctx.now);
+    if (runs.length === 0 || !next) continue;
+    await ctx.admin.request(SCHEDULE_RUNS, {
+      id: need(scheduleIds, spec.name, 'report schedule'),
+      last: iso(Math.max(...runs)),
+      next: next.toISOString(),
+    });
   }
   return {
     templates: templates.length,

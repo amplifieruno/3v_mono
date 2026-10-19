@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { asOrgAdmin } from './support/clients.js';
 import { expectDenied, expectError } from './support/fixtures.js';
 import { savedSearchWorld as world } from './support/search.js';
+import { runSqlRows } from './support/sql.js';
 
 /**
  * Dashboards (slice 7, task 5; spec §6.10): owner-managed (owner stamped from the session), shared ones readable but
@@ -120,6 +121,19 @@ describe('dashboard widget validation', () => {
     }
     await expectError(create(a, { name: 'Bad layout', layout: [] }));
     await expectError(create(a, { name: '  ' }));
+  });
+
+  it('should accept integral positions written as decimals and reject fractions without raising', async () => {
+    const { a } = await world();
+    const id = await create(a, { name: 'Decimals' });
+    const ok = await a.request<{ update_dashboards_by_pk: unknown }>(SET_WIDGETS, {
+      id, w: [widget({ position: { x: 5.0, y: 0, w: 7.0, h: 2 } })],
+    });
+    expect(ok.update_dashboards_by_pk).not.toBeNull();
+    const check = async (position: string) => (await runSqlRows(`select itap.valid_dashboard_widgets('[{"id":"a","kind":"kpi",
+      "title":"t","query":"dashboard_kpis","params":{},"position":${position}}]'::jsonb)::text as v`))[0].v;
+    expect(await check('{"x":5.0,"y":1e2,"w":7.0,"h":2.0}')).toBe('true');
+    expect(await check('{"x":5.5,"y":0,"w":6,"h":2}')).toBe('false');
   });
 
   it('should keep dashboard names unique per owner', async () => {

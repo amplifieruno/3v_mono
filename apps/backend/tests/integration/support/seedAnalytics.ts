@@ -67,7 +67,7 @@ export async function expectSeededAnalytics(novaSlug: string, riversideSlug: str
 
   // Reports: completed through the pipeline with a file in the organization bucket, back-dated with their event.
   const reports = await runSqlRows(
-    `select r.status, r.schedule_id is not null as scheduled, r.error, r.generated_at < now() - interval '10 minutes' as past,
+    `select r.status, r.schedule_id is not null as scheduled, r.error, r.attempts, r.generated_at < now() - interval '10 minutes' as past,
             f.bucket_id = r.organization_id::text and f.metadata ->> 'kind' = 'report' as file_ok,
             (select count(*) from itap.report_metrics m where m.report_id = r.id) as metrics,
             (select e.occurred_at = r.generated_at from itap.events e
@@ -82,8 +82,18 @@ export async function expectSeededAnalytics(novaSlug: string, riversideSlug: str
   expect(completed.every((r) => Number(r.metrics) > 0)).toBe(true);
   expect(completed.filter((r) => r.scheduled === 't').every((r) => Number(r.deliveries) > 0)).toBe(true);
   const failed = reports.filter((r) => r.status === 'failed');
+  expect(failed[0]?.attempts).toBe('1');
   expect(failed).toHaveLength(1);
   expect(failed[0].error).toMatch(/storage/);
+
+  // Schedules: last run = their latest seeded run (a 07:00 local instant), next run ahead.
+  const schedules = await runSqlRows(
+    `select s.name, s.last_run_at = (select max(r.generated_at) - interval '1 minute' * case s.name when 'Weekly occupancy' then 2 else 1 end
+              from itap.reports r where r.schedule_id = s.id and r.created_at < o.created_at) as last_ok,
+            s.next_run_at > now() as next_ok
+       from itap.report_schedules s join itap.organizations o on o.id = s.organization_id where s.organization_id = ${org}`,
+  );
+  expect(schedules.map((x) => [x.last_ok, x.next_ok])).toEqual([['t', 't'], ['t', 't']]);
 
   // Bulk jobs: a completed import, a partial one with row errors and a result file, a completed bulk search.
   const jobs = await runSqlRows(
@@ -95,6 +105,12 @@ export async function expectSeededAnalytics(novaSlug: string, riversideSlug: str
   expect(jobs[0]).toMatchObject({ succeeded: '8', failed: '0', result: 't', private_rows: '0' });
   expect(jobs[1]).toMatchObject({ succeeded: '3', failed: '3', skipped: '1', result: 't' });
   expect(jobs[2]).toMatchObject({ result: 't', private_rows: '3' });
+  const [timing] = await runSqlRows(
+    `select count(*) filter (where r.completed_at > r.started_at and r.started_at >= j.started_at - interval '1 second'
+              and r.completed_at <= j.completed_at + interval '1 second') as kept, count(*) as n
+       from itap.search_requests r join itap.bulk_jobs j on j.id = r.bulk_job_id where j.organization_id = ${org}`,
+  );
+  expect(timing).toEqual({ kept: '3', n: '3' });
 
   // Owner-only rows: the admin's searches, bulk search and private saved search, and the Nova admin's personal dashboard.
   const admin = asOrgAdmin(ids.admin ?? '', orgId);

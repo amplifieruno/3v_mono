@@ -49,6 +49,33 @@ describe('Stage B: after_hours for rostered staff', () => {
     expect(await eventTypes(w, other.identity, 13 * HOUR + 10 * 60)).toContain('after_hours');
   });
 
+  it('should count a short window that overlaps the 30 minutes around the detection', async () => {
+    const { w } = await world();
+    // Monday 08:05-08:20 UTC, between the instants 08:00 and 08:30: detected 08:00 (overlapping) and 07:20 (outside).
+    const brief = await insertOne(w.a, 'work_schedules', {
+      name: 'Brief', timezone: 'UTC', windows: [{ days: [1], from: '08:05', to: '08:20' }],
+    });
+    const inside = await knownPerson(w.a, { work_schedule_id: brief.id });
+    expect(await eventTypes(w, inside.identity, 0)).not.toContain('after_hours');
+    const outside = await knownPerson(w.a, { work_schedule_id: brief.id });
+    expect(await eventTypes(w, outside.identity, -40 * 60)).toContain('after_hours');
+  });
+
+  it('should read the work schedule in its own timezone, not the facility one', async () => {
+    const { w } = await world();
+    // Monday 08:00 UTC is 17:00 in Tokyo.
+    const tokyo = await insertOne(w.a, 'work_schedules', {
+      name: 'Tokyo evening', timezone: 'Asia/Tokyo', windows: [{ days: [1], from: '17:00', to: '18:00' }],
+    });
+    const utc = await insertOne(w.a, 'work_schedules', {
+      name: 'UTC evening', timezone: 'UTC', windows: [{ days: [1], from: '17:00', to: '18:00' }],
+    });
+    const remote = await knownPerson(w.a, { work_schedule_id: tokyo.id });
+    expect(await eventTypes(w, remote.identity, 0)).not.toContain('after_hours');
+    const local = await knownPerson(w.a, { work_schedule_id: utc.id });
+    expect(await eventTypes(w, local.identity, 0)).toContain('after_hours');
+  });
+
   it('should still report a rostered person whose profile is not active', async () => {
     const { w, early } = await world();
     const gone = await knownPerson(w.a, { work_schedule_id: early, status: 'terminated' });

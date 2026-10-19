@@ -86,4 +86,15 @@ END;
 $$;
 
 DROP FUNCTION itap.report_incident_summary(itap.report_context);
+-- Rows of the removed type go first (schedules -> reports -> templates); report metrics and targets cascade, report
+-- deliveries keep their log row (report_id SET NULL). Target freeze guards are disabled for the cascade, like
+-- 1792365700062's down disables the delivery guard.
+ALTER TABLE itap.report_facilities DISABLE TRIGGER report_facilities_frozen;
+ALTER TABLE itap.report_segments DISABLE TRIGGER report_segments_frozen;
+DELETE FROM itap.report_schedules s USING itap.report_templates t
+WHERE t.organization_id = s.organization_id AND t.id = s.template_id AND t.report_type = 'incident_summary';
+DELETE FROM itap.reports WHERE report_type = 'incident_summary';
+DELETE FROM itap.report_templates WHERE report_type = 'incident_summary';
+ALTER TABLE itap.report_facilities ENABLE TRIGGER report_facilities_frozen;
+ALTER TABLE itap.report_segments ENABLE TRIGGER report_segments_frozen;
 DELETE FROM itap.report_types WHERE value = 'incident_summary';

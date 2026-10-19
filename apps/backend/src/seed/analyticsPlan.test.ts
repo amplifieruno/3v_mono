@@ -43,6 +43,13 @@ describe('seed report plan', () => {
     expect(reports.filter((r) => r.error)).toHaveLength(1);
     expect(reports.filter((r) => r.schedule === 'Weekly occupancy')).toHaveLength(3);
     expect(reports.filter((r) => r.schedule === 'Daily incidents')).toHaveLength(3);
+    for (const r of reports.filter((x) => x.schedule)) {
+      // 07:00 local run instants, generated a minute or two later.
+      expect(new Date(r.runAt ?? 0).toISOString().slice(11, 16)).toBe('04:00');
+      expect(r.generatedAt - (r.runAt ?? 0)).toBeGreaterThan(0);
+      expect(r.generatedAt - (r.runAt ?? 0)).toBeLessThanOrEqual(5 * 60_000);
+    }
+    expect(reports.filter((x) => !x.schedule).every((x) => x.runAt === null)).toBe(true);
     for (const r of reports) {
       expect(r.generatedAt).toBeLessThan(NOW.getTime());
       expect(new Date(r.generatedAt).toISOString().slice(0, 10) > r.end_date).toBe(true);
