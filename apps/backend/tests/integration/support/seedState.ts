@@ -24,6 +24,21 @@ const TABLES = [
   'device_areas',
   'access_point_devices',
   'facility_templates',
+  // History (slice 4): the replay is skipped on a second run, the configuration is keyed by name.
+  'detections',
+  'tracking_sessions',
+  'identity_locations',
+  'incidents',
+  'incident_activities',
+  'incident_notes',
+  'watch_lists',
+  'watch_list_entries',
+  'event_rules',
+  'event_rule_versions',
+  'visits',
+  'shift_handovers',
+  'shift_handover_incidents',
+  'operator_workspaces',
   // A second run must write nothing at all, so no new audit rows either.
   'audit_log',
 ];
@@ -64,6 +79,8 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
     `(select count(*) from itap.floor_plans where organization_id = ${org} and image_file_id is not null) as floor_plans_with_image`,
   );
   parts.push(`(select count(*) from itap.areas where organization_id = ${org} and shape is not null) as areas_with_shape`);
+  // Pipeline events only (the live device health cron adds device platform events at any time).
+  parts.push(`(select count(*) from itap.events where organization_id = ${org} and session_id is not null) as history_events`);
   const [row] = await runSqlRows(`select ${parts.join(', ')}`);
   return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, Number(v)]));
 }

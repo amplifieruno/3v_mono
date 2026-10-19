@@ -12,6 +12,8 @@ export type AreaNode = {
   type: string;
   access?: 'public' | 'restricted' | 'secure' | 'classified';
   capacity?: number;
+  /** Loitering threshold (areas.loitering_threshold_seconds): dwell events of evaluate_dwell_rules. */
+  loitering?: number;
   description?: string;
   rect?: Rect;
   circle?: { center: [number, number]; radius: number };
@@ -66,9 +68,9 @@ const LOBBY: AreaNode = {
     { name: 'Main Entrance', type: 'entrance', capacity: 80, rect: [480, 680, 240, 100] },
     { name: 'Reception', type: 'zone', capacity: 30, rect: [60, 460, 320, 220] },
     { name: 'Turnstile Gallery', type: 'zone', capacity: 60, rect: [440, 440, 320, 200] },
-    { name: 'Lobby Lounge', type: 'zone', capacity: 60, rect: [800, 460, 340, 240] },
+    { name: 'Lobby Lounge', type: 'zone', capacity: 60, loitering: 1200, rect: [800, 460, 340, 240] },
     { name: 'Elevator Hall', type: 'corridor', access: 'restricted', capacity: 80, rect: [400, 80, 400, 300] },
-    { name: 'Loading Dock', type: 'zone', access: 'restricted', capacity: 15, rect: [880, 60, 280, 220] },
+    { name: 'Loading Dock', type: 'zone', access: 'restricted', capacity: 15, loitering: 600, rect: [880, 60, 280, 220] },
     {
       name: 'Loading Dock Geofence',
       type: 'virtual_zone',
@@ -186,8 +188,8 @@ const NOVA_TOWER: FacilitySpec = {
   longitude: 37.5372,
   timezone: 'Europe/Moscow',
   operatingHours: [
-    { days: WEEKDAYS, from: '07:00', to: '22:00' },
-    { days: [6], from: '09:00', to: '18:00' },
+    { days: WEEKDAYS, from: '07:00', to: '21:00' },
+    { days: [6], from: '09:00', to: '15:00' },
   ],
   contact: { phone: '+7 495 000-00-24', email: 'facility@nova-tower.example', person: 'Building operations desk' },
   root: {

@@ -176,6 +176,77 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(Number(offHour.n)).toBe(0);
   });
 
+  it('should replay 30 days of Nova Tower history through the detection pipeline', async () => {
+    const nova = await seedCounts(SLUGS[0]);
+    expect(nova.detections).toBeGreaterThan(10_000);
+    expect(nova.history_events).toBeGreaterThan(1_000);
+    expect(nova.watch_lists).toBe(3);
+    expect(nova.watch_list_entries).toBeGreaterThanOrEqual(5);
+    expect(nova.event_rules).toBe(5);
+    expect(nova.shift_handovers).toBe(3);
+    expect(nova.operator_workspaces).toBe(4);
+    const org = `(select id from itap.organizations where slug = '${SLUGS[0]}')`;
+
+    const [span] = await runSqlRows(
+      `select (min(detected_at) < now() - interval '29 days')::text as old, (max(detected_at) < now() - interval '1 hour')::text as recent,
+              (select count(*) from itap.tracking_sessions where organization_id = ${org} and status in ('completed', 'lost')) as closed,
+              (select count(*) from itap.tracking_sessions where organization_id = ${org}) as sessions,
+              (select count(*) from itap.tracking_sessions where organization_id = ${org} and visit_id is not null) as with_visit,
+              (select count(*) from itap.identity_locations where organization_id = ${org} and is_estimated) as estimated
+         from itap.detections where organization_id = ${org}`,
+    );
+    expect(span).toMatchObject({ old: 'true', recent: 'true' });
+    expect(Number(span.closed)).toBeGreaterThan(Number(span.sessions) * 0.98);
+    expect(Number(span.with_visit)).toBeGreaterThan(0);
+    expect(Number(span.estimated)).toBeGreaterThan(0);
+
+    const types = await runSqlRows(
+      `select event_type, count(*) as n from itap.events where organization_id = ${org} group by event_type`,
+    );
+    const byType = Object.fromEntries(types.map((t) => [t.event_type, Number(t.n)]));
+    for (const type of ['detection_known', 'detection_unknown', 'vip_arrival', 'blacklist_match', 'watchlist_match',
+      'after_hours', 'restricted_area_entry', 'loitering', 'unexpected_facility']) {
+      expect(byType[type] ?? 0, type).toBeGreaterThanOrEqual(1);
+    }
+    // One person in front of a camera for minutes: one detection_known per session.
+    const [dupes] = await runSqlRows(
+      `select count(*) as n from (select session_id from itap.events where organization_id = ${org}
+         and event_type = 'detection_known' group by session_id having count(*) > 1) x`,
+    );
+    expect(Number(dupes.n)).toBe(0);
+
+    const incidents = await runSqlRows(
+      `select status, disposition, count(*) as n,
+              bool_and(created_at < now() - interval '1 hour')::text as backdated
+         from itap.incidents where organization_id = ${org} group by status, disposition`,
+    );
+    const statuses = new Set(incidents.map((i) => i.status));
+    for (const status of ['open', 'acknowledged', 'investigating', 'resolved', 'closed']) expect(statuses.has(status), status).toBe(true);
+    expect(incidents.some((i) => i.disposition === 'false_positive')).toBe(true);
+    expect(incidents.every((i) => i.backdated === 'true')).toBe(true);
+    expect(nova.incident_activities).toBeGreaterThan(nova.incidents * 2);
+    expect(nova.incident_notes).toBeGreaterThan(0);
+
+    const visits = await runSqlRows(`select distinct status from itap.visits where organization_id = ${org} order by status`);
+    expect(visits.map((v) => v.status)).toEqual(['cancelled', 'checked_in', 'checked_out', 'no_show', 'scheduled']);
+
+    const [config] = await runSqlRows(
+      `select s.recognition_threshold::text as threshold, f.operating_hours::text as hours,
+              (select count(*) from itap.event_rules r join itap.event_rule_versions v on v.id = r.current_version_id
+                where r.organization_id = ${org} and v.status = 'published') as published,
+              (select count(*) from itap.areas a where a.organization_id = ${org} and a.loitering_threshold_seconds is not null) as loitering,
+              (select count(*) from itap.profiles p where p.organization_id = ${org} and itap.profile_is_blacklisted(p)) as blacklisted
+         from itap.organization_settings s join itap.facilities f on f.organization_id = s.organization_id
+        where s.organization_id = ${org}`,
+    );
+    expect(config.threshold).toBe('0.4');
+    expect(JSON.parse(config.hours ?? '[]')).toEqual([
+      { days: [1, 2, 3, 4, 5], from: '07:00', to: '21:00' },
+      { days: [6], from: '09:00', to: '15:00' },
+    ]);
+    expect(config).toMatchObject({ published: '4', loitering: '2', blacklisted: '1' });
+  });
+
   it('should recreate the organizations with --reset', async () => {
     const before = await state();
     await seed('--reset');

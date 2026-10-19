@@ -11,18 +11,30 @@ export type SeedFacilitiesResult = {
   areas: Record<string, string>;
 };
 
-type AreaRow = { id: string; name: string; parent_id: string | null };
+type AreaRow = { id: string; name: string; parent_id: string | null; loitering_threshold_seconds?: number | null };
 
 const FACILITY = `
   query SeedFacility($org: uuid!, $name: String!) {
-    facilities(where: { organization_id: { _eq: $org }, name: { _eq: $name } }) { id }
+    facilities(where: { organization_id: { _eq: $org }, name: { _eq: $name } }) { id operating_hours }
+  }
+`;
+const SET_HOURS = `
+  mutation SeedFacilityHours($id: uuid!, $hours: jsonb!) {
+    update_facilities_by_pk(pk_columns: { id: $id }, _set: { operating_hours: $hours }) { id }
   }
 `;
 const INSERT_FACILITY = `
   mutation SeedInsertFacility($object: facilities_insert_input!) { insert_facilities_one(object: $object) { id } }
 `;
 const AREAS = `
-  query SeedAreas($facility: uuid!) { areas(where: { facility_id: { _eq: $facility } }) { id name parent_id } }
+  query SeedAreas($facility: uuid!) {
+    areas(where: { facility_id: { _eq: $facility } }) { id name parent_id loitering_threshold_seconds }
+  }
+`;
+const SET_LOITERING = `
+  mutation SeedAreaLoitering($id: uuid!, $seconds: Int) {
+    update_areas_by_pk(pk_columns: { id: $id }, _set: { loitering_threshold_seconds: $seconds }) { id }
+  }
 `;
 const INSERT_AREAS = `
   mutation SeedInsertAreas($objects: [areas_insert_input!]!) { insert_areas(objects: $objects) { affected_rows } }
@@ -47,8 +59,15 @@ const APPLY_TEMPLATE = `
 `;
 
 async function upsertFacility(ctx: SeedContext, org: string, spec: FacilitySpec): Promise<string> {
-  const found = await ctx.admin.request<{ facilities: { id: string }[] }>(FACILITY, { org, name: spec.name });
-  if (found.facilities[0]) return found.facilities[0].id;
+  const found = await ctx.admin.request<{ facilities: { id: string; operating_hours: unknown }[] }>(FACILITY, { org, name: spec.name });
+  const existing = found.facilities[0];
+  if (existing) {
+    // Earlier seeds had other operating hours; rewritten only when they differ (no audit row otherwise).
+    if (JSON.stringify(existing.operating_hours) !== JSON.stringify(spec.operatingHours)) {
+      await ctx.admin.request(SET_HOURS, { id: existing.id, hours: spec.operatingHours });
+    }
+    return existing.id;
+  }
   const { insert_facilities_one: row } = await ctx.admin.request<{ insert_facilities_one: { id: string } }>(INSERT_FACILITY, {
     object: {
       organization_id: org,
@@ -123,13 +142,31 @@ async function seedAreas(ctx: SeedContext, org: string, facility: string, spec: 
           area_type: node.type,
           access_level: node.access ?? 'public',
           capacity: node.capacity ?? null,
+          loitering_threshold_seconds: node.loitering ?? null,
           shape: nodeShape(node),
         };
       }),
     });
     keys = await areaKeys(ctx, facility);
   }
+  await syncLoitering(ctx, facility, planned, keys);
   return keys;
+}
+
+/** Areas seeded before their planned loitering threshold existed get it (only rows that differ are written). */
+async function syncLoitering(
+  ctx: SeedContext,
+  facility: string,
+  planned: { key: string; node: { loitering?: number } }[],
+  keys: Map<string, string>,
+): Promise<void> {
+  const { areas } = await ctx.admin.request<{ areas: AreaRow[] }>(AREAS, { facility });
+  const current = new Map(areas.map((a) => [a.id, a.loitering_threshold_seconds ?? null]));
+  for (const { key, node } of planned) {
+    const id = keys.get(key);
+    if (!id || node.loitering === undefined || current.get(id) === node.loitering) continue;
+    await ctx.admin.request(SET_LOITERING, { id, seconds: node.loitering });
+  }
 }
 
 /** The "Standard office floor" template, applied once to the empty template floor of Nova Tower. */
