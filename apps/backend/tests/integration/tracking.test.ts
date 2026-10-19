@@ -3,7 +3,7 @@ import { asAdmin, asOrgAdmin } from './support/clients.js';
 import { createDevice, createFacility } from './support/facilities.js';
 import { expectDenied, expectError } from './support/fixtures.js';
 import { runSql, runSqlRows } from './support/sql.js';
-import { at, createTrackingWorld, detect, identityCounters, sessions } from './support/tracking.js';
+import { at, bindCamera, createTrackingWorld, detect, identityCounters, sessions } from './support/tracking.js';
 
 describe('detections', () => {
   it('should derive facility, area and the camera access point from the device', async () => {
@@ -14,6 +14,18 @@ describe('detections', () => {
     expect(plain).toMatchObject({ facility_id: w.facility.id, area_id: w.lobby.id, access_point_id: null });
     const explicit = await detect(w.orgA.id, w.lobbyCam, w.identity, 2, { area_id: w.zone.id });
     expect(explicit.area_id).toBe(w.zone.id);
+  });
+
+  it('should derive the access point only from a single camera binding of the device', async () => {
+    const w = await createTrackingWorld();
+    // The exit camera also watches the entrance door: two camera bindings, ambiguous.
+    await bindCamera(w.a, w.facility.id, w.entranceDoor.id, w.exitCam.id);
+    const ambiguous = await detect(w.orgA.id, w.exitCam, w.identity, 0);
+    expect(ambiguous.access_point_id).toBeNull();
+    const explicit = await detect(w.orgA.id, w.exitCam, w.identity, 1, { access_point_id: w.exitDoor.id });
+    expect(explicit.access_point_id).toBe(w.exitDoor.id);
+    // A device with one camera binding still derives it.
+    expect((await detect(w.orgA.id, w.entranceCam, w.identity, 2)).access_point_id).toBe(w.entranceDoor.id);
   });
 
   it('should reject a facility that is not the device facility and a missing device', async () => {

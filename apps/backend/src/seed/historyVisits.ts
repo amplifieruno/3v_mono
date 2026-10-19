@@ -1,4 +1,4 @@
-import { addDays, weekday } from './historyTime.js';
+import { addDays, weekday, zonedTime } from './historyTime.js';
 import type { Track } from './historyScripts.js';
 
 /** A visitor profile; tracked on camera only when it has an identity (biometric consent given). */
@@ -56,8 +56,11 @@ export function planVisits(t: Track, visitors: HistoryVisitor[], hosts: HistoryH
     const host = hosts[i % hosts.length];
     return { visitorProfileId: v.profileId, identityId: v.identityId, hostProfileId: host.profileId, companyId: host.companyId, purpose: PURPOSES[i % PURPOSES.length] };
   };
+  // Expected times are whole quarter hours: computed once without jitter, then floored.
+  const exact = (date: string, minutes: number) => zonedTime(date, minutes, t.timezone);
   const slot = (date: string, minutes: number, hours: number) => {
-    const start = t.at(date, minutes) - (t.at(date, minutes) % (15 * MINUTE));
+    const at = exact(date, minutes);
+    const start = at - (at % (15 * MINUTE));
     return { expectedStart: start, expectedEnd: start + hours * HOUR };
   };
 
@@ -107,8 +110,8 @@ export function planVisits(t: Track, visitors: HistoryVisitor[], hosts: HistoryH
     visits.push({
       ...base(guest, i),
       purpose: 'Two-day audit',
-      expectedStart: t.at(from, 540) - (t.at(from, 540) % HOUR),
-      expectedEnd: t.at(addDays(w.today, 1), 1080) - (t.at(addDays(w.today, 1), 1080) % HOUR),
+      expectedStart: exact(from, 540),
+      expectedEnd: exact(addDays(w.today, 1), 1080),
       status: 'checked_in',
       checkedInAt: arrive,
       badgeNumber: `V-${2000 + i}`,

@@ -107,6 +107,17 @@ function scenarios(t: Track, input: HistoryInput, today: string, first: string):
   const dockDay = weekdayOnOrBefore(addDays(today, -15));
   if (courier && inWindow(dockDay)) t.pass(courier.identityId, 'dock', t.at(dockDay, 13 * 60 + 30), 2);
 
+  // Restricted-floor entries that open incidents: the same contractor at the executive floor door (day -2) and an
+  // unknown face in the server room (day -20).
+  const exec = weekdayOnOrBefore(addDays(today, -2));
+  if (courier && inWindow(exec)) {
+    const turned = t.enter(courier.identityId, 'entrance', t.at(exec, 11 * 60 + 5));
+    t.pass(courier.identityId, 'executive', turned + 3 * 60_000, 1);
+  }
+  const lost = input.unknownIdentities.find((u) => u !== input.watchedIdentity);
+  const serverDay = weekdayOnOrBefore(addDays(today, -20));
+  if (lost && inWindow(serverDay)) t.pass(lost, 'serverRoom', t.at(serverDay, 19 * 60 + 40), 2);
+
   // Unknown faces a few times each (one of them once at the loading dock); the watched one three times.
   const weekdays: string[] = [];
   for (let d = first; d < today; d = addDays(d, 1)) if (weekday(d) <= 5) weekdays.push(d);

@@ -13,17 +13,35 @@ import type { SeedContext } from './tenancy.js';
  * called synchronously (the detection_created event trigger re-runs it asynchronously; it is idempotent), dwell
  * rules / stale sessions at simulated times and the daily lifecycle job (no-show visits).
  *
- * Idempotency: the replay is skipped when the organization already has a detection older than now - 29 days (the
- * first replayed day always has one; live recognition never writes the past). A replay that failed part-way leaves
- * that marker too: recover with `pnpm seed --reset`.
+ * Idempotency: the replay is skipped when the organization already has a detection older than the marker age (the
+ * first replayed day always has one; live recognition never writes the past). Without the marker but with any
+ * detection or session from the replay period on (live recognition, a replay that failed part-way), it is skipped
+ * too and the seed says the history needs `pnpm seed --reset`: no partial history is produced.
  */
-export type ReplayResult = { skipped: boolean; days: number; detections: number; visits: number; durationMs: number };
+export type ReplayResult = {
+  skipped: false | 'seeded' | 'needs_reset';
+  days: number;
+  detections: number;
+  visits: number;
+  durationMs: number;
+};
+
+/**
+ * `seeded`: the history marker exists. `needs_reset`: no marker but tracking data from the replay period or later
+ * (live recognition, an interrupted replay): replaying would interleave with it, so the seed asks for --reset.
+ */
+export function replayDecision(state: { seeded: boolean; newerData: boolean }): 'replay' | 'seeded' | 'needs_reset' {
+  if (state.seeded) return 'seeded';
+  return state.newerData ? 'needs_reset' : 'replay';
+}
 
 const MARKER_AGE_MS = 29 * 86_400_000;
 
 const MARKER = `
-  query SeedHistoryMarker($org: uuid!, $before: timestamptz!) {
-    detections(where: { organization_id: { _eq: $org }, detected_at: { _lt: $before } }, limit: 1) { id }
+  query SeedHistoryMarker($org: uuid!, $before: timestamptz!, $start: timestamptz!) {
+    marker: detections(where: { organization_id: { _eq: $org }, detected_at: { _lt: $before } }, limit: 1) { id }
+    newer: detections(where: { organization_id: { _eq: $org }, detected_at: { _gte: $start } }, limit: 1) { id }
+    sessions: tracking_sessions(where: { organization_id: { _eq: $org }, last_detected_at: { _gte: $start } }, limit: 1) { id }
     visits(where: { organization_id: { _eq: $org } }, limit: 1) { id }
   }
 `;
@@ -55,7 +73,7 @@ function need<T>(value: T | undefined, what: string): T {
   return value;
 }
 
-async function resolvePoints(
+export async function resolveNovaPoints(
   ctx: SeedContext,
   facility: string,
   facilities: SeedFacilitiesResult,
@@ -97,17 +115,31 @@ function visitRow(org: string, facility: string, now: number, v: PlannedVisit): 
 
 export async function replayHistory(
   ctx: SeedContext,
-  args: { org: string; facility: string; facilities: SeedFacilitiesResult; devices: SeedDevicesResult; plan: HistoryPlan },
+  args: {
+    org: string;
+    facility: string;
+    plan: HistoryPlan;
+    points: Record<PointKey, ResolvedPoint>;
+    /** Marker age (default 29 days: the Nova replay covers 30). */
+    markerAgeMs?: number;
+    label?: string;
+  },
 ): Promise<ReplayResult> {
   const started = Date.now();
   const { org, facility, plan } = args;
-  const marker = await ctx.admin.request<{ detections: { id: string }[]; visits: { id: string }[] }>(MARKER, {
+  type Ids = { id: string }[];
+  const marker = await ctx.admin.request<{ marker: Ids; newer: Ids; sessions: Ids; visits: Ids }>(MARKER, {
     org,
-    before: new Date(ctx.now.getTime() - MARKER_AGE_MS).toISOString(),
+    before: new Date(ctx.now.getTime() - (args.markerAgeMs ?? MARKER_AGE_MS)).toISOString(),
+    start: new Date(plan.days[0]?.start ?? ctx.now.getTime()).toISOString(),
   });
-  if (marker.detections.length > 0) return { skipped: true, days: 0, detections: 0, visits: 0, durationMs: Date.now() - started };
+  const decision = replayDecision({
+    seeded: marker.marker.length > 0,
+    newerData: marker.newer.length > 0 || marker.sessions.length > 0,
+  });
+  if (decision !== 'replay') return { skipped: decision, days: 0, detections: 0, visits: 0, durationMs: Date.now() - started };
 
-  const points = await resolvePoints(ctx, facility, args.facilities, args.devices);
+  const { points } = args;
   let visits = 0;
   if (marker.visits.length === 0 && plan.visits.length > 0) {
     await ctx.admin.request(INSERT_VISITS, { objects: plan.visits.map((v) => visitRow(org, facility, ctx.now.getTime(), v)) });
@@ -119,7 +151,7 @@ export async function replayHistory(
     const mutation = buildDayMutation({ organization: org, day, detections: inDay, resolve: (p) => points[p], newId: randomUUID });
     await ctx.admin.request(mutation.query, mutation.variables);
     detections += mutation.detections;
-    process.stdout.write(`  history ${day.date}: ${mutation.detections} detections\n`);
+    process.stdout.write(`  ${args.label ?? 'history'} ${day.date}: ${mutation.detections} detections\n`);
   }
   return { skipped: false, days: plan.days.length, detections, visits, durationMs: Date.now() - started };
 }

@@ -75,7 +75,7 @@ describe('buildHistoryPlan', () => {
   });
 
   it('should take exactly one person without clearance into the server room, once', () => {
-    const server = plan.detections.filter((d) => d.point === 'serverRoom' && d.identityId !== 'id-100');
+    const server = plan.detections.filter((d) => d.point === 'serverRoom' && d.identityId.startsWith('id-') && d.identityId !== 'id-100');
     expect(new Set(server.map((d) => d.identityId)).size).toBe(1);
     expect(new Set(server.map((d) => local(d.at).date)).size).toBe(1);
   });
@@ -115,6 +115,18 @@ describe('buildHistoryPlan', () => {
     const own = plan.detections.filter((d) => d.identityId === tracked?.identityId);
     expect(own.length).toBeGreaterThan(0);
     expect(own[0].at).toBeGreaterThanOrEqual(tracked?.checkedInAt ?? 0);
+  });
+
+  it('should plan expected visit times on whole quarter hours', () => {
+    for (const v of plan.visits) {
+      expect(v.expectedStart % (15 * 60_000)).toBe(0);
+      expect(v.expectedEnd % (15 * 60_000)).toBe(0);
+    }
+  });
+
+  it('should bring an unknown face into the server room and a contractor to the executive floor once', () => {
+    expect(new Set(plan.detections.filter((d) => d.point === 'serverRoom' && d.identityId.startsWith('u-')).map((d) => local(d.at).date)).size).toBe(1);
+    expect(plan.detections.filter((d) => d.point === 'executive' && d.identityId === 'id-102')).toHaveLength(1);
   });
 
   it('should only produce detections at the planned camera points with plausible face values', () => {

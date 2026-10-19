@@ -2,15 +2,22 @@ import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
 import type { SeedContext } from './tenancy.js';
 
 /**
- * Operator history of the incidents the replay produced (design §9 "incidents with notes/activities"): assignment,
+ * Operator history of the incidents the replay produced (incidents themselves open at their event time) (design §9 "incidents with notes/activities"): assignment,
  * acknowledgement, investigation, notes, resolution with a disposition, closing and a manual escalation, each through
  * the real mutation functions in the session of a seeded admin (activities and audit rows come from them). Those are
  * user actions, so they run at seed time; afterwards their timestamps (incident creation, acknowledged / resolved /
- * escalated at, activities, notes) are moved to the simulated operator times after the triggering event. updated_at
+ * escalated at, later activities, notes) are moved to the simulated operator times after the triggering event. updated_at
  * keeps the seed time (set by trigger). Newest incidents stay open; older ones are progressively further along.
  * Idempotent: skipped once any incident has been acknowledged.
  */
-type IncidentRow = { id: string; status: string; acknowledged_at: string | null; incident_events: { event_id: string }[] };
+type IncidentRow = {
+  id: string;
+  status: string;
+  created_at: string;
+  dedup_key: string | null;
+  acknowledged_at: string | null;
+  incident_identities: { identity_id: string }[];
+};
 type Step =
   | { kind: 'assign' }
   | { kind: 'acknowledge' }
@@ -22,10 +29,11 @@ type Step =
 
 const INCIDENTS = `
   query SeedHistoryIncidents($org: uuid!) {
-    incidents(where: { organization_id: { _eq: $org } }) { id status acknowledged_at incident_events { event_id } }
+    incidents(where: { organization_id: { _eq: $org } }) {
+      id status created_at dedup_key acknowledged_at incident_identities { identity_id }
+    }
   }
 `;
-const EVENTS = `query SeedIncidentEvents($ids: [uuid!]!) { events(where: { id: { _in: $ids } }) { id occurred_at } }`;
 const ACTIVITIES = `
   query SeedIncidentActivities($id: uuid!) {
     incident_activities(where: { incident_id: { _eq: $id } }, order_by: [{ occurred_at: asc }, { created_at: asc }]) { id }
@@ -35,7 +43,7 @@ const ACTIVITIES = `
 
 const MINUTE = 60_000;
 
-/** Steps by target status; the oldest closed incident is a false positive. */
+/** Steps by target status; `falsePositive` resolves (and closes, when closed) as a false positive. */
 function stepsFor(status: string, falsePositive: boolean): Step[] {
   const note = (body: string): Step => ({ kind: 'note', body });
   switch (status) {
@@ -109,9 +117,13 @@ async function backdate(ctx: SeedContext, incident: string, opened: number, step
   };
   const noteTimes = steps.flatMap((s, i) => (s.kind === 'note' ? [times[i]] : []));
   const ack = at('acknowledge') ?? at('investigate') ?? at('resolve');
-  const fields = activities.map((a, i) => `a${i}: update_incident_activities_by_pk(pk_columns: { id: "${a.id}" }, _set: { occurred_at: "${iso(timeline[Math.min(i, timeline.length - 1)])}", created_at: "${iso(timeline[Math.min(i, timeline.length - 1)])}" }) { id }`);
+  // The creation activity (index 0) is already dated at the incident's created_at (= event time).
+  const fields = activities.slice(1).map((a, j) => {
+    const time = iso(timeline[Math.min(j + 1, timeline.length - 1)]);
+    return `a${j}: update_incident_activities_by_pk(pk_columns: { id: "${a.id}" }, _set: { occurred_at: "${time}", created_at: "${time}" }) { id }`;
+  });
   notes.forEach((n, i) => fields.push(`n${i}: update_incident_notes_by_pk(pk_columns: { id: "${n.id}" }, _set: { created_at: "${iso(noteTimes[i] ?? opened)}" }) { id }`));
-  const set: Record<string, string> = { created_at: iso(opened) };
+  const set: Record<string, string> = {};
   if (ack) set.acknowledged_at = ack;
   const resolved = at('resolve');
   if (resolved) set.resolved_at = resolved;
@@ -126,28 +138,39 @@ async function backdate(ctx: SeedContext, incident: string, opened: number, step
   );
 }
 
+/** Occurrence of an incident: its session (one sighting can open incidents of several rules), else itself. */
+function occurrence(i: IncidentRow): string {
+  const m = /^session:([^:]+):/.exec(i.dedup_key ?? '');
+  return m ? m[1] : i.id;
+}
+
 export async function seedIncidentHistory(
   ctx: SeedContext,
-  args: { org: string; users: [string, string] },
+  args: { org: string; users: [string, string]; falsePositiveIdentity: string | null },
 ): Promise<{ incidents: number; processed: number; byStatus: Record<string, number> }> {
   const { incidents } = await ctx.admin.request<{ incidents: IncidentRow[] }>(INCIDENTS, { org: args.org });
   const byStatus: Record<string, number> = {};
   if (incidents.length === 0 || incidents.some((i) => i.acknowledged_at !== null)) {
     return { incidents: incidents.length, processed: 0, byStatus };
   }
-  const eventIds = incidents.flatMap((i) => i.incident_events.map((e) => e.event_id));
-  const { events } = await ctx.admin.request<{ events: { id: string; occurred_at: string }[] }>(EVENTS, { ids: eventIds });
-  const occurred = new Map(events.map((e) => [e.id, Date.parse(e.occurred_at)]));
-  const opened = (i: IncidentRow) => Math.min(...i.incident_events.map((e) => occurred.get(e.event_id) ?? ctx.now.getTime()));
-  const newestFirst = [...incidents].sort((a, b) => opened(b) - opened(a));
-  const ladder = ['open', 'acknowledged', 'investigating', 'investigating', 'resolved', 'resolved'];
-  const closed = newestFirst.slice(ladder.length);
+  const opened = (i: IncidentRow) => Date.parse(i.created_at);
+  // Statuses per occurrence, newest first: the latest still open, older ones further along.
+  const occurrences = [...new Set([...incidents].sort((a, b) => opened(b) - opened(a)).map(occurrence))];
+  const ladder = ['open', 'acknowledged', 'investigating', 'resolved'];
+  // The watch-list persona's earliest incident turned out to be a false positive.
+  const persona = incidents
+    .filter((i) => args.falsePositiveIdentity && i.incident_identities.some((x) => x.identity_id === args.falsePositiveIdentity))
+    .sort((a, b) => opened(a) - opened(b))[0];
   const actors = args.users.map((user) => createHasuraClient(ctx.env, { role: 'admin', userId: user, organizationId: args.org }));
 
-  for (const [n, incident] of newestFirst.entries()) {
-    const status = ladder[n] ?? 'closed';
+  const ordered = [...incidents].sort((a, b) => opened(b) - opened(a) || a.id.localeCompare(b.id));
+  for (const [n, incident] of ordered.entries()) {
+    const rank = occurrences.indexOf(occurrence(incident));
+    let status = ladder[rank] ?? 'closed';
+    const falsePositive = incident === persona;
+    if (falsePositive) status = 'resolved';
     byStatus[status] = (byStatus[status] ?? 0) + 1;
-    const steps = stepsFor(status, incident === closed[closed.length - 1]);
+    const steps = stepsFor(status, falsePositive);
     const start = opened(incident);
     const latest = ctx.now.getTime() - 5 * MINUTE;
     let previous = start;
@@ -157,8 +180,8 @@ export async function seedIncidentHistory(
       previous = Math.min(Math.max(planned, previous + MINUTE), latest);
       return previous;
     });
-    for (const step of steps) await runStep(actors[n % 2], args.org, incident.id, step, args.users[(n + 1) % 2]);
+    for (const step of steps) await runStep(actors[rank % 2 === 0 ? 0 : 1], args.org, incident.id, step, args.users[rank % 2 === 0 ? 1 : 0]);
     await backdate(ctx, incident.id, start, steps, times);
   }
-  return { incidents: incidents.length, processed: newestFirst.length, byStatus };
+  return { incidents: incidents.length, processed: ordered.length, byStatus };
 }

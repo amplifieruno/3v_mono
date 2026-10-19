@@ -41,7 +41,7 @@ const ESTIMATE_STATE = `
     tracking_sessions(
       where: { organization_id: { _eq: $org }, last_area_id: { _eq: $area }, status: { _eq: lost }, started_at: { _gt: $since } }
       order_by: { started_at: desc }
-      limit: 200
+      limit: 3000
     ) { id identity_id facility_id last_detected_at }
   }
 `;
@@ -113,6 +113,7 @@ async function seedEstimatedLocations(
   org: string,
   facilities: SeedFacilitiesResult,
   companyByIdentity: Record<string, string>,
+  timezone: string,
 ): Promise<number> {
   const gallery = facilities.areas['nova/Nova Tower/Lobby/Turnstile Gallery'];
   if (!gallery) return 0;
@@ -125,7 +126,17 @@ async function seedEstimatedLocations(
   if (state.identity_locations.length > 0) return 0;
   const suite = (company: string): string | undefined =>
     Object.entries(facilities.areas).find(([key]) => key.startsWith('nova/') && key.endsWith(`(${company})`))?.[1];
+  // About two a day over the last week: arrivals that went upstairs after the turnstile (the floors have no camera).
+  const perDay = new Map<string, number>();
   const objects = state.tracking_sessions
+    .filter((s) => {
+      if (!suite(companyByIdentity[s.identity_id] ?? '')) return false;
+      const day = localDate(Date.parse(s.last_detected_at), timezone);
+      const taken = perDay.get(day) ?? 0;
+      if (taken >= 2) return false;
+      perDay.set(day, taken + 1);
+      return true;
+    })
     .flatMap((s) => {
       const area = suite(companyByIdentity[s.identity_id] ?? '');
       if (!area) return [];
@@ -141,8 +152,7 @@ async function seedEstimatedLocations(
         confidence: 0.6,
         occurred_at: new Date(Date.parse(s.last_detected_at) + 90_000).toISOString(),
       }];
-    })
-    .slice(0, 15);
+    });
   if (objects.length === 0) return 0;
   const data = await ctx.admin.request<{ insert_identity_locations: { affected_rows: number } }>(INSERT_LOCATIONS, { objects });
   return data.insert_identity_locations.affected_rows;
@@ -155,6 +165,6 @@ export async function seedOperatorHistory(
   return {
     handovers: await seedHandovers(ctx, args.org, args.users, args.timezone),
     workspaces: await seedWorkspaces(ctx, args.org, args.users, args.devices),
-    estimatedLocations: await seedEstimatedLocations(ctx, args.org, args.facilities, args.companyByIdentity),
+    estimatedLocations: await seedEstimatedLocations(ctx, args.org, args.facilities, args.companyByIdentity, args.timezone),
   };
 }

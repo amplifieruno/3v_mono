@@ -245,6 +245,38 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       { days: [6], from: '09:00', to: '15:00' },
     ]);
     expect(config).toMatchObject({ published: '4', loitering: '2', blacklisted: '1' });
+
+    const [extra] = await runSqlRows(
+      `select (select count(*) from itap.profiles p where p.organization_id = ${org} and p.profile_type = 'employee'
+                and not itap.profile_has_face(p)) as unlinked,
+              (select count(*) from itap.event_rule_versions v where v.organization_id = ${org}
+                and v.parameters ? 'watch_list_kinds') as by_kind,
+              (select count(*) from (select substring(dedup_key from '^session:[^:]+') as s from itap.incidents
+                where organization_id = ${org} and dedup_key like 'session:%' group by 1 having count(*) > 1) x) as doubled,
+              (select count(*) from itap.watch_list_entries e where e.organization_id = ${org}
+                and e.created_at > (select min(detected_at) from itap.detections d where d.organization_id = ${org})) as late_entries,
+              (select count(*) from itap.visits v where v.organization_id = ${org}
+                and extract(epoch from v.expected_start)::bigint % 900 <> 0) as unrounded,
+              (select count(*) from itap.incidents i where i.organization_id = ${org} and i.disposition = 'false_positive'
+                and exists (select 1 from itap.incident_identities x join itap.identities y on y.id = x.identity_id
+                  where x.incident_id = i.id and itap.profile_is_blacklisted((select p from itap.profiles p where p.id = y.profile_id)))) as persona_fp`,
+    );
+    expect(Number(extra.unlinked)).toBeGreaterThanOrEqual(8);
+    expect(extra).toMatchObject({ by_kind: '2', doubled: '0', late_entries: '0', unrounded: '0', persona_fp: '1' });
+  });
+
+  it('should give Riverside a light, separate history with one incident', async () => {
+    const riverside = await seedCounts(SLUGS[1]);
+    expect(riverside.detections).toBeGreaterThan(20);
+    expect(riverside.incidents).toBe(1);
+    const org = `(select id from itap.organizations where slug = '${SLUGS[1]}')`;
+    const [row] = await runSqlRows(
+      `select (select count(*) from itap.events where organization_id = ${org} and event_type = 'after_hours') as after_hours,
+              (select count(*) from itap.detections d join itap.devices v on v.id = d.device_id
+                where d.organization_id = ${org} and v.organization_id <> d.organization_id) as foreign_devices`,
+    );
+    expect(Number(row.after_hours)).toBeGreaterThanOrEqual(1);
+    expect(row.foreign_devices).toBe('0');
   });
 
   it('should recreate the organizations with --reset', async () => {

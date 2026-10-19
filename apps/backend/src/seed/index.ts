@@ -60,7 +60,7 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   ),
   deviceHealth: step(['tenancy', 'devices'], (ctx, { tenancy, devices }) => seedDeviceHealth(ctx, tenancy, devices)),
   history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities'], (ctx, r) =>
-    seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles),
+    seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles, r.identities),
   ),
 };
 
@@ -94,11 +94,11 @@ async function main(): Promise<void> {
   const history = results.history;
   if (history) {
     const { replay } = history;
-    log(
-      replay.skipped
-        ? 'History: replay skipped (already seeded).'
-        : `History: ${replay.days} days, ${replay.detections} detections, ${replay.visits} visits in ${Math.round(replay.durationMs / 1000)} s.`,
-    );
+    if (replay.skipped === 'needs_reset') {
+      log('History: Nova Tower already has tracking data but no seeded history; the history replay needs `pnpm seed --reset`.');
+    } else if (replay.skipped === 'seeded') log('History: replay skipped (already seeded).');
+    else log(`History: ${replay.days} days, ${replay.detections} detections, ${replay.visits} visits in ${Math.round(replay.durationMs / 1000)} s.`);
+    if (history.riverside.skipped === 'needs_reset') log('History: Riverside replay needs `pnpm seed --reset`.');
   }
   log(`Seed complete in ${Math.round((Date.now() - ctx.now.getTime()) / 1000)} s.`);
 }

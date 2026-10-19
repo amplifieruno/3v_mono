@@ -4,13 +4,15 @@ import type { SeedContext } from './tenancy.js';
 
 /**
  * The tracked people of the Nova Tower history. Only the manifest faces have enrolled identities; every other
- * profile that is tracked on camera (employees and day security, VIPs, contractors and visitors with a granted
- * biometric consent) gets one primary identity of source `import` (access-control import, no face templates), so the
- * history covers the whole building. Night-shift staff are not replayed (their shifts would be after-hours events
+ * profile that is tracked on camera (a granted biometric consent; employees and day security, VIPs, contractors,
+ * visitors) gets one primary identity of source `import` (access-control import, no face templates; the profile's
+ * has_face is true, it counts linked identities), so the history covers the whole building. Every 12th employee
+ * stays without an identity (pending link). Night-shift staff are not replayed (their shifts would be after-hours events
  * every night). Unknown faces are the seeded camera identities without a profile.
  */
 type ProfileRow = {
   id: string;
+  external_id: string;
   profile_type: string;
   access_level: string;
   start_date: string | null;
@@ -25,7 +27,7 @@ type ProfileRow = {
 const PROFILES = `
   query SeedHistoryProfiles($org: uuid!) {
     profiles(where: { organization_id: { _eq: $org }, external_id: { _like: "seed:%" } }, order_by: { external_id: asc }) {
-      id profile_type access_level start_date end_date custom_fields
+      id external_id profile_type access_level start_date end_date custom_fields
       company { id name }
       work_schedule { name }
       consent_records(where: { purpose: { _eq: biometric_processing } }, order_by: { granted_at: desc }, limit: 1) { status }
@@ -62,16 +64,28 @@ const LOGISTICS = 'Granite Logistics';
 function tracked(p: ProfileRow, blacklisted: Set<string>): boolean {
   if (blacklisted.has(p.id)) return false;
   if (p.work_schedule?.name === 'Night Shift' || p.custom_fields.shift === 'night') return false;
-  if (p.profile_type === 'employee' || p.profile_type === 'vip') return true;
   return p.consent_records[0]?.status === 'granted';
 }
 
+/**
+ * Every 12th employee (by seed key) keeps no identity at all: has_face stays false and the profile shows the
+ * "pending link" state (FS) until a face is enrolled. Profiles with an enrolled face keep theirs.
+ */
+function leftUnlinked(p: ProfileRow): boolean {
+  return p.profile_type === 'employee' && Number(p.external_id.slice('seed:'.length)) % 12 === 0;
+}
+
 /** Loads the Nova Tower people, creates the missing history identities and returns the plan input. */
-export async function historyPeople(ctx: SeedContext, org: string, people: SeedPeopleResult): Promise<HistoryPeople> {
+export async function historyPeople(
+  ctx: SeedContext,
+  org: string,
+  people: SeedPeopleResult,
+  seededIdentities: string[],
+): Promise<HistoryPeople> {
   const load = async () => (await ctx.admin.request<{ profiles: ProfileRow[] }>(PROFILES, { org })).profiles;
   const blacklisted = new Set(people.byRole.blacklisted);
   let profiles = await load();
-  const missing = profiles.filter((p) => tracked(p, blacklisted) && p.identities.length === 0);
+  const missing = profiles.filter((p) => tracked(p, blacklisted) && !leftUnlinked(p) && p.identities.length === 0);
   if (missing.length > 0) {
     await ctx.admin.request(INSERT_IDENTITIES, {
       objects: missing.map((p) => ({
@@ -121,7 +135,9 @@ export async function historyPeople(ctx: SeedContext, org: string, people: SeedP
   const blacklistedProfile = profiles.find((p) => blacklisted.has(p.id));
   const blacklistedIdentity = blacklistedProfile?.identities.find((i) => i.matching_enabled)?.id ?? null;
   const { identities: unknown } = await ctx.admin.request<{ identities: { id: string }[] }>(UNKNOWN, { org });
-  const unknownIdentities = unknown.map((u) => u.id);
+  // Only the seeded camera identities: live recognition may have created more since.
+  const seeded = new Set(seededIdentities);
+  const unknownIdentities = unknown.map((u) => u.id).filter((id) => seeded.has(id));
   return {
     people: persons,
     visitors,
