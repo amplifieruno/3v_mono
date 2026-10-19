@@ -19,7 +19,7 @@ export function coverageScenarios(t: Track, input: HistoryInput, today: string, 
   const { rnd } = t;
 
   const attendees = input.people
-    .filter((p) => p.role === 'employee' && !p.guard && p.clearance !== 'basic')
+    .filter((p) => p.role === 'employee' && !p.guard && !p.night && p.clearance !== 'basic')
     .slice(0, MEETING_ATTENDEES);
   const workshop = weekdayOnOrBefore(addDays(today, -11));
   if (attendees.length === MEETING_ATTENDEES && inWindow(workshop)) {

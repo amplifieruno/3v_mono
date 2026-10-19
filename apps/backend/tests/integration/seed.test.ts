@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { asAdmin, asBearer, testEnv } from './support/clients.js';
 import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
+import { expectSeededAnalytics } from './support/seedAnalytics.js';
 import { expectSeededNotifications } from './support/seedNotifications.js';
 import { expectSeededSegments } from './support/seedSegments.js';
 import { seedCounts, seededTemplate } from './support/seedState.js';
@@ -209,11 +210,11 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       `select event_type, count(*) as n from itap.events where organization_id = ${org} group by event_type`,
     );
     const byType = Object.fromEntries(types.map((t) => [t.event_type, Number(t.n)]));
-    // Events of every type the pipeline produces today (design §9); abnormal_movement / tailgating / access and
-    // auth events have no producer before slices 7/8.
+    // Events of every type the pipeline produces today (design §9); tailgating / access and auth events have no
+    // producer before slice 8.
     for (const type of ['detection_known', 'detection_unknown', 'vip_arrival', 'blacklist_match', 'watchlist_match',
       'after_hours', 'restricted_area_entry', 'loitering', 'unexpected_facility', 'occupancy_exceeded', 'unusual_dwell',
-      'inactive_profile_detected', 'device_offline', 'device_online']) {
+      'inactive_profile_detected', 'device_offline', 'device_online', 'abnormal_movement', 'report_generated']) {
       expect(byType[type] ?? 0, type).toBeGreaterThanOrEqual(1);
     }
     // Overfilled once (one 15-minute bucket of Meeting Room 12A); the terminated contractor seen once; one outage.
@@ -309,6 +310,10 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
 
   it('should seed segments of both targets with a 30-day membership history and daily stats', async () => {
     await expectSeededSegments(SLUGS[0], SLUGS[1]);
+  });
+
+  it('should seed stats, reports, searches, bulk jobs and dashboards (slice 7)', async () => {
+    await expectSeededAnalytics(SLUGS[0], SLUGS[1]);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {

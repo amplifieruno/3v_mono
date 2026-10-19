@@ -5,6 +5,7 @@ import { localDate, localMinutes, weekday } from './historyTime.js';
 const TZ = 'Europe/Moscow';
 const NOW = new Date('2026-10-19T09:17:00Z');
 const END = NOW.getTime() - 3_600_000;
+const NIGHT = new Set(['id-110', 'id-111']);
 
 function person(n: number, extra: Partial<HistoryPerson> = {}): HistoryPerson {
   return {
@@ -15,6 +16,7 @@ function person(n: number, extra: Partial<HistoryPerson> = {}): HistoryPerson {
     car: n % 3 === 0,
     dockDuty: n % 7 === 0 && n % 5 !== 0,
     guard: null,
+    night: false,
     activeFrom: null,
     activeTo: null,
     ...extra,
@@ -27,6 +29,7 @@ function input(): HistoryInput {
   people.push(person(102, { role: 'contractor', clearance: 'basic', activeFrom: '2026-09-01', activeTo: '2027-01-01' }));
   people.push(person(103, { role: 'vip', clearance: 'elevated', car: true }), person(104, { role: 'vip', clearance: 'elevated' }));
   people.push(person(105, { role: 'contractor', clearance: 'basic', activeFrom: '2026-01-10', activeTo: '2026-09-09' }));
+  people.push(person(110, { night: true }), person(111, { night: true, guard: 'guard' }));
   const visitDates = ['2026-10-01', '2026-10-05', '2026-10-08', '2026-10-11', '2026-10-14', '2026-10-16', '2026-10-19'];
   return {
     now: NOW,
@@ -87,7 +90,7 @@ describe('buildHistoryPlan', () => {
       const { date, minutes } = local(d.at);
       const day = weekday(date);
       const open = day <= 5 ? minutes >= 7 * 60 && minutes < 21 * 60 : day === 6 && minutes >= 9 * 60 && minutes < 15 * 60;
-      return !open && d.identityId.startsWith('id-');
+      return !open && d.identityId.startsWith('id-') && !NIGHT.has(d.identityId);
     });
     const entries = new Set(outside.map((d) => `${d.identityId}/${local(d.at).date}`));
     expect(entries.size).toBeGreaterThanOrEqual(2);
@@ -170,5 +173,74 @@ describe('buildHistoryPlan', () => {
       expect(d.bbox.x + d.bbox.width).toBeLessThanOrEqual(1920);
       expect(d.bbox.y + d.bbox.height).toBeLessThanOrEqual(1080);
     }
+  });
+
+  it('should bring office employees on time on most weekdays: about 80% on time, 15% late, 5% absent', () => {
+    const office = input().people.filter((p) => p.role === 'employee' && !p.guard && !p.night).map((p) => p.identityId);
+    const first = new Map<string, number>();
+    for (const d of plan.detections) {
+      const { date, minutes } = local(d.at);
+      const key = `${d.identityId}/${date}`;
+      if (weekday(date) <= 5 && minutes < 12 * 60 && !first.has(key)) first.set(key, minutes);
+    }
+    let onTime = 0;
+    let late = 0;
+    let absent = 0;
+    for (const { date } of plan.days.filter((day) => weekday(day.date) <= 5 && day.end - day.start > 20 * 3_600_000)) {
+      for (const id of office) {
+        const minutes = first.get(`${id}/${date}`);
+        if (minutes === undefined) absent += 1;
+        else if (minutes >= 7 * 60 + 50 && minutes <= 8 * 60 + 10) onTime += 1;
+        else if (minutes > 8 * 60 + 15) late += 1;
+      }
+    }
+    const total = onTime + late + absent;
+    expect(onTime / total).toBeGreaterThan(0.74);
+    expect(onTime / total).toBeLessThan(0.86);
+    expect(late / total).toBeGreaterThan(0.1);
+    expect(late / total).toBeLessThan(0.2);
+    expect(absent / total).toBeGreaterThan(0.02);
+    expect(absent / total).toBeLessThan(0.09);
+  });
+
+  it('should bring night-shift staff around 22:00 and let them leave around 06:00, never across the day boundary', () => {
+    const night = plan.detections.filter((d) => NIGHT.has(d.identityId));
+    expect(night.length).toBeGreaterThan(100);
+    const arrivals = new Map<string, number>();
+    for (const d of night) {
+      const { minutes } = local(d.at);
+      // Nobody on camera around the 04:00 replay day boundary.
+      expect(minutes < 3 * 60 + 45 || minutes > 4 * 60 + 15).toBe(true);
+      if (minutes >= 20 * 60) {
+        const key = `${d.identityId}/${local(d.at).date}`;
+        if (!arrivals.has(key)) arrivals.set(key, minutes);
+      }
+    }
+    const times = [...arrivals.values()];
+    expect(times.length).toBeGreaterThan(40);
+    const onTime = times.filter((m) => m >= 21 * 60 + 45 && m <= 22 * 60 + 10).length;
+    expect(onTime / times.length).toBeGreaterThan(0.7);
+    const departures = night.filter((d) => local(d.at).minutes >= 5 * 60 + 45 && local(d.at).minutes <= 6 * 60 + 25);
+    expect(departures.length).toBeGreaterThan(40);
+    // The night guard checks the loading dock during the shift.
+    expect(night.some((d) => d.identityId === 'id-111' && d.point === 'dock' && local(d.at).minutes < 3 * 60)).toBe(true);
+  });
+
+  it('should take a few people on unusual routes between busy areas, about three a week', () => {
+    const area = (point: string) => (point.startsWith('turnstile') ? 'gallery' : point);
+    const rare = new Set(['parking>reception', 'gallery>reception', 'reception>entrance', 'entrance>parking', 'parking>entrance']);
+    const last = new Map<string, { at: number; point: string }>();
+    const seen: string[] = [];
+    for (const d of plan.detections) {
+      const prev = last.get(d.identityId);
+      if (prev && d.at - prev.at < 5 * 60_000 && area(prev.point) !== area(d.point)) {
+        const pair = `${area(prev.point)}>${area(d.point)}`;
+        if (rare.has(pair)) seen.push(`${pair}@${local(d.at).date}`);
+      }
+      last.set(d.identityId, { at: d.at, point: d.point });
+    }
+    expect(seen.length).toBeGreaterThanOrEqual(8);
+    expect(seen.length).toBeLessThanOrEqual(12);
+    expect(new Set(seen.map((s) => s.split('@')[1])).size).toBeGreaterThanOrEqual(7);
   });
 });

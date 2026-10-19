@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { loadEnv } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { createStorageClient } from '../storage/storageClient.js';
+import { seedAnalytics, type SeedAnalyticsResult } from './analytics.js';
 import { seedCompanies, type SeedCompaniesResult } from './companies.js';
 import { seedDeviceHealth, type SeedDeviceHealthResult } from './deviceHealth.js';
 import { seedDevices, type SeedDevicesResult } from './devices.js';
@@ -26,6 +27,7 @@ export type SeedResults = {
   deviceHealth: SeedDeviceHealthResult;
   history: SeedHistoryResult;
   segments: SeedSegmentsResult;
+  analytics: SeedAnalyticsResult;
 };
 
 type StepName = keyof SeedResults;
@@ -72,6 +74,8 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   segments: step(['tenancy', 'companies', 'profiles', 'facilities', 'history'], (ctx, r) =>
     seedSegments(ctx, r.tenancy, r.companies, r.profiles, r.facilities),
   ),
+  // Last: stats over the whole history, reports computed from them, searches, bulk jobs and dashboards.
+  analytics: step(['tenancy', 'facilities', 'history', 'segments'], (ctx, r) => seedAnalytics(ctx, r.tenancy, r.facilities)),
 };
 
 function log(message: string): void {
@@ -116,6 +120,13 @@ async function main(): Promise<void> {
   const segments = results.segments;
   if (segments && segments.segmentsCreated > 0) {
     log(`Segments: ${segments.segmentsCreated} created, ${segments.evaluations} evaluation times, ${segments.syncs} syncs in ${Math.round(segments.durationMs / 1000)} s.`);
+  }
+  const analytics = results.analytics;
+  if (analytics) {
+    const { stats, reports, searches, bulk } = analytics;
+    log(`Analytics: stats ${stats.nova.hourly}/${stats.nova.daily}/${stats.nova.transitions} rows (hourly/daily/transitions); ` +
+      `${reports.reports} past reports (${reports.failed} failed), ${searches.requests} searches, ${bulk.jobs} bulk jobs ` +
+      `(${bulk.statuses.join(', ') || 'already seeded'}) in ${Math.round(analytics.durationMs / 1000)} s.`);
   }
   log(`Seed complete in ${Math.round((Date.now() - ctx.now.getTime()) / 1000)} s.`);
 }

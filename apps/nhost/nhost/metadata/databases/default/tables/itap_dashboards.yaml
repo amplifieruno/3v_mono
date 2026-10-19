@@ -1,0 +1,92 @@
+table:
+  schema: itap
+  name: dashboards
+configuration:
+  custom_name: dashboards
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          owner_id: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - is_shared
+        - layout
+        - name
+        - widgets
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        owner_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - description
+        - id
+        - is_shared
+        - layout
+        - name
+        - organization_id
+        - owner_id
+        - updated_at
+        - widgets
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - owner_id:
+                  _eq: X-Hasura-User-Id
+              - is_shared:
+                  _eq: true
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - is_shared
+        - layout
+        - name
+        - widgets
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id

@@ -117,6 +117,14 @@ array_relationships:
           name: custom_attribute_definitions
         column_mapping:
           id: organization_id
+  - name: dashboards
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: dashboards
+        column_mapping:
+          id: organization_id
   - name: detections
     using:
       manual_configuration:

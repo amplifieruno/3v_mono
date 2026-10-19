@@ -57,6 +57,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: owner_id
+  - name: dashboards
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: dashboards
+        column_mapping:
+          organization_id: organization_id
+          user_id: owner_id
   - name: event_rule_versions
     using:
       manual_configuration:

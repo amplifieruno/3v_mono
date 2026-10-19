@@ -1,14 +1,16 @@
+import { SCHEDULES } from './companies.js';
 import type { SeedPeopleResult } from './people.js';
 import type { HistoryHost, HistoryInput, HistoryPerson, HistoryVisitor } from './historyPlan.js';
 import type { SeedContext } from './tenancy.js';
 
 /**
  * The tracked people of the Nova Tower history. Only the manifest faces have enrolled identities; every other
- * profile that is tracked on camera (a granted biometric consent; employees and day security, VIPs, contractors,
+ * profile that is tracked on camera (a granted biometric consent; employees and security, VIPs, contractors,
  * visitors) gets one primary identity of source `import` (access-control import, no face templates; the profile's
  * has_face is true, it counts linked identities), so the history covers the whole building. Every 12th employee
- * stays without an identity (pending link). Night-shift staff are not replayed (their shifts would be after-hours events
- * every night). Unknown faces are the seeded camera identities without a profile. One contractor's contract was
+ * stays without an identity (pending link). Night-shift staff work 22:00-06:00 (Stage B does not report rostered staff
+ * as after-hours presence; night guards check the loading dock). Unknown faces are the seeded camera identities
+ * without a profile. One contractor's contract was
  * terminated before the replay window (terminateContractor).
  */
 type ProfileRow = {
@@ -20,6 +22,7 @@ type ProfileRow = {
   start_date: string | null;
   end_date: string | null;
   custom_fields: Record<string, unknown>;
+  department: string | null;
   company: { id: string; name: string } | null;
   work_schedule: { name: string } | null;
   consent_records: { status: string }[];
@@ -29,7 +32,7 @@ type ProfileRow = {
 const PROFILES = `
   query SeedHistoryProfiles($org: uuid!) {
     profiles(where: { organization_id: { _eq: $org }, external_id: { _like: "seed:%" } }, order_by: { external_id: asc }) {
-      id external_id profile_type status access_level start_date end_date custom_fields
+      id external_id profile_type status access_level start_date end_date custom_fields department
       company { id name }
       work_schedule { name }
       consent_records(where: { purpose: { _eq: biometric_processing } }, order_by: { granted_at: desc }, limit: 1) { status }
@@ -72,7 +75,6 @@ const LOGISTICS = 'Granite Logistics';
 
 function tracked(p: ProfileRow, blacklisted: Set<string>): boolean {
   if (blacklisted.has(p.id)) return false;
-  if (p.work_schedule?.name === 'Night Shift' || p.custom_fields.shift === 'night') return false;
   return p.consent_records[0]?.status === 'granted';
 }
 
@@ -142,7 +144,8 @@ export async function historyPeople(
       if (!blacklisted.has(p.id) && p.start_date) visitors.push({ profileId: p.id, identityId: usable, visitDate: p.start_date });
       continue;
     }
-    const security = p.work_schedule?.name === 'Security 24/7';
+    const night = p.work_schedule?.name === SCHEDULES.nightShift;
+    const security = p.work_schedule?.name === SCHEDULES.security || (night && p.department === 'Security');
     if (p.profile_type === 'employee' && !security && p.company) hosts.push({ profileId: p.id, companyId: p.company.id });
     if (!usable) continue;
     if (p.company && !security) companyByIdentity[usable] = p.company.name;
@@ -156,6 +159,7 @@ export async function historyPeople(
       car: typeof p.custom_fields.parking_spot === 'string' && !(p.profile_type === 'vip' && p.id === people.byRole.vip[0]),
       dockDuty: p.company?.name === LOGISTICS && p.access_level !== 'basic',
       guard,
+      night,
       activeFrom: p.profile_type === 'contractor' ? p.start_date : null,
       activeTo: p.profile_type === 'contractor' ? p.end_date : null,
     });

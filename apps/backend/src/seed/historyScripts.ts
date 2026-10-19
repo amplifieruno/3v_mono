@@ -1,5 +1,5 @@
 import type { Random } from './random.js';
-import { weekday, zonedTime } from './historyTime.js';
+import { addDays, weekday, zonedTime } from './historyTime.js';
 
 /**
  * Camera points of the Nova Tower history: where a detection happens (device, area, access point are resolved by
@@ -106,18 +106,23 @@ export type HistoryPerson = {
   /** Logistics staff cleared for the loading dock. */
   dockDuty: boolean;
   guard: 'chief' | 'guard' | null;
+  /** On the Night Shift work schedule (22:00-06:00): nightShift instead of office days. */
+  night: boolean;
   /** Profile validity (contractors), YYYY-MM-DD. */
   activeFrom: string | null;
   activeTo: string | null;
 };
 
-/** A regular office day: arrival 08:15–10:00, lunch out on some days, departure 8.5–9.5 h later (by 20:35). */
+/**
+ * A regular office day on the Office Day schedule (starts 08:00): on time (07:50-08:10) or, about one day in six,
+ * late (08:17-09:45); lunch out on some days; departure 8.5-9.5 h after arrival (by 20:35).
+ */
 export function officeDay(t: Track, p: HistoryPerson, date: string): void {
   const { rnd } = t;
   const id = p.identityId;
   const byCar = p.car && rnd.chance(0.8);
   const door: PointKey = byCar ? 'parking' : 'entrance';
-  const arrive = t.at(date, rnd.int(495, 599));
+  const arrive = t.at(date, rnd.chance(0.16) ? rnd.int(497, 585) : rnd.int(470, 489));
   t.enter(id, door, arrive, byCar ? [80, 150] : [35, 70]);
   if (rnd.chance(0.45)) {
     const out = t.leave(id, 'entrance', t.at(date, rnd.int(735, 825)));
@@ -126,6 +131,21 @@ export function officeDay(t: Track, p: HistoryPerson, date: string): void {
   if (p.dockDuty && rnd.chance(0.25)) t.pass(id, 'dock', t.at(date, rnd.int(900, 960)), rnd.int(2, 3));
   const depart = Math.min(arrive + rnd.int(510, 570) * MINUTE, t.at(date, 1234));
   t.leave(id, door, depart, byCar ? [80, 150] : [35, 70]);
+}
+
+/**
+ * A night shift (22:00-06:00) starting on `date`: on time (21:50-22:09) or, about one night in six, late
+ * (22:17-23:20); night guards check the loading dock at about 00:30 and 02:30, logistics staff once at about 01:30;
+ * out at 05:50-06:14 the next morning. Nothing between 03:45 and 04:15 (the replay day boundary).
+ */
+export function nightShift(t: Track, p: HistoryPerson, date: string): void {
+  const { rnd } = t;
+  const id = p.identityId;
+  const next = addDays(date, 1);
+  t.enter(id, 'entrance', t.at(date, rnd.chance(0.16) ? rnd.int(1337, 1400) : rnd.int(1310, 1329)));
+  const rounds = p.guard ? [rnd.int(20, 40), rnd.int(140, 160)] : p.dockDuty && rnd.chance(0.5) ? [rnd.int(80, 100)] : [];
+  for (const minutes of rounds) t.pass(id, 'dock', t.at(next, minutes), 2);
+  t.leave(id, 'entrance', t.at(next, rnd.int(350, 373)));
 }
 
 /** A Saturday in the office (10:00–14:00), through the main entrance. */

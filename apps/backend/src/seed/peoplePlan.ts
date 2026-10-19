@@ -172,6 +172,8 @@ function addOthers(plan: Planner, org: OrgKey, mix: Mix, now: Date): void {
     const person = plan.add('contractor', vendors[i % vendors.length] ?? null, {
       job_title: CONTRACTOR_TITLES[i % CONTRACTOR_TITLES.length],
       access_level: 'basic',
+      // Contractors come when booked (no fixed schedule, so no attendance tracking).
+      schedule: null,
       start_date: dateFrom(now, -plan.random.int(20, 400)),
       // Every fifth contractor (from the second) has access ending within a month: the "Contractors ending soon" segment.
       end_date: dateFrom(now, i % 5 === 1 ? plan.random.int(6, 26) : plan.random.int(30, 300)),
@@ -204,6 +206,8 @@ export function buildPeople(org: OrgKey, now: Date): PersonSpec[] {
       job_title: VIP_TITLES[i],
       access_level: 'elevated',
       custom_fields: { badge_number: plan.badge(), parking_spot: `P1-0${i + 1}`, shift: 'day' },
+      // Executives keep no work schedule (not in the attendance report).
+      schedule: null,
     });
     person.document = { kind: 'nda', title: 'Building NDA' };
   }

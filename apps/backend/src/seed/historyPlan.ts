@@ -2,6 +2,7 @@ import { seededRandom } from './random.js';
 import {
   contractorDay,
   guardDay,
+  nightShift,
   officeDay,
   saturdayDay,
   strangerVisit,
@@ -11,6 +12,7 @@ import {
   type PlannedDetection,
 } from './historyScripts.js';
 import { coverageScenarios } from './historyCoverage.js';
+import { unusualRoutes } from './historyRoutes.js';
 import { addDays, localDate, replayDays, weekday, weekdayOnOrBefore, type ReplayDay } from './historyTime.js';
 import { planVisits, type HistoryHost, type HistoryVisitor, type PlannedVisit } from './historyVisits.js';
 
@@ -19,11 +21,14 @@ export type { HistoryHost, HistoryVisitor, PlannedVisit } from './historyVisits.
 
 /**
  * 30 days of plausible camera history of Nova Tower (seed, design §9), as detections to replay through the real
- * pipeline in time order (historyReplay). Office days through the entrance or parking gate and the turnstiles, day
- * security rounds, contractors via reception, VIP mornings, visitors (historyVisits) and the scenarios that produce
- * the alert events: the blacklisted person twice at the loading dock (once at night, once loitering), unknown faces,
- * a watched unknown face, a couple of after-hours entries, one server-room entry without clearance, one
- * contractor at the loading dock and the rarer event types (historyCoverage). Deterministic for the same input.
+ * pipeline in time order (historyReplay). Office days through the entrance or parking gate and the turnstiles
+ * (arrivals plausible for the 08:00 schedule start: about 80% on time, 15% late, 5% absent), night shifts
+ * (22:00-06:00, no after_hours events: Stage B exempts rostered staff), day security rounds, contractors via
+ * reception, VIP mornings, visitors (historyVisits) and the scenarios that produce the alert events: the blacklisted
+ * person twice at the loading dock (once at night, once loitering), unknown faces, a watched unknown face, a couple
+ * of after-hours entries, one server-room entry without clearance, one contractor at the loading dock, the rarer
+ * event types (historyCoverage) and a few unusual routes (historyRoutes: abnormal_movement). Deterministic for the
+ * same input.
  */
 export type HistoryInput = {
   now: Date;
@@ -47,6 +52,10 @@ function regularDays(t: Track, input: HistoryInput, days: ReplayDay[]): void {
     for (const p of input.people) {
       if (p.activeFrom && date < p.activeFrom) continue;
       if (p.activeTo && date > p.activeTo) continue;
+      if (p.night) {
+        if (rnd.chance(0.95)) nightShift(t, p, date);
+        continue;
+      }
       if (p.guard) {
         if (day <= 6) guardDay(t, p, date);
         continue;
@@ -59,7 +68,7 @@ function regularDays(t: Track, input: HistoryInput, days: ReplayDay[]): void {
         if (day <= 5 && rnd.chance(0.35)) contractorDay(t, p, date);
         continue;
       }
-      if (day <= 5 && rnd.chance(0.93)) officeDay(t, p, date);
+      if (day <= 5 && rnd.chance(0.95)) officeDay(t, p, date);
       else if (day === 6 && rnd.chance(0.04)) saturdayDay(t, p, date);
     }
   }
@@ -68,7 +77,7 @@ function regularDays(t: Track, input: HistoryInput, days: ReplayDay[]): void {
 function scenarios(t: Track, input: HistoryInput, today: string, first: string): void {
   const { rnd } = t;
   const inWindow = (date: string): boolean => date >= first && date < today;
-  const office = input.people.filter((p) => p.role === 'employee' && !p.guard);
+  const office = input.people.filter((p) => p.role === 'employee' && !p.guard && !p.night);
 
   // The blacklisted person: at the loading dock at night (after hours) and, days later, loitering there.
   if (input.blacklistedIdentity) {
@@ -131,6 +140,7 @@ function scenarios(t: Track, input: HistoryInput, today: string, first: string):
   if (atDock && inWindow(dockVisit)) t.pass(atDock, 'dock', t.at(dockVisit, 15 * 60 + 40), 2);
 
   coverageScenarios(t, input, today, inWindow);
+  unusualRoutes(t, input, today, inWindow);
 }
 
 export function buildHistoryPlan(input: HistoryInput): HistoryPlan {

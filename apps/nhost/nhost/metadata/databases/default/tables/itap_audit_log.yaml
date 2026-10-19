@@ -25,6 +25,7 @@ select_permissions:
           - _or:
               - entity:
                   _nin:
+                    - dashboards
                     - notification_subscriptions
                     - operator_workspaces
                     - saved_searches

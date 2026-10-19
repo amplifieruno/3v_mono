@@ -2,6 +2,13 @@ import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 
 const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
+const SESSION_USER = 'X-Hasura-User-Id';
+const ownDashboard: BoolExp = { _and: [ownOrganizationRow, { owner_id: { _eq: SESSION_USER } }] };
+const visibleDashboard: BoolExp = {
+  _and: [ownOrganizationRow, { _or: [{ owner_id: { _eq: SESSION_USER } }, { is_shared: { _eq: true } }] }],
+};
+const DASHBOARD_INPUT = ['description', 'is_shared', 'layout', 'name', 'widgets'];
+const DASHBOARD_COLUMNS = [...DASHBOARD_INPUT, 'created_at', 'id', 'organization_id', 'owner_id', 'updated_at'].sort();
 
 /** Row type of a query function: org_admin selects it only through the function (root fields hidden). */
 function resultTable(name: string, columns: string[]): TableSpec {
@@ -46,6 +53,32 @@ export const analyticsTables: TableSpec[] = [
     'open_incidents_critical', 'open_incidents_high', 'open_incidents_info', 'open_incidents_low',
     'open_incidents_medium', 'segment_top_movers', 'unique_visitors_today',
   ]),
+  {
+    // Owner-managed (owner stamped from the session); shared dashboards are readable, never editable, by the
+    // organization. Widgets are validated in SQL (itap.valid_dashboard_widgets; contract in the migration).
+    name: 'dashboards',
+    profile: 'tenant_crud',
+    readOnlyColumns: ['owner_id'],
+    extraPermissions: {
+      insert_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: DASHBOARD_INPUT,
+            check: ownOrganizationRow,
+            set: { organization_id: 'x-hasura-organization-id', owner_id: 'x-hasura-user-id' },
+          },
+        },
+      ],
+      select_permissions: [
+        { role: ORG_ADMIN, permission: { columns: DASHBOARD_COLUMNS, filter: visibleDashboard, allow_aggregations: true } },
+      ],
+      update_permissions: [
+        { role: ORG_ADMIN, permission: { columns: DASHBOARD_INPUT, filter: ownDashboard, check: ownDashboard } },
+      ],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: ownDashboard } }],
+    },
+  },
   resultTable('identity_timeline_entries', [
     'access_point_id', 'area_id', 'detection_id', 'device_id', 'event_id', 'event_type', 'facility_id', 'identity_id',
     'kind', 'movement_type', 'occurred_at', 'session_id', 'severity', 'status', 'title', 'visit_id',

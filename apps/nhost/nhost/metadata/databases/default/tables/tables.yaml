@@ -41,6 +41,7 @@
 - "!include itap_custom_attribute_definitions.yaml"
 - "!include itap_custom_attribute_entities.yaml"
 - "!include itap_custom_attribute_types.yaml"
+- "!include itap_dashboards.yaml"
 - "!include itap_detections.yaml"
 - "!include itap_device_areas.yaml"
 - "!include itap_device_event_kinds.yaml"

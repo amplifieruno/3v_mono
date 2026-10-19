@@ -57,6 +57,14 @@ const TABLES = [
   // keep them current between two runs.
   'segment_templates',
   'segments',
+  // Analytics (slice 7): configuration keyed by name, history only when there is none (live crons add reports and
+  // saved-search runs later: counted below without them).
+  'report_templates',
+  'report_schedules',
+  'saved_searches',
+  'bulk_jobs',
+  'bulk_job_rows',
+  'dashboards',
 ];
 
 /** Counts every seeded table of the organization with the given slug, plus storage files and derived counts. */
@@ -97,7 +105,8 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
   parts.push(`(select count(*) from itap.areas where organization_id = ${org} and shape is not null) as areas_with_shape`);
   // A second run must write nothing at all, so no new audit rows or activities either. The live escalate cron keeps
   // escalating the open demo incident (activity with no actor, an audited incident update with no user) and live
-  // device events fan out: rows the crons write after the organization was created are left out.
+  // device events fan out: rows the crons write after the organization was created are left out. Report schedules
+  // (cron, no user) and the hourly runs of the alerting saved search write reports and search requests at any time.
   const created = `(select created_at from itap.organizations where id = ${org})`;
   parts.push(
     `(select count(*) from itap.incident_activities where organization_id = ${org}
@@ -105,11 +114,16 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
   );
   parts.push(
     `(select count(*) from itap.audit_log where organization_id = ${org}
-       and not (entity = 'incidents' and user_id is null and occurred_at > ${created})) as audit_log`,
+       and not (entity = 'incidents' and user_id is null and occurred_at > ${created})
+       and not (entity = 'reports' and user_id is null)
+       and not (entity = 'search_requests' and entity_id in (select id from itap.search_requests where saved_search_id is not null))
+     ) as audit_log`,
   );
   parts.push(`(select count(*) from itap.notification_deliveries where organization_id = ${org} and created_at < ${created}) as seeded_deliveries`);
   parts.push(`(select count(*) from itap.user_notifications where organization_id = ${org} and created_at < ${created}) as seeded_inbox`);
   parts.push(`(select count(*) from itap.segment_members where organization_id = ${org} and source = 'manual') as manual_segment_members`);
+  parts.push(`(select count(*) from itap.reports where organization_id = ${org} and created_at < ${created}) as seeded_reports`);
+  parts.push(`(select count(*) from itap.search_requests where organization_id = ${org} and saved_search_id is null) as search_requests`);
   // Pipeline events only (the live device health cron adds device platform events at any time).
   parts.push(`(select count(*) from itap.events where organization_id = ${org} and session_id is not null) as history_events`);
   const [row] = await runSqlRows(`select ${parts.join(', ')}`);

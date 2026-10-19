@@ -41,6 +41,7 @@ describe('buildDayMutation', () => {
       'csEnd:close_stale_sessions',
       'lifecycle:run_lifecycle_jobs',
       'notifications:seed_finalize_notifications',
+      'stats:aggregate_stats_range',
     ]);
     // Window times: start of the 5-minute window that holds the detections; the day closes at its end.
     expect(built.query).toContain(`p_at: "${new Date(START).toISOString()}"`);
@@ -48,6 +49,10 @@ describe('buildDayMutation', () => {
     expect(built.query).toContain(`p_at: "${new Date(day.end).toISOString()}"`);
     // The day's notification rows are dated at their simulated times in the same transaction.
     expect(built.query).toContain(`seed_finalize_notifications(args: { p_organization: $org, p_until: "${new Date(day.end).toISOString()}" })`);
+    // The day's stats, so area_transitions_daily is there when later days are evaluated (abnormal_movement).
+    expect(built.query).toContain(
+      `aggregate_stats_range(args: { p_organization: $org, p_from: "${new Date(START).toISOString()}", p_to: "${new Date(day.end).toISOString()}" })`,
+    );
   });
 
   it('should insert each window sorted by identity then time and evaluate in time order', () => {
