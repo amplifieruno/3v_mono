@@ -47,8 +47,12 @@ insert_permissions:
         - body
         - incident_id
       check:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed
       set:
         organization_id: x-hasura-organization-id
 select_permissions:
@@ -73,16 +77,33 @@ update_permissions:
         - body
       filter:
         _and:
-          - organization_id:
-              _eq: X-Hasura-Organization-Id
-          - author_id:
-              _eq: X-Hasura-User-Id
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - author_id:
+                  _eq: X-Hasura-User-Id
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - incident:
+                  status:
+                    _neq: closed
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
 delete_permissions:
   - role: org_admin
     permission:
       filter:
         _and:
-          - organization_id:
-              _eq: X-Hasura-Organization-Id
-          - author_id:
-              _eq: X-Hasura-User-Id
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - author_id:
+                  _eq: X-Hasura-User-Id
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - incident:
+                  status:
+                    _neq: closed

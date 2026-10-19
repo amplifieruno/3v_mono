@@ -28,8 +28,12 @@ insert_permissions:
         - event_id
         - incident_id
       check:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed
       set:
         organization_id: x-hasura-organization-id
 select_permissions:
@@ -57,5 +61,9 @@ delete_permissions:
   - role: org_admin
     permission:
       filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed

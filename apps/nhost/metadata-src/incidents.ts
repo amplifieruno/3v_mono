@@ -5,6 +5,29 @@ const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organiza
 const own = (column: string): BoolExp => ({ _and: [ownOrganizationRow, { [column]: { _eq: 'X-Hasura-User-Id' } }] });
 // The sender may edit or withdraw a handover until the recipient acknowledges it.
 const ownOpenHandover: BoolExp = { _and: [own('from_user_id'), { acknowledged_at: { _is_null: true } }] };
+const notClosed: BoolExp = { status: { _neq: 'closed' } };
+/** Rows of the own organization whose incident (reached through `path` relationships) is not closed. */
+const openIncident = (...path: string[]): BoolExp => ({
+  _and: [ownOrganizationRow, path.reduceRight<BoolExp>((inner, rel) => ({ [rel]: inner }), notClosed)],
+});
+const and = (...parts: BoolExp[]): BoolExp => ({ _and: parts });
+
+/**
+ * Insert (check = filter, organization preset), optional update and delete permissions for org_admin, all limited
+ * by `filter`; replaces the generated tenant_crud entries.
+ */
+function writable(insertColumns: string[], filter: BoolExp, updateColumns: string[] = []): TableSpec['extraPermissions'] {
+  return {
+    insert_permissions: [
+      { role: ORG_ADMIN, permission: { columns: insertColumns, check: filter, set: { organization_id: 'x-hasura-organization-id' } } },
+    ],
+    update_permissions:
+      updateColumns.length > 0
+        ? [{ role: ORG_ADMIN, permission: { columns: updateColumns, filter, check: ownOrganizationRow } }]
+        : [],
+    delete_permissions: [{ role: ORG_ADMIN, permission: { filter } }],
+  };
+}
 
 /** Incidents, shift handovers and operator workspaces (spec §6.9). */
 export const incidentTables: TableSpec[] = [
@@ -29,21 +52,70 @@ export const incidentTables: TableSpec[] = [
       'resolved_at',
       'resolution',
     ],
+    extraPermissions: {
+      // Closed incidents are frozen (closed is terminal).
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['area_id', 'assigned_to', 'description', 'escalation_policy_id', 'external_ref', 'facility_id', 'severity', 'title'],
+            filter: and(ownOrganizationRow, notClosed),
+            check: ownOrganizationRow,
+          },
+        },
+      ],
+    },
   },
-  { name: 'incident_events', profile: 'tenant_crud', insertOnlyColumns: ['incident_id', 'event_id'] },
-  { name: 'incident_identities', profile: 'tenant_crud', insertOnlyColumns: ['incident_id', 'identity_id'] },
+  // Links of a closed incident are frozen.
   {
-    // author_id is stamped from the session member; only the author edits or deletes a note.
+    name: 'incident_events',
+    profile: 'tenant_crud',
+    insertOnlyColumns: ['incident_id', 'event_id'],
+    extraPermissions: writable(['event_id', 'incident_id'], openIncident('incident')),
+  },
+  {
+    name: 'incident_identities',
+    profile: 'tenant_crud',
+    insertOnlyColumns: ['incident_id', 'identity_id'],
+    extraPermissions: writable(['identity_id', 'incident_id', 'role'], openIncident('incident'), ['role']),
+  },
+  {
+    // author_id is stamped from the session member; only the author edits or deletes a note, never on a closed
+    // incident.
     name: 'incident_notes',
     profile: 'tenant_crud',
     readOnlyColumns: ['author_id'],
     insertOnlyColumns: ['incident_id'],
     extraPermissions: {
-      update_permissions: [{ role: ORG_ADMIN, permission: { columns: ['body'], filter: own('author_id') } }],
-      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: own('author_id') } }],
+      insert_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['body', 'incident_id'],
+            check: openIncident('incident'),
+            set: { organization_id: 'x-hasura-organization-id' },
+          },
+        },
+      ],
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: { columns: ['body'], filter: and(own('author_id'), openIncident('incident')), check: ownOrganizationRow },
+        },
+      ],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: and(own('author_id'), openIncident('incident')) } }],
     },
   },
-  { name: 'incident_note_files', profile: 'tenant_crud', insertOnlyColumns: ['note_id', 'file_id'] },
+  {
+    // Files of a note: the note's author only, never on a closed incident.
+    name: 'incident_note_files',
+    profile: 'tenant_crud',
+    insertOnlyColumns: ['note_id', 'file_id'],
+    extraPermissions: writable(
+      ['file_id', 'note_id'],
+      and(openIncident('note', 'incident'), { note: { author_id: { _eq: 'X-Hasura-User-Id' } } }),
+    ),
+  },
   // Timeline written by triggers and functions only.
   { name: 'incident_activities', profile: 'tenant_read' },
   {
@@ -65,7 +137,18 @@ export const incidentTables: TableSpec[] = [
       delete_permissions: [{ role: ORG_ADMIN, permission: { filter: ownOpenHandover } }],
     },
   },
-  { name: 'shift_handover_incidents', profile: 'tenant_crud', insertOnlyColumns: ['handover_id', 'incident_id'] },
+  {
+    // Linked incidents follow the handover: the sender only, until acknowledged.
+    name: 'shift_handover_incidents',
+    profile: 'tenant_crud',
+    insertOnlyColumns: ['handover_id', 'incident_id'],
+    extraPermissions: writable(
+      ['handover_id', 'incident_id'],
+      and(ownOrganizationRow, {
+        handover: { from_user_id: { _eq: 'X-Hasura-User-Id' }, acknowledged_at: { _is_null: true } },
+      }),
+    ),
+  },
   {
     // User-owned: every operation is limited to rows of the session user; user_id is preset from the session.
     name: 'operator_workspaces',

@@ -215,6 +215,7 @@ AS $$
 DECLARE
   parent uuid;
   version_status text;
+  locked integer;
 BEGIN
   EXECUTE format('SELECT %I FROM %s WHERE organization_id = $1 AND id = $2', p_parent_column, p_versions)
     INTO parent USING p_organization_id, p_version;
@@ -226,6 +227,11 @@ BEGIN
     USING p_organization_id, parent;
   EXECUTE format('SELECT status FROM %s WHERE organization_id = $1 AND id = $2 FOR UPDATE', p_versions)
     INTO version_status USING p_organization_id, p_version;
+  GET DIAGNOSTICS locked = ROW_COUNT;
+  -- Deleted between the first read and the lock (e.g. a concurrent draft delete).
+  IF locked = 0 THEN
+    PERFORM itap.raise_code('version_not_found');
+  END IF;
   IF version_status = 'published' THEN
     PERFORM itap.raise_code('version_already_published');
   END IF;

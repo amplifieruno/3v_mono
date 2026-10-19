@@ -36,8 +36,17 @@ insert_permissions:
         - file_id
         - note_id
       check:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - note:
+                  incident:
+                    status:
+                      _neq: closed
+          - note:
+              author_id:
+                _eq: X-Hasura-User-Id
       set:
         organization_id: x-hasura-organization-id
 select_permissions:
@@ -65,5 +74,14 @@ delete_permissions:
   - role: org_admin
     permission:
       filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - note:
+                  incident:
+                    status:
+                      _neq: closed
+          - note:
+              author_id:
+                _eq: X-Hasura-User-Id

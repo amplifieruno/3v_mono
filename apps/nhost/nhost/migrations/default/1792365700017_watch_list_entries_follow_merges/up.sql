@@ -1,0 +1,308 @@
+-- Watch list entries are configuration about a person and follow merges (controller ruling, Review Focus #5).
+-- itap.fold_watch_list_entries(org, column, sources, target) re-points the sources' entries (identity_id or
+-- profile_id) to the target, keeping one entry per list when both sides have one: no expiry wins, else the later
+-- expiry, ties go to the target's own entry, then the older entry. Losers are deleted. It returns one row per
+-- moved entry (removed = NULL) and per deleted entry (removed = full row snapshot).
+-- merge_identities records both in identity_merge_moves (entity 'watch_list_entries'; the new column `snapshot`
+-- holds deleted rows), so rollback_merge re-points exactly the moved rows back and re-inserts the deleted ones with
+-- their original id and values (skipped when their list or a conflicting entry exists by then). merge_profiles
+-- (irreversible) folds profile entries the same way. Everything else in the three functions is unchanged.
+ALTER TABLE itap.identity_merge_moves ADD COLUMN snapshot jsonb;
+ALTER TABLE itap.identity_merge_moves DROP CONSTRAINT identity_merge_moves_entity_known;
+ALTER TABLE itap.identity_merge_moves ADD CONSTRAINT identity_merge_moves_entity_known
+  CHECK (entity IN ('identity_photos', 'identity_embeddings', 'watch_list_entries'));
+ALTER TABLE itap.identity_merge_moves ADD CONSTRAINT identity_merge_moves_snapshot_entity
+  CHECK (snapshot IS NULL OR entity = 'watch_list_entries');
+
+CREATE FUNCTION itap.fold_watch_list_entries(p_organization_id uuid, p_column text, p_sources uuid[], p_target uuid)
+RETURNS TABLE (entry_id uuid, from_subject_id uuid, removed jsonb)
+LANGUAGE plpgsql VOLATILE
+SET search_path = pg_catalog, itap
+AS $$
+BEGIN
+  IF p_column NOT IN ('identity_id', 'profile_id') THEN
+    RAISE EXCEPTION USING ERRCODE = 'invalid_parameter_value', MESSAGE = 'fold_watch_list_entries: bad column ' || p_column;
+  END IF;
+  -- Losers first (two statements: a unique index is checked per row, so the winner may only move once the
+  -- loser is gone).
+  RETURN QUERY EXECUTE format($q$
+    WITH ranked AS (
+      SELECT e.id, row_number() OVER (
+        PARTITION BY e.watch_list_id
+        ORDER BY e.expires_at IS NULL DESC, e.expires_at DESC, e.%1$I = $3 DESC, e.created_at, e.id
+      ) AS rn
+      FROM itap.watch_list_entries e
+      WHERE e.organization_id = $1 AND (e.%1$I = ANY ($2) OR e.%1$I = $3)
+    )
+    DELETE FROM itap.watch_list_entries d USING ranked r
+    WHERE d.organization_id = $1 AND d.id = r.id AND r.rn > 1
+    RETURNING d.id, d.%1$I, to_jsonb(d)
+  $q$, p_column) USING p_organization_id, p_sources, p_target;
+  RETURN QUERY EXECUTE format($q$
+    UPDATE itap.watch_list_entries u SET %1$I = $3
+    FROM (
+      SELECT e.id, e.%1$I AS old_subject FROM itap.watch_list_entries e
+      WHERE e.organization_id = $1 AND e.%1$I = ANY ($2)
+    ) o
+    WHERE u.organization_id = $1 AND u.id = o.id
+    RETURNING u.id, o.old_subject, NULL::jsonb
+  $q$, p_column) USING p_organization_id, p_sources, p_target;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION itap.merge_identities(hasura_session json, p_target uuid, p_sources uuid[], p_reason text DEFAULT NULL)
+RETURNS SETOF itap.identity_merges
+LANGUAGE plpgsql VOLATILE
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  org uuid := itap.session_organization(hasura_session);
+  actor uuid := itap.session_user_id(hasura_session);
+  sources uuid[];
+  all_ids uuid[];
+  locked_count int;
+  linked uuid[];
+  target_profile uuid;
+  target_matching boolean;
+  inherit_primary boolean;
+  merge_row itap.identity_merges;
+  photos_moved int;
+  embeddings_moved int;
+  entries_folded int;
+  lock_id uuid;
+BEGIN
+  SELECT coalesce(array_agg(DISTINCT s), '{}') INTO sources FROM unnest(p_sources) s WHERE s IS NOT NULL;
+  IF cardinality(sources) = 0 THEN PERFORM itap.raise_code('merge_sources_required'); END IF;
+  IF p_target = ANY (sources) THEN PERFORM itap.raise_code('merge_source_is_target'); END IF;
+  all_ids := sources || p_target;
+
+  SELECT count(*) INTO locked_count FROM (
+    SELECT id FROM itap.identities WHERE organization_id = org AND id = ANY (all_ids) ORDER BY id FOR UPDATE
+  ) l;
+  IF p_target IS NULL OR locked_count <> cardinality(all_ids) THEN PERFORM itap.raise_code('identity_not_found'); END IF;
+  IF EXISTS (SELECT 1 FROM itap.identities WHERE organization_id = org AND id = ANY (all_ids) AND status = 'merged') THEN
+    PERFORM itap.raise_code('identity_already_merged');
+  END IF;
+  SELECT coalesce(array_agg(DISTINCT profile_id) FILTER (WHERE profile_id IS NOT NULL), '{}'),
+         bool_or(is_primary_for_profile) FILTER (WHERE id <> p_target)
+    INTO linked, inherit_primary
+  FROM itap.identities WHERE organization_id = org AND id = ANY (all_ids);
+  -- Never re-link silently: all linked identities must share one profile (Review Focus 1).
+  IF cardinality(linked) > 1 THEN PERFORM itap.raise_code('merge_profile_conflict'); END IF;
+  SELECT profile_id, matching_enabled INTO target_profile, target_matching
+  FROM itap.identities WHERE organization_id = org AND id = p_target;
+  inherit_primary := coalesce(inherit_primary, false)
+    AND NOT (SELECT is_primary_for_profile FROM itap.identities WHERE organization_id = org AND id = p_target);
+  FOR lock_id IN SELECT unnest(all_ids) ORDER BY 1 LOOP
+    PERFORM itap.lock_identity_templates(lock_id);
+  END LOOP;
+
+  PERFORM set_config('itap.merge_context', 'on', true);
+  INSERT INTO itap.identity_merges
+    (organization_id, target_identity_id, reason, inherited_profile_id, inherited_primary, merged_by,
+     target_previous_matching_enabled)
+  VALUES (
+    org, p_target, p_reason, CASE WHEN target_profile IS NULL THEN linked[1] END, inherit_primary,
+    itap.organization_member(org, actor), target_matching
+  )
+  RETURNING * INTO merge_row;
+  INSERT INTO itap.identity_merge_sources
+    (organization_id, merge_id, source_identity_id, previous_status, previous_profile_id, previous_is_primary)
+  SELECT org, merge_row.id, i.id, i.status, i.profile_id, i.is_primary_for_profile
+  FROM itap.identities i WHERE i.organization_id = org AND i.id = ANY (sources);
+
+  INSERT INTO itap.identity_merge_moves (organization_id, merge_id, entity, row_id, from_identity_id)
+  SELECT org, merge_row.id, 'identity_photos', p.id, p.identity_id
+  FROM itap.identity_photos p WHERE p.organization_id = org AND p.identity_id = ANY (sources);
+  GET DIAGNOSTICS photos_moved = ROW_COUNT;
+  INSERT INTO itap.identity_merge_moves (organization_id, merge_id, entity, row_id, from_identity_id)
+  SELECT org, merge_row.id, 'identity_embeddings', e.id, e.identity_id
+  FROM itap.identity_embeddings e WHERE e.organization_id = org AND e.identity_id = ANY (sources);
+  GET DIAGNOSTICS embeddings_moved = ROW_COUNT;
+  UPDATE itap.identity_photos SET identity_id = p_target WHERE organization_id = org AND identity_id = ANY (sources);
+  UPDATE itap.identity_embeddings SET identity_id = p_target WHERE organization_id = org AND identity_id = ANY (sources);
+  INSERT INTO itap.identity_merge_moves (organization_id, merge_id, entity, row_id, from_identity_id, snapshot)
+  SELECT org, merge_row.id, 'watch_list_entries', f.entry_id, f.from_subject_id, f.removed
+  FROM itap.fold_watch_list_entries(org, 'identity_id', sources, p_target) f;
+  GET DIAGNOSTICS entries_folded = ROW_COUNT;
+
+  -- Merged sources leave their profile (identities_count / has_face count live identities only); the target takes
+  -- over the profile when it had none, and the primary flag when a source held it.
+  UPDATE itap.identities SET status = 'merged', profile_id = NULL WHERE organization_id = org AND id = ANY (sources);
+  IF cardinality(linked) = 1 AND (target_profile IS NULL OR inherit_primary) THEN
+    UPDATE itap.identities
+    SET profile_id = linked[1], is_primary_for_profile = is_primary_for_profile OR inherit_primary
+    WHERE organization_id = org AND id = p_target;
+  END IF;
+
+  -- Every open candidate touching a source is settled by this merge (rollback reopens exactly these).
+  UPDATE itap.identity_duplicate_candidates SET status = 'merged', merge_id = merge_row.id
+  WHERE organization_id = org AND status = 'open' AND (identity_a_id = ANY (sources) OR identity_b_id = ANY (sources));
+  UPDATE itap.verification_requests SET status = 'cancelled', decided_at = now()
+  WHERE organization_id = org AND status = 'pending' AND identity_id = ANY (sources);
+
+  INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes, reason)
+  VALUES (org, actor, 'merge', 'identity_merges', merge_row.id, jsonb_build_object(
+    'target_identity_id', p_target, 'source_identity_ids', to_jsonb(sources), 'photos_moved', photos_moved,
+    'embeddings_moved', embeddings_moved, 'watch_list_entries_folded', entries_folded,
+    'inherited_profile_id', merge_row.inherited_profile_id
+  ), p_reason);
+  PERFORM set_config('itap.merge_context', 'off', true);
+  RETURN NEXT merge_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION itap.rollback_merge(hasura_session json, p_merge_id uuid)
+RETURNS SETOF itap.identity_merges
+LANGUAGE plpgsql VOLATILE
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  org uuid := itap.session_organization(hasura_session);
+  actor uuid := itap.session_user_id(hasura_session);
+  merge_row itap.identity_merges;
+  lock_id uuid;
+  moved_away int;
+BEGIN
+  SELECT * INTO merge_row FROM itap.identity_merges WHERE organization_id = org AND id = p_merge_id FOR UPDATE;
+  IF NOT FOUND THEN PERFORM itap.raise_code('merge_not_found'); END IF;
+  IF merge_row.status <> 'completed' THEN PERFORM itap.raise_code('merge_not_completed'); END IF;
+  FOR lock_id IN
+    SELECT i.id FROM itap.identities i
+    WHERE i.organization_id = org AND (i.id = merge_row.target_identity_id OR i.id IN (
+      SELECT s.source_identity_id FROM itap.identity_merge_sources s WHERE s.organization_id = org AND s.merge_id = p_merge_id
+    ))
+    ORDER BY i.id FOR UPDATE
+  LOOP
+    PERFORM itap.lock_identity_templates(lock_id);
+  END LOOP;
+  -- Merges are undone newest first: a target merged later must be restored by rolling back that merge first.
+  IF EXISTS (SELECT 1 FROM itap.identities
+             WHERE organization_id = org AND id = merge_row.target_identity_id AND status = 'merged') THEN
+    PERFORM itap.raise_code('merge_target_merged');
+  END IF;
+  -- Recorded rows that left the target since (e.g. a later split) cannot be restored exactly: refuse. Deleted rows
+  -- are simply gone and do not block.
+  SELECT count(*) INTO moved_away
+  FROM itap.identity_merge_moves m
+  LEFT JOIN itap.identity_photos p
+    ON m.entity = 'identity_photos' AND p.organization_id = org AND p.id = m.row_id
+  LEFT JOIN itap.identity_embeddings e
+    ON m.entity = 'identity_embeddings' AND e.organization_id = org AND e.id = m.row_id
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id
+    AND coalesce(p.identity_id, e.identity_id) IS DISTINCT FROM merge_row.target_identity_id
+    AND coalesce(p.id, e.id) IS NOT NULL;
+  moved_away := moved_away + (
+    SELECT count(*) FROM itap.identity_merge_moves m
+    JOIN itap.watch_list_entries w ON w.organization_id = org AND w.id = m.row_id
+    WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'watch_list_entries'
+      AND m.snapshot IS NULL AND w.identity_id IS DISTINCT FROM merge_row.target_identity_id
+  );
+  IF moved_away > 0 THEN PERFORM itap.raise_code('merge_rows_moved:' || moved_away); END IF;
+
+  PERFORM set_config('itap.merge_context', 'on', true);
+  -- Undo what the merge did to the target's profile link, unless it was changed since.
+  IF merge_row.inherited_profile_id IS NOT NULL THEN
+    -- Unlinking keeps the flag the inherited profile's consent set: restore the target's own value.
+    UPDATE itap.identities
+    SET profile_id = NULL, matching_enabled = coalesce(merge_row.target_previous_matching_enabled, matching_enabled)
+    WHERE organization_id = org AND id = merge_row.target_identity_id AND profile_id = merge_row.inherited_profile_id;
+  ELSIF merge_row.inherited_primary THEN
+    UPDATE itap.identities SET is_primary_for_profile = false
+    WHERE organization_id = org AND id = merge_row.target_identity_id;
+  END IF;
+
+  -- Exactly the recorded rows (all still on the target, checked above); newer target rows stay (Review Focus 2).
+  UPDATE itap.identity_photos p SET identity_id = m.from_identity_id
+  FROM itap.identity_merge_moves m
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'identity_photos'
+    AND p.organization_id = org AND p.id = m.row_id AND p.identity_id = merge_row.target_identity_id;
+  UPDATE itap.identity_embeddings e SET identity_id = m.from_identity_id
+  FROM itap.identity_merge_moves m
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'identity_embeddings'
+    AND e.organization_id = org AND e.id = m.row_id AND e.identity_id = merge_row.target_identity_id;
+  -- Watch list entries: moved rows go back first, then the rows the merge folded away are re-inserted as they were.
+  UPDATE itap.watch_list_entries w SET identity_id = m.from_identity_id
+  FROM itap.identity_merge_moves m
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'watch_list_entries' AND m.snapshot IS NULL
+    AND w.organization_id = org AND w.id = m.row_id AND w.identity_id = merge_row.target_identity_id;
+  INSERT INTO itap.watch_list_entries
+  SELECT (jsonb_populate_record(NULL::itap.watch_list_entries, m.snapshot)).*
+  FROM itap.identity_merge_moves m
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'watch_list_entries'
+    AND m.snapshot IS NOT NULL
+    AND EXISTS (SELECT 1 FROM itap.watch_lists l
+                WHERE l.organization_id = org AND l.id = (m.snapshot ->> 'watch_list_id')::uuid)
+  ON CONFLICT DO NOTHING;
+
+  UPDATE itap.identities i
+  SET status = s.previous_status,
+      profile_id = s.previous_profile_id,
+      is_primary_for_profile = s.previous_is_primary AND s.previous_profile_id IS NOT NULL AND NOT EXISTS (
+        SELECT 1 FROM itap.identities o
+        WHERE o.organization_id = org AND o.profile_id = s.previous_profile_id AND o.is_primary_for_profile
+      )
+  FROM itap.identity_merge_sources s
+  WHERE s.organization_id = org AND s.merge_id = p_merge_id
+    AND i.organization_id = org AND i.id = s.source_identity_id AND i.status = 'merged';
+
+  UPDATE itap.identity_duplicate_candidates SET status = 'open', merge_id = NULL
+  WHERE organization_id = org AND merge_id = p_merge_id;
+  UPDATE itap.identity_merges
+  SET status = 'rolled_back', rolled_back_at = now(), rolled_back_by = itap.organization_member(org, actor)
+  WHERE id = merge_row.id
+  RETURNING * INTO merge_row;
+  INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes)
+  VALUES (org, actor, 'rollback', 'identity_merges', merge_row.id,
+          jsonb_build_object('target_identity_id', merge_row.target_identity_id));
+  PERFORM set_config('itap.merge_context', 'off', true);
+  RETURN NEXT merge_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION itap.merge_profiles(hasura_session json, p_target uuid, p_source uuid)
+RETURNS SETOF itap.profiles
+LANGUAGE plpgsql VOLATILE
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  org uuid := itap.session_organization(hasura_session);
+  actor uuid := itap.session_user_id(hasura_session);
+  locked_count int;
+  identities_moved int;
+  documents_moved int;
+  consents_moved int;
+  entries_folded int;
+  result itap.profiles;
+BEGIN
+  IF p_target IS NULL OR p_source IS NULL THEN PERFORM itap.raise_code('profile_not_found'); END IF;
+  IF p_target = p_source THEN PERFORM itap.raise_code('merge_source_is_target'); END IF;
+  SELECT count(*) INTO locked_count FROM (
+    SELECT id FROM itap.profiles WHERE organization_id = org AND id IN (p_target, p_source) ORDER BY id FOR UPDATE
+  ) l;
+  IF locked_count <> 2 THEN PERFORM itap.raise_code('profile_not_found'); END IF;
+
+  UPDATE itap.consent_records SET profile_id = p_target WHERE organization_id = org AND profile_id = p_source;
+  GET DIAGNOSTICS consents_moved = ROW_COUNT;
+  UPDATE itap.profile_documents SET profile_id = p_target WHERE organization_id = org AND profile_id = p_source;
+  GET DIAGNOSTICS documents_moved = ROW_COUNT;
+  UPDATE itap.identities SET profile_id = p_target
+  WHERE organization_id = org AND profile_id = p_source AND status <> 'merged';
+  GET DIAGNOSTICS identities_moved = ROW_COUNT;
+  SELECT count(*) INTO entries_folded FROM itap.fold_watch_list_entries(org, 'profile_id', ARRAY[p_source], p_target);
+
+  UPDATE itap.profile_duplicate_candidates SET status = 'merged'
+  WHERE organization_id = org AND status = 'open' AND (profile_a_id = p_source OR profile_b_id = p_source);
+  UPDATE itap.profiles SET status = 'inactive' WHERE organization_id = org AND id = p_source;
+  PERFORM itap.apply_biometric_consent(org, p_target);
+
+  INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes)
+  VALUES (org, actor, 'merge', 'profiles', p_target, jsonb_build_object(
+    'source_profile_id', p_source, 'identities_moved', identities_moved,
+    'documents_moved', documents_moved, 'consents_moved', consents_moved,
+    'watch_list_entries_folded', entries_folded
+  ));
+  SELECT * INTO result FROM itap.profiles WHERE organization_id = org AND id = p_target;
+  RETURN NEXT result;
+END;
+$$;

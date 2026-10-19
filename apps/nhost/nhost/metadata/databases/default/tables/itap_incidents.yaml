@@ -176,5 +176,11 @@ update_permissions:
         - severity
         - title
       filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _neq: closed
+      check:
         organization_id:
           _eq: X-Hasura-Organization-Id

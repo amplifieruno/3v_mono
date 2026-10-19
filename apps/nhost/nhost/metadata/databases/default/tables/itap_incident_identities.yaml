@@ -38,8 +38,12 @@ insert_permissions:
         - incident_id
         - role
       check:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed
       set:
         organization_id: x-hasura-organization-id
 select_permissions:
@@ -63,11 +67,22 @@ update_permissions:
       columns:
         - role
       filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed
+      check:
         organization_id:
           _eq: X-Hasura-Organization-Id
 delete_permissions:
   - role: org_admin
     permission:
       filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - incident:
+              status:
+                _neq: closed

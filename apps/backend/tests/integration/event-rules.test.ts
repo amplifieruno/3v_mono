@@ -89,6 +89,20 @@ describe('event rules (versioned)', () => {
     expect(status.message).toContain('version_status_reserved');
   });
 
+  it('should reject org_admin writes of the reserved statuses published and superseded', async () => {
+    const s = await setup();
+    const { rule, draft } = await createRuleWithDraft(s.a, s.facility.id);
+    for (const status of ['published', 'superseded']) {
+      const update = await expectError(updateByPk(s.a, 'event_rule_versions', draft.id, { status }));
+      expect(update.message).toContain('version_status_reserved');
+    }
+    await publish(s.a, draft.id);
+    const insert = await expectError(insertOne(s.a, 'event_rule_versions', { rule_id: rule.id, status: 'published' }));
+    expect(insert.message).toContain('version_status_reserved');
+    const view = await ruleView(s.a, rule.id);
+    expect(view.event_rule_versions.map((v) => v.status)).toEqual(['published']);
+  });
+
   it('should create a new draft copying the current version and its scopes, idempotently', async () => {
     const s = await setup();
     const { rule, draft } = await createRuleWithDraft(s.a, s.facility.id);

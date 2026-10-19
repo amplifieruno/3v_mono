@@ -83,18 +83,22 @@ describe('profiles.is_blacklisted', () => {
     expect(await isBlacklisted(s.a, s.profile)).toBe(true);
   });
 
-  it('should be true through a linked identity unless that identity is merged', async () => {
+  it('should be true through a linked identity and stay true after that identity is merged (entry follows)', async () => {
     const s = await setup();
     const listed = await createIdentity(s.user.id, s.orgA.id);
     const target = await createIdentity(s.user.id, s.orgA.id);
     await s.a.request(UPDATE_IDENTITY, { id: listed.id, set: { profile_id: s.profile } });
     await insertOne(s.a, 'watch_list_entries', { watch_list_id: s.blacklist.id, identity_id: listed.id });
     expect(await isBlacklisted(s.a, s.profile)).toBe(true);
-    // Merged into an unlinked target: the merged source still points at the profile but no longer counts.
+    // Merged into an unlinked target: the target inherits the profile and the entry (spec Review Focus #5).
     await s.a.request(MERGE, { target: target.id, sources: pgArray([listed.id]) });
-    const [row] = await runSqlRows(`select status, profile_id from itap.identities where id = '${listed.id}'`);
+    const [row] = await runSqlRows(`select status from itap.identities where id = '${listed.id}'`);
     expect(row.status).toBe('merged');
-    expect(await isBlacklisted(s.a, s.profile)).toBe(false);
+    expect(await isBlacklisted(s.a, s.profile)).toBe(true);
+    const lists = await runSqlRows(
+      `select kind from itap.identity_watch_lists('${s.orgA.id}', '${target.id}', now())`,
+    );
+    expect(lists.map((r) => r.kind)).toEqual(['blacklist']);
   });
 
   it('should list the active watch lists of an identity at a point in time (helper for Stage B)', async () => {
