@@ -1,10 +1,10 @@
 # Slice 2 summary: Identity and profile
 
-Branch `feat/data-layer-foundation` (commits `608ee4d..HEAD`, 11 commits). Spec: `design.md`; plan: `plan-02-identity-profile.md`.
+Branch `feat/data-layer-foundation`: slice commits `608ee4d..f1ebdb2` (12 commits) plus the final-review fix wave (6 commits, see below). Spec: `design.md`; plan: `plan-02-identity-profile.md`.
 
 ## What was built
 
-**Tables (migrations `1792365500000`..`030`)**
+**Tables (migrations `1792365500000`..`030`; fix wave `031`..`034`)**
 - Numbering: `organization_counters`. Companies: `companies` (+ kind/status enums), `work_schedules`.
 - Profiles: `profiles` (+ type/status/access-level enums), `custom_attribute_definitions` (+ entity/type enums), `profile_documents` (+ kinds), `consent_records` (+ purpose/status/method enums), `profile_duplicate_candidates`.
 - Identities: `identities` (+ status/source enums), `identity_photos` (+ kinds), `identity_embeddings` (pgvector), `identity_relationships` (+ relation enum), `identity_duplicate_candidates` (+ candidate statuses), `verification_requests` (+ statuses), `identity_merges`, `identity_merge_sources`, `identity_merge_moves` (+ merge statuses).
@@ -24,6 +24,45 @@ Branch `feat/data-layer-foundation` (commits `608ee4d..HEAD`, 11 commits). Spec:
 **Legacy removal**: TypeORM services, REST routes, recognition manager, face-api.js/TensorFlow/Redis code removed from the backend.
 
 **Seed** (`pnpm seed`): companies, profiles with attributes/documents/consents, and enrolled faces. Faces come from committed assets (`apps/backend/seed-assets/faces`, built by `src/seed/tools/extract-faces.ts`: extraction + clustering over stream-server videos and InsightFace test images); most profiles have no face.
+
+## Final-review fix wave
+
+Findings `.superpowers/sdd/plan-02-identity-profile/final-review-findings.md`; report `final-fix-report.md`.
+
+- Biometrics: `enroll_face` / `add_identity_photos` refuse with `consent_withdrawn` (latest biometric consent withdrawn /
+  identity matching off); `BEFORE INSERT` guard on `identity_photos` / `identity_embeddings` rejects rows for identities
+  with matching disabled (`identity_matching_disabled`) or merged (`identity_merged_frozen`) unless `itap.merge_context`
+  (migration `031`); enrollment refuses sensitive files (`profile_document`, `dsr_export`, `auth_capture`) as photo
+  sources with `file_not_found`; `identity_merges.target_previous_matching_enabled` is restored by rollback when it
+  unlinks an inherited profile (`032`); `organization_settings.enrollment_duplicate_threshold` (default 0.5) drives the
+  enrollment duplicate check, independent of `recognition_threshold` (`033`).
+- Permissions: `profiles`, `identities`, `profile_documents` are not deletable by org_admin (lifecycle by status; erasure
+  via the slice-10 DSR flow; embeddings stay deletable). Identity statuses `verified` / `pending_verification` are
+  reserved for the verification workflow (`034`): creating a pending request moves an unverified identity to
+  `pending_verification`, reject / cancel / delete of the pending request returns it to `unverified`, approve verifies;
+  an identity is `pending_verification` only while a pending request exists. Non-admin roles may set only `unverified`,
+  `suspended`, `archived` (trigger with `itap.verification_context`, not a Hasura check: an update check would also block
+  edits of other columns on verified rows). `is_synthetic` is insert-only. `upload_profile_document` accepts only PDF,
+  PNG, JPEG, WebP (`unsupported_mime_type`).
+- Generator: a function exposed to a role must declare `sessionArgument`; each role's select filter on the return table
+  must restrict `organization_id` (opt-out: `unscopedReturnReason`).
+- Seed / licensing: neutral fictional watch-list persona note; `seed-assets/faces/NOTICE`; manifest and fixture README no
+  longer claim the InsightFace-REST Apache-2.0 licence covers the photographs (`lumia.jpg` and the fixture photos: rights
+  uncertain). The T8 ruling text below ("InsightFace test images (Apache-2.0)") is superseded by this.
+- Infra: Dockerfile build no longer masked (and pnpm pinned to 9.15.9; `pnpm@latest` broke the frozen install); legacy
+  eslint override, decorator flags, stale `app.ts` comment, `STARTUP.md`, `start-project.sh` removed.
+
+## Documented behaviour and accepted shortcuts
+
+- Enrollment stores every accepted embedding; the template upkeep trigger marks the top five by quality as templates.
+  The spec §7 rule "add an embedding only if it beats the worst template" applies to the recognition path (slice 4).
+- `rollback_merge` does not restore verification requests the merge cancelled; a source that was `pending_verification`
+  comes back as `unverified` (a new request must be created).
+- Consent records are editable by org_admin including their dates (demo shortcut; a production system would append
+  only).
+- Enrollment writes go through the admin-role `actor` client (admin secret + caller session variables, so audit rows
+  record the caller), not by forwarding the caller's role as spec §8.0 describes; this is the slice-1 action pattern.
+  Organization scoping is enforced by the service (every id resolved in the session organization) and by SQL triggers.
 
 ## Rulings (from the ledger)
 
@@ -46,18 +85,15 @@ Branch `feat/data-layer-foundation` (commits `608ee4d..HEAD`, 11 commits). Spec:
 - `identity_merge_sources.previous_status` column added (needed by rollback, not in the plan table list).
 - Task 4 also removed the public 5432 publish from the prod compose file.
 - `is_blacklisted` computed field deferred to slice 4.
-- Fix rounds: T2 (1 round), T4 (1 round).
+- Fix rounds: T2 (1 round), T4 (1 round), final review (1 wave).
 
 ## Deferred minors (for the final review to triage)
 
 - T1: `assign_number` keeps an explicit number without advancing the counter (document / GREATEST); counter lock ordering note; windows entry shape not validated (slice 3: `itap.valid_windows(jsonb)` CHECK, apply to `work_schedules` too); no DST test; misleading test comments.
 - T2: options elements not required to be strings; null-on-optional / JSON-null-required not asserted.
-- T4: rollback does not restore verification requests the merge cancelled.
-- T5: `merge_profiles` closes (source, X) candidates as `merged` (should dismiss/repoint); target status not checked / no primary promotion; link trigger overrides manual `matching_enabled=false`; consent records editable incl. dates (demo shortcut, document); deleting a `profile_documents` row orphans the file (`delete_file` is the path).
-- T6: intra-request photo consistency (reject non-matching photos when target has templates); concurrent enroll primary race -> map unique violation to `identity_conflict`; `runSqlRows` 'NULL' comment; LINK not in the photo transaction; LINK where lacks org/status guard; primary lookup ignores status; addPhotos can land on a just-merged identity (SQL guard needed); matching-disabled identities invisible to duplicate check (document); missing tests for crop cleanup and merged `identity_not_active`.
-- T7: Dockerfile `pnpm build; exit 0` masks errors; eslint legacy override block stale; `app.ts` stale comment; tsconfig decorator flags; `STARTUP.md` / `start-project.sh` stale (Redis/TypeORM) - delete or update.
+- T5: `merge_profiles` closes (source, X) candidates as `merged` (should dismiss/repoint); target status not checked / no primary promotion; link trigger overrides manual `matching_enabled=false`.
+- T6: intra-request photo consistency (reject non-matching photos when target has templates); concurrent enroll primary race -> map unique violation to `identity_conflict`; `runSqlRows` 'NULL' comment; LINK not in the photo transaction; LINK where lacks org/status guard; primary lookup ignores status; matching-disabled identities invisible to duplicate check (document); missing tests for crop cleanup and merged `identity_not_active`.
 - T8: blacklisted/no-consent enrolled visitor consent story; approve retry skip; `cameraIdentity` hardcoded status; extract tool reproducibility (video hashes) and move out of `src`; plan note for `SeedResults` shape.
-- Final wave: demo-persona and asset licensing items above.
 
 ## Owner actions (not done by the agents)
 
