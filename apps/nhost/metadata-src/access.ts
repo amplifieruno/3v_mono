@@ -82,4 +82,6 @@ export const accessFunctions: FunctionSpec[] = [
   'reject_access_policy_version',
   'archive_access_policy',
   'revoke_access_grant',
+  // Decision engine (task 2): evaluates at now() and records the decision + access_granted/access_denied event.
+  'check_access',
 ].map((name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }));

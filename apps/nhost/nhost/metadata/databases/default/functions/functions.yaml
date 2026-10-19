@@ -14,6 +14,7 @@
 - "!include itap_bulk_job_progress.yaml"
 - "!include itap_cancel_bulk_job.yaml"
 - "!include itap_cancel_visit.yaml"
+- "!include itap_check_access.yaml"
 - "!include itap_check_in_visit.yaml"
 - "!include itap_check_out_visit.yaml"
 - "!include itap_claim_bulk_job.yaml"
