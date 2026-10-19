@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { asAdmin } from './support/clients.js';
 import { expectError } from './support/fixtures.js';
 import { insertOne } from './support/operations.js';
-import { evaluate, knownPerson, orgEvents, orgIncidents, publishedRule } from './support/stageB.js';
+import { evaluate, knownPerson, listEntry, orgEvents, orgIncidents, publishedRule } from './support/stageB.js';
 import { createTrackingWorld, detect } from './support/tracking.js';
 
 describe('Stage B: watch-list rules by kind (parameters.watch_list_kinds)', () => {
@@ -12,8 +12,8 @@ describe('Stage B: watch-list rules by kind (parameters.watch_list_kinds)', () =
     const vips = await insertOne(w.a, 'watch_lists', { name: 'VIP', kind: 'vip', severity: 'info' });
     const banned = await knownPerson(w.a);
     const guest = await knownPerson(w.a, { first_name: 'Vic', access_level: 'elevated' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: blacklist.id, profile_id: banned.profile });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: vips.id, profile_id: guest.profile });
+    await listEntry(w.a, { watch_list_id: blacklist.id, profile_id: banned.profile });
+    await listEntry(w.a, { watch_list_id: vips.id, profile_id: guest.profile });
     const incidentRule = await publishedRule(w.a, 'watchlist', {
       creates_incident: true,
       parameters: { watch_list_kinds: ['blacklist', 'watch'] },
@@ -39,7 +39,7 @@ describe('Stage B: watch-list rules by kind (parameters.watch_list_kinds)', () =
     const w = await createTrackingWorld();
     const vips = await insertOne(w.a, 'watch_lists', { name: 'VIP', kind: 'vip', severity: 'info' });
     const guest = await knownPerson(w.a, { access_level: 'elevated' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: vips.id, profile_id: guest.profile });
+    await listEntry(w.a, { watch_list_id: vips.id, profile_id: guest.profile });
     const all = await publishedRule(w.a, 'watchlist', {});
     await evaluate((await detect(w.orgA.id, w.entranceCam, guest.identity, 0)).id);
     const arrival = (await orgEvents(w.orgA.id)).find((e) => e.event_type === 'vip_arrival');
@@ -62,7 +62,7 @@ describe('Stage B: incident time', () => {
   it('should open an incident at the time of its triggering event, with the creation activity at that time', async () => {
     const w = await createTrackingWorld();
     const blacklist = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: blacklist.id, identity_id: w.identity });
+    await listEntry(w.a, { watch_list_id: blacklist.id, identity_id: w.identity });
     await publishedRule(w.a, 'watchlist', { creates_incident: true });
     const d = await detect(w.orgA.id, w.entranceCam, w.identity, 0);
     await evaluate(d.id);
@@ -82,7 +82,7 @@ describe('Stage B: incident time', () => {
     const w = await createTrackingWorld();
     const list = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
     const banned = await knownPerson(w.a);
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: list.id, profile_id: banned.profile });
+    await listEntry(w.a, { watch_list_id: list.id, profile_id: banned.profile });
     await publishedRule(w.a, 'watchlist', { creates_incident: true }, [], 'Blacklist match');
     await publishedRule(w.a, 'watchlist', { creates_incident: true }, [], 'Front desk alert');
     await evaluate((await detect(w.orgA.id, w.entranceCam, banned.identity, 0)).id);

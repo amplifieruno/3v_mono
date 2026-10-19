@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { asAdmin } from './support/clients.js';
 import { expectDenied } from './support/fixtures.js';
 import { insertOne, updateByPk } from './support/operations.js';
-import { evaluate, knownPerson, orgEvents, orgIncidents, publishedRule, types } from './support/stageB.js';
-import { createIdentity, createTrackingWorld, detect, sessions } from './support/tracking.js';
+import { evaluate, knownPerson, listEntry, orgEvents, orgIncidents, publishedRule, types } from './support/stageB.js';
+import { at, createIdentity, createTrackingWorld, detect, sessions } from './support/tracking.js';
 
 describe('Stage B: session-opened events', () => {
   it('should emit one detection_known and one vip_arrival per session for 2 fps detections (Review Focus 1)', async () => {
     const w = await createTrackingWorld();
     const person = await knownPerson(w.a);
     const vip = await insertOne(w.a, 'watch_lists', { name: 'VIP', kind: 'vip', severity: 'low' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: vip.id, profile_id: person.profile });
+    await listEntry(w.a, { watch_list_id: vip.id, profile_id: person.profile });
     const ids: string[] = [];
     // 30 s of 2 fps detections (same logic as 10 minutes: every row after the first extends the session).
     for (let i = 0; i < 60; i++) ids.push((await detect(w.orgA.id, w.lobbyCam, person.identity, i / 2)).id);
@@ -52,7 +52,7 @@ describe('Stage B: session-opened events', () => {
   it('should not duplicate events or incidents when the same detection is evaluated again (Review Focus 3)', async () => {
     const w = await createTrackingWorld();
     const list = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: list.id, identity_id: w.identity });
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: w.identity });
     await publishedRule(w.a, 'watchlist', { creates_incident: true });
     const d = await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
     const [one, two] = await Promise.all([evaluate(d.id), evaluate(d.id)]);
@@ -66,7 +66,7 @@ describe('Stage B: session-opened events', () => {
     const w = await createTrackingWorld();
     const person = await knownPerson(w.a, { access_level: 'standard' });
     const list = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
-    await insertOne(w.a, 'watch_list_entries', { watch_list_id: list.id, profile_id: person.profile });
+    await listEntry(w.a, { watch_list_id: list.id, profile_id: person.profile });
     const rule = await publishedRule(w.a, 'watchlist', { severity: 'medium', creates_incident: true }, [{ facility_id: w.facility.id }]);
     const ruleState = async () =>
       (
@@ -126,6 +126,21 @@ describe('Stage B: session-opened events', () => {
     await updateByPk(w.a, 'facilities', w.facility.id, { timezone: 'Asia/Tokyo' });
     const other = await createIdentity(w.a);
     expect(types(await evaluate((await detect(w.orgA.id, w.lobbyCam, other, 5)).id))).toEqual(['detection_unknown']);
+  });
+
+  it('should match only watch-list entries created at or before the detection time', async () => {
+    const w = await createTrackingWorld();
+    const list = await insertOne(w.a, 'watch_lists', { name: 'Banned', kind: 'blacklist', severity: 'critical' });
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: w.identity }, at(100));
+    // Session 1 opens at 0, before the entry existed: no match (history replayed later stays as it was).
+    expect(types(await evaluate((await detect(w.orgA.id, w.lobbyCam, w.identity, 0)).id))).toEqual(['detection_unknown']);
+    // Session 2 opens at 1000 (after the 300 s timeout), after the entry: blacklist_match.
+    const later = await evaluate((await detect(w.orgA.id, w.lobbyCam, w.identity, 1000)).id);
+    expect(types(later)).toEqual(['blacklist_match', 'detection_unknown']);
+    // An entry created exactly at the detection time counts.
+    const other = await createIdentity(w.a);
+    await listEntry(w.a, { watch_list_id: list.id, identity_id: other }, at(2000));
+    expect(types(await evaluate((await detect(w.orgA.id, w.lobbyCam, other, 2000)).id))).toContain('blacklist_match');
   });
 
   it('should emit nothing for late and extending detections (Review Focus 2)', async () => {

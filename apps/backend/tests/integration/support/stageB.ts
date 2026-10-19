@@ -1,6 +1,7 @@
 import type { HasuraClient } from '../../../src/hasura/client.js';
 import { asAdmin } from './clients.js';
 import { insertOne } from './operations.js';
+import { runSql } from './sql.js';
 import { at } from './tracking.js';
 
 /** Stage B (evaluate_detection), dwell / stale-session crons and their events (slice 4, task 3). */
@@ -55,6 +56,20 @@ export async function knownPerson(
   const p = await insertOne(a, 'profiles', { first_name: 'Ann', last_name: 'Lee', ...profile });
   const i = await insertOne(a, 'identities', { profile_id: p.id });
   return { profile: p.id, identity: i.id };
+}
+
+/**
+ * A watch-list entry dated `createdAt` (default: before the fixed test clock of `at()`), so Stage B counts it for
+ * detections at `at(...)` times: only entries created at or before the detection time match.
+ */
+export async function listEntry(
+  a: HasuraClient,
+  fields: Record<string, unknown>,
+  createdAt = '2026-01-01T00:00:00Z',
+): Promise<{ id: string }> {
+  const entry = await insertOne(a, 'watch_list_entries', fields);
+  await runSql(`update itap.watch_list_entries set created_at = '${createdAt}' where id = '${entry.id}'`);
+  return entry;
 }
 
 /** A rule of `ruleType` with one version (scopes as given; none = everywhere), published. Returns the version id. */
