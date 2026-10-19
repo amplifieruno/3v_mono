@@ -18,7 +18,8 @@ describe('hasuraJwt', () => {
     const claims = decoded[CLAIMS] as Record<string, unknown>;
     expect(claims['x-hasura-organization-id']).toBe('a1b2c3d4-0000-4000-8000-000000000001');
     expect(claims['x-hasura-default-role']).toBe('org_admin');
-    expect(claims['x-hasura-allowed-roles']).toEqual(['org_admin', 'user']);
+    // Only org_admin: an org token cannot act as `user` (and so cannot renew itself via switch_organization).
+    expect(claims['x-hasura-allowed-roles']).toEqual(['org_admin']);
     expect(claims['x-hasura-user-id']).toBe(U);
     expect((decoded.exp as number) - (decoded.iat as number)).toBe(900);
     expect(expiresAt.getTime()).toBe((decoded.exp as number) * 1000);

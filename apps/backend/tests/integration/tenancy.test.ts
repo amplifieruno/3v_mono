@@ -66,6 +66,27 @@ describe('tenancy schema', () => {
     );
   });
 
+  it('should let org_admin see the names and emails of its own members only', async () => {
+    const { orgA, orgB, user, other } = await twoOrgs();
+    const client = asOrgAdmin(user.id, orgA.id);
+
+    const members = await client.request<{ organization_members: { user: { id: string; email: string } | null }[] }>(
+      `{ organization_members { user { id email displayName avatarUrl } } }`,
+    );
+    expect(members.organization_members.map((m) => m.user)).toEqual([
+      expect.objectContaining({ id: user.id, email: user.email }),
+    ]);
+
+    const users = await client.request<{ users: { id: string }[] }>(
+      `query ($ids: [uuid!]!) { users(where: { id: { _in: $ids } }) { id } }`,
+      { ids: [user.id, other.id] },
+    );
+    expect(users.users).toEqual([{ id: user.id }]);
+    expect(orgB.id).not.toBe(orgA.id);
+
+    await expectDenied(client.request(`{ users { passwordHash } }`), 'passwordHash');
+  });
+
   it('should let org_admin update only its own organization', async () => {
     const { orgA, orgB, user } = await twoOrgs();
     const client = asOrgAdmin(user.id, orgA.id);

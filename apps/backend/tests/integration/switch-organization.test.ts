@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { asAdmin, asBearer, asUser } from './support/clients.js';
-import { addMember, createTestOrg, createTestUser, createTwoOrgs, expectError } from './support/fixtures.js';
+import { asAdmin, asBearer, asUser, testEnv } from './support/clients.js';
+import { addMember, createTestOrg, createTestUser, createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
 import { requireBackend } from './support/backend.js';
 
 type OrgToken = { access_token: string; expires_at: string; organization_id: string; role: string };
@@ -82,5 +82,34 @@ describe('switch_organization action', () => {
     );
     expect(data.user_settings_by_pk?.last_organization_id).toBe(orgA.id);
     expect(data.audit_log).toEqual([{ user_id: user.id, entity: 'organization', entity_id: orgA.id }]);
+  });
+
+  it('should not let an org token renew itself (no switch_organization for org_admin, no user role)', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const { switch_organization: token } = await switchOrg(user.id, orgA.id);
+
+    await expectDenied(asBearer(token.access_token).request(SWITCH, { id: orgA.id }), 'switch_organization');
+
+    const asUserRole = await fetch(testEnv().HASURA_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token.access_token}`,
+        'x-hasura-role': 'user',
+      },
+      body: JSON.stringify({ query: SWITCH, variables: { id: orgA.id } }),
+    });
+    const body = (await asUserRole.json()) as { errors?: { extensions?: { code?: string } }[] };
+    expect(body.errors?.[0]?.extensions?.code).toBe('access-denied');
+  });
+
+  it('should reject a disabled account with account_disabled', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    await asAdmin().request(
+      `mutation ($id: uuid!) { updateUser(pk_columns: { id: $id }, _set: { disabled: true }) { id } }`,
+      { id: user.id },
+    );
+    const error = await expectError(switchOrg(user.id, orgA.id));
+    expect(error.code).toBe('account_disabled');
   });
 });

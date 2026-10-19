@@ -21,16 +21,21 @@ type Membership = { role: string; status: string; expires_at: string | null; org
 
 const activeMember: Membership = { role: 'admin', status: 'active', expires_at: null, organization: { status: 'active' } };
 
-/** Admin client mock: answers the membership query with `members`, records every other call. */
-function mockAdmin(members: Membership[]) {
+/** Admin client mock: answers the membership query with `members` and the user row, records every other call. */
+function mockAdmin(members: Membership[], user: { disabled: boolean } | null = { disabled: false }) {
   const request = vi.fn(async (query: string) =>
-    query.includes('SwitchOrgMembership') ? { organization_members: members } : {},
+    query.includes('SwitchOrgMembership') ? { organization_members: members, user } : {},
   );
   return { client: { request } as unknown as HasuraClient, request };
 }
 
-function run(members: Membership[], input: unknown = { organization_id: ORG }, userId: string | null = USER) {
-  const admin = mockAdmin(members);
+function run(
+  members: Membership[],
+  input: unknown = { organization_id: ORG },
+  userId: string | null = USER,
+  user: { disabled: boolean } | null = { disabled: false },
+) {
+  const admin = mockAdmin(members, user);
   const actor = mockAdmin([]);
   const promise = switchOrganization({
     env,
@@ -71,6 +76,16 @@ describe('switchOrganization', () => {
     expect(await errorCode(promise)).toBe('membership_inactive');
   });
 
+  it('should reject a disabled account with account_disabled even with an active membership', async () => {
+    const { promise, actorRequest } = run([activeMember], { organization_id: ORG }, USER, { disabled: true });
+    expect(await errorCode(promise)).toBe('account_disabled');
+    expect(actorRequest).not.toHaveBeenCalled();
+  });
+
+  it('should reject an unknown user with account_disabled', async () => {
+    expect(await errorCode(run([activeMember], { organization_id: ORG }, USER, null).promise)).toBe('account_disabled');
+  });
+
   it('should reject a suspended organization with organization_suspended', async () => {
     const { promise } = run([{ ...activeMember, organization: { status: 'suspended' } }]);
     expect(await errorCode(promise)).toBe('organization_suspended');
@@ -90,6 +105,7 @@ describe('switchOrganization', () => {
     expect(new Date(result.expires_at).getTime()).toBeGreaterThan(Date.now());
     const payload = jwt.verify(result.access_token, env.HASURA_JWT_SECRET.key) as Record<string, unknown>;
     expect(payload['https://hasura.io/jwt/claims']).toMatchObject({
+      'x-hasura-allowed-roles': ['org_admin'],
       'x-hasura-user-id': USER,
       'x-hasura-organization-id': ORG,
       'x-hasura-default-role': 'org_admin',

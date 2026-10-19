@@ -138,6 +138,8 @@ export const tenancyTables: TableSpec[] = [
   {
     name: 'organization_members',
     profile: 'tenant_crud',
+    // Membership needs the invitee's consent: created only by accept_invitation (or the seed), never inserted directly.
+    noInsert: true,
     noDelete: true,
     readOnlyColumns: ['deactivated_at', 'deactivated_by', 'joined_at'],
     insertOnlyColumns: ['user_id'],

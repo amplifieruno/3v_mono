@@ -10,7 +10,6 @@ actions:
       timeout: 30
     permissions:
       - role: user
-      - role: org_admin
     comment: Checks an active membership and returns a short-lived organization token (§4.3)
   - name: invite_member
     definition:

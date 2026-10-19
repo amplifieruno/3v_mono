@@ -24,6 +24,7 @@ const MEMBERSHIP_QUERY = `
       expires_at
       organization { status }
     }
+    user(id: $user) { disabled }
   }
 `;
 
@@ -53,10 +54,12 @@ export const switchOrganization = defineAction(inputSchema, async ({ env, input,
   if (!userId) throw new ActionError('unauthenticated', 'x-hasura-user-id is required');
   const organizationId = input.organization_id.toLowerCase();
 
-  const { organization_members } = await admin.request<{ organization_members: Membership[] }>(MEMBERSHIP_QUERY, {
-    org: organizationId,
-    user: userId,
-  });
+  const { organization_members, user } = await admin.request<{
+    organization_members: Membership[];
+    user: { disabled: boolean } | null;
+  }>(MEMBERSHIP_QUERY, { org: organizationId, user: userId });
+  // A base token outlives sign-out/disable until it expires; never mint an org token for a disabled account.
+  if (!user || user.disabled) throw new ActionError('account_disabled', 'This account is disabled');
   const membership = organization_members[0];
   if (!membership) throw new ActionError('not_a_member', 'You are not a member of this organization');
 

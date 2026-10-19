@@ -38,7 +38,9 @@ export function signOrgToken(
 ): SignedToken {
   return sign(
     {
-      'x-hasura-allowed-roles': [input.role, 'user'],
+      // Only the org role: an org token cannot act as `user`, so it cannot call switch_organization to renew
+      // itself; renewal always goes through the base token (§4.3), which Nhost stops issuing on sign-out/disable.
+      'x-hasura-allowed-roles': [input.role],
       'x-hasura-default-role': input.role,
       'x-hasura-user-id': input.userId,
       'x-hasura-organization-id': input.organizationId.toLowerCase(),

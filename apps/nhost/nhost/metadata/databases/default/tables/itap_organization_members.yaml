@@ -66,24 +66,6 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: vacation_delegate_user_id
-insert_permissions:
-  - role: org_admin
-    permission:
-      columns:
-        - department
-        - expires_at
-        - quiet_hours
-        - role
-        - status
-        - title
-        - user_id
-        - vacation_delegate_user_id
-        - vacation_until
-      check:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
-      set:
-        organization_id: x-hasura-organization-id
 select_permissions:
   - role: org_admin
     permission:
