@@ -8,12 +8,14 @@ import type { SeedContext } from './tenancy.js';
  * visitors) gets one primary identity of source `import` (access-control import, no face templates; the profile's
  * has_face is true, it counts linked identities), so the history covers the whole building. Every 12th employee
  * stays without an identity (pending link). Night-shift staff are not replayed (their shifts would be after-hours events
- * every night). Unknown faces are the seeded camera identities without a profile.
+ * every night). Unknown faces are the seeded camera identities without a profile. One contractor's contract was
+ * terminated before the replay window (terminateContractor).
  */
 type ProfileRow = {
   id: string;
   external_id: string;
   profile_type: string;
+  status: string;
   access_level: string;
   start_date: string | null;
   end_date: string | null;
@@ -27,7 +29,7 @@ type ProfileRow = {
 const PROFILES = `
   query SeedHistoryProfiles($org: uuid!) {
     profiles(where: { organization_id: { _eq: $org }, external_id: { _like: "seed:%" } }, order_by: { external_id: asc }) {
-      id external_id profile_type access_level start_date end_date custom_fields
+      id external_id profile_type status access_level start_date end_date custom_fields
       company { id name }
       work_schedule { name }
       consent_records(where: { purpose: { _eq: biometric_processing } }, order_by: { granted_at: desc }, limit: 1) { status }
@@ -46,13 +48,20 @@ const UNKNOWN = `
     ) { id }
   }
 `;
+const TERMINATE = `
+  mutation SeedTerminateContractor($id: uuid!, $end: date!) {
+    update_profiles_by_pk(pk_columns: { id: $id }, _set: { status: terminated, end_date: $end }) { id }
+  }
+`;
 const INSERT_IDENTITIES = `
   mutation SeedHistoryIdentities($objects: [identities_insert_input!]!) {
     insert_identities(objects: $objects) { returning { id profile_id } }
   }
 `;
 
-export type HistoryPeople = Omit<HistoryInput, 'now' | 'timezone'> & {
+export type HistoryPeople = Omit<HistoryInput, 'now' | 'timezone' | 'terminatedIdentity'> & {
+  /** The contractor terminated before the replay window (seen once in the history), when there is one. */
+  terminatedIdentity: string | null;
   /** Identity of every tracked profile (profile id -> identity id). */
   identityByProfile: Record<string, string>;
   /** Tenant company name of every tracked employee (estimated locations on their floor). */
@@ -75,6 +84,24 @@ function leftUnlinked(p: ProfileRow): boolean {
   return p.profile_type === 'employee' && Number(p.external_id.slice('seed:'.length)) % 12 === 0;
 }
 
+const DAY_MS = 86_400_000;
+
+/**
+ * One tracked contractor (granted consent, started at least 60 days ago; the last by seed key) had the contract
+ * terminated 40 days ago: status terminated, end_date then. Idempotent: an already terminated one is kept.
+ */
+async function terminateContractor(ctx: SeedContext, profiles: ProfileRow[], blacklisted: Set<string>): Promise<string | null> {
+  const contractors = profiles.filter((p) => p.profile_type === 'contractor' && tracked(p, blacklisted));
+  const done = contractors.find((p) => p.status === 'terminated');
+  if (done) return done.id;
+  const end = new Date(ctx.now.getTime() - 40 * DAY_MS).toISOString().slice(0, 10);
+  const startedBy = new Date(ctx.now.getTime() - 60 * DAY_MS).toISOString().slice(0, 10);
+  const pick = contractors.filter((p) => p.status === 'active' && p.start_date !== null && p.start_date <= startedBy).pop();
+  if (!pick) return null;
+  await ctx.admin.request(TERMINATE, { id: pick.id, end });
+  return pick.id;
+}
+
 /** Loads the Nova Tower people, creates the missing history identities and returns the plan input. */
 export async function historyPeople(
   ctx: SeedContext,
@@ -85,6 +112,8 @@ export async function historyPeople(
   const load = async () => (await ctx.admin.request<{ profiles: ProfileRow[] }>(PROFILES, { org })).profiles;
   const blacklisted = new Set(people.byRole.blacklisted);
   let profiles = await load();
+  const terminatedProfile = await terminateContractor(ctx, profiles, blacklisted);
+  if (profiles.some((p) => p.id === terminatedProfile && p.status !== 'terminated')) profiles = await load();
   const missing = profiles.filter((p) => tracked(p, blacklisted) && !leftUnlinked(p) && p.identities.length === 0);
   if (missing.length > 0) {
     await ctx.admin.request(INSERT_IDENTITIES, {
@@ -145,6 +174,7 @@ export async function historyPeople(
     blacklistedIdentity,
     unknownIdentities,
     watchedIdentity: unknownIdentities[0] ?? null,
+    terminatedIdentity: (terminatedProfile && identityByProfile[terminatedProfile]) || null,
     identityByProfile,
     companyByIdentity,
   };

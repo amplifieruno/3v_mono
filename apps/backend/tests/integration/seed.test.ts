@@ -120,8 +120,9 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(nova.access_point_devices).toBeGreaterThanOrEqual(11);
     expect(nova.device_areas).toBeGreaterThan(0);
     expect(nova.facility_templates).toBe(1);
-    // Hourly samples for 30 days per device, minus the offline gaps.
-    expect(nova.seeded_health_metrics).toBeGreaterThan(nova.devices * 700);
+    // Hourly samples for 30 days per device, minus the offline gaps (the meeting-room camera has no stream: never
+    // probed, no history).
+    expect(nova.seeded_health_metrics).toBeGreaterThan((nova.devices - 1) * 700);
     // 3 offline incidents: offline + online each.
     expect(nova.seeded_device_events).toBe(6);
     expect(nova.photos_with_device).toBeGreaterThanOrEqual(4);
@@ -182,7 +183,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(nova.history_events).toBeGreaterThan(1_000);
     expect(nova.watch_lists).toBe(3);
     expect(nova.watch_list_entries).toBeGreaterThanOrEqual(5);
-    expect(nova.event_rules).toBe(5);
+    expect(nova.event_rules).toBe(6);
     expect(nova.shift_handovers).toBe(3);
     expect(nova.operator_workspaces).toBe(4);
     const org = `(select id from itap.organizations where slug = '${SLUGS[0]}')`;
@@ -204,10 +205,40 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       `select event_type, count(*) as n from itap.events where organization_id = ${org} group by event_type`,
     );
     const byType = Object.fromEntries(types.map((t) => [t.event_type, Number(t.n)]));
+    // Events of every type the pipeline produces today (design §9); abnormal_movement / tailgating / access and
+    // auth events have no producer before slices 7/8.
     for (const type of ['detection_known', 'detection_unknown', 'vip_arrival', 'blacklist_match', 'watchlist_match',
-      'after_hours', 'restricted_area_entry', 'loitering', 'unexpected_facility']) {
+      'after_hours', 'restricted_area_entry', 'loitering', 'unexpected_facility', 'occupancy_exceeded', 'unusual_dwell',
+      'inactive_profile_detected', 'device_offline', 'device_online']) {
       expect(byType[type] ?? 0, type).toBeGreaterThanOrEqual(1);
     }
+    // Overfilled once (one 15-minute bucket of Meeting Room 12A); the terminated contractor seen once; one outage.
+    expect(byType.occupancy_exceeded).toBe(1);
+    expect(byType.inactive_profile_detected).toBe(1);
+    expect([byType.device_offline, byType.device_online]).toEqual([1, 1]);
+    const [coverage] = await runSqlRows(
+      `select (select a.name from itap.events e join itap.areas a on a.id = e.area_id
+                where e.organization_id = ${org} and e.event_type = 'occupancy_exceeded') as overfilled,
+              (select p.status from itap.events e join itap.profiles p on p.id = e.profile_id
+                where e.organization_id = ${org} and e.event_type = 'inactive_profile_detected') as inactive_status,
+              (select d.name from itap.events e join itap.devices d on d.id = e.device_id
+                where e.organization_id = ${org} and e.event_type = 'device_offline') as offline_device,
+              (select (d.last_seen_at > now() - interval '2 hours')::text from itap.devices d
+                where d.organization_id = ${org} and d.name = 'Parking Gate Terminal') as gate_seen_recently,
+              (select count(*) from itap.events e join itap.event_rule_versions v on v.id = e.rule_version_id
+                join itap.event_rules r on r.id = v.rule_id
+                where e.organization_id = ${org} and e.event_type = 'unusual_dwell' and r.name = 'Long wait in the lobby lounge') as dwell_by_rule,
+              (select string_agg(name, ',' order by name) from itap.event_rules where organization_id = ${org}
+                and name like '%match%') as match_rules`,
+    );
+    expect(coverage).toMatchObject({
+      overfilled: 'Meeting Room 12A',
+      inactive_status: 'terminated',
+      offline_device: 'Parking Gate Terminal',
+      gate_seen_recently: 'true',
+      match_rules: 'Watch & blacklist match',
+    });
+    expect(Number(coverage.dwell_by_rule)).toBeGreaterThanOrEqual(1);
     // One person in front of a camera for minutes: one detection_known per session.
     const [dupes] = await runSqlRows(
       `select count(*) as n from (select session_id from itap.events where organization_id = ${org}
@@ -244,7 +275,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       { days: [1, 2, 3, 4, 5], from: '07:00', to: '21:00' },
       { days: [6], from: '09:00', to: '15:00' },
     ]);
-    expect(config).toMatchObject({ published: '4', loitering: '2', blacklisted: '1' });
+    expect(config).toMatchObject({ published: '5', loitering: '2', blacklisted: '1' });
 
     const [extra] = await runSqlRows(
       `select (select count(*) from itap.profiles p where p.organization_id = ${org} and p.profile_type = 'employee'

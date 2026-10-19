@@ -26,6 +26,7 @@ function input(): HistoryInput {
   people.push(person(100, { guard: 'chief', clearance: 'elevated' }), person(101, { guard: 'guard' }));
   people.push(person(102, { role: 'contractor', clearance: 'basic', activeFrom: '2026-09-01', activeTo: '2027-01-01' }));
   people.push(person(103, { role: 'vip', clearance: 'elevated', car: true }), person(104, { role: 'vip', clearance: 'elevated' }));
+  people.push(person(105, { role: 'contractor', clearance: 'basic', activeFrom: '2026-01-10', activeTo: '2026-09-09' }));
   const visitDates = ['2026-10-01', '2026-10-05', '2026-10-08', '2026-10-11', '2026-10-14', '2026-10-16', '2026-10-19'];
   return {
     now: NOW,
@@ -36,6 +37,7 @@ function input(): HistoryInput {
     blacklistedIdentity: 'bl',
     unknownIdentities: ['u-1', 'u-2', 'u-3'],
     watchedIdentity: 'u-1',
+    terminatedIdentity: 'id-105',
   };
 }
 
@@ -127,6 +129,38 @@ describe('buildHistoryPlan', () => {
   it('should bring an unknown face into the server room and a contractor to the executive floor once', () => {
     expect(new Set(plan.detections.filter((d) => d.point === 'serverRoom' && d.identityId.startsWith('u-')).map((d) => local(d.at).date)).size).toBe(1);
     expect(plan.detections.filter((d) => d.point === 'executive' && d.identityId === 'id-102')).toHaveLength(1);
+  });
+
+  it('should overfill Meeting Room 12A (capacity 12) once with 13 cleared employees', () => {
+    const meeting = plan.detections.filter((d) => d.point === 'meeting');
+    const people = new Set(meeting.map((d) => d.identityId));
+    expect(people.size).toBe(13);
+    expect(new Set(meeting.map((d) => local(d.at).date)).size).toBe(1);
+    // All seated within one 15-minute occupancy bucket and one 5-minute replay window.
+    const times = meeting.map((d) => d.at);
+    expect(Math.max(...times) - Math.min(...times)).toBeLessThan(2 * 60_000);
+    const byId = new Map(input().people.map((p) => [p.identityId, p]));
+    expect([...people].every((id) => byId.get(id)?.clearance !== 'basic' && byId.get(id)?.role === 'employee')).toBe(true);
+  });
+
+  it('should keep one unknown face in the lobby lounge for over 40 minutes (unusual dwell)', () => {
+    const stays = new Map<string, number[]>();
+    for (const d of plan.detections.filter((x) => x.point === 'lounge' && x.identityId.startsWith('u-'))) {
+      const key = `${d.identityId}/${local(d.at).date}`;
+      stays.set(key, [...(stays.get(key) ?? []), d.at]);
+    }
+    const longest = Math.max(...[...stays.values()].map((t) => Math.max(...t) - Math.min(...t)));
+    expect(longest).toBeGreaterThan(40 * 60_000);
+    // Seen at least every 3 minutes: the session (5-minute timeout) stays open throughout.
+    const [stay] = [...stays.values()].filter((t) => Math.max(...t) - Math.min(...t) > 40 * 60_000);
+    for (let i = 1; i < stay.length; i += 1) expect(stay[i] - stay[i - 1]).toBeLessThanOrEqual(3 * 60_000 + 6_000);
+  });
+
+  it('should bring the terminated contractor once (entrance, reception) and never on regular days', () => {
+    const seen = plan.detections.filter((d) => d.identityId === 'id-105');
+    expect([...new Set(seen.map((d) => d.point))]).toEqual(['entrance', 'reception']);
+    expect(new Set(seen.map((d) => local(d.at).date)).size).toBe(1);
+    expect(seen[seen.length - 1].at - seen[0].at).toBeLessThan(3 * 60_000);
   });
 
   it('should only produce detections at the planned camera points with plausible face values', () => {

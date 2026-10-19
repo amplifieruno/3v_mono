@@ -68,3 +68,23 @@ describe('buildHealthHistory', () => {
     expect(buildHealthHistory('nova/a', 'host', NOW, [])).not.toEqual(buildHealthHistory('nova/b', 'host', NOW, []));
   });
 });
+
+describe('buildHealthHistory: incidents through record_device_health', () => {
+  it('should plan the offline/online calls instead of direct events and keep the offline gap', () => {
+    const incident: Incident = { device: 'x', startHoursAgo: 50, hours: 3, reason: 'test', viaPipeline: true };
+    const plan = buildHealthHistory('nova/x', 'host', NOW, [incident]);
+    const last = lastWholeHour(NOW).getTime();
+    expect(plan.events).toEqual([]);
+    expect(plan.pipeline).toEqual([
+      { reachable: false, at: new Date(last - 50 * HOUR_MS).toISOString() },
+      { reachable: true, at: new Date(last - 47 * HOUR_MS).toISOString() },
+    ]);
+    const times = new Set(plan.metrics.map((m) => m.recorded_at));
+    for (const h of [50, 49, 48]) expect(times.has(new Date(last - h * HOUR_MS).toISOString())).toBe(false);
+  });
+
+  it('should route the Parking Gate Terminal outage of Nova Tower through record_device_health', async () => {
+    const { NOVA_INCIDENTS } = await import('./deviceHealthPlan.js');
+    expect(NOVA_INCIDENTS.filter((i) => i.viaPipeline).map((i) => i.device)).toEqual(['Parking Gate Terminal']);
+  });
+});

@@ -68,6 +68,7 @@ const POINT_SPECS: Record<PointKey, { device: string; area: string; accessPoint:
   dock: { device: 'Loading Dock Camera', area: `${LOBBY}/Loading Dock`, accessPoint: 'Loading Dock Door' },
   parking: { device: 'Parking Gate Terminal', area: 'Nova Tower/Parking/Parking Level P-1', accessPoint: 'Parking Gate' },
   executive: { device: 'Executive Floor Reader', area: `Nova Tower/${floorName(24)}/Executive Reception`, accessPoint: 'Executive Floor Door' },
+  meeting: { device: 'Meeting Room 12A Camera', area: `Nova Tower/${floorName(12)}/Suite 1201 (Aurora Analytics)/Meeting Room 12A`, accessPoint: null },
 };
 
 function need<T>(value: T | undefined, what: string): T {

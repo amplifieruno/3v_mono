@@ -4,7 +4,7 @@ import { weekday, zonedTime } from './historyTime.js';
 /**
  * Camera points of the Nova Tower history: where a detection happens (device, area, access point are resolved by
  * the replay, see historyReplay). Turnstiles and the lounge are seen by the Lobby Camera, the parking gate and the
- * executive floor door by their face terminals.
+ * executive floor door by their face terminals, meeting room 12A by its own camera.
  */
 export const POINTS = [
   'entrance',
@@ -18,6 +18,7 @@ export const POINTS = [
   'dock',
   'parking',
   'executive',
+  'meeting',
 ] as const;
 export type PointKey = (typeof POINTS)[number];
 

@@ -5,7 +5,7 @@ import type { SeedContext } from './tenancy.js';
 /**
  * Nova Tower configuration the history replay runs against (seeded before it): the recognition threshold 0.40
  * (avoids the known false blacklist match of the camera faces), watch lists (Blacklist, VIP guests, Watch) and the
- * event rules (four published, one draft). Idempotent: rows are keyed by name; nothing is written on a re-run.
+ * event rules (five published, one draft). Idempotent: rows are keyed by name; nothing is written on a re-run.
  */
 export type HistoryConfigInput = {
   org: string;
@@ -53,6 +53,11 @@ const INSERT_ENTRIES = `
   }
 `;
 const RULES = `query SeedEventRules($org: uuid!) { event_rules(where: { organization_id: { _eq: $org } }) { name } }`;
+const RENAME_RULE = `
+  mutation SeedRenameEventRule($org: uuid!, $from: String!, $to: String!) {
+    update_event_rules(where: { organization_id: { _eq: $org }, name: { _eq: $from } }, _set: { name: $to }) { affected_rows }
+  }
+`;
 
 type ListSpec = { name: string; kind: string; severity: string; color: string; description: string };
 const LISTS_SPEC: ListSpec[] = [
@@ -76,16 +81,21 @@ export type RuleSpec = {
 /**
  * Published rules: after hours (facility), restricted areas with incidents on the technical and executive floors
  * (entries elsewhere, e.g. the loading dock, are events only, so a blacklist sighting there opens one incident, not
- * two), "Blacklist match" (watch-list kinds blacklist + watch, incidents) and "VIP arrival" (kind vip, announcement
- * only). One draft: lobby loitering.
+ * two), "Watch & blacklist match" (watch-list kinds blacklist + watch, incidents), "VIP arrival" (kind vip,
+ * announcement only) and "Long wait in the lobby lounge" (unusual_dwell after 40 minutes). One draft: lobby loitering.
  */
+const WATCH_RULE = 'Watch & blacklist match';
+/** Rules renamed since earlier seeds (old name -> new name), renamed in place so a re-run does not duplicate them. */
+const RENAMED_RULES: Record<string, string> = { 'Blacklist match': WATCH_RULE };
+
 function novaRules(input: HistoryConfigInput): RuleSpec[] {
   const facility = [{ facility_id: input.facility }];
   return [
     { name: 'After-hours presence', description: 'Anyone seen outside the facility operating hours', rule_type: 'after_hours', severity: 'medium', creates_incident: false, parameters: {}, scopes: facility, publish: true },
     { name: 'Restricted area entry', description: 'Entry above clearance on the technical and executive floors', rule_type: 'restricted_area', severity: 'high', creates_incident: true, parameters: {}, scopes: input.areas.secureFloors.map((area_id) => ({ area_id })), publish: true },
-    { name: 'Blacklist match', description: 'Blacklist or watch-list match anywhere in Nova Tower', rule_type: 'watchlist', severity: 'critical', creates_incident: true, parameters: { watch_list_kinds: ['blacklist', 'watch'] }, scopes: facility, publish: true },
+    { name: WATCH_RULE, description: 'Blacklist or watch-list match anywhere in Nova Tower', rule_type: 'watchlist', severity: 'critical', creates_incident: true, parameters: { watch_list_kinds: ['blacklist', 'watch'] }, scopes: facility, publish: true },
     { name: 'VIP arrival', description: 'Announce VIP arrivals to reception', rule_type: 'watchlist', severity: 'info', creates_incident: false, parameters: { watch_list_kinds: ['vip'] }, scopes: facility, publish: true },
+    { name: 'Long wait in the lobby lounge', description: 'Someone waiting in the lobby lounge for over 40 minutes', rule_type: 'unusual_dwell', severity: 'low', creates_incident: false, parameters: { dwell_seconds: 2400 }, scopes: [{ area_id: input.areas.lobbyLounge }], publish: true },
     { name: 'Lobby loitering', description: 'Long stays in the lobby lounge (draft, under review)', rule_type: 'loitering', severity: 'low', creates_incident: false, parameters: {}, scopes: [{ area_id: input.areas.lobbyLounge }], publish: false },
   ];
 }
@@ -134,6 +144,17 @@ export async function seedRules(
   return count;
 }
 
+/** Renames rules of earlier seeds in place (only when the new name is still free); a no-op once renamed. */
+async function renameRules(ctx: SeedContext, input: HistoryConfigInput): Promise<void> {
+  const { org } = input;
+  const { event_rules: rules } = await ctx.admin.request<{ event_rules: { name: string }[] }>(RULES, { org });
+  const names = new Set(rules.map((r) => r.name));
+  const actor = createHasuraClient(ctx.env, { role: 'admin', userId: input.adminUser, organizationId: org });
+  for (const [from, to] of Object.entries(RENAMED_RULES)) {
+    if (names.has(from) && !names.has(to)) await actor.request(RENAME_RULE, { org, from, to });
+  }
+}
+
 async function seedWatchLists(ctx: SeedContext, input: HistoryConfigInput): Promise<Record<string, string>> {
   const actor = createHasuraClient(ctx.env, { role: 'admin', userId: input.adminUser, organizationId: input.org });
   const created_at = new Date(input.configuredAt).toISOString();
@@ -167,6 +188,7 @@ export async function seedHistoryConfig(
     await ctx.admin.request(SET_THRESHOLD, { org: input.org, value: RECOGNITION_THRESHOLD });
   }
   const watchLists = await seedWatchLists(ctx, input);
+  await renameRules(ctx, input);
   const rulesCreated = await seedRules(ctx, { org: input.org, adminUser: input.adminUser, configuredAt: input.configuredAt }, novaRules(input));
   return { watchLists, rulesCreated };
 }

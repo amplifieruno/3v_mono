@@ -10,11 +10,26 @@ import { seededRandom } from './random.js';
  * - `host` (terminals, sensors): heartbeat with CPU / memory / disk; while offline no heartbeat arrives (no row).
  *
  * An incident yields an `offline` event at its first hour and an `online` event at the first hour after it, with the
- * messages and payload shapes of itap.record_device_health.
+ * messages and payload shapes of itap.record_device_health; a `viaPipeline` incident yields the two
+ * record_device_health calls instead (seedDeviceHealth runs them before inserting the samples).
  */
 export type HealthKind = 'camera' | 'host';
 
-export type Incident = { device: string; startHoursAgo: number; hours: number; reason: string };
+export type Incident = {
+  device: string;
+  startHoursAgo: number;
+  hours: number;
+  reason: string;
+  /**
+   * Recorded through itap.record_device_health at the simulated times (device_events plus the device_offline /
+   * device_online platform events) instead of direct device_events rows. Only for a device the live health cron
+   * never probes: a newer live sample would make the function ignore the past calls.
+   */
+  viaPipeline?: boolean;
+};
+
+/** One planned itap.record_device_health call (reachable false = offline probe). */
+export type HealthCall = { reachable: boolean; at: string };
 
 export type MetricSample = {
   recorded_at: string;
@@ -41,7 +56,7 @@ const HOUR_MS = 60 * 60 * 1000;
 export const NOVA_INCIDENTS: Incident[] = [
   { device: 'Lobby Camera', startHoursAgo: 4 * 24 + 2, hours: 1, reason: 'PoE switch restart' },
   { device: 'Loading Dock Camera', startHoursAgo: 9 * 24 + 5, hours: 3, reason: 'Network cabling work at the dock' },
-  { device: 'Parking Gate Terminal', startHoursAgo: 17 * 24 + 11, hours: 5, reason: 'Power outage on parking level P-1' },
+  { device: 'Parking Gate Terminal', startHoursAgo: 17 * 24 + 11, hours: 5, reason: 'Power outage on parking level P-1', viaPipeline: true },
 ];
 
 /** The latest whole hour strictly before `now`. */
@@ -57,14 +72,22 @@ export function buildHealthHistory(
   kind: HealthKind,
   now: Date,
   incidents: Incident[],
-): { metrics: MetricSample[]; events: DeviceEventSample[] } {
+): { metrics: MetricSample[]; events: DeviceEventSample[]; pipeline: HealthCall[] } {
   const random = seededRandom(`health/${key}`);
   const last = lastWholeHour(now).getTime();
   const offlineHoursAgo = new Set<number>();
   const events: DeviceEventSample[] = [];
+  const pipeline: HealthCall[] = [];
   for (const incident of incidents) {
     for (let h = 0; h < incident.hours; h += 1) offlineHoursAgo.add(incident.startHoursAgo - h);
     const end = incident.startHoursAgo - incident.hours;
+    if (incident.viaPipeline) {
+      pipeline.push(
+        { reachable: false, at: new Date(last - incident.startHoursAgo * HOUR_MS).toISOString() },
+        { reachable: true, at: new Date(last - end * HOUR_MS).toISOString() },
+      );
+      continue;
+    }
     events.push({
       kind: 'offline',
       message: 'Device is unreachable',
@@ -109,5 +132,5 @@ export function buildHealthHistory(
       error_count: random.chance(0.01) ? 1 : 0,
     });
   }
-  return { metrics, events };
+  return { metrics, events, pipeline };
 }

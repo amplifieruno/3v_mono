@@ -1,4 +1,4 @@
-import { buildHealthHistory, NOVA_INCIDENTS } from './deviceHealthPlan.js';
+import { buildHealthHistory, lastWholeHour, NOVA_INCIDENTS, type HealthCall } from './deviceHealthPlan.js';
 import type { SeedDevicesResult } from './devices.js';
 import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 
@@ -27,21 +27,32 @@ const CLEAR_FRAME_RATE = `
     ) { affected_rows }
   }
 `;
-// One mutation per device (one transaction): a device has either its whole history or none. A sample at an hour the
-// live cron already recorded is skipped.
-const INSERT_HISTORY = `
-  mutation SeedHealthHistory($metrics: [device_health_metrics_insert_input!]!, $events: [device_events_insert_input!]!) {
+/**
+ * One mutation per device (one transaction): a device has either its whole history or none. A sample at an hour the
+ * live cron already recorded is skipped. Outages planned through the pipeline call itap.record_device_health at their
+ * past times first (while no newer sample exists), then restore the device's last_seen_at to the last whole hour.
+ */
+function historyMutation(calls: HealthCall[]): string {
+  const recorded = calls.map(
+    (c, i) => `r${i}: record_device_health(args: { p_device: $device, p_reachable: ${c.reachable}, p_latency_ms: ${c.reachable ? 12 : 'null'},
+                p_frame_ok: ${c.reachable}, p_checked_at: "${c.at}" }) { id }`,
+  );
+  const restore = calls.length > 0 ? ['seen: update_devices_by_pk(pk_columns: { id: $device }, _set: { last_seen_at: $seen }) { id }'] : [];
+  const vars = calls.length > 0 ? '$device: uuid!, $seen: timestamptz!, ' : '';
+  return `mutation SeedHealthHistory(${vars}$metrics: [device_health_metrics_insert_input!]!, $events: [device_events_insert_input!]!) {
+    ${[...recorded, ...restore].join('\n    ')}
     insert_device_health_metrics(
       objects: $metrics
       on_conflict: { constraint: device_health_metrics_organization_id_device_id_recorded_at_key, update_columns: [] }
     ) { affected_rows }
     insert_device_events(objects: $events) { affected_rows }
-  }
-`;
+  }`;
+}
 
 /**
  * 30 days of hourly telemetry per seeded device, inserted directly (no live producer exists for the past), with the
- * Nova Tower offline incidents and their device events. Written once per device (idempotent).
+ * Nova Tower offline incidents and their device events (the parking gate outage through itap.record_device_health,
+ * so it also leaves device_offline / device_online events). Written once per device (idempotent).
  */
 export async function seedDeviceHealth(
   ctx: SeedContext,
@@ -67,7 +78,8 @@ export async function seedDeviceHealth(
     const incidents = device.org === 'nova' ? NOVA_INCIDENTS.filter((i) => i.device === device.name) : [];
     const history = buildHealthHistory(key, device.camera ? 'camera' : 'host', ctx.now, incidents);
     const owner = { organization_id: tenancy.orgs[device.org], device_id: device.id };
-    const data = await ctx.admin.request<{ insert_device_health_metrics: { affected_rows: number } }>(INSERT_HISTORY, {
+    const data = await ctx.admin.request<{ insert_device_health_metrics: { affected_rows: number } }>(historyMutation(history.pipeline), {
+      ...(history.pipeline.length > 0 ? { device: device.id, seen: lastWholeHour(ctx.now).toISOString() } : {}),
       metrics: history.metrics.map((m) => ({ ...owner, ...m })),
       events: history.events.map((e) => ({ ...owner, ...e })),
     });

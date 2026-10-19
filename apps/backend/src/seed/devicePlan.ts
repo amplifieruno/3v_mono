@@ -118,6 +118,13 @@ const NOVA_DEVICES: DeviceSpec[] = [
     ip: '10.10.0.13',
     accessPoints: [{ name: 'Loading Dock Door', role: 'camera' }],
   },
+  {
+    // Meeting-room camera without a stream (never probed live): the history shows it overfilled once.
+    ...camera,
+    name: 'Meeting Room 12A Camera',
+    area: `Nova Tower/${floorName(12)}/Suite 1201 (Aurora Analytics)/Meeting Room 12A`,
+    ip: '10.10.12.31',
+  },
   ...turnstiles.map((t, i): DeviceSpec => ({
     ...terminal,
     name: `Turnstile Terminal ${i + 1}`,

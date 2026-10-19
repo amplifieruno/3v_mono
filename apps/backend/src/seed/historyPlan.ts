@@ -10,7 +10,8 @@ import {
   type HistoryPerson,
   type PlannedDetection,
 } from './historyScripts.js';
-import { addDays, localDate, replayDays, weekday, type ReplayDay } from './historyTime.js';
+import { coverageScenarios } from './historyCoverage.js';
+import { addDays, localDate, replayDays, weekday, weekdayOnOrBefore, type ReplayDay } from './historyTime.js';
 import { planVisits, type HistoryHost, type HistoryVisitor, type PlannedVisit } from './historyVisits.js';
 
 export type { HistoryPerson, PlannedDetection } from './historyScripts.js';
@@ -21,8 +22,8 @@ export type { HistoryHost, HistoryVisitor, PlannedVisit } from './historyVisits.
  * pipeline in time order (historyReplay). Office days through the entrance or parking gate and the turnstiles, day
  * security rounds, contractors via reception, VIP mornings, visitors (historyVisits) and the scenarios that produce
  * the alert events: the blacklisted person twice at the loading dock (once at night, once loitering), unknown faces,
- * a watched unknown face, a couple of after-hours entries, one server-room entry without clearance and one
- * contractor at the loading dock. Deterministic for the same input.
+ * a watched unknown face, a couple of after-hours entries, one server-room entry without clearance, one
+ * contractor at the loading dock and the rarer event types (historyCoverage). Deterministic for the same input.
  */
 export type HistoryInput = {
   now: Date;
@@ -33,16 +34,11 @@ export type HistoryInput = {
   blacklistedIdentity: string | null;
   unknownIdentities: string[];
   watchedIdentity: string | null;
+  /** A contractor whose contract was terminated before the replay window: seen once (inactive_profile_detected). */
+  terminatedIdentity?: string | null;
 };
 
 export type HistoryPlan = { days: ReplayDay[]; detections: PlannedDetection[]; visits: PlannedVisit[] };
-
-/** Latest date on or before `date` that is a weekday (Mon–Fri). */
-function weekdayOnOrBefore(date: string): string {
-  let d = date;
-  while (weekday(d) > 5) d = addDays(d, -1);
-  return d;
-}
 
 function regularDays(t: Track, input: HistoryInput, days: ReplayDay[]): void {
   const { rnd } = t;
@@ -103,7 +99,9 @@ function scenarios(t: Track, input: HistoryInput, today: string, first: string):
   if (intruder && inWindow(breach)) t.pass(intruder.identityId, 'serverRoom', t.at(breach, 15 * 60 + 10), 2);
 
   // A basic-clearance contractor at the (restricted) loading dock, once.
-  const courier = input.people.find((p) => p.role === 'contractor' && (!p.activeFrom || p.activeFrom <= addDays(today, -15)));
+  const courier = input.people.find(
+    (p) => p.role === 'contractor' && (!p.activeFrom || p.activeFrom <= addDays(today, -15)) && (!p.activeTo || p.activeTo >= today),
+  );
   const dockDay = weekdayOnOrBefore(addDays(today, -15));
   if (courier && inWindow(dockDay)) t.pass(courier.identityId, 'dock', t.at(dockDay, 13 * 60 + 30), 2);
 
@@ -131,6 +129,8 @@ function scenarios(t: Track, input: HistoryInput, today: string, first: string):
   const atDock = input.unknownIdentities.find((u) => u !== input.watchedIdentity);
   const dockVisit = weekdayOnOrBefore(addDays(today, -8));
   if (atDock && inWindow(dockVisit)) t.pass(atDock, 'dock', t.at(dockVisit, 15 * 60 + 40), 2);
+
+  coverageScenarios(t, input, today, inWindow);
 }
 
 export function buildHistoryPlan(input: HistoryInput): HistoryPlan {

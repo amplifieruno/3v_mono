@@ -67,6 +67,13 @@ export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** Latest date on or before `date` that is a weekday (Mon–Fri). */
+export function weekdayOnOrBefore(date: string): string {
+  let d = date;
+  while (weekday(d) > 5) d = addDays(d, -1);
+  return d;
+}
+
 /**
  * The replay days: the first starts at or before now - 30 days (moved back to Saturday when it would be a Sunday,
  * so the first day always has people on camera), the last ends at now - 1 hour.
