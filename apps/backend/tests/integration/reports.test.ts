@@ -16,7 +16,7 @@ import {
   storedFile,
 } from './support/reports.js';
 import { createProfile } from './support/segments.js';
-import { runSql } from './support/sql.js';
+import { runSql, runSqlRows } from './support/sql.js';
 import { createIdentity, detect } from './support/tracking.js';
 
 const DAY = '2026-01-05';
@@ -134,6 +134,7 @@ describe('reports', () => {
 
   it('should generate an incident report with the timeline and log it on the incident', async () => {
     const incident = await createIncident(w.a, { title: 'Door forced' });
+    await updateByPk(w.a, 'incidents', incident.id, { assigned_to: w.user.id });
     await insertOne(w.a, 'incident_notes', { incident_id: incident.id, body: 'Guard dispatched' });
     const [r] = await callReportFn(w.a, 'generate_incident_report', { p_incident: incident.id, p_format: 'csv' });
     expect(r).toMatchObject({ report_type: 'incident', incident_id: incident.id, format: 'csv', status: 'queued' });
@@ -142,6 +143,9 @@ describe('reports', () => {
     const csv = (await download(done.file_id ?? '')).toString('utf8');
     expect(csv.split('\r\n')[0]).toBe('Time,Kind,Actor,Details');
     expect(csv).toContain('Guard dispatched');
+    // Actors and user ids in activity details render as names / emails, never raw ids.
+    expect(csv).toContain(`to: ${w.user.email}`);
+    expect(csv).not.toContain(w.user.id);
     expect(metric(await metrics(r.id), 'notes')).toBe(1);
     expect((await activities(w.a, incident.id)).map((x) => x.kind)).toContain('report_generated');
     // Another organization cannot report on it.
@@ -188,15 +192,69 @@ describe('reports', () => {
       await runSql(`DROP TRIGGER test_block_${tag} ON itap.reports; DROP FUNCTION itap.test_block_${tag}()`);
     }
     const [requeued] = await callReportFn(w.a, 'retry_report', { p_report: id });
-    expect(requeued).toMatchObject({ status: 'queued', error: null, attempts: 0 });
+    expect(requeued).toMatchObject({ status: 'queued', error: null, attempts: 1 });
     const done = await settled(id);
-    expect(done).toMatchObject({ status: 'completed', attempts: 1, error: null });
+    expect(done).toMatchObject({ status: 'completed', attempts: 2, error: null });
     expect(await reportFiles(w.orgA.id, id)).toEqual([done.file_id]);
     // Only failed reports are retried; another organization gets not-found.
     await expectError(callReportFn(w.a, 'retry_report', { p_report: id }));
     await expectError(callReportFn(asOrgAdmin(w.other.id, w.orgB.id), 'retry_report', { p_report: id }));
     // Status never goes back from completed, even for trusted SQL.
     await expect(runSql(`UPDATE itap.reports SET status = 'queued' WHERE id = '${id}'`)).rejects.toThrow(/report_invalid_transition/);
+  });
+
+  it('should fence stale handlers with monotonic attempt numbers across retries', async () => {
+    const [row] = await runSqlRows(`INSERT INTO itap.reports
+        (organization_id, report_type, title, format, start_date, end_date, status, attempts, error)
+      VALUES ('${w.orgA.id}', 'flow', 'Fenced', 'json', '${DAY}', '${DAY}', 'failed', 1, 'boom') RETURNING id`);
+    const id = row.id ?? '';
+    const [requeued] = await callReportFn(w.a, 'retry_report', { p_report: id });
+    expect(requeued).toMatchObject({ status: 'queued', attempts: 1 });
+    const done = await settled(id);
+    expect(done).toMatchObject({ status: 'completed', attempts: 2 });
+    // A handler of attempt 1 (before the retry) can neither fail nor complete the new generation.
+    const [busy] = await runSqlRows(`INSERT INTO itap.reports
+        (organization_id, report_type, title, format, start_date, end_date, status, attempts, attempts_at_retry, lease_expires_at)
+      VALUES ('${w.orgA.id}', 'flow', 'Busy', 'json', '${DAY}', '${DAY}', 'generating', 2, 1, now() + interval '5 minutes')
+      RETURNING id`);
+    const stale = await runSqlRows(`SELECT
+        (SELECT count(*) FROM itap.fail_report('${busy.id}', 1, 'stale')) AS failed,
+        (SELECT count(*) FROM itap.complete_report('${busy.id}', 1, NULL, '{}')) AS completed`);
+    expect(stale).toEqual([{ failed: '0', completed: '0' }]);
+    expect((await runSqlRows(`SELECT status FROM itap.reports WHERE id = '${busy.id}'`))[0].status).toBe('generating');
+    // Out of attempts counts only attempts since the last retry.
+    await runSql(`UPDATE itap.reports SET lease_expires_at = now() - interval '1 second' WHERE id = '${busy.id}'`);
+    expect(await callClaim(busy.id ?? '')).toEqual([{ attempts: '3', status: 'generating' }]);
+  });
+
+  it('should freeze report targets once generation started', async () => {
+    const r = await createReport(w.a, {
+      report_type: 'occupancy', format: 'csv', start_date: DAY, end_date: DAY,
+      report_facilities: { data: [{ facility_id: w.facility.id }] },
+    });
+    await settled(r.id);
+    await expectError(insertOne(w.a, 'report_facilities', { report_id: r.id, facility_id: w.facility.id }));
+    await expectError(insertOne(w.a, 'report_segments', { report_id: r.id, segment_id: w.segment }));
+    const rows = await runSqlRows(`SELECT id FROM itap.report_facilities WHERE report_id = '${r.id}'`);
+    await expectError(deleteByPk(w.a, 'report_facilities', rows[0].id ?? ''));
+  });
+
+  it('should reject an invalid report timezone and audit opening a report file', async () => {
+    await expectError(createReport(w.a, { report_type: 'flow', format: 'csv', start_date: DAY, end_date: DAY, parameters: { timezone: 'Mars/Olympus' } }));
+    await expectError(insertOne(w.a, 'report_templates', { name: 'Bad tz', report_type: 'flow', parameters: { timezone: 'Nowhere' } }));
+    const r = await settled((await createReport(w.a, { report_type: 'flow', format: 'csv', start_date: DAY, end_date: DAY })).id);
+    await w.a.request(`mutation($f: uuid!) { open_file(file_id: $f) { url } }`, { f: r.file_id });
+    const audit = await runSqlRows(`SELECT count(*) AS n FROM itap.audit_log
+      WHERE organization_id = '${w.orgA.id}' AND action = 'view_sensitive' AND entity_id = '${r.file_id}'`);
+    expect(audit[0].n).toBe('1');
+  });
+
+  it('should keep the template report type fixed', async () => {
+    const t = await insertOne(w.a, 'report_templates', { name: 'Fixed type', report_type: 'flow' });
+    await expectDenied(updateByPk(w.a, 'report_templates', t.id, { report_type: 'incident' }), 'report_type');
+    await expect(runSql(`UPDATE itap.report_templates SET report_type = 'incident' WHERE id = '${t.id}'`)).rejects.toThrow(
+      /report_template_type_immutable/,
+    );
   });
 
   it('should not let org_admin forge templates marked as system', async () => {
@@ -212,3 +270,7 @@ describe('reports', () => {
   });
 });
 
+
+async function callClaim(id: string): Promise<Record<string, string | null>[]> {
+  return runSqlRows(`SELECT attempts, status FROM itap.claim_report('${id}')`);
+}

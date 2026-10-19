@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createStorageClient, SENSITIVE_FILE_KINDS } from '../storage/storageClient.js';
+import { AUDITED_FILE_KINDS, createStorageClient } from '../storage/storageClient.js';
 import { ActionError, defineAction } from './types.js';
 
 export type FileUrl = { url: string; expires_at: string };
@@ -58,12 +58,12 @@ async function loadOwnFile(
   return file;
 }
 
-/** Returns a short-lived download URL; audits `view_sensitive` for sensitive file kinds. */
+/** Returns a short-lived download URL; audits `view_sensitive` for sensitive file kinds and reports. */
 export const openFile = defineAction(inputSchema, async ({ env, input, session, admin, actor }): Promise<FileUrl> => {
   const file = await loadOwnFile(input.file_id, session.organizationId, true, (q, v) => admin.request(q, v));
   const { url, expiresAt } = await createStorageClient(env).presignedUrl(file.id);
 
-  if (typeof file.metadata?.kind === 'string' && SENSITIVE_FILE_KINDS.has(file.metadata.kind)) {
+  if (typeof file.metadata?.kind === 'string' && AUDITED_FILE_KINDS.has(file.metadata.kind)) {
     await actor.request(AUDIT_VIEW, {
       org: session.organizationId?.toLowerCase(),
       user: session.userId ?? null,

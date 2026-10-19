@@ -18,9 +18,9 @@ export type CronSchedule = {
   days: Set<number>;
   months: Set<number>;
   weekdays: Set<number>;
-  /** Day-of-month field is `*` (unrestricted). */
+  /** Day-of-month field starts with `*` (unrestricted for the OR rule). */
   anyDay: boolean;
-  /** Weekday field is `*` (unrestricted). */
+  /** Weekday field starts with `*` (unrestricted for the OR rule). */
   anyWeekday: boolean;
 };
 
@@ -51,7 +51,9 @@ export function parseCron(expression: string): CronSchedule {
   if (fields.length !== 5 || fields[0] === '') throw new CronError('A cron expression has exactly 5 fields');
   const [minutes, hours, days, months, rawWeekdays] = fields.map((f, i) => parseField(f, FIELDS[i]));
   const weekdays = new Set([...rawWeekdays].map((d) => d % 7));
-  return { minutes, hours, days, months, weekdays, anyDay: fields[2] === '*', anyWeekday: fields[4] === '*' };
+  // As in Vixie cron, a field starting with `*` (`*`, `*/1`, `*/2`) counts as unrestricted for the day-of-month /
+  // weekday OR rule.
+  return { minutes, hours, days, months, weekdays, anyDay: fields[2].startsWith('*'), anyWeekday: fields[4].startsWith('*') };
 }
 
 const formatters = new Map<string, Intl.DateTimeFormat>();

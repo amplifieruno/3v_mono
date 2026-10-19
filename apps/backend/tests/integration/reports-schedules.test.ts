@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { requireBackend } from './support/backend.js';
-import { asAdmin } from './support/clients.js';
+import { asAdmin, asOrgAdmin, testEnv } from './support/clients.js';
 import { expectDenied, expectError } from './support/fixtures.js';
 import { notificationWorld, recipientGroup } from './support/notifications.js';
 import { insertOne, updateByPk } from './support/operations.js';
-import { REPORT_FIELDS, runScheduleCron, settled, type Report } from './support/reports.js';
+import { REPORT_FIELDS, reportFiles, runScheduleCron, settled, type Report } from './support/reports.js';
+import { createStorageClient } from '../../src/storage/storageClient.js';
 import { waitFor } from './support/sending.js';
 import { runSql, runSqlRows } from './support/sql.js';
 import type { HasuraClient } from '../../src/hasura/client.js';
@@ -149,6 +150,44 @@ describe('report schedules', () => {
     expect((await schedule(inApp.id)).next_run_at).toBeNull();
   });
 
+  it('should isolate a failing schedule: record the error, move it on and run the others', async () => {
+    const w = await notificationWorld();
+    const groupA = await recipientGroup(w.a, [{ user_id: w.bob, channel: 'in_app' }]);
+    const b = asOrgAdmin(w.other.id, w.orgB.id);
+    const groupB = await recipientGroup(b, [{ user_id: w.other.id, channel: 'in_app' }]);
+    const base = { name: 'S', cron: '0 6 * * *', timezone: 'UTC', channel: 'in_app' };
+    const poisoned = await insertOne(w.a, 'report_schedules', { ...base, template_id: await template(w.a, {}), recipient_group_id: groupA });
+    const healthy = await insertOne(b, 'report_schedules', { ...base, template_id: await template(b, {}), recipient_group_id: groupB });
+    const tag = poisoned.id.replace(/-/g, '');
+    await runSql(`CREATE FUNCTION itap.test_poison_${tag}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+        RAISE EXCEPTION USING ERRCODE = 'check_violation', MESSAGE = 'test_schedule_poisoned'; END $$;
+      CREATE TRIGGER test_poison_${tag} BEFORE INSERT ON itap.reports FOR EACH ROW
+        WHEN (NEW.schedule_id = '${poisoned.id}') EXECUTE FUNCTION itap.test_poison_${tag}()`);
+    try {
+      await runScheduleCron([w.orgA.id, w.orgB.id], '2026-01-04T23:00:00Z');
+      const result = await runScheduleCron([w.orgA.id, w.orgB.id], '2026-01-05T07:00:00Z');
+      expect(result).toMatchObject({ schedules_failed: 1, reports_created: 1 });
+      expect(await scheduleReports(healthy.id)).toHaveLength(1);
+      const failed = await asAdmin().request<{ report_schedules_by_pk: Record<string, unknown> }>(
+        `query($id: uuid!) { report_schedules_by_pk(id: $id) { next_run_at last_run_at last_error last_failed_at } }`,
+        { id: poisoned.id },
+      );
+      expect(failed.report_schedules_by_pk).toMatchObject({ next_run_at: '2026-01-06T06:00:00+00:00', last_run_at: null });
+      expect(failed.report_schedules_by_pk.last_error).toContain('test_schedule_poisoned');
+      expect(failed.report_schedules_by_pk.last_failed_at).not.toBeNull();
+    } finally {
+      await runSql(`DROP TRIGGER test_poison_${tag} ON itap.reports; DROP FUNCTION itap.test_poison_${tag}()`);
+    }
+    // The next successful run clears the error.
+    await runScheduleCron([w.orgA.id], '2026-01-06T07:00:00Z');
+    const ok = await asAdmin().request<{ report_schedules_by_pk: Record<string, unknown> }>(
+      `query($id: uuid!) { report_schedules_by_pk(id: $id) { last_error last_failed_at last_run_at } }`,
+      { id: poisoned.id },
+    );
+    expect(ok.report_schedules_by_pk).toEqual({ last_error: null, last_failed_at: null, last_run_at: '2026-01-06T06:00:00+00:00' });
+    await expectDenied(updateByPk(w.a, 'report_schedules', poisoned.id, { last_error: null }), 'last_error');
+  });
+
   it('should reclaim a report whose lease expired and fail one out of attempts', async () => {
     const w = await notificationWorld();
     const [stuck, exhausted] = await runSqlRows(`INSERT INTO itap.reports
@@ -156,9 +195,17 @@ describe('report schedules', () => {
       VALUES ('${w.orgA.id}', 'flow', 'Stuck', 'json', '2026-01-05', '2026-01-05', 'generating', 1, now() - interval '1 minute'),
              ('${w.orgA.id}', 'flow', 'Exhausted', 'json', '2026-01-05', '2026-01-05', 'generating', 3, now() - interval '1 minute')
       RETURNING id`);
+    // A crashed attempt left its uploaded file behind; the next claim sweeps it.
+    const leftover = await createStorageClient(testEnv()).upload({
+      bucketId: w.orgA.id, name: 'left.json', mimeType: 'application/json', data: Buffer.from('{}'),
+      metadata: { kind: 'report', report_id: stuck.id },
+    });
     const result = await runScheduleCron([w.orgA.id], new Date().toISOString());
     expect(result).toMatchObject({ reports_due: 2 });
-    expect(await settled(stuck.id ?? '')).toMatchObject({ status: 'completed', attempts: 2 });
+    const done = await settled(stuck.id ?? '');
+    expect(done).toMatchObject({ status: 'completed', attempts: 2 });
+    expect(await reportFiles(w.orgA.id, stuck.id ?? '')).toEqual([done.file_id]);
+    expect(done.file_id).not.toBe(leftover.id);
     expect(await settled(exhausted.id ?? '')).toMatchObject({ status: 'failed', error: 'max_attempts', attempts: 3 });
     // A live lease is not reclaimed.
     const [busy] = await runSqlRows(`INSERT INTO itap.reports

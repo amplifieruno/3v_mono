@@ -55,6 +55,12 @@ describe('nextRun', () => {
     expect(iso(nextRun('0 0 25 * 2', 'UTC', new Date('2026-10-23T00:00:00Z')))).toBe('2026-10-25T00:00:00.000Z');
   });
 
+  it('should treat a starred day-of-month field like */1 as unrestricted (weekday alone decides)', () => {
+    // 2026-10-19 is a Monday: */1 + Monday = Mondays only, as in Vixie cron.
+    expect(iso(nextRun('0 0 */1 * 1', 'UTC', new Date('2026-10-19T00:00:00Z')))).toBe('2026-10-26T00:00:00.000Z');
+    expect(iso(nextRun('0 0 1 * */2', 'UTC', new Date('2026-10-19T00:00:00Z')))).toBe('2026-11-01T00:00:00.000Z');
+  });
+
   it('should handle months and leap days and return null when a date never occurs', () => {
     expect(iso(nextRun('0 0 1 1 *', 'UTC', new Date('2026-10-19T00:00:00Z')))).toBe('2027-01-01T00:00:00.000Z');
     expect(iso(nextRun('0 0 29 2 *', 'UTC', new Date('2026-10-19T00:00:00Z')))).toBe('2028-02-29T00:00:00.000Z');

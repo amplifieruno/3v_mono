@@ -1,6 +1,6 @@
 import { sendNotificationDelivery } from '../notifications/sendDelivery.js';
 import { sendWebhookDelivery } from '../webhooks/sendWebhook.js';
-import { runWithConcurrency } from './deviceHealthCheck.js';
+import { runWithConcurrency } from '../util/concurrency.js';
 import { defineCronHandler, defineEventHandler, type CronTriggerPayload, type TriggerContext } from './types.js';
 
 const BATCH = 50;

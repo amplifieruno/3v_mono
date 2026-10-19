@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_report_schedule_failure
+configuration:
+  custom_name: record_report_schedule_failure
+  exposed_as: mutation

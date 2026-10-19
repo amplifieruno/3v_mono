@@ -21,7 +21,14 @@ const dataset = {
 
 type Calls = { query: string; variables: Record<string, unknown> }[];
 
-function fakeAdmin(overrides: { claim?: unknown[]; complete?: () => unknown; compute?: () => unknown }) {
+function fakeAdmin(overrides: {
+  claim?: unknown[];
+  complete?: () => unknown;
+  compute?: () => unknown;
+  fail?: unknown[];
+  fileId?: string | null;
+  leftovers?: string[];
+}) {
   const calls: Calls = [];
   const request = vi.fn(async (query: string, variables: Record<string, unknown> = {}) => {
     calls.push({ query, variables });
@@ -32,7 +39,9 @@ function fakeAdmin(overrides: { claim?: unknown[]; complete?: () => unknown; com
     if (query.includes('complete_report')) {
       return overrides.complete ? overrides.complete() : { complete_report: [{ id: REPORT, status: 'completed' }] };
     }
-    if (query.includes('fail_report')) return { fail_report: [{ id: REPORT, status: 'failed' }] };
+    if (query.includes('fail_report')) return { fail_report: overrides.fail ?? [{ id: REPORT, status: 'failed' }] };
+    if (query.includes('reports_by_pk')) return { reports_by_pk: { file_id: overrides.fileId ?? null } };
+    if (query.includes('ReportLeftoverFiles')) return { files: (overrides.leftovers ?? []).map((id) => ({ id })) };
     throw new Error(`unexpected query ${query}`);
   });
   return { admin: { request } as unknown as HasuraClient, calls };
@@ -109,6 +118,35 @@ describe('generateReport', () => {
     const storage = fakeStorage();
     expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, skipped: 'superseded' });
     expect(storage.deleteFile).toHaveBeenCalledWith('file-1');
+  });
+
+  it('should keep the file when the completion committed but its response was lost', async () => {
+    const { admin } = fakeAdmin({
+      complete: () => {
+        throw new Error('socket hang up');
+      },
+      fail: [],
+      fileId: 'file-1',
+    });
+    const storage = fakeStorage();
+    expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, skipped: 'superseded' });
+    expect(storage.deleteFile).not.toHaveBeenCalled();
+  });
+
+  it('should delete its file when a failure could not be recorded because another attempt owns the report', async () => {
+    const { admin } = fakeAdmin({ complete: () => { throw new Error('x'); }, fail: [], fileId: 'other-file' });
+    const storage = fakeStorage();
+    expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, skipped: 'superseded' });
+    expect(storage.deleteFile).toHaveBeenCalledWith('file-1');
+  });
+
+  it('should sweep files earlier attempts of the report left behind after claiming it', async () => {
+    const { admin, calls } = fakeAdmin({ leftovers: ['old-1', 'old-2'] });
+    const storage = fakeStorage();
+    expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, status: 'completed' });
+    expect(storage.deleteFile.mock.calls.map((c) => (c as unknown[])[0])).toEqual(['old-1', 'old-2']);
+    const sweep = calls.find((c) => c.query.includes('ReportLeftoverFiles'));
+    expect(sweep?.variables).toMatchObject({ bucket: ORG.toLowerCase(), meta: { report_id: REPORT } });
   });
 
   it('should propagate a failure to record the failure so the lease reclaims the report', async () => {

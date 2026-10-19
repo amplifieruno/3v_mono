@@ -15,15 +15,17 @@ export const reportTables: TableSpec[] = [
   { name: 'report_statuses', isEnum: true, profile: 'none' },
   { name: 'report_metric_types', isEnum: true, profile: 'none' },
   {
+    // report_type is fixed at insert (also guarded in SQL): schedules depend on it.
     name: 'report_templates',
     profile: 'tenant_crud',
     readOnlyColumns: ['is_system'],
+    insertOnlyColumns: ['report_type'],
     extraPermissions: {
       update_permissions: [
         {
           role: ORG_ADMIN,
           permission: {
-            columns: ['description', 'format', 'name', 'parameters', 'report_type'],
+            columns: ['description', 'format', 'name', 'parameters'],
             filter: userEditableTemplate,
             check: userEditableTemplate,
           },
@@ -33,17 +35,18 @@ export const reportTables: TableSpec[] = [
     },
   },
   {
-    // next_run_at / last_run_at are written by the run_report_schedules cron.
+    // next_run_at / last_run_at / last_error / last_failed_at are written by the run_report_schedules cron.
     name: 'report_schedules',
     profile: 'tenant_crud',
-    readOnlyColumns: ['last_run_at', 'next_run_at'],
+    readOnlyColumns: ['last_run_at', 'next_run_at', 'last_error', 'last_failed_at'],
   },
   {
     // Generation state is system-managed; the report definition is fixed once inserted (only title/description edit).
     name: 'reports',
     profile: 'tenant_crud',
     readOnlyColumns: [
-      'number', 'status', 'file_id', 'summary', 'error', 'generated_at', 'attempts', 'lease_expires_at', 'schedule_id',
+      'number', 'status', 'file_id', 'summary', 'error', 'generated_at', 'attempts', 'attempts_at_retry',
+      'lease_expires_at', 'schedule_id',
     ],
     insertOnlyColumns: ['report_type', 'parameters', 'start_date', 'end_date', 'incident_id', 'format', 'template_id'],
     noDelete: true,
@@ -66,7 +69,10 @@ export const reportTables: TableSpec[] = [
 ];
 
 export const reportFunctions: FunctionSpec[] = [
-  ...['claim_report', 'compute_report', 'complete_report', 'fail_report', 'init_report_schedule', 'run_report_schedule'].map(
+  ...[
+    'claim_report', 'compute_report', 'complete_report', 'fail_report', 'init_report_schedule', 'run_report_schedule',
+    'record_report_schedule_failure',
+  ].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', roles: [] }),
   ),
   { name: 'due_reports', exposedAs: 'query', roles: [] },

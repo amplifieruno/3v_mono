@@ -52,6 +52,12 @@ describe('openFile', () => {
     expect((actorRequest.mock.calls[0] as unknown as [string])[0]).toContain('entity: "files"');
   });
 
+  it('should audit opening a generated report file', async () => {
+    const { promise, actorRequest } = run(openFile, { id: FILE, bucketId: ORG, metadata: { kind: 'report' } });
+    await promise;
+    expect(actorRequest).toHaveBeenCalledWith(expect.stringContaining('view_sensitive'), { org: ORG, user: USER, file: FILE });
+  });
+
   it('should not audit non-sensitive or kind-less files', async () => {
     for (const metadata of [{ kind: 'photo' }, null]) {
       const { promise, actorRequest } = run(openFile, { id: FILE, bucketId: ORG, metadata });

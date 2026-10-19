@@ -4,10 +4,10 @@ import type { HasuraClient } from '../hasura/client.js';
 import {
   createDeviceHealthCheck,
   mapSnapshotResponse,
-  runWithConcurrency,
   streamIdOf,
   type FetchLike,
 } from './deviceHealthCheck.js';
+import { runWithConcurrency } from '../util/concurrency.js';
 import type { CronTriggerPayload } from './types.js';
 
 const env = { STREAM_SERVER_URL: 'http://stream-server:8888/' } as Env;

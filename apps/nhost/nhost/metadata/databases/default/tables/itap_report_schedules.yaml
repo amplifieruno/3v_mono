@@ -76,6 +76,8 @@ select_permissions:
         - cron
         - id
         - is_active
+        - last_error
+        - last_failed_at
         - last_run_at
         - name
         - next_run_at

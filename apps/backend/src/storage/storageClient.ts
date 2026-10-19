@@ -4,6 +4,12 @@ import { mapAbort } from '../http/abort.js';
 /** `metadata.kind` values whose access is audited (`open_file`) and which org_admin cannot select directly. */
 export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_document', 'dsr_export', 'auth_capture']);
 
+/**
+ * `metadata.kind` values whose opening through `open_file` is audited (`view_sensitive`): the sensitive kinds plus
+ * generated reports (aggregated personal data: attendance, incident timelines). Reports stay selectable by org_admin.
+ */
+export const AUDITED_FILE_KINDS: ReadonlySet<string> = new Set([...SENSITIVE_FILE_KINDS, 'report']);
+
 export type StorageClient = {
   presignedUrl(fileId: string): Promise<{ url: string; expiresAt: Date }>;
   deleteFile(fileId: string): Promise<void>;

@@ -11,7 +11,7 @@ const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
 function xmlText(text: string): string {
   return text
-    .replace(/[^\t\n\r -퟿-�\u{10000}-\u{10FFFF}]/gu, '')
+    .replace(/[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
