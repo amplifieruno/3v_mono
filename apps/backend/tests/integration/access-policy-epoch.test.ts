@@ -71,6 +71,15 @@ describe('policy epoch (distribution)', () => {
     expect(await bump(w, () => publishVersion(w, v2.id))).toEqual({ delta: 1, urgent: true });
   });
 
+  it('should treat publishing an allow version with max_risk as urgent (risk can now deny)', async () => {
+    const w = await accessWorld();
+    const risky = await createPolicyWithDraft(w.a, { profile_id: w.profile }, { access_point_id: w.door.id }, {
+      effect: 'allow',
+      max_risk: 0.5,
+    });
+    expect(await bump(w, () => publishVersion(w, risky.draft.id))).toEqual({ delta: 1, urgent: true });
+  });
+
   it('should bump on archive: urgent for an allow policy, lazy for a deny policy, none for an unpublished one', async () => {
     const w = await accessWorld();
     const allow = await doorPolicy(w, 'allow');
@@ -109,7 +118,7 @@ describe('policy epoch (distribution)', () => {
     });
   });
 
-  it('should bump on overrides: lock start urgent, unlock start lazy, unlock end urgent, lock end lazy', async () => {
+  it('should bump on overrides: every start urgent, unlock end urgent, lock end lazy', async () => {
     const w = await accessWorld();
     let lock = '';
     expect(await bump(w, async () => (lock = await insertOverride(w.orgA.id, w.facility.id, 'lock_all')))).toEqual({
@@ -117,10 +126,11 @@ describe('policy epoch (distribution)', () => {
       urgent: true,
     });
     expect(await bump(w, () => endOverride(lock))).toEqual({ delta: 1, urgent: false });
+    // Unlock / evacuation starts are urgent too (life-safety: terminals must open promptly).
     let unlock = '';
     expect(await bump(w, async () => (unlock = await insertOverride(w.orgA.id, w.facility.id, 'evacuation')))).toEqual({
       delta: 1,
-      urgent: false,
+      urgent: true,
     });
     expect(await bump(w, () => endOverride(unlock))).toEqual({ delta: 1, urgent: true });
   });
