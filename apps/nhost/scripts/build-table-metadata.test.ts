@@ -187,6 +187,21 @@ describe('buildTableMetadata: computed fields', () => {
     expect(md.update_permissions?.[0].permission.columns).not.toContain('has_thing');
   });
 
+  it('should pass the session argument of a session-dependent computed field', () => {
+    const md = buildTableMetadata(
+      { ...spec, computedFields: [{ name: 'mine', function: 'thing_mine', sessionArgument: 'hasura_session' }] },
+      columns,
+      [],
+      [],
+    );
+    expect(md.computed_fields).toEqual([
+      {
+        name: 'mine',
+        definition: { function: { schema: 'itap', name: 'thing_mine' }, session_argument: 'hasura_session' },
+      },
+    ]);
+  });
+
   it('should honour an explicit function schema and omit computed_fields when none are declared', () => {
     const custom = buildTableMetadata(
       { ...spec, computedFields: [{ name: 'x', function: 'f', schema: 'other' }] },

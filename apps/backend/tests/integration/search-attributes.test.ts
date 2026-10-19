@@ -4,6 +4,7 @@ import { requireBackend } from './support/backend.js';
 import { INSERT_FACILITY } from './support/facilities.js';
 import { createIdentityAsAdmin } from './support/faces.js';
 import { createTwoOrgs, expectError } from './support/fixtures.js';
+import { MERGE, pgArray } from './support/lifecycle.js';
 import { results, searchFaces } from './support/search.js';
 import { runSql } from './support/sql.js';
 
@@ -92,6 +93,18 @@ describe('search_faces (attribute)', () => {
     expect(await find(w, { facility_id: w.facility })).toEqual([w.emp]);
     expect(await find(w, { facility_id: w.facility, seen_from: day(4), seen_to: day(6) })).toEqual([w.emp]);
     expect(await find(w, { facility_id: w.facility, seen_from: day(6) })).toEqual([]);
+  });
+
+  it('should find a merge target through the history of its merged sources (effective identity)', async () => {
+    const w = await world();
+    const { id: target } = await createIdentityAsAdmin(w.orgA.id, {});
+    await w.a.request(MERGE, { target, sources: pgArray([w.emp]), reason: 'same person' });
+    // emp (now merged) was first seen on day 1, last on day 5, in facility HQ; the target itself was never seen.
+    expect(await find(w, { facility_id: w.facility })).toEqual([target]);
+    expect(await find(w, { facility_id: w.facility, seen_from: day(4), seen_to: day(6) })).toEqual([target]);
+    expect(await find(w, { first_seen_to: day(2) })).toEqual([target]);
+    expect(await find(w, { last_seen_from: day(4), last_seen_to: day(6) })).toEqual([target]);
+    expect(await find(w, {})).toEqual([w.vis, w.unk, target]);
   });
 
   it('should exclude merged identities and identities whose biometric consent was withdrawn', async () => {

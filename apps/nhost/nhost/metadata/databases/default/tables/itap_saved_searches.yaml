@@ -48,6 +48,13 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: saved_search_id
+computed_fields:
+  - name: owner_last_error
+    definition:
+      function:
+        schema: itap
+        name: saved_search_owner_last_error
+      session_argument: hasura_session
 insert_permissions:
   - role: org_admin
     permission:
@@ -81,7 +88,6 @@ select_permissions:
         - id
         - image_file_id
         - is_shared
-        - last_error
         - last_run_at
         - last_run_status
         - last_search_request_id
@@ -104,6 +110,8 @@ select_permissions:
               - is_shared:
                   _eq: true
       allow_aggregations: true
+      computed_fields:
+        - owner_last_error
 update_permissions:
   - role: org_admin
     permission:

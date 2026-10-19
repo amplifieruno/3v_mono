@@ -24,8 +24,9 @@ const SAVED_INPUT = [
   'alert_on_match', 'description', 'filters', 'fuzzy', 'image_file_id', 'is_shared', 'max_results', 'name',
   'schedule_cron', 'search_type', 'threshold',
 ];
+// last_error is owner-only: exposed through the computed field owner_last_error.
 const SAVED_COLUMNS = [
-  ...SAVED_INPUT, 'created_at', 'id', 'last_error', 'last_run_at', 'last_run_status', 'last_search_request_id',
+  ...SAVED_INPUT, 'created_at', 'id', 'last_run_at', 'last_run_status', 'last_search_request_id',
   'next_run_at', 'organization_id', 'owner_id', 'updated_at',
 ].sort();
 
@@ -61,6 +62,9 @@ export const searchTables: TableSpec[] = [
     name: 'saved_searches',
     profile: 'tenant_crud',
     readOnlyColumns: ['owner_id', 'last_run_at', 'next_run_at', 'last_run_status', 'last_error', 'last_search_request_id'],
+    computedFields: [
+      { name: 'owner_last_error', function: 'saved_search_owner_last_error', sessionArgument: 'hasura_session' },
+    ],
     extraPermissions: {
       insert_permissions: [
         {

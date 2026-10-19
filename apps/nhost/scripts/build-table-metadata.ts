@@ -260,7 +260,13 @@ export function buildTableMetadata(
     computed_fields: nonEmpty(
       [...(spec.computedFields ?? [])]
         .sort(byName)
-        .map((f) => ({ name: f.name, definition: { function: { schema: f.schema ?? 'itap', name: f.function } } })),
+        .map((f) => ({
+          name: f.name,
+          definition: {
+            function: { schema: f.schema ?? 'itap', name: f.function },
+            ...(f.sessionArgument ? { session_argument: f.sessionArgument } : {}),
+          },
+        })),
     ),
     insert_permissions: nonEmpty(mergeRoles(generated.insert_permissions, extra.insert_permissions)),
     select_permissions: nonEmpty(

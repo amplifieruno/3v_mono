@@ -31,7 +31,7 @@ function run(
   input: unknown,
   { bucket = ORG, organizationId = ORG as string | null, metadata = null as unknown } = {},
 ) {
-  const adminRequest = vi.fn(async () => ({ files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10, metadata }] }));
+  const adminRequest = vi.fn(async () => ({ files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10, metadata, isUploaded: true }] }));
   const client = { request: adminRequest } as unknown as HasuraClient;
   return handler({
     env,

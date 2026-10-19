@@ -48,6 +48,7 @@ type FileRow = {
   size: number | null;
   metadata: { kind?: unknown } | null;
   uploadedByUserId: string | null;
+  isUploaded: boolean | null;
 };
 type Match = { identity_id: string; profile_id: string | null; rank: number; confidence: number | null; match_type: string };
 
@@ -55,7 +56,7 @@ const SETTINGS = `
   query SearchSettings($org: uuid!) { organization_settings_by_pk(organization_id: $org) { recognition_threshold } }
 `;
 const FILE = `
-  query SearchImageFile($id: uuid!) { file(id: $id) { id bucketId mimeType size metadata uploadedByUserId } }
+  query SearchImageFile($id: uuid!) { file(id: $id) { id bucketId mimeType size metadata uploadedByUserId isUploaded } }
 `;
 const INSERT = `
   mutation InsertSearchRequest($object: search_requests_insert_input!) { insert_search_requests_one(object: $object) { id } }
@@ -128,6 +129,7 @@ function insertError(error: unknown): unknown {
 async function extractEmbedding(deps: SearchDeps, file: FileRow): Promise<{ embedding: number[]; faceCount: number }> {
   let normalized: Awaited<ReturnType<typeof normalizeImage>>;
   try {
+    if (file.isUploaded !== true) throw new InvalidImageError('Upload not completed');
     if (!file.mimeType?.startsWith('image/') || (file.size ?? 0) > MAX_PHOTO_BYTES) throw new InvalidImageError('Not an image');
     normalized = await normalizeImage(await deps.storage.download(file.id));
   } catch (error: unknown) {

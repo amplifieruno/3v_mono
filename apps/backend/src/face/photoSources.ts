@@ -37,7 +37,7 @@ export function photoFromBuffer(ref: string, image: Buffer): PhotoSource {
 
 const FILES_QUERY = `
   query EnrollmentFiles($ids: [uuid!]!) {
-    files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata uploadedByUserId }
+    files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata uploadedByUserId isUploaded }
   }
 `;
 
@@ -48,6 +48,7 @@ type FileRow = {
   size: number | null;
   metadata: unknown;
   uploadedByUserId?: string | null;
+  isUploaded?: boolean | null;
 };
 
 function fileKind(metadata: unknown): string | undefined {
@@ -87,6 +88,7 @@ export async function loadOrganizationPhotos(
       ref: fileId,
       fileId,
       async load() {
+        if (file.isUploaded !== true) throw new InvalidImageError('Upload not completed');
         if (!file.mimeType?.startsWith('image/')) throw new InvalidImageError(`Not an image: ${file.mimeType}`);
         if ((file.size ?? 0) > MAX_PHOTO_BYTES) throw new InvalidImageError('Photo exceeds 15 MB');
         return storage.download(fileId);

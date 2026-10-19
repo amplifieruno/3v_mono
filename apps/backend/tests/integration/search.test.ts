@@ -89,6 +89,37 @@ describe('search_faces (facial)', () => {
     expect(top2.results_count).toBe(2);
   });
 
+  it('should never go below a similarity of 0.2, even for a fuzzy search at the lowest threshold', async () => {
+    const { orgA, user, a, x } = await enrolledWorld();
+    const probe = await templateOf(x);
+    const low = await identityAt(orgA.id, atSimilarity(probe, 0.15, 17));
+    const near = await identityAt(orgA.id, atSimilarity(probe, 0.25, 19));
+    const image = await uploadSearchImage(user.id, orgA.id, FACES.personA1);
+    const out = await searchFaces(a, { search_type: 'facial', image_file_id: image, threshold: 0.2, fuzzy: true });
+    const ids = (await results(out.search_request_id)).map((r) => r.identity_id);
+    expect(ids).toContain(near);
+    expect(ids).not.toContain(low);
+  });
+
+  it('should record invalid_image for a file whose upload never completed', async () => {
+    const { orgA, user, a } = await enrolledWorld();
+    const image = await uploadSearchImage(user.id, orgA.id, FACES.personA1);
+    await runSql(`UPDATE storage.files SET is_uploaded = false WHERE id = '${image}'`);
+    const out = await searchFaces(a, { search_type: 'facial', image_file_id: image });
+    expect(out).toMatchObject({ status: 'failed', error: 'invalid_image' });
+  });
+
+  it('should refuse a search image as another entity file (profile avatar)', async () => {
+    const { orgA, user, a } = await enrolledWorld();
+    const image = await uploadSearchImage(user.id, orgA.id, FACES.personA1);
+    const error = await expectError(
+      a.request(`mutation ($f: uuid!) { insert_profiles_one(object: { first_name: "A", last_name: "B", avatar_file_id: $f }) { id } }`, {
+        f: image,
+      }),
+    );
+    expect(`${error.message} ${error.detail ?? ''}`).toMatch(/file_owner_only/);
+  });
+
   it('should exclude merged identities and identities whose biometric consent was withdrawn', async () => {
     const { orgA, user, a, x } = await enrolledWorld();
     const probe = await templateOf(x);

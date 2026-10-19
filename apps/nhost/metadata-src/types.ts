@@ -54,6 +54,8 @@ export interface ComputedFieldSpec {
   function: string;
   /** Schema of the function; defaults to `itap`. */
   schema?: string;
+  /** The function's `json` argument Hasura fills with the session variables (session-dependent fields). */
+  sessionArgument?: 'hasura_session';
 }
 
 export interface TableSpec {
@@ -175,7 +177,7 @@ export interface TableMetadata extends HasuraPermissions {
   configuration: { custom_name: string };
   object_relationships?: ManualRelationship[];
   array_relationships?: ManualRelationship[];
-  computed_fields?: { name: string; definition: { function: QualifiedTable } }[];
+  computed_fields?: { name: string; definition: { function: QualifiedTable; session_argument?: string } }[];
   event_triggers?: EventTriggerMetadata[];
 }
 

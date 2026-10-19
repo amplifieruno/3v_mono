@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { HasuraClient } from '../../../src/hasura/client.js';
 import { runSavedSearches } from '../../../src/search/savedSearches.js';
-import { asAdmin, orgAdminToken, testEnv } from './clients.js';
+import { asAdmin, asOrgAdmin, orgAdminToken, testEnv } from './clients.js';
 import { readFace, type FaceFixture } from './enrollment.js';
 import { addEmbedding, createIdentityAsAdmin } from './faces.js';
+import { addMember, createTestUser, createTwoOrgs } from './fixtures.js';
 import { runSqlRows } from './sql.js';
 
 /** Search (slice 7, task 3) helpers. */
@@ -150,13 +151,35 @@ export async function savedSearchState(id: string): Promise<SavedSearchState> {
 }
 
 /** saved_search_match events of an organization: identity and dedup key, oldest first. */
-export async function matchEvents(orgId: string): Promise<{ identity_id: string | null; dedup_key: string | null }[]> {
-  const data = await asAdmin().request<{ events: { identity_id: string | null; dedup_key: string | null }[] }>(
+export type MatchEvent = { identity_id: string | null; dedup_key: string | null; occurred_at: string };
+
+export async function matchEvents(orgId: string): Promise<MatchEvent[]> {
+  const data = await asAdmin().request<{ events: MatchEvent[] }>(
     `query ($org: uuid!) {
       events(where: { organization_id: { _eq: $org }, event_type: { _eq: saved_search_match } },
-             order_by: [{ occurred_at: asc }, { dedup_key: asc }]) { identity_id dedup_key }
+             order_by: [{ occurred_at: asc }, { dedup_key: asc }]) { identity_id dedup_key occurred_at }
     }`,
     { org: orgId },
   );
   return data.events;
+}
+
+export const INSERT_SAVED_SEARCH = `
+  mutation ($o: saved_searches_insert_input!) { insert_saved_searches_one(object: $o) { id owner_id next_run_at } }
+`;
+
+/** Inserts a saved search as `client` (attribute search with no filters unless overridden). */
+export async function createSavedSearch(client: HasuraClient, object: Record<string, unknown>): Promise<string> {
+  const data = await client.request<{ insert_saved_searches_one: { id: string } }>(INSERT_SAVED_SEARCH, {
+    o: { search_type: 'attribute', filters: {}, ...object },
+  });
+  return data.insert_saved_searches_one.id;
+}
+
+/** Two organizations; org A has the owner (`user`, client `a`) and a colleague (client `c`). */
+export async function savedSearchWorld() {
+  const { orgA, orgB, user, other } = await createTwoOrgs();
+  const colleague = await createTestUser();
+  await addMember(orgA.id, colleague.id);
+  return { orgA, orgB, user, other, colleague, a: asOrgAdmin(user.id, orgA.id), c: asOrgAdmin(colleague.id, orgA.id) };
 }

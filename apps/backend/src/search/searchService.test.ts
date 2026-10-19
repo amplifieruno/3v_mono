@@ -17,12 +17,20 @@ beforeAll(async () => {
   image = await sharp({ create: { width: 200, height: 200, channels: 3, background: '#888' } }).png().toBuffer();
 });
 
-type FileRow = { id: string; bucketId: string; mimeType: string; size: number; metadata: unknown; uploadedByUserId: string | null };
+type FileRow = {
+  id: string;
+  bucketId: string;
+  mimeType: string;
+  size: number;
+  metadata: unknown;
+  uploadedByUserId: string | null;
+  isUploaded: boolean;
+};
 
 function ownFile(overrides: Partial<FileRow> = {}): FileRow {
   return {
     id: FILE, bucketId: ORG.toLowerCase(), mimeType: 'image/png', size: 1000, metadata: { kind: 'search' },
-    uploadedByUserId: USER, ...overrides,
+    uploadedByUserId: USER, isUploaded: true, ...overrides,
   };
 }
 
@@ -123,6 +131,12 @@ describe('runSearch', () => {
       await expect(runSearch(deps, facial)).rejects.toMatchObject({ code: 'file_not_found' });
       expect(actorCalls).toHaveLength(0);
     }
+  });
+
+  it('should record invalid_image for a file whose upload never completed, without downloading it', async () => {
+    const { deps, storage } = setup({ file: ownFile({ isUploaded: false }) });
+    expect(await runSearch(deps, facial)).toMatchObject({ status: 'failed', error: 'invalid_image' });
+    expect(storage.download).not.toHaveBeenCalled();
   });
 
   it('should accept an organization image of another kind (e.g. a capture) from any member', async () => {
