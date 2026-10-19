@@ -122,4 +122,14 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Hourly: area hourly stats, facility daily stats, area transitions of the previous hour',
   },
+  {
+    // Every 15 minutes (spec §8.3): due report schedules -> reports (previous complete period, one per schedule and
+    // period; next runs computed by the backend in the schedule timezone), then reports the render_report trigger left
+    // (queued over a minute) or whose generation lease expired.
+    name: 'run_report_schedules',
+    schedule: '*/15 * * * *',
+    toleranceSeconds: 1800,
+    includeInMetadata: true,
+    comment: 'Run due report schedules and reclaim stalled report generation',
+  },
 ];

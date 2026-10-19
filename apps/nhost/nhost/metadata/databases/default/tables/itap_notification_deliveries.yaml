@@ -48,6 +48,15 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           recipient_user_id: user_id
+  - name: report
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          organization_id: organization_id
+          report_id: id
   - name: rule
     using:
       manual_configuration:

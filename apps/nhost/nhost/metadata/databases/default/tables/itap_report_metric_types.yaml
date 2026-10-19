@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: report_metric_types
+is_enum: true
+configuration:
+  custom_name: report_metric_types

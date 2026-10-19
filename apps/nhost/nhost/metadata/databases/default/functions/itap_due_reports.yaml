@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_reports
+configuration:
+  custom_name: due_reports
+  exposed_as: query

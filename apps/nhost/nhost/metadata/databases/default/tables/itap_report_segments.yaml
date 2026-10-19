@@ -1,0 +1,70 @@
+table:
+  schema: itap
+  name: report_segments
+configuration:
+  custom_name: report_segments
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: report
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          organization_id: organization_id
+          report_id: id
+  - name: segment
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segments
+        column_mapping:
+          organization_id: organization_id
+          segment_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - report_id
+        - segment_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - id
+        - organization_id
+        - report_id
+        - segment_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns: []
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

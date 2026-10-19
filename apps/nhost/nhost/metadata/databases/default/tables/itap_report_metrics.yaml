@@ -1,0 +1,41 @@
+table:
+  schema: itap
+  name: report_metrics
+configuration:
+  custom_name: report_metrics
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: report
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          organization_id: organization_id
+          report_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - category
+        - created_at
+        - dimension
+        - id
+        - metric_name
+        - metric_type
+        - organization_id
+        - report_id
+        - unit
+        - value
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

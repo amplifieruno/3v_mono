@@ -139,6 +139,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: report_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_facilities
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: tracking_sessions
     using:
       manual_configuration:

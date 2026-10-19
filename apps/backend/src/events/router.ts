@@ -2,6 +2,7 @@ import express, { Router, type NextFunction, type Request, type Response } from 
 import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
+import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
 import { aggregateStatsCron } from './analyticsCrons.js';
 import { detectionCreated } from './detectionCreated.js';
@@ -47,6 +48,8 @@ export const defaultEventHandlers: EventHandlers = {
   evaluate_segments_pending: evaluateSegmentsPending,
   evaluate_segments: evaluateSegmentsHourly,
   aggregate_stats: aggregateStatsCron,
+  render_report: renderReport,
+  run_report_schedules: runReportSchedules,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: fail_report
+configuration:
+  custom_name: fail_report
+  exposed_as: mutation

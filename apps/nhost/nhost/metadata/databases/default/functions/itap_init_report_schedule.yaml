@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: init_report_schedule
+configuration:
+  custom_name: init_report_schedule
+  exposed_as: mutation

@@ -58,7 +58,18 @@ describe('notification deliveries', () => {
     await expect(insert('report_id, recipient_address, recipient_user_id', `gen_random_uuid(), 'x@example.com', '${w.bob}'`)).rejects.toThrow(
       /notification_deliveries_exactly_one_recipient/,
     );
-    await insert('report_id, recipient_address', `gen_random_uuid(), 'x@example.com'`);
+    // Report origin (slice 7): a real report; deleting it (retention) keeps the log row without an origin.
+    const [rep] = await runSqlRows(`insert into itap.reports (organization_id, report_type, title, format, start_date, end_date, status)
+      values ('${w.orgA.id}', 'flow', 'R', 'csv', '2026-01-05', '2026-01-05', 'completed') returning id`);
+    await expect(insert('report_id, recipient_address', `gen_random_uuid(), 'x@example.com'`)).rejects.toThrow(
+      /notification_deliveries_report_fkey/,
+    );
+    await insert('report_id, recipient_address, content', `'${rep.id}', 'x@example.com', '{"report_code": "REPORT-1"}'`);
+    await expect(insert('recipient_address', `'y@example.com'`)).rejects.toThrow(/notification_deliveries_exactly_one_origin/);
+    await runSql(`delete from itap.reports where id = '${rep.id}'`);
+    const [orphan] = await runSqlRows(`select report_id, content ->> 'report_code' as code from itap.notification_deliveries
+      where organization_id = '${w.orgA.id}' and recipient_address = 'x@example.com'`);
+    expect(orphan).toEqual({ report_id: 'NULL', code: 'REPORT-1' });
   });
 
   it('should defer non-in_app deliveries of digest rules to the end of the digest period', async () => {

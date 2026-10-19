@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: compute_report
+configuration:
+  custom_name: compute_report
+  exposed_as: mutation

@@ -201,6 +201,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: user_id
+  - name: report_schedules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_schedules
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: report_templates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_templates
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: reports
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
   - name: segment_members_by_added_by
     using:
       manual_configuration:

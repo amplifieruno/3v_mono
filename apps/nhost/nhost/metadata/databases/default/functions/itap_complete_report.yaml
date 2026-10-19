@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: complete_report
+configuration:
+  custom_name: complete_report
+  exposed_as: mutation

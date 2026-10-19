@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: report_datasets
+configuration:
+  custom_name: report_datasets

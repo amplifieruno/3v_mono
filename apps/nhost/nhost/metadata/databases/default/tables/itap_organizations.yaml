@@ -493,6 +493,54 @@ array_relationships:
           name: recipient_groups
         column_mapping:
           id: organization_id
+  - name: report_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_facilities
+        column_mapping:
+          id: organization_id
+  - name: report_metrics
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_metrics
+        column_mapping:
+          id: organization_id
+  - name: report_schedules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_schedules
+        column_mapping:
+          id: organization_id
+  - name: report_segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_segments
+        column_mapping:
+          id: organization_id
+  - name: report_templates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_templates
+        column_mapping:
+          id: organization_id
+  - name: reports
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          id: organization_id
   - name: segment_daily_stats
     using:
       manual_configuration:

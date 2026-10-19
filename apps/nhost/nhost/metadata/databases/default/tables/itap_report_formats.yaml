@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: report_formats
+is_enum: true
+configuration:
+  custom_name: report_formats

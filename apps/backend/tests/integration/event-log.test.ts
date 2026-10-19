@@ -23,7 +23,7 @@ describe('events', () => {
         'inactive_profile_detected', 'restricted_area_entry', 'access_granted', 'access_denied', 'tailgating',
         'loitering', 'unusual_dwell', 'after_hours', 'unexpected_facility', 'abnormal_movement', 'occupancy_exceeded',
         'device_offline', 'device_online', 'device_error', 'auth_success', 'auth_failed', 'emergency_override_started',
-        'emergency_override_ended', 'saved_search_match', 'integration_failed', 'admin_action',
+        'emergency_override_ended', 'saved_search_match', 'integration_failed', 'admin_action', 'report_generated',
       ].sort(),
     );
   });

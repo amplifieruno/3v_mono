@@ -1,0 +1,106 @@
+table:
+  schema: itap
+  name: report_templates
+configuration:
+  custom_name: report_templates
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: report_schedules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_schedules
+        column_mapping:
+          organization_id: organization_id
+          id: template_id
+  - name: reports
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: reports
+        column_mapping:
+          organization_id: organization_id
+          id: template_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - format
+        - name
+        - parameters
+        - report_type
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - created_by
+        - description
+        - format
+        - id
+        - is_system
+        - name
+        - organization_id
+        - parameters
+        - report_type
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - format
+        - name
+        - parameters
+        - report_type
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false

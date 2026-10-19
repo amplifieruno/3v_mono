@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: report_statuses
+is_enum: true
+configuration:
+  custom_name: report_statuses

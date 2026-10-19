@@ -1,0 +1,172 @@
+table:
+  schema: itap
+  name: reports
+configuration:
+  custom_name: reports
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          file_id: id
+  - name: incident
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          incident_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: schedule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_schedules
+        column_mapping:
+          organization_id: organization_id
+          schedule_id: id
+  - name: template
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_templates
+        column_mapping:
+          organization_id: organization_id
+          template_id: id
+array_relationships:
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          organization_id: organization_id
+          id: report_id
+  - name: report_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_facilities
+        column_mapping:
+          organization_id: organization_id
+          id: report_id
+  - name: report_metrics
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_metrics
+        column_mapping:
+          organization_id: organization_id
+          id: report_id
+  - name: report_segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: report_segments
+        column_mapping:
+          organization_id: organization_id
+          id: report_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - end_date
+        - format
+        - incident_id
+        - parameters
+        - report_type
+        - start_date
+        - template_id
+        - title
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attempts
+        - code
+        - created_at
+        - created_by
+        - description
+        - end_date
+        - error
+        - file_id
+        - format
+        - generated_at
+        - id
+        - incident_id
+        - lease_expires_at
+        - number
+        - organization_id
+        - parameters
+        - report_type
+        - schedule_id
+        - start_date
+        - status
+        - summary
+        - template_id
+        - title
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - title
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+event_triggers:
+  - name: render_report
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+      update:
+        columns:
+          - status
+    retry_conf:
+      num_retries: 3
+      interval_sec: 30
+      timeout_sec: 120
+    webhook: "{{BACKEND_URL}}/hasura/events/render_report"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET
