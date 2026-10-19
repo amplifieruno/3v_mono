@@ -173,7 +173,8 @@ function addOthers(plan: Planner, org: OrgKey, mix: Mix, now: Date): void {
       job_title: CONTRACTOR_TITLES[i % CONTRACTOR_TITLES.length],
       access_level: 'basic',
       start_date: dateFrom(now, -plan.random.int(20, 400)),
-      end_date: dateFrom(now, plan.random.int(30, 300)),
+      // Every fifth contractor (from the second) has access ending within a month: the "Contractors ending soon" segment.
+      end_date: dateFrom(now, i % 5 === 1 ? plan.random.int(6, 26) : plan.random.int(30, 300)),
       custom_fields: { clearance_expires: dateFrom(now, plan.random.int(10, 200)) },
     });
     if (i < 3) person.document = { kind: 'contract', title: 'Service contract' };

@@ -117,6 +117,19 @@ async function matchingIds(reader: HasuraClient, target: SegmentTarget, where: W
   }
 }
 
+/**
+ * Every subject of the reader's organization matching `conditions` at `at`, in id order: the evaluator's matching step
+ * without a stored segment (conditions validated first, segment_condition_invalid). evaluateSegment matches the same
+ * way; the seed computes past memberships with it and writes them through sync_segment_members.
+ */
+export async function matchingSubjects(
+  reader: HasuraClient,
+  input: { target: SegmentTarget; conditions: unknown; at: string },
+): Promise<string[]> {
+  const inputs = await loadContext(reader, input.at, { target: input.target, conditions: input.conditions });
+  return matchingIds(reader, input.target, await whereFor(reader, input.target, input.conditions, inputs));
+}
+
 export type PreviewResult = { count: number; sample_ids: string[]; sample_labels: string[] };
 
 type SampleRow = { id: string; code: string | null; first_name?: string; last_name?: string };

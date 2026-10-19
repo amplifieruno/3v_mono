@@ -53,6 +53,14 @@ describe('buildPeople', () => {
     for (const p of withdrawn) expect(['employee', 'vip', 'blacklisted']).not.toContain(p.role);
   });
 
+  it('should end the access of a few Nova contractors within 30 days and the others later', () => {
+    const contractors = buildPeople('nova', NOW).filter((p) => p.role === 'contractor');
+    const soon = contractors.filter((p) => p.profile.end_date !== null && p.profile.end_date <= '2026-11-18');
+    expect(soon.length).toBe(3);
+    // Still active: every access ends after the 30-day history.
+    for (const p of contractors) expect((p.profile.end_date ?? '') > '2026-10-19').toBe(true);
+  });
+
   it('should plan a small Riverside subset with different names', () => {
     const riverside = buildPeople('riverside', NOW);
     expect(riverside.length).toBeGreaterThan(5);

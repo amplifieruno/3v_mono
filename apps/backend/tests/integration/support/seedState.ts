@@ -53,6 +53,10 @@ const TABLES = [
   'webhook_subscriptions',
   'webhook_subscription_event_types',
   'webhook_deliveries',
+  // Segments (slice 6): keyed by name. Rule membership rows and daily stats are left out: the live evaluation crons
+  // keep them current between two runs.
+  'segment_templates',
+  'segments',
 ];
 
 /** Counts every seeded table of the organization with the given slug, plus storage files and derived counts. */
@@ -105,6 +109,7 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
   );
   parts.push(`(select count(*) from itap.notification_deliveries where organization_id = ${org} and created_at < ${created}) as seeded_deliveries`);
   parts.push(`(select count(*) from itap.user_notifications where organization_id = ${org} and created_at < ${created}) as seeded_inbox`);
+  parts.push(`(select count(*) from itap.segment_members where organization_id = ${org} and source = 'manual') as manual_segment_members`);
   // Pipeline events only (the live device health cron adds device platform events at any time).
   parts.push(`(select count(*) from itap.events where organization_id = ${org} and session_id is not null) as history_events`);
   const [row] = await runSqlRows(`select ${parts.join(', ')}`);

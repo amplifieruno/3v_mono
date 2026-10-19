@@ -5,6 +5,7 @@ import { asAdmin, asBearer, testEnv } from './support/clients.js';
 import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
 import { expectSeededNotifications } from './support/seedNotifications.js';
+import { expectSeededSegments } from './support/seedSegments.js';
 import { seedCounts, seededTemplate } from './support/seedState.js';
 import { runSqlRows } from './support/sql.js';
 
@@ -185,8 +186,8 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(nova.history_events).toBeGreaterThan(1_000);
     expect(nova.watch_lists).toBe(3);
     expect(nova.watch_list_entries).toBeGreaterThanOrEqual(5);
-    // Blacklist and watch-list matches are separate rules (only blacklist incidents escalate).
-    expect(nova.event_rules).toBe(7);
+    // Blacklist and watch-list matches are separate rules (only blacklist incidents escalate); + the segment-scoped rule.
+    expect(nova.event_rules).toBe(8);
     expect(nova.shift_handovers).toBe(3);
     expect(nova.operator_workspaces).toBe(4);
     const org = `(select id from itap.organizations where slug = '${SLUGS[0]}')`;
@@ -278,7 +279,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       { days: [1, 2, 3, 4, 5], from: '07:00', to: '21:00' },
       { days: [6], from: '09:00', to: '15:00' },
     ]);
-    expect(config).toMatchObject({ published: '6', loitering: '2', blacklisted: '1' });
+    expect(config).toMatchObject({ published: '7', loitering: '2', blacklisted: '1' });
 
     const [extra] = await runSqlRows(
       `select (select count(*) from itap.profiles p where p.organization_id = ${org} and p.profile_type = 'employee'
@@ -304,6 +305,10 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     await expectSeededNotifications(SLUGS[0]);
     // Riverside has no notification configuration: Stage C wrote nothing there.
     expect((await seedCounts(SLUGS[1])).seeded_deliveries).toBe(0);
+  });
+
+  it('should seed segments of both targets with a 30-day membership history and daily stats', async () => {
+    await expectSeededSegments(SLUGS[0], SLUGS[1]);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {

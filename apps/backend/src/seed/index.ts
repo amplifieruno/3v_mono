@@ -11,6 +11,7 @@ import { seedFaces, type SeedIdentitiesResult } from './faces.js';
 import { seedHistory, type SeedHistoryResult } from './history.js';
 import { seedNotifications, type SeedNotificationsResult } from './notifications.js';
 import { seedPeople, type SeedPeopleResult } from './people.js';
+import { seedSegments, type SeedSegmentsResult } from './segments.js';
 import { resetTenancy, seedTenancy, type SeedContext, type SeedTenancyResult } from './tenancy.js';
 
 /** Results of the seed steps, keyed by step name. */
@@ -24,6 +25,7 @@ export type SeedResults = {
   notifications: SeedNotificationsResult;
   deviceHealth: SeedDeviceHealthResult;
   history: SeedHistoryResult;
+  segments: SeedSegmentsResult;
 };
 
 type StepName = keyof SeedResults;
@@ -66,6 +68,10 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities', 'notifications'], (ctx, r) =>
     seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles, r.identities, r.notifications),
   ),
+  // After the replay: segment history is matched from the replayed sessions and events (behavioral metrics).
+  segments: step(['tenancy', 'companies', 'profiles', 'facilities', 'history'], (ctx, r) =>
+    seedSegments(ctx, r.tenancy, r.companies, r.profiles, r.facilities),
+  ),
 };
 
 function log(message: string): void {
@@ -106,6 +112,10 @@ async function main(): Promise<void> {
     const { escalations, demoIncident } = history.incidents;
     log(`Notifications: ${escalations} history escalations, ${history.notifications.webhooksSigned} webhook deliveries signed` +
       (demoIncident ? `; open demo incident ${demoIncident} escalates live in about 4 minutes.` : '.'));
+  }
+  const segments = results.segments;
+  if (segments && segments.segmentsCreated > 0) {
+    log(`Segments: ${segments.segmentsCreated} created, ${segments.evaluations} evaluation times, ${segments.syncs} syncs in ${Math.round(segments.durationMs / 1000)} s.`);
   }
   log(`Seed complete in ${Math.round((Date.now() - ctx.now.getTime()) / 1000)} s.`);
 }
