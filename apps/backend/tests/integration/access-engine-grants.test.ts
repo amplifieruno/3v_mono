@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { insertOverride } from './support/access.js';
-import { accessWorld, checkAccess, evaluate, insertGrant, publishPolicy } from './support/accessEngine.js';
+import { accessWorld, checkAccess, evaluate, insertGrant, publishPolicy, raceAgainst } from './support/accessEngine.js';
 import { createAccessPoint, createArea } from './support/facilities.js';
-import { callFn } from './support/operations.js';
+import { callFn, updateByPk } from './support/operations.js';
 import { runSql, runSqlRows } from './support/sql.js';
 
 /** Decision engine (slice 8 task 2): grants (single-use consumption) and emergency overrides. */
@@ -19,6 +19,7 @@ describe('evaluate_access: grants', () => {
     const r = await evaluate(w.orgA.id, w.door.id, { profile: w.profile });
     expect(r).toMatchObject({ result: 'granted', reason: 'grant', grant_id: door, policy_version_id: null });
     expect(r.signals.decided_by).toBe('grant');
+    expect(r.signals.grants).toEqual([expect.objectContaining({ id: door, single_use: false, applied: true, consumed: false })]);
     await callFn(w.a, 'revoke_access_grant', { p_grant: door, p_reason: 'Left' }, 'id');
     expect((await evaluate(w.orgA.id, w.door.id, { profile: w.profile })).reason).toBe('no_rule');
 
@@ -73,6 +74,30 @@ describe('evaluate_access: grants', () => {
     const [row] = await runSqlRows(`select count(*) as n from itap.access_decisions where grant_id = '${once}'`);
     expect(Number(row.n)).toBe(1);
   });
+
+  it('should block a second session on the grant row lock and deny it after the first consumed (two sessions)', async () => {
+    const w = await accessWorld();
+    const once = await insertGrant(w, { single_use: true });
+    const hold = `select r.reason, r.grant_id, pg_sleep(1.5) from itap.evaluate_access('${w.orgA.id}', '${w.door.id}',
+      null::uuid, '${w.profile}'::uuid, null::uuid, null::timestamptz, true, null::uuid) r`;
+    const { second, waitedMs } = await raceAgainst(hold, w.orgA.id, w.door.id, w.profile);
+    expect(waitedMs).toBeGreaterThan(700); // waited for session A's row lock
+    expect(second).toMatchObject({ result: 'denied', reason: 'no_rule', grant_id: null });
+    expect(second.signals.grants).toEqual([expect.objectContaining({ id: once, applied: false })]);
+    const [row] = await runSqlRows(`select count(*) as n from itap.access_decisions where grant_id = '${once}'`);
+    expect(Number(row.n)).toBe(1);
+  });
+
+  it('should not consume a single-use grant revoked by a concurrent transaction (re-check in the UPDATE)', async () => {
+    const w = await accessWorld();
+    const once = await insertGrant(w, { single_use: true });
+    const hold = `select itap.revoke_access_grant(json_build_object('x-hasura-organization-id', '${w.orgA.id}',
+      'x-hasura-user-id', '${w.user.id}'), '${once}', 'Revoked during the request'), pg_sleep(1.5)`;
+    const { second, waitedMs } = await raceAgainst(hold, w.orgA.id, w.door.id, w.profile);
+    expect(waitedMs).toBeGreaterThan(700);
+    expect(second).toMatchObject({ result: 'denied', reason: 'no_rule' });
+    expect(await usedAt(once)).toBeNull();
+  });
 });
 
 describe('evaluate_access: emergency overrides', () => {
@@ -103,6 +128,39 @@ describe('evaluate_access: emergency overrides', () => {
     const fallthrough = await evaluate(w.orgA.id, entry.id, { profile: w.profile });
     expect(fallthrough).toMatchObject({ result: 'denied', reason: 'no_rule', override_id: null });
     expect(fallthrough.signals.overrides).toEqual([expect.objectContaining({ id: evac, applied: false })]);
+  });
+
+  it('should open exits under evacuation even when a lock_all also covers them, keeping entries locked', async () => {
+    const w = await accessWorld();
+    const entry = await createAccessPoint(w.a, w.facility.id, w.area.id, { direction: 'in' });
+    const exit = await createAccessPoint(w.a, w.facility.id, w.area.id, { direction: 'out' });
+    const lock = await insertOverride(w.orgA.id, w.facility.id, 'lock_all');
+    const evac = await insertOverride(w.orgA.id, w.facility.id, 'evacuation');
+    const out = await evaluate(w.orgA.id, exit.id, { profile: w.profile });
+    expect(out).toMatchObject({ result: 'granted', reason: 'override_evacuation', override_id: evac });
+    expect(out.signals.overrides).toEqual([
+      expect.objectContaining({ id: evac, applied: true }),
+      expect.objectContaining({ id: lock, applied: false }),
+    ]);
+    expect(await evaluate(w.orgA.id, w.door.id, {})).toMatchObject({ reason: 'override_evacuation' }); // both
+    expect(await evaluate(w.orgA.id, entry.id, { profile: w.profile })).toMatchObject({
+      result: 'denied',
+      reason: 'override_lock',
+      override_id: lock,
+    });
+  });
+
+  it('should deny access_point_unavailable at an inactive or maintenance access point unless an override decides', async () => {
+    const w = await accessWorld();
+    await insertGrant(w);
+    for (const status of ['inactive', 'maintenance']) {
+      await updateByPk(w.a, 'access_points', w.door.id, { status });
+      const r = await evaluate(w.orgA.id, w.door.id, { profile: w.profile });
+      expect(r).toMatchObject({ result: 'denied', reason: 'access_point_unavailable', grant_id: null });
+      expect(r.signals.decided_by).toBe('access_point');
+    }
+    await insertOverride(w.orgA.id, w.facility.id, 'unlock_all');
+    expect((await evaluate(w.orgA.id, w.door.id, { profile: w.profile })).reason).toBe('override_unlock');
   });
 
   it('should apply an area-limited override only inside its area subtrees', async () => {

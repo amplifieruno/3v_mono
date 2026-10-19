@@ -25,7 +25,9 @@ describe('evaluate_access: latency benchmark (seeded Nova Tower)', () => {
     expect(stats).not.toBeNull();
     const s = stats as BenchmarkStats;
     expect(s.calls).toBe(CALLS);
-    expect(s.policies).toBeGreaterThanOrEqual(5);
+    expect(s.policies).toBeGreaterThanOrEqual(7);
+    for (const path of ['policy_allow', 'policy_deny', 'grant', 'no_rule']) expect(s.reasons).toContain(`${path}=`);
+    expect(s.single_use_consumed).toBeGreaterThan(0);
     expect(s.granted).toBeGreaterThan(0);
     expect(s.denied).toBeGreaterThan(0);
     expect(s.latency_p95_ms).toBeLessThan(100);

@@ -131,3 +131,24 @@ export async function writeCounts(org: string): Promise<Record<string, number>> 
 }
 
 export { accessWorld };
+
+/**
+ * Two-session race: session A runs `holdSql` (which must take a row lock and then pg_sleep(holdSeconds) in the same
+ * run_sql transaction); session B starts `delayMs` later with a recording evaluation and therefore blocks on the
+ * row lock until A commits. Returns B's evaluation and how long it waited.
+ */
+export async function raceAgainst(
+  holdSql: string,
+  org: string,
+  accessPoint: string,
+  profile: string,
+  delayMs = 400,
+): Promise<{ second: Evaluation; waitedMs: number }> {
+  const first = runSqlRows(holdSql);
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  const started = Date.now();
+  const second = await evaluate(org, accessPoint, { profile, record: true });
+  const waitedMs = Date.now() - started;
+  await first;
+  return { second, waitedMs };
+}

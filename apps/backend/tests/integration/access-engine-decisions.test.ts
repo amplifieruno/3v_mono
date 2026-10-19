@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { policyEpoch } from './support/access.js';
+import { insertOverride, policyEpoch } from './support/access.js';
 import { accessWorld, checkAccess, evaluate, publishPolicy, writeCounts } from './support/accessEngine.js';
 import { createDevice } from './support/facilities.js';
 import { asOrgAdmin } from './support/clients.js';
@@ -42,7 +42,26 @@ describe('evaluate_access: person resolution', () => {
     expect(await evaluate(w.orgA.id, w.door.id, { profile: w.profile })).toMatchObject({
       result: 'denied',
       reason: 'profile_inactive',
+    });    await insertOverride(w.orgA.id, w.facility.id, 'unlock_all');
+    expect(await evaluate(w.orgA.id, w.door.id, { profile: w.profile })).toMatchObject({
+      result: 'granted',
+      reason: 'override_unlock',
     });
+  });
+
+  it('should require the device to be bound to the access point (check_access raises, evaluate_access ignores it)', async () => {
+    const w = await accessWorld();
+    const loose = await createDevice(w.a, w.facility.id, { device_type: 'access_terminal' });
+    const e = await expectError(checkAccess(w.a, { access_point_id: w.door.id, profile_id: w.profile, device_id: loose.id }));
+    expect(e.message).toContain('invalid_device');
+    const r = await evaluate(w.orgA.id, w.door.id, { profile: w.profile, device: loose.id, record: true });
+    expect(r.signals.signals).toMatchObject({ device_id: null, ignored_device_id: loose.id });
+    const [row] = await runSqlRows(`select device_id from itap.access_decisions where id = '${r.decision_id}'`);
+    expect(row.device_id).toBe('NULL');
+    await runSql(`insert into itap.access_point_devices (organization_id, facility_id, access_point_id, device_id, role)
+      values ('${w.orgA.id}', '${w.facility.id}', '${w.door.id}', '${loose.id}', 'terminal')`);
+    const bound = await checkAccess(w.a, { access_point_id: w.door.id, profile_id: w.profile, device_id: loose.id });
+    expect(bound.device_id).toBe(loose.id);
   });
 });
 

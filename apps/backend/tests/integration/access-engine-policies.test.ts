@@ -3,6 +3,7 @@ import { createDraft } from './support/access.js';
 import { accessWorld, evaluate, publishPolicy, writeCounts } from './support/accessEngine.js';
 import { createAccessPoint, createArea } from './support/facilities.js';
 import { insertOne, updateByPk } from './support/operations.js';
+import { mergeInto } from './support/segments.js';
 import { runSql } from './support/sql.js';
 
 /** Decision engine (slice 8 task 2): policy versions — matching, ordering, schedule, simulation substitution. */
@@ -84,6 +85,32 @@ describe('evaluate_access: policy versions', () => {
     expect(await at('2026-01-10T00:00:00Z')).toMatchObject({ reason: 'policy_allow', policy_version_id: version });
     expect((await at('2026-02-09T23:59:59Z')).reason).toBe('policy_allow');
     expect((await at('2026-02-10T00:00:00Z')).reason).toBe('no_rule');
+  });
+
+  it('should match identity segments for a profile-only request through the profile identities (effective, at the instant)', async () => {
+    const w = await accessWorld();
+    const face = await insertOne(w.a, 'identities', { profile_id: w.profile });
+    const allowSeg = await insertOne(w.a, 'segments', { name: `Faces ${Date.now()}`, kind: 'manual', target: 'identities' });
+    const denySeg = await insertOne(w.a, 'segments', { name: `Banned ${Date.now()}`, kind: 'manual', target: 'identities' });
+    await runSql(`insert into itap.segment_members (organization_id, segment_id, target, identity_id, source, added_at)
+      values ('${w.orgA.id}', '${allowSeg.id}', 'identities', '${face.id}', 'manual', '2026-01-01T00:00:00Z')`);
+    const allow = await publishPolicy(w, { segment_id: allowSeg.id }, { access_point_id: w.door.id });
+    const r = await evaluate(w.orgA.id, w.door.id, { profile: w.profile });
+    expect(r).toMatchObject({ result: 'granted', policy_version_id: allow.version });
+    expect(r.signals.candidates[0]).toMatchObject({ subject: 'segment' });
+    expect((await evaluate(w.orgA.id, w.door.id, { profile: w.profile, at: '2025-12-31T00:00:00Z' })).reason).toBe('no_rule');
+
+    // A deny on an identity segment cannot be bypassed by presenting the profile (even via a merged-away face).
+    const old = await insertOne(w.a, 'identities', {});
+    await runSql(`insert into itap.segment_members (organization_id, segment_id, target, identity_id, source, added_at)
+      values ('${w.orgA.id}', '${denySeg.id}', 'identities', '${face.id}', 'manual', '2026-01-01T00:00:00Z')`);
+    const deny = await publishPolicy(w, { segment_id: denySeg.id }, { facility_id: w.facility.id }, { effect: 'deny', priority: 900 });
+    expect(await evaluate(w.orgA.id, w.door.id, { profile: w.profile })).toMatchObject({
+      reason: 'policy_deny',
+      policy_version_id: deny.version,
+    });
+    await mergeInto(w.a, face.id, [old.id]);
+    expect((await evaluate(w.orgA.id, w.door.id, { identity: old.id })).reason).toBe('policy_deny');
   });
 
   it('should honour valid_from / valid_until and report outside_schedule when only the schedule failed', async () => {
