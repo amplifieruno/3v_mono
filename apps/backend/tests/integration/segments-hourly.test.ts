@@ -15,38 +15,57 @@ import { at, detect } from './support/tracking.js';
 
 /**
  * Hourly cron evaluate_segments (slice 6, task 3): per organization refresh_activity_stats(org, at), evaluate every
- * dynamic segment at the scheduled time, upsert segment_daily_stats; a failing segment is recorded and skipped.
+ * dynamic segment at max(scheduled time, now), upsert segment_daily_stats; a failing segment is recorded and skipped.
  */
 
 describe('evaluate_segments (hourly)', () => {
   it('should refresh stats, evaluate behavioral segments and write daily stats, idempotently for one scheduled time', async () => {
     const w = await segmentWorld();
-    await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    // Scheduled times in the future: a late run evaluates its segments at now, so the run must not be late here.
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 0, { detected_at: fromNow(-86_400) });
     const frequent = await dynamicSegment(w.a, 'identities', { field: 'visits_last_30d', operator: 'gte', value: 1 });
-    const hour = at(3600);
+    const hour = fromNow(3600);
+    const day = (iso: string) => iso.slice(0, 10); // test organizations are UTC
 
     expect(await runHourly([w.orgA.id], hour)).toMatchObject({ organizations: 1, segments: 1, failed: 0 });
     const [stats] = await runSqlRows(`SELECT visits_last_30d, as_of FROM itap.identity_activity_stats WHERE identity_id = '${w.identity}'`);
     expect(stats.visits_last_30d).toBe('1');
     expect(Date.parse(String(stats.as_of))).toBe(Date.parse(hour));
     expect(await openRows(frequent.id)).toEqual([[w.identity, 'rule']]);
-    expect((await evaluationStatus(frequent.id)).last_evaluated_at).not.toBeNull();
-    expect(await dailyStats(frequent.id)).toEqual([{ day: '2026-01-05', member_count: 1, added: 1, removed: 0 }]);
+    expect(Date.parse(String((await evaluationStatus(frequent.id)).last_evaluated_at))).toBe(Date.parse(hour));
+    expect(await dailyStats(frequent.id)).toEqual([{ day: day(hour), member_count: 1, added: 1, removed: 0 }]);
 
     // The same scheduled time again (a Hasura retry): no new rows, same numbers.
     const rows = await exactRows(frequent.id);
     expect(await runHourly([w.orgA.id], hour)).toMatchObject({ organizations: 1, failed: 0 });
     expect(await exactRows(frequent.id)).toEqual(rows);
-    expect(await dailyStats(frequent.id)).toEqual([{ day: '2026-01-05', member_count: 1, added: 1, removed: 0 }]);
+    expect(await dailyStats(frequent.id)).toEqual([{ day: day(hour), member_count: 1, added: 1, removed: 0 }]);
 
     // 31 days later the visit left the window: removed, and the new day gets its own row.
     const later = new Date(Date.parse(hour) + 31 * 86_400_000).toISOString();
     await runHourly([w.orgA.id], later);
     expect(await openRows(frequent.id)).toEqual([]);
     expect(await dailyStats(frequent.id)).toEqual([
-      { day: '2026-01-05', member_count: 1, added: 1, removed: 0 },
-      { day: '2026-02-05', member_count: 0, added: 0, removed: 1 },
+      { day: day(hour), member_count: 1, added: 1, removed: 0 },
+      { day: day(later), member_count: 0, added: 0, removed: 1 },
     ]);
+  });
+
+  it('should evaluate the segments of a late run at the current time, stats at the scheduled time', async () => {
+    const w = await segmentWorld();
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    const frequent = await dynamicSegment(w.a, 'identities', { field: 'visits_last_30d', operator: 'gte', value: 1 });
+    const hour = at(3600);
+    const before = Date.now();
+    expect(await runHourly([w.orgA.id], hour)).toMatchObject({ organizations: 1, segments: 1, failed: 0 });
+    const [stats] = await runSqlRows(`SELECT as_of FROM itap.identity_activity_stats WHERE identity_id = '${w.identity}'`);
+    expect(Date.parse(String(stats.as_of))).toBe(Date.parse(hour));
+    const [rule] = await exactRows(frequent.id);
+    expect(Date.parse(String(rule.added_at))).toBeGreaterThanOrEqual(before);
+    // An evaluate_segment action meanwhile is not undone by a retry of the late run (no stale sync).
+    await evaluate(w.a, frequent.id);
+    expect(await runHourly([w.orgA.id], hour)).toMatchObject({ failed: 0 });
+    expect(await openRows(frequent.id)).toEqual([[w.identity, 'rule']]);
   });
 
   it('should record a failing segment, keep evaluating the others and clear the failure after a success', async () => {

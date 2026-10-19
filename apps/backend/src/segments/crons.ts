@@ -11,7 +11,9 @@ import { evaluateSegment, mapSegmentError, SegmentError, type EvaluateResult } f
  *   meanwhile keeps it pending), unless a sync came back stale or a segment failed transiently: then it stays pending
  *   for the next run, so no input change is dropped;
  * - `evaluate_segments` (hourly): per organization refresh_activity_stats, every dynamic segment, segment_daily_stats.
- * The hourly evaluation time is the run's scheduled_time (a retry of one run is a no-op). A segment whose evaluation fails is
+ * The hourly activity and daily stats run at the run's scheduled_time; its segments are evaluated at
+ * max(scheduled_time, now) like the pending cron (a late run reads current inputs, and an evaluation stamped before an
+ * evaluate_segment already recorded would be stale; a retry re-syncs to the same result). A segment whose evaluation fails is
  * recorded on the segment (last_evaluation_error / last_evaluation_failed_at) and the others continue; a failure of
  * an organization-level step fails the run (500, Hasura retries) after every organization was attempted.
  */
@@ -170,8 +172,10 @@ export function createEvaluateSegmentsPending(options: SegmentCronOptions = {}):
 /** Cron `evaluate_segments` (hourly): activity stats, every dynamic segment, daily stats, per organization. */
 export function createEvaluateSegmentsHourly(options: SegmentCronOptions = {}): CronHandler {
   const clientsFor = options.clientsFor ?? organizationClients;
+  const now = options.now ?? Date.now;
   return defineCronHandler(async (payload, ctx) => {
     const at = scheduledAt(payload);
+    const evaluatedAt = new Date(Math.max(Date.parse(at), now())).toISOString();
     const { organizations } = await ctx.admin.request<{ organizations: { id: string }[] }>(ORGANIZATIONS);
     const totals: Totals = { organizations: organizations.length, segments: 0, failed: 0, failedOrganizations: 0 };
     for (const { id } of organizations) {
@@ -180,7 +184,7 @@ export function createEvaluateSegmentsHourly(options: SegmentCronOptions = {}): 
         const result = await evaluateOrganizationSegments(
           { admin: ctx.admin, clients: clientsFor(ctx.env, id), evaluate: options.evaluate },
           id,
-          at,
+          evaluatedAt,
         );
         await ctx.admin.request(DAILY_STATS, { organization: id, at });
         totals.segments += result.segments;

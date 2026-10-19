@@ -61,7 +61,7 @@ describe('segment evaluation crons', () => {
       if (id === 's-gone') throw new SegmentError('segment_not_found');
       return ok(id);
     });
-    const result = await run(createEvaluateSegmentsHourly({ clientsFor, evaluate }), 'evaluate_segments', admin);
+    const result = await run(createEvaluateSegmentsHourly({ clientsFor, evaluate, now: () => Date.parse(AT) - 5000 }), 'evaluate_segments', admin);
     expect(result).toEqual({ organizations: 1, segments: 4, failed: 1 });
     expect(evaluate.mock.calls.map(([, id, at]) => [id, at])).toEqual([
       ['s-1', AT],
@@ -93,6 +93,23 @@ describe('segment evaluation crons', () => {
     const handler = createEvaluateSegmentsHourly({ clientsFor, evaluate: vi.fn<Evaluate>() });
     await expect(run(handler, 'evaluate_segments', admin)).rejects.toThrow(/failed for 1 of 2 organizations/);
     expect(calls.filter((c) => c.op === 'RefreshSegmentDailyStats').map((c) => c.vars?.organization)).toEqual(['org-2']);
+  });
+
+  it('should evaluate segments of a late hourly run at the current time, activity and daily stats at the scheduled time', async () => {
+    const { admin, calls } = fakeAdmin({
+      SegmentCronOrganizations: { organizations: [{ id: 'org-1' }] },
+      SegmentsToEvaluate: { segments: [{ id: 's-1' }, { id: 's-2' }] },
+    });
+    const evaluate = vi.fn<Evaluate>(async (_c, id) => {
+      if (id === 's-2') throw new SegmentError('segment_condition_invalid', '$.field');
+      return ok(id);
+    });
+    const later = new Date(Date.parse(AT) + 90_000).toISOString();
+    await run(createEvaluateSegmentsHourly({ clientsFor, evaluate, now: () => Date.parse(later) }), 'evaluate_segments', admin);
+    expect(evaluate.mock.calls.map(([, , at]) => at)).toEqual([later, later]);
+    expect(calls.find((c) => c.op === 'RecordSegmentEvaluationFailure')?.vars?.at).toBe(later);
+    expect(calls.find((c) => c.op === 'RunActivityStats')?.vars).toEqual({ organization: 'org-1', at: AT });
+    expect(calls.find((c) => c.op === 'RefreshSegmentDailyStats')?.vars).toEqual({ organization: 'org-1', at: AT });
   });
 
   it('should evaluate due organizations and finish each request with the requested_at it read', async () => {
