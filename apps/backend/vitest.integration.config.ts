@@ -21,7 +21,13 @@ export default defineConfig({
   test: {
     include: ['tests/integration/**/*.test.ts'],
     setupFiles: ['tests/integration/support/setup.ts'],
+    // One file at a time, and no `it.concurrent` inside a file (maxConcurrency 1): the suite shares one dev stack.
+    // Connection budget: Hasura's source pool is HASURA_GRAPHQL_PG_CONNECTIONS = 50 (+ its metadata/event
+    // connections), hasura-auth and hasura-storage keep small pools, Postgres max_connections is 100. A full run peaks
+    // around 30 client connections (final-fix report), so tests that burst requests with Promise.all are capped by
+    // Hasura's pool, not by Postgres.
     fileParallelism: false,
+    maxConcurrency: 1,
     testTimeout: 30000,
     env,
   },

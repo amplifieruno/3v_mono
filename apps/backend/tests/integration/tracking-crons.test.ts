@@ -122,7 +122,8 @@ describe('evaluate_dwell_rules', () => {
     const incidents = await orgIncidents(w.orgA.id);
     expect(incidents).toHaveLength(1);
     expect(incidents[0].incident_identities).toEqual([{ identity_id: w.identity, role: 'subject' }]);
-    expect(types(await orgEvents(w.orgA.id))).toEqual(['unusual_dwell']);
+    // The detection_created trigger may evaluate the detections asynchronously meanwhile (detection_unknown).
+    expect(types(await orgEvents(w.orgA.id)).filter((t) => t !== 'detection_unknown')).toEqual(['unusual_dwell']);
   });
 
   it('should ignore occupancy of other organizations', async () => {

@@ -4,6 +4,7 @@ import { createIdentity } from './support/faces.js';
 import { createTwoOrgs, expectError } from './support/fixtures.js';
 import { MERGE, newProfile, pgArray, UPDATE_IDENTITY } from './support/lifecycle.js';
 import { insertOne, updateByPk } from './support/operations.js';
+import { listEntry } from './support/stageB.js';
 import { runSqlRows } from './support/sql.js';
 
 const BLACKLISTED = `query($id: uuid!) { profiles_by_pk(id: $id) { is_blacklisted } }`;
@@ -105,18 +106,21 @@ describe('profiles.is_blacklisted', () => {
     const s = await setup();
     const identity = await createIdentity(s.user.id, s.orgA.id);
     await s.a.request(UPDATE_IDENTITY, { id: identity.id, set: { profile_id: s.profile } });
-    await insertOne(s.a, 'watch_list_entries', { watch_list_id: s.watch.id, identity_id: identity.id });
-    await insertOne(s.a, 'watch_list_entries', {
-      watch_list_id: s.blacklist.id,
-      profile_id: s.profile,
-      expires_at: '2026-01-10T00:00:00Z',
-    });
+    // Entries count from their created_at (dated before the probe times here).
+    await listEntry(s.a, { watch_list_id: s.watch.id, identity_id: identity.id }, '2026-01-02T00:00:00Z');
+    await listEntry(
+      s.a,
+      { watch_list_id: s.blacklist.id, profile_id: s.profile, expires_at: '2026-01-10T00:00:00Z' },
+      '2026-01-04T00:00:00Z',
+    );
     const at = async (ts: string): Promise<string[]> =>
       (
         await runSqlRows(
           `select kind from itap.identity_watch_lists('${s.orgA.id}', '${identity.id}', '${ts}') order by kind`,
         )
       ).map((r) => r.kind ?? '');
+    expect(await at('2026-01-01T00:00:00Z')).toEqual([]);
+    expect(await at('2026-01-03T00:00:00Z')).toEqual(['watch']);
     expect(await at('2026-01-05T00:00:00Z')).toEqual(['blacklist', 'watch']);
     expect(await at('2026-01-11T00:00:00Z')).toEqual(['watch']);
     // Another organization never sees the lists.
