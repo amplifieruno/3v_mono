@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: search_match_types
+is_enum: true
+configuration:
+  custom_name: search_match_types

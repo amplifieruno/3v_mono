@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_saved_search_run
+configuration:
+  custom_name: record_saved_search_run
+  exposed_as: mutation

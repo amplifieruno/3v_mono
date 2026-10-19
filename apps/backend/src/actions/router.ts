@@ -8,6 +8,7 @@ import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
 import { uploadProfileDocument } from './profileDocuments.js';
 import { recognitionStart, recognitionStatus, recognitionStop } from './recognition.js';
+import { searchFaces } from './search.js';
 import { evaluateSegmentAction, previewSegmentAction } from './segments.js';
 import { switchOrganization } from './switchOrganization.js';
 import { ActionError, type ActionHandler } from './types.js';
@@ -29,6 +30,7 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   recognition_status: recognitionStatus,
   preview_segment: previewSegmentAction,
   evaluate_segment: evaluateSegmentAction,
+  search_faces: searchFaces,
 };
 
 const payloadSchema = z.object({

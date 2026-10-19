@@ -1,0 +1,142 @@
+table:
+  schema: itap
+  name: saved_searches
+configuration:
+  custom_name: saved_searches
+object_relationships:
+  - name: image_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          image_file_id: id
+  - name: last_search_request
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          last_search_request_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          owner_id: user_id
+array_relationships:
+  - name: search_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          id: saved_search_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - alert_on_match
+        - description
+        - filters
+        - fuzzy
+        - image_file_id
+        - is_shared
+        - max_results
+        - name
+        - schedule_cron
+        - search_type
+        - threshold
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        owner_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - alert_on_match
+        - created_at
+        - description
+        - filters
+        - fuzzy
+        - id
+        - image_file_id
+        - is_shared
+        - last_error
+        - last_run_at
+        - last_run_status
+        - last_search_request_id
+        - max_results
+        - name
+        - next_run_at
+        - organization_id
+        - owner_id
+        - schedule_cron
+        - search_type
+        - threshold
+        - updated_at
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - owner_id:
+                  _eq: X-Hasura-User-Id
+              - is_shared:
+                  _eq: true
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - alert_on_match
+        - description
+        - filters
+        - fuzzy
+        - image_file_id
+        - is_shared
+        - max_results
+        - name
+        - schedule_cron
+        - search_type
+        - threshold
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id

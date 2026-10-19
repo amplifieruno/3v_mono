@@ -1,0 +1,11 @@
+DROP TABLE itap.search_results;
+DROP FUNCTION itap.search_results_guard();
+ALTER TABLE itap.saved_searches DROP CONSTRAINT saved_searches_last_search_request_fkey;
+DROP TABLE itap.search_requests;
+DROP FUNCTION itap.search_requests_guard();
+DROP TABLE itap.saved_searches;
+DROP FUNCTION itap.saved_searches_guard();
+DROP FUNCTION itap.search_definition_guard();
+DROP FUNCTION itap.search_filter_refs(uuid, jsonb);
+DROP FUNCTION itap.valid_search_filters(jsonb);
+DROP FUNCTION itap.valid_search_timestamp(jsonb);

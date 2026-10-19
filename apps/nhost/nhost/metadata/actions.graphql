@@ -18,6 +18,14 @@ type Mutation {
   recognition_start(device_id: uuid!): RecognitionStatus!
   recognition_stop(device_id: uuid!): RecognitionStatus!
   evaluate_segment(segment_id: uuid!): SegmentEvaluation!
+  search_faces(
+    search_type: String!
+    image_file_id: uuid
+    filters: jsonb
+    threshold: Float
+    max_results: Int
+    fuzzy: Boolean
+  ): SearchResult!
 }
 
 type Query {
@@ -95,4 +103,14 @@ type SegmentEvaluation {
   member_count: Int!
   evaluated_at: timestamptz!
   stale: Boolean!
+}
+
+type SearchResult {
+  search_request_id: uuid!
+  status: String!
+  results_count: Int!
+  top_confidence: Float
+  duration_ms: Int!
+  face_count: Int
+  error: String
 }

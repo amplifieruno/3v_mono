@@ -1,5 +1,5 @@
 import type { HasuraClient } from '../hasura/client.js';
-import { SENSITIVE_FILE_KINDS, type StorageClient } from '../storage/storageClient.js';
+import { OWNER_ONLY_FILE_KINDS, SENSITIVE_FILE_KINDS, type StorageClient } from '../storage/storageClient.js';
 
 /** Largest accepted source photo. */
 export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
@@ -37,11 +37,18 @@ export function photoFromBuffer(ref: string, image: Buffer): PhotoSource {
 
 const FILES_QUERY = `
   query EnrollmentFiles($ids: [uuid!]!) {
-    files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata }
+    files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata uploadedByUserId }
   }
 `;
 
-type FileRow = { id: string; bucketId: string; mimeType: string | null; size: number | null; metadata: unknown };
+type FileRow = {
+  id: string;
+  bucketId: string;
+  mimeType: string | null;
+  size: number | null;
+  metadata: unknown;
+  uploadedByUserId?: string | null;
+};
 
 function fileKind(metadata: unknown): string | undefined {
   if (typeof metadata !== 'object' || metadata === null || !('kind' in metadata)) return undefined;
@@ -50,8 +57,9 @@ function fileKind(metadata: unknown): string | undefined {
 
 /**
  * Resolves uploaded files of the organization into photo sources. Every id must exist in the organization's own
- * bucket (bucket id = organization uuid) and must not be a sensitive kind (SENSITIVE_FILE_KINDS), otherwise
- * PhotoNotFoundError (other tenants' and sensitive files are not disclosed).
+ * bucket (bucket id = organization uuid), must not be a sensitive kind (SENSITIVE_FILE_KINDS) and, for an owner-only
+ * kind (search images), must have been uploaded by `userId`; otherwise PhotoNotFoundError (other tenants', sensitive
+ * and other members' private files are not disclosed).
  * Nothing is downloaded here; non-image or oversized files become `invalid_image` when loaded.
  */
 export async function loadOrganizationPhotos(
@@ -59,6 +67,7 @@ export async function loadOrganizationPhotos(
   storage: StorageClient,
   organizationId: string,
   fileIds: string[],
+  userId?: string,
 ): Promise<PhotoSource[]> {
   const { files } = await admin.request<{ files: FileRow[] }>(FILES_QUERY, { ids: fileIds });
   const byId = new Map(files.map((file) => [file.id, file]));
@@ -70,6 +79,10 @@ export async function loadOrganizationPhotos(
     // Sensitive files are read only through audited access: an enrollment crop would bypass that audit.
     const kind = fileKind(file.metadata);
     if (kind !== undefined && SENSITIVE_FILE_KINDS.has(kind)) throw new PhotoNotFoundError(fileId);
+    if (kind !== undefined && OWNER_ONLY_FILE_KINDS.has(kind)) {
+      const uploader = file.uploadedByUserId?.toLowerCase();
+      if (!uploader || uploader !== userId?.toLowerCase()) throw new PhotoNotFoundError(fileId);
+    }
     return {
       ref: fileId,
       fileId,

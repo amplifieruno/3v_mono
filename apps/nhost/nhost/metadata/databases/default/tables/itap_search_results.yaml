@@ -1,0 +1,62 @@
+table:
+  schema: itap
+  name: search_results
+configuration:
+  custom_name: search_results
+object_relationships:
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: search_request
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          search_request_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - confidence
+        - created_at
+        - id
+        - identity_id
+        - match_type
+        - organization_id
+        - profile_id
+        - rank
+        - search_request_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - search_request:
+              user_id:
+                _eq: X-Hasura-User-Id
+      allow_aggregations: true

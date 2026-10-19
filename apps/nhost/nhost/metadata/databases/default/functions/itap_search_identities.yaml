@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: search_identities
+configuration:
+  custom_name: search_identities
+  exposed_as: query

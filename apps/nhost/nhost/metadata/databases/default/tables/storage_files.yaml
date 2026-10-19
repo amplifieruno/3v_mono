@@ -109,7 +109,8 @@ insert_permissions:
         - mime_type
         - name
         - size
-        - uploaded_by_user_id
+      set:
+        uploaded_by_user_id: x-hasura-User-Id
 select_permissions:
   - role: org_admin
     permission:
@@ -146,6 +147,18 @@ select_permissions:
                           metadata:
                             _contains:
                               kind: auth_capture
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: search
+          - _and:
+              - bucket_id:
+                  _eq: X-Hasura-Organization-Id
+              - metadata:
+                  _contains:
+                    kind: search
+              - uploaded_by_user_id:
+                  _eq: X-Hasura-User-Id
           - bucket_id:
               _eq: org-logos
   - role: user

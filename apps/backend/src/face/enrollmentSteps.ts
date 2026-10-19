@@ -32,7 +32,7 @@ export function vectorLiteral(values: number[]): string {
 }
 
 /** Applies EXIF orientation so InsightFace boxes and crops use the same pixel grid; returns the image size too. */
-async function normalizeImage(raw: Buffer): Promise<{ image: Buffer; width: number; height: number }> {
+export async function normalizeImage(raw: Buffer): Promise<{ image: Buffer; width: number; height: number }> {
   let meta: sharp.Metadata;
   try {
     meta = await sharp(raw).metadata();

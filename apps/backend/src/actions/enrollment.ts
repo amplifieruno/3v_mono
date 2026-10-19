@@ -48,7 +48,7 @@ async function runEnrollment(ctx: ActionContext<unknown>, ids: string[], run: Ru
     organizationId,
   };
   try {
-    const photos = await loadOrganizationPhotos(ctx.admin, storage, organizationId, ids);
+    const photos = await loadOrganizationPhotos(ctx.admin, storage, organizationId, ids, ctx.session.userId);
     const outcome = await run(deps, photos);
     return {
       identity_id: outcome.identityId,

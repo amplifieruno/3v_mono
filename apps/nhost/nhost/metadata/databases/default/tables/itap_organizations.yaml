@@ -541,6 +541,30 @@ array_relationships:
           name: reports
         column_mapping:
           id: organization_id
+  - name: saved_searches
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: saved_searches
+        column_mapping:
+          id: organization_id
+  - name: search_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          id: organization_id
+  - name: search_results
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_results
+        column_mapping:
+          id: organization_id
   - name: segment_daily_stats
     using:
       manual_configuration:

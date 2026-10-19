@@ -169,6 +169,18 @@ actions:
     permissions:
       - role: org_admin
     comment: Evaluates a dynamic segment now and syncs its rule members (sync_segment_members); manual members are never removed
+  - name: search_faces
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/search_faces'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 60
+    permissions:
+      - role: org_admin
+    comment: Face / attribute search (facial, attribute, combined); writes the caller's search_requests and search_results
 custom_types:
   enums: []
   input_objects: []
@@ -184,4 +196,5 @@ custom_types:
     - name: RecognitionStatus
     - name: SegmentPreview
     - name: SegmentEvaluation
+    - name: SearchResult
   scalars: []

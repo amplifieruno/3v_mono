@@ -3,6 +3,7 @@ import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
+import { runSavedSearches } from '../search/savedSearches.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
 import { aggregateStatsCron } from './analyticsCrons.js';
 import { detectionCreated } from './detectionCreated.js';
@@ -50,6 +51,7 @@ export const defaultEventHandlers: EventHandlers = {
   aggregate_stats: aggregateStatsCron,
   render_report: renderReport,
   run_report_schedules: runReportSchedules,
+  run_saved_searches: runSavedSearches,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

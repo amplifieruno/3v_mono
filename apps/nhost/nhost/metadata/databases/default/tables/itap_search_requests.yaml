@@ -1,0 +1,90 @@
+table:
+  schema: itap
+  name: search_requests
+configuration:
+  custom_name: search_requests
+object_relationships:
+  - name: image_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          image_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: saved_search
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: saved_searches
+        column_mapping:
+          organization_id: organization_id
+          saved_search_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+array_relationships:
+  - name: saved_searches
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: saved_searches
+        column_mapping:
+          organization_id: organization_id
+          id: last_search_request_id
+  - name: search_results
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_results
+        column_mapping:
+          organization_id: organization_id
+          id: search_request_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - completed_at
+        - created_at
+        - duration_ms
+        - error
+        - face_count
+        - filters
+        - fuzzy
+        - id
+        - image_file_id
+        - max_results
+        - organization_id
+        - results_count
+        - saved_search_id
+        - search_type
+        - started_at
+        - status
+        - threshold
+        - top_confidence
+        - updated_at
+        - user_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      allow_aggregations: true

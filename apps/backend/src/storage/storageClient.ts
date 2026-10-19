@@ -10,6 +10,13 @@ export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_docum
  */
 export const AUDITED_FILE_KINDS: ReadonlySet<string> = new Set([...SENSITIVE_FILE_KINDS, 'report']);
 
+/**
+ * `metadata.kind` values visible to their uploader only (`uploaded_by_user_id`, preset from the session on upload):
+ * search images. Enforced by the storage.files select permission, open_file / delete_file, enrollment photo sources
+ * and the search service.
+ */
+export const OWNER_ONLY_FILE_KINDS: ReadonlySet<string> = new Set(['search']);
+
 export type StorageClient = {
   presignedUrl(fileId: string): Promise<{ url: string; expiresAt: Date }>;
   deleteFile(fileId: string): Promise<void>;

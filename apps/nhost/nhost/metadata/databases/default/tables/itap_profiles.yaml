@@ -129,6 +129,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_b_id
+  - name: search_results
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_results
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: segment_members
     using:
       manual_configuration:

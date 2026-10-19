@@ -132,4 +132,15 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Run due report schedules and reclaim stalled report generation',
   },
+  {
+    // Spec §8.3: scheduled saved searches (schedule_cron, organization timezone) run as their owner (skipped when the
+    // owner is no longer an active member); saved_search_match events for identities new since the previous run.
+    // Missed hours are not replayed (next run strictly after the scheduled time).
+    name: 'run_saved_searches',
+    schedule: '0 * * * *',
+    toleranceSeconds: 3600,
+    retry: { num_retries: 2, retry_interval_seconds: 60, timeout_seconds: 600 },
+    includeInMetadata: true,
+    comment: 'Run due scheduled saved searches and alert on new matches',
+  },
 ];

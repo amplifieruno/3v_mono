@@ -228,6 +228,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: created_by
+  - name: saved_searches
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: saved_searches
+        column_mapping:
+          organization_id: organization_id
+          user_id: owner_id
+  - name: search_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
   - name: segment_members_by_added_by
     using:
       manual_configuration:

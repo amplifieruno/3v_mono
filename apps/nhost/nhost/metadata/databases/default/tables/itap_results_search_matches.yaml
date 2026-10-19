@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: search_matches
+configuration:
+  custom_name: search_matches

@@ -17,7 +17,7 @@ const OTHER = '33333333-3333-4333-8333-333333333333';
 const FILE = '44444444-4444-4444-8444-444444444444';
 const USER = '11111111-1111-4111-8111-111111111111';
 
-type Row = { id: string; bucketId: string; metadata: { kind?: string } | null } | null;
+type Row = { id: string; bucketId: string; metadata: { kind?: string } | null; uploadedByUserId?: string | null } | null;
 
 function run(handler: ActionHandler<unknown, unknown>, row: Row, input: unknown = { file_id: FILE }, organizationId = ORG) {
   const adminRequest = vi.fn(async () => ({ file: row }));
@@ -105,5 +105,19 @@ describe('deleteFile', () => {
     const { promise, actorRequest } = run(deleteFile, { id: FILE, bucketId: ORG, metadata: null });
     await expect(promise).rejects.toThrow('storage down');
     expect(actorRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe('search images (owner-only kind)', () => {
+  it("should open and delete a search image for its uploader only", async () => {
+    const mine = { id: FILE, bucketId: ORG, metadata: { kind: 'search' }, uploadedByUserId: USER };
+    storage.deleteFile.mockResolvedValue(undefined);
+    expect(await run(openFile, mine).promise).toMatchObject({ url: 'http://s/f' });
+    expect(await run(deleteFile, mine).promise).toEqual({ file_id: FILE });
+
+    const theirs = { ...mine, uploadedByUserId: OTHER };
+    expect(await errorCode(run(openFile, theirs).promise)).toBe('file_not_found');
+    expect(await errorCode(run(deleteFile, theirs).promise)).toBe('file_not_found');
+    expect(await errorCode(run(openFile, { ...mine, uploadedByUserId: null }).promise)).toBe('file_not_found');
   });
 });
