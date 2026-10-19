@@ -60,7 +60,7 @@ Branch `feat/data-layer-foundation`: commits `4858f02..HEAD` (`f82de68` .. `bffe
 
 - Sessions closed later than the trailing window (more than about `timeout + 3 min` after a missed run) lose their exit until a manual `aggregate_stats_range`.
 - `devices_offline` in `dashboard_kpis`: non-inactive devices with health critical or status connection_error; day rows of the day in progress include data after the aggregated hour (deliberate, so runs never regress a day).
-- Report deliveries bypass quiet hours and digest mode by design. A missed schedule run is not replayed; the next run produces the most recent period (oldest missed periods are skipped).
+- Report deliveries bypass quiet hours and digest mode by design. A missed schedule run is not replayed: the next cron run creates the report of the period before the oldest missed `next_run_at` (the oldest missed period), then moves `next_run_at` past now, so later missed periods are skipped.
 - Facility-local daily stats are filtered by the report's dates, exact only when facility and report timezones match.
 - Attendance uses `tracking_sessions.profile_id` captured at session open (ignores later re-links and merges). Behavior report is a snapshot, not bound to the period.
 - Compliance report counts every audit entity including private ones (counts only).
@@ -70,13 +70,22 @@ Branch `feat/data-layer-foundation`: commits `4858f02..HEAD` (`f82de68` .. `bffe
 - Seed: attendance absent rate (13%) is above the replay's 5% (unlinked employees, 24/7 schedule on Sundays); past reports are seeded only when the organization has none (an interrupted seed needs `--reset`); profiles from the seeded import keep the seed run's `created_at`.
 - A new or rescheduled schedule gets `next_run_at` only at the next 15-minute run.
 
-## Carry-overs: pending for the slice-7 final review ("Carry -> final wave")
+## Final review fix wave (done)
 
-- CSV formula guard: prefix any cell starting with `-` unless it is a plain number (`^-?\d+(\.\d+)?$`).
-- NUL characters in a bulk cell must fail the row (`invalid_value`).
-- An InsightFace error on a bulk_search row must be a row failure (`search_unavailable`).
-- `bulk_apply_profile_row` must re-raise 40P01 / 40001 / 55P03 (deadlock, serialization, lock timeout) instead of recording a row failure.
-- Close stale bulk search requests (left running) at job claim.
+- CSV formula guard: any text cell starting with `=`, `+`, `@`, tab, CR, or `-` unless the whole text is a plain number (`^-?\d+(\.\d+)?$`; `-1.5` stays, `-(1+1)`, `--x` and a lone `-` are prefixed).
+- NUL characters: a bulk cell with `\u0000` fails the record (`invalid_value:<column>`); a NUL in the header fails the job (`csv_invalid: NUL character`); job / report error texts drop NULs.
+- A face-service failure on a bulk_search record (InsightFace error, fetch / storage failure) fails the record (`search_unavailable`); Hasura errors and a lost job still stop / fail the attempt.
+- `bulk_apply_profile_row` re-raises 40P01 / 40001 / 55P03; the backend retries the row up to 3 times (100 / 400 / 1000 ms, by the SQLSTATE Hasura reports in `extensions.internal.error.status_code`, kept as `HasuraError.sqlState`), then fails the attempt as before.
+- `claim_bulk_job` closes the job's search requests left queued / running by a dead attempt (`failed`, `interrupted`); `itap.close_stale_search_requests(at)` (run by the minute cron `resume_bulk_jobs`) closes any search request queued / running for over 10 minutes the same way.
+- A claim refused because the work failed with `max_attempts` (reports; bulk also `owner_inactive`) sweeps the files earlier attempts uploaded (`metadata.report_id` / `metadata.bulk_job_id`), except the attached file.
+- `itap.report_user_name(org, user)` / `itap.report_details_text(org, details)` name only members of the report's organization (migration 148).
+
+## Carry-overs to slice 10 (retention must purge)
+
+- Report files of expired / old reports (`kind = report`, `metadata.report_id`) and any file tagged `metadata.report_id` / `metadata.bulk_job_id` not attached to its report / job (best-effort sweeps can miss them).
+- Bulk files: inputs (`bulk_input`), results (`bulk_result`, `bulk_search_result`) and `bulk_job_rows` of old jobs.
+- Facial search images (`kind = search`) and old `search_requests` / `search_results` (incl. bulk rows and saved-search runs, which are search requests with `saved_search_id`).
+- Report rows (`completed | failed -> expired`) with their `report_metrics`; audit rows of these entities follow the audit retention policy.
 
 ## Owner actions (not done by the agents)
 
@@ -93,7 +102,7 @@ pnpm seed                              # --reset re-creates the demo data (about
 pnpm --filter nhost test
 pnpm --filter backend exec vitest run src      # never watch mode
 pnpm --filter backend test:integration
-RUN_SEED_TEST=1 pnpm --filter backend test:integration -- seed
+RUN_SEED_TEST=1 pnpm --filter backend exec vitest run -c vitest.integration.config.ts tests/integration/seed.test.ts
 ```
 
 Live demo: after `pnpm seed`, query `dashboard_kpis`, `occupancy_series` and `flow_matrix` as org_admin; open the seeded reports' files via `open_file`; insert a report (it renders within seconds through `render_report`); call `search_faces` with an uploaded photo; upload a CSV (`kind = bulk_input`) and insert a `bulk_jobs` row, optionally with `dry_run`.
