@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin } from './support/clients.js';
-import { createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
+import { asOrgAdmin, orgAdminToken } from './support/clients.js';
+import { createTwoOrgs, expectDenied, expectError, uploadFile } from './support/fixtures.js';
 import { runSql, runSqlRows } from './support/sql.js';
 
 const INSERT_PROFILE = `
@@ -94,10 +94,24 @@ describe('profiles', () => {
     expect(ok.insert_profiles_one.id).toBeTruthy();
   });
 
-  it('should reject an avatar file that does not exist in the organization bucket', async () => {
+  it('should accept an avatar from the own bucket and reject one from another organization bucket', async () => {
+    const { orgA, orgB, user, other } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const foreign = await uploadFile(orgAdminToken(other.id, orgB.id), orgB.id);
+    const own = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id);
+    if (!('id' in foreign) || !('id' in own)) throw new Error('upload failed');
+    const err = await expectError(a.request(INSERT_PROFILE, { object: profile({ avatar_file_id: foreign.id }) }));
+    expect(err.message).toContain('file_not_in_org_bucket:avatar_file_id');
+    const ok = await a.request<{ insert_profiles_one: Profile }>(INSERT_PROFILE, { object: profile({ avatar_file_id: own.id }) });
+    expect(ok.insert_profiles_one.id).toBeTruthy();
+  });
+
+  it('should not let org_admin write source_integration_id until integrations exist', async () => {
     const { orgA, user } = await createTwoOrgs();
-    const err = await expectError(asOrgAdmin(user.id, orgA.id).request(INSERT_PROFILE, { object: profile({ avatar_file_id: randomUUID() }) }));
-    expect(err.message).toMatch(/foreign key|file_not_in_org_bucket/i);
+    await expectDenied(
+      asOrgAdmin(user.id, orgA.id).request(INSERT_PROFILE, { object: profile({ source_integration_id: randomUUID() }) }),
+      'source_integration_id',
+    );
   });
 
   it('should isolate profiles per organization', async () => {
@@ -135,6 +149,21 @@ describe('custom attributes on profiles', () => {
       `query { custom_attribute_definitions { id } }`,
     );
     expect(list.custom_attribute_definitions).toEqual([]);
+  });
+
+  it('should not let org_admin change entity or key of a definition, but allow other fields', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const created = await a.request<{ insert_custom_attribute_definitions_one: { id: string } }>(INSERT_DEFINITION, {
+      object: { entity: 'profile', key: 'badge', label: 'Badge', data_type: 'string' },
+    });
+    const id = created.insert_custom_attribute_definitions_one.id;
+    const UPDATE = `mutation($id: uuid!, $set: custom_attribute_definitions_set_input!) {
+      update_custom_attribute_definitions(where: { id: { _eq: $id } }, _set: $set) { affected_rows } }`;
+    await expectDenied(a.request(UPDATE, { id, set: { key: 'renamed' } }), 'key');
+    await expectDenied(a.request(UPDATE, { id, set: { entity: 'device' } }), 'entity');
+    const ok = await a.request<{ update_custom_attribute_definitions: { affected_rows: number } }>(UPDATE, { id, set: { label: 'New' } });
+    expect(ok.update_custom_attribute_definitions.affected_rows).toBe(1);
   });
 
   it('should reject an invalid key format and options on a non-array', async () => {

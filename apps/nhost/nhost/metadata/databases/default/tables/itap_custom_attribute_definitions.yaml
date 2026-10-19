@@ -58,9 +58,7 @@ update_permissions:
     permission:
       columns:
         - data_type
-        - entity
         - is_active
-        - key
         - label
         - options
         - required

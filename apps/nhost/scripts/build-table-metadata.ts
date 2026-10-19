@@ -196,6 +196,18 @@ function withAggregations(extra: RolePermission<SelectPermission>[] = []): RoleP
   }));
 }
 
+/** A replacing select entry keeps the generated entry's computed fields (union with its own). */
+function withComputedFields(
+  base: RolePermission<SelectPermission>[] = [],
+  extra: RolePermission<SelectPermission>[] = [],
+): RolePermission<SelectPermission>[] {
+  return extra.map((entry) => {
+    const generatedFields = base.find((b) => b.role === entry.role)?.permission.computed_fields ?? [];
+    const merged = [...new Set([...generatedFields, ...(entry.permission.computed_fields ?? [])])].sort();
+    return merged.length > 0 ? { ...entry, permission: { ...entry.permission, computed_fields: merged } } : entry;
+  });
+}
+
 function nonEmpty<T>(list: T[]): T[] | undefined {
   return list.length > 0 ? list : undefined;
 }
@@ -239,7 +251,12 @@ export function buildTableMetadata(
         .map((f) => ({ name: f.name, definition: { function: { schema: f.schema ?? 'itap', name: f.function } } })),
     ),
     insert_permissions: nonEmpty(mergeRoles(generated.insert_permissions, extra.insert_permissions)),
-    select_permissions: nonEmpty(mergeRoles(generated.select_permissions, withAggregations(extra.select_permissions))),
+    select_permissions: nonEmpty(
+      mergeRoles(
+        generated.select_permissions,
+        withComputedFields(generated.select_permissions, withAggregations(extra.select_permissions)),
+      ),
+    ),
     update_permissions: nonEmpty(mergeRoles(generated.update_permissions, extra.update_permissions)),
     delete_permissions: nonEmpty(mergeRoles(generated.delete_permissions, extra.delete_permissions)),
   };

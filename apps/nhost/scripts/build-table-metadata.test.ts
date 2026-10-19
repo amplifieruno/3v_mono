@@ -210,4 +210,24 @@ describe('buildTableMetadata: computed fields', () => {
       buildTableMetadata({ ...spec, computedFields: [{ name: 'name', function: 'f' }] }, columns, [], []),
     ).toThrow(/computed field "name" collides/);
   });
+
+  it('should keep generated computed fields when extraPermissions replaces the select permission', () => {
+    const md = buildTableMetadata(
+      {
+        ...spec,
+        extraPermissions: {
+          select_permissions: [{ role: 'org_admin', permission: { columns: ['id'], filter: ORG_FILTER } }],
+        },
+      },
+      columns,
+      [],
+      [],
+    );
+    expect(md.select_permissions).toEqual([
+      {
+        role: 'org_admin',
+        permission: { columns: ['id'], computed_fields: ['has_thing'], filter: ORG_FILTER, allow_aggregations: true },
+      },
+    ]);
+  });
 });
