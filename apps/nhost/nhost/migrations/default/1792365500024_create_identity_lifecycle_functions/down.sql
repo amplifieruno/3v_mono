@@ -1,6 +1,3 @@
-DROP FUNCTION itap.reject_verification(json, uuid, text);
-DROP FUNCTION itap.approve_verification(json, uuid, text);
-DROP FUNCTION itap.decide_verification(json, uuid, text, text);
 DROP FUNCTION itap.split_identity(json, uuid, uuid[], uuid[]);
 DROP FUNCTION itap.rollback_merge(json, uuid);
 DROP FUNCTION itap.merge_identities(json, uuid, uuid[], text);

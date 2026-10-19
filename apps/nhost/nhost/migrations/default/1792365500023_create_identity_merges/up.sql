@@ -93,3 +93,11 @@ CREATE TABLE itap.identity_merge_moves (
 
 CREATE INDEX identity_merge_moves_organization_id_from_identity_id_idx
   ON itap.identity_merge_moves (organization_id, from_identity_id);
+
+-- The merge that closed a duplicate candidate (rollback reopens exactly those).
+ALTER TABLE itap.identity_duplicate_candidates
+  ADD COLUMN merge_id uuid,
+  ADD CONSTRAINT identity_duplicate_candidates_merge_fkey FOREIGN KEY (organization_id, merge_id)
+    REFERENCES itap.identity_merges (organization_id, id) ON DELETE SET NULL (merge_id);
+CREATE INDEX identity_duplicate_candidates_organization_id_merge_id_idx
+  ON itap.identity_duplicate_candidates (organization_id, merge_id);

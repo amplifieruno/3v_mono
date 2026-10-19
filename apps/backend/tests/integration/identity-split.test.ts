@@ -161,4 +161,21 @@ describe('reserved identity status and sources', () => {
     expect((await identityState(bystander.id)).status).toBe('unverified');
     expect((await identityState(source.id)).status).toBe('unverified');
   });
+
+  it('should freeze the profile link of a merged identity', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const p = await newProfile(user.id, orgA.id);
+    const target = await createIdentity(user.id, orgA.id);
+    const source = await createIdentity(user.id, orgA.id);
+    await a.request(MERGE, { target: target.id, sources: pgArray([source.id]) });
+    const err = await expectError(a.request(UPDATE_IDENTITY, { id: source.id, set: { profile_id: p } }));
+    expect(err.message).toContain('identity_merged_frozen');
+    await expect(
+      runSql(`update itap.identities set profile_id = '${p}', is_primary_for_profile = true where id = '${source.id}'`),
+    ).rejects.toThrow(/identity_merged_frozen/);
+    expect(await identityState(source.id)).toEqual({ status: 'merged', profile_id: null, is_primary_for_profile: false });
+    // Other columns stay editable.
+    await a.request(UPDATE_IDENTITY, { id: source.id, set: { is_synthetic: true } });
+  });
 });

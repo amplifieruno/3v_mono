@@ -49,6 +49,15 @@ object_relationships:
           organization_id: organization_id
           target_identity_id: id
 array_relationships:
+  - name: identity_duplicate_candidates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_duplicate_candidates
+        column_mapping:
+          organization_id: organization_id
+          id: merge_id
   - name: identity_merge_moves
     using:
       manual_configuration:

@@ -1,4 +1,4 @@
--- Identity lifecycle mutations (spec §6.3, §8.0, §8.1): merge, rollback, split, verification decisions.
+-- Identity lifecycle mutations (spec §6.3, §8.0, §8.1): merge, rollback, split (verification: next migration).
 -- Tracked as Hasura mutations with the `hasura_session` session argument. Every id is resolved inside the session
 -- organization only (an id of another organization behaves like a missing one: error, nothing changes). Errors are
 -- RAISEd with a stable code as the message. Merge/rollback/split set the transaction-local `itap.merge_context` flag
@@ -39,6 +39,7 @@ $$;
 
 CREATE FUNCTION itap.raise_code(p_code text) RETURNS void
 LANGUAGE plpgsql
+SET search_path = pg_catalog
 AS $$
 BEGIN
   RAISE EXCEPTION USING ERRCODE = 'check_violation', MESSAGE = p_code;
@@ -122,8 +123,11 @@ BEGIN
     WHERE organization_id = org AND id = p_target;
   END IF;
 
-  UPDATE itap.identity_duplicate_candidates SET status = 'merged'
-  WHERE organization_id = org AND status = 'open' AND identity_a_id = ANY (all_ids) AND identity_b_id = ANY (all_ids);
+  -- Every open candidate touching a source is settled by this merge (rollback reopens exactly these).
+  UPDATE itap.identity_duplicate_candidates SET status = 'merged', merge_id = merge_row.id
+  WHERE organization_id = org AND status = 'open' AND (identity_a_id = ANY (sources) OR identity_b_id = ANY (sources));
+  UPDATE itap.verification_requests SET status = 'cancelled', decided_at = now()
+  WHERE organization_id = org AND status = 'pending' AND identity_id = ANY (sources);
 
   INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes, reason)
   VALUES (org, actor, 'merge', 'identity_merges', merge_row.id, jsonb_build_object(
@@ -145,6 +149,7 @@ DECLARE
   actor uuid := itap.session_user_id(hasura_session);
   merge_row itap.identity_merges;
   lock_id uuid;
+  moved_away int;
 BEGIN
   SELECT * INTO merge_row FROM itap.identity_merges WHERE organization_id = org AND id = p_merge_id FOR UPDATE;
   IF NOT FOUND THEN PERFORM itap.raise_code('merge_not_found'); END IF;
@@ -158,6 +163,23 @@ BEGIN
   LOOP
     PERFORM itap.lock_identity_templates(lock_id);
   END LOOP;
+  -- Merges are undone newest first: a target merged later must be restored by rolling back that merge first.
+  IF EXISTS (SELECT 1 FROM itap.identities
+             WHERE organization_id = org AND id = merge_row.target_identity_id AND status = 'merged') THEN
+    PERFORM itap.raise_code('merge_target_merged');
+  END IF;
+  -- Recorded rows that left the target since (e.g. a later split) cannot be restored exactly: refuse. Deleted rows
+  -- are simply gone and do not block.
+  SELECT count(*) INTO moved_away
+  FROM itap.identity_merge_moves m
+  LEFT JOIN itap.identity_photos p
+    ON m.entity = 'identity_photos' AND p.organization_id = org AND p.id = m.row_id
+  LEFT JOIN itap.identity_embeddings e
+    ON m.entity = 'identity_embeddings' AND e.organization_id = org AND e.id = m.row_id
+  WHERE m.organization_id = org AND m.merge_id = p_merge_id
+    AND coalesce(p.identity_id, e.identity_id) IS DISTINCT FROM merge_row.target_identity_id
+    AND coalesce(p.id, e.id) IS NOT NULL;
+  IF moved_away > 0 THEN PERFORM itap.raise_code('merge_rows_moved:' || moved_away); END IF;
 
   PERFORM set_config('itap.merge_context', 'on', true);
   -- Undo what the merge did to the target's profile link, unless it was changed since.
@@ -169,7 +191,7 @@ BEGIN
     WHERE organization_id = org AND id = merge_row.target_identity_id;
   END IF;
 
-  -- Exactly the recorded rows, and only while they are still on the target (Review Focus 2).
+  -- Exactly the recorded rows (all still on the target, checked above); newer target rows stay (Review Focus 2).
   UPDATE itap.identity_photos p SET identity_id = m.from_identity_id
   FROM itap.identity_merge_moves m
   WHERE m.organization_id = org AND m.merge_id = p_merge_id AND m.entity = 'identity_photos'
@@ -190,6 +212,8 @@ BEGIN
   WHERE s.organization_id = org AND s.merge_id = p_merge_id
     AND i.organization_id = org AND i.id = s.source_identity_id AND i.status = 'merged';
 
+  UPDATE itap.identity_duplicate_candidates SET status = 'open', merge_id = NULL
+  WHERE organization_id = org AND merge_id = p_merge_id;
   UPDATE itap.identity_merges
   SET status = 'rolled_back', rolled_back_at = now(), rolled_back_by = itap.organization_member(org, actor)
   WHERE id = merge_row.id
@@ -236,8 +260,10 @@ BEGIN
   RETURNING * INTO created;
   PERFORM itap.lock_identity_templates(least(original.id, created.id));
   PERFORM itap.lock_identity_templates(greatest(original.id, created.id));
-  UPDATE itap.identity_photos SET identity_id = created.id WHERE organization_id = org AND id = ANY (photos);
-  UPDATE itap.identity_embeddings SET identity_id = created.id WHERE organization_id = org AND id = ANY (embeddings);
+  UPDATE itap.identity_photos SET identity_id = created.id
+  WHERE organization_id = org AND identity_id = p_identity AND id = ANY (photos);
+  UPDATE itap.identity_embeddings SET identity_id = created.id
+  WHERE organization_id = org AND identity_id = p_identity AND id = ANY (embeddings);
   IF original.primary_photo_file_id IS NOT NULL AND EXISTS (
     SELECT 1 FROM itap.identity_photos
     WHERE organization_id = org AND id = ANY (photos) AND file_id = original.primary_photo_file_id
@@ -249,49 +275,4 @@ BEGIN
   PERFORM set_config('itap.merge_context', 'off', true);
   RETURN QUERY SELECT * FROM itap.identities WHERE organization_id = org AND id = created.id;
 END;
-$$;
-
--- Shared body of approve/reject (not tracked).
-CREATE FUNCTION itap.decide_verification(hasura_session json, p_request uuid, p_reason text, p_decision text)
-RETURNS itap.verification_requests
-LANGUAGE plpgsql VOLATILE
-SET search_path = pg_catalog, itap
-AS $$
-DECLARE
-  org uuid := itap.session_organization(hasura_session);
-  actor uuid := itap.session_user_id(hasura_session);
-  request itap.verification_requests;
-BEGIN
-  SELECT * INTO request FROM itap.verification_requests WHERE organization_id = org AND id = p_request FOR UPDATE;
-  IF NOT FOUND THEN PERFORM itap.raise_code('verification_not_found'); END IF;
-  IF request.status <> 'pending' THEN PERFORM itap.raise_code('verification_not_pending'); END IF;
-  UPDATE itap.verification_requests
-  SET status = p_decision, decided_by = itap.organization_member(org, actor), decided_at = now(),
-      reason = coalesce(p_reason, reason)
-  WHERE id = request.id
-  RETURNING * INTO request;
-  IF p_decision = 'approved' THEN
-    UPDATE itap.identities SET status = 'verified' WHERE organization_id = org AND id = request.identity_id;
-  END IF;
-  INSERT INTO itap.audit_log (organization_id, user_id, action, entity, entity_id, changes, reason)
-  VALUES (org, actor, CASE p_decision WHEN 'approved' THEN 'approve' ELSE 'reject' END, 'verification_requests',
-          request.id, jsonb_build_object('identity_id', request.identity_id, 'status', p_decision), p_reason);
-  RETURN request;
-END;
-$$;
-
-CREATE FUNCTION itap.approve_verification(hasura_session json, p_request uuid, p_reason text DEFAULT NULL)
-RETURNS SETOF itap.verification_requests
-LANGUAGE sql VOLATILE
-SET search_path = pg_catalog, itap
-AS $$
-  SELECT * FROM itap.decide_verification(hasura_session, p_request, p_reason, 'approved');
-$$;
-
-CREATE FUNCTION itap.reject_verification(hasura_session json, p_request uuid, p_reason text DEFAULT NULL)
-RETURNS SETOF itap.verification_requests
-LANGUAGE sql VOLATILE
-SET search_path = pg_catalog, itap
-AS $$
-  SELECT * FROM itap.decide_verification(hasura_session, p_request, p_reason, 'rejected');
 $$;

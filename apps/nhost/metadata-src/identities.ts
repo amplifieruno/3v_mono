@@ -2,6 +2,8 @@ import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 
 const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
+// Decided requests are history: editable and deletable only while pending.
+const pendingRequest: BoolExp = { _and: [ownOrganizationRow, { status: { _eq: 'pending' } }] };
 
 export const identityTables: TableSpec[] = [
   { name: 'identity_statuses', isEnum: true, profile: 'none' },
@@ -51,7 +53,20 @@ export const identityTables: TableSpec[] = [
     profile: 'tenant_crud',
     noInsert: true,
     noDelete: true,
-    readOnlyColumns: ['identity_a_id', 'identity_b_id', 'similarity', 'detected_at'],
+    readOnlyColumns: ['identity_a_id', 'identity_b_id', 'similarity', 'detected_at', 'merge_id'],
+    extraPermissions: {
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['status'],
+            // Merged candidates belong to the merge functions (rollback reopens them).
+            filter: { _and: [ownOrganizationRow, { status: { _neq: 'merged' } }] },
+            check: { _and: [ownOrganizationRow, { status: { _in: ['open', 'dismissed'] } }] },
+          },
+        },
+      ],
+    },
   },
   {
     // Decided only through approve_verification / reject_verification; requested_by stamped by trigger.
@@ -59,6 +74,19 @@ export const identityTables: TableSpec[] = [
     profile: 'tenant_crud',
     readOnlyColumns: ['status', 'requested_by', 'decided_by', 'decided_at'],
     insertOnlyColumns: ['identity_id'],
+    extraPermissions: {
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['assigned_to', 'evidence', 'reason'],
+            filter: pendingRequest,
+            check: ownOrganizationRow,
+          },
+        },
+      ],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: pendingRequest } }],
+    },
   },
   // Written only by merge_identities / rollback_merge.
   { name: 'identity_merges', profile: 'tenant_read' },

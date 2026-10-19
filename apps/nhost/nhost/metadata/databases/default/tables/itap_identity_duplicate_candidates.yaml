@@ -22,6 +22,15 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           identity_b_id: id
+  - name: merge
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          merge_id: id
   - name: organization
     using:
       manual_configuration:
@@ -39,6 +48,7 @@ select_permissions:
         - id
         - identity_a_id
         - identity_b_id
+        - merge_id
         - organization_id
         - similarity
         - status
@@ -53,5 +63,16 @@ update_permissions:
       columns:
         - status
       filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _neq: merged
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _in:
+                - open
+                - dismissed

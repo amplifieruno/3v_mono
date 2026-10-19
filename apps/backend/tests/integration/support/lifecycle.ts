@@ -117,3 +117,22 @@ export async function auditRows(
     reason: r.reason || null,
   }));
 }
+
+/** Inserts an open duplicate candidate for the pair (ordered as the CHECK requires); returns nothing. */
+export async function addCandidate(orgId: string, x: string, y: string): Promise<void> {
+  const [lo, hi] = x < y ? [x, y] : [y, x];
+  await runSqlRows(
+    `insert into itap.identity_duplicate_candidates (organization_id, identity_a_id, identity_b_id, similarity)
+     values ('${orgId}', '${lo}', '${hi}', 0.8)`,
+  );
+}
+
+/** Status and merge_id ('' when null) of the candidate for the pair. */
+export async function candidateState(x: string, y: string): Promise<{ status: string; merge_id: string | null }> {
+  const [lo, hi] = x < y ? [x, y] : [y, x];
+  const [row] = await runSqlRows(
+    `select status, coalesce(merge_id::text, '') as merge_id from itap.identity_duplicate_candidates
+     where identity_a_id = '${lo}' and identity_b_id = '${hi}'`,
+  );
+  return { status: row.status ?? '', merge_id: row.merge_id || null };
+}
