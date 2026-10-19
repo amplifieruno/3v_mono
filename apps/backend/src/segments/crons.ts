@@ -11,9 +11,10 @@ import { evaluateSegment, mapSegmentError, SegmentError, type EvaluateResult } f
  *   meanwhile keeps it pending), unless a sync came back stale or a segment failed transiently: then it stays pending
  *   for the next run, so no input change is dropped;
  * - `evaluate_segments` (hourly): per organization refresh_activity_stats, every dynamic segment, segment_daily_stats.
- * The hourly activity and daily stats run at the run's scheduled_time; its segments are evaluated at
- * max(scheduled_time, now) like the pending cron (a late run reads current inputs, and an evaluation stamped before an
- * evaluate_segment already recorded would be stale; a retry re-syncs to the same result). A segment whose evaluation fails is
+ * The hourly activity stats run at the run's scheduled_time; its segments are evaluated at max(scheduled_time, now)
+ * like the pending cron (a late run reads current inputs, and an evaluation stamped before an evaluate_segment already
+ * recorded would be stale; a retry re-syncs to the same result), and the daily stats are refreshed at that evaluation
+ * time (plus at the scheduled time first when the run is more than a minute late, so the previous day is finished). A segment whose evaluation fails is
  * recorded on the segment (last_evaluation_error / last_evaluation_failed_at) and the others continue; a failure of
  * an organization-level step fails the run (500, Hasura retries) after every organization was attempted.
  */
@@ -75,6 +76,8 @@ const DAILY_STATS = `
 `;
 
 const MAX_ERROR_LENGTH = 1000;
+/** An hourly run later than this also refreshes daily stats at its scheduled time. */
+const LATE_MS = 60_000;
 
 /** The stored failure text: the segment code (with its condition path) or the error message. */
 export function failureText(error: unknown): string {
@@ -186,7 +189,11 @@ export function createEvaluateSegmentsHourly(options: SegmentCronOptions = {}): 
           id,
           evaluatedAt,
         );
-        await ctx.admin.request(DAILY_STATS, { organization: id, at });
+        // Daily stats at the evaluation time, so today's row matches the rows just written. refresh_segment_daily_stats
+        // covers the days of p_at - 1 h and p_at; a run late by more than a minute could step past the day the
+        // scheduled time finishes (offsets are multiples of 15 min), so it refreshes at the scheduled time first.
+        if (Date.parse(evaluatedAt) - Date.parse(at) > LATE_MS) await ctx.admin.request(DAILY_STATS, { organization: id, at });
+        await ctx.admin.request(DAILY_STATS, { organization: id, at: evaluatedAt });
         totals.segments += result.segments;
         totals.failed += result.failed;
       } catch {

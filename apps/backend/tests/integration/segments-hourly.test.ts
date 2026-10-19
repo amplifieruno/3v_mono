@@ -62,10 +62,30 @@ describe('evaluate_segments (hourly)', () => {
     expect(Date.parse(String(stats.as_of))).toBe(Date.parse(hour));
     const [rule] = await exactRows(frequent.id);
     expect(Date.parse(String(rule.added_at))).toBeGreaterThanOrEqual(before);
+    // Daily stats: the scheduled day as of the scheduled time (no member yet), today as of the evaluation time.
+    const today = String(rule.added_at).slice(0, 10);
+    expect(await dailyStats(frequent.id)).toEqual(expect.arrayContaining([
+      { day: '2026-01-05', member_count: 0, added: 0, removed: 0 },
+      { day: today, member_count: 1, added: 1, removed: 0 },
+    ]));
     // An evaluate_segment action meanwhile is not undone by a retry of the late run (no stale sync).
     await evaluate(w.a, frequent.id);
     expect(await runHourly([w.orgA.id], hour)).toMatchObject({ failed: 0 });
     expect(await openRows(frequent.id)).toEqual([[w.identity, 'rule']]);
+  });
+
+  it('should keep today\'s daily stats current for a run seconds after its scheduled time (production timing)', async () => {
+    const w = await segmentWorld();
+    const dept = `OnTime-${Date.now()}`;
+    const person = await createProfile(w.a, { department: dept });
+    const segment = await dynamicSegment(w.a, 'profiles', { field: 'department', operator: 'eq', value: dept });
+    const scheduled = fromNow(-5);
+    expect(await runHourly([w.orgA.id], scheduled)).toMatchObject({ organizations: 1, segments: 1, failed: 0 });
+    const [rule] = await exactRows(segment.id);
+    expect(rule.subject).toBe(person);
+    expect(Date.parse(String(rule.added_at))).toBeGreaterThan(Date.parse(scheduled));
+    const today = String(rule.added_at).slice(0, 10);
+    expect((await dailyStats(segment.id)).find((d) => d.day === today)).toEqual({ day: today, member_count: 1, added: 1, removed: 0 });
   });
 
   it('should record a failing segment, keep evaluating the others and clear the failure after a success', async () => {

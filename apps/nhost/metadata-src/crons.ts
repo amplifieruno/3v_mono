@@ -103,8 +103,9 @@ export const crons: CronSpec[] = [
     comment: 'Evaluate dynamic segments of organizations whose segment inputs changed (30 s debounce)',
   },
   {
-    // Hourly per organization at scheduled_time: refresh_activity_stats, every dynamic segment (time windows,
-    // schedules, behavioral metrics), segment_daily_stats. Idempotent for one scheduled time; up to an hour late runs.
+    // Hourly per organization: refresh_activity_stats at scheduled_time, every dynamic segment (time windows, schedules,
+    // behavioral metrics) and segment_daily_stats at max(scheduled_time, now) (daily stats also at scheduled_time first
+    // when the run is over a minute late). A retry re-syncs to the same membership; up to an hour late runs.
     name: 'evaluate_segments',
     schedule: '0 * * * *',
     toleranceSeconds: 3600,

@@ -90,12 +90,12 @@ describe('segment evaluation crons', () => {
       },
       SegmentsToEvaluate: { segments: [] },
     });
-    const handler = createEvaluateSegmentsHourly({ clientsFor, evaluate: vi.fn<Evaluate>() });
+    const handler = createEvaluateSegmentsHourly({ clientsFor, evaluate: vi.fn<Evaluate>(), now: () => Date.parse(AT) });
     await expect(run(handler, 'evaluate_segments', admin)).rejects.toThrow(/failed for 1 of 2 organizations/);
     expect(calls.filter((c) => c.op === 'RefreshSegmentDailyStats').map((c) => c.vars?.organization)).toEqual(['org-2']);
   });
 
-  it('should evaluate segments of a late hourly run at the current time, activity and daily stats at the scheduled time', async () => {
+  it('should evaluate segments of a late hourly run at the current time, activity stats at the scheduled time', async () => {
     const { admin, calls } = fakeAdmin({
       SegmentCronOrganizations: { organizations: [{ id: 'org-1' }] },
       SegmentsToEvaluate: { segments: [{ id: 's-1' }, { id: 's-2' }] },
@@ -109,7 +109,24 @@ describe('segment evaluation crons', () => {
     expect(evaluate.mock.calls.map(([, , at]) => at)).toEqual([later, later]);
     expect(calls.find((c) => c.op === 'RecordSegmentEvaluationFailure')?.vars?.at).toBe(later);
     expect(calls.find((c) => c.op === 'RunActivityStats')?.vars).toEqual({ organization: 'org-1', at: AT });
-    expect(calls.find((c) => c.op === 'RefreshSegmentDailyStats')?.vars).toEqual({ organization: 'org-1', at: AT });
+    // Late by more than a minute: the scheduled time first (finishes the days it covered), then the evaluation time
+    // (today's row matches the rows just written).
+    expect(calls.filter((c) => c.op === 'RefreshSegmentDailyStats').map((c) => c.vars)).toEqual([
+      { organization: 'org-1', at: AT },
+      { organization: 'org-1', at: later },
+    ]);
+  });
+
+  it('should refresh daily stats once, at the evaluation time, for a run on time', async () => {
+    const { admin, calls } = fakeAdmin({
+      SegmentCronOrganizations: { organizations: [{ id: 'org-1' }] },
+      SegmentsToEvaluate: { segments: [{ id: 's-1' }] },
+    });
+    const evaluate = vi.fn<Evaluate>(async (_c, id) => ok(id));
+    const soon = new Date(Date.parse(AT) + 5000).toISOString();
+    await run(createEvaluateSegmentsHourly({ clientsFor, evaluate, now: () => Date.parse(soon) }), 'evaluate_segments', admin);
+    expect(evaluate.mock.calls.map(([, , at]) => at)).toEqual([soon]);
+    expect(calls.filter((c) => c.op === 'RefreshSegmentDailyStats').map((c) => c.vars)).toEqual([{ organization: 'org-1', at: soon }]);
   });
 
   it('should evaluate due organizations and finish each request with the requested_at it read', async () => {
