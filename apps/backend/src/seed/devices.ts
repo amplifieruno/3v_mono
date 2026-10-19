@@ -6,7 +6,15 @@ import { repointCameraPhotos } from './cameraPhotos.js';
 import type { SeedPeopleResult } from './people.js';
 import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 
-export type SeededDevice = { id: string; org: OrgKey; name: string; camera: boolean; createdAt: string };
+export type SeededDevice = {
+  id: string;
+  org: OrgKey;
+  name: string;
+  camera: boolean;
+  /** Has a stream_url, i.e. is probed by the live health check. */
+  streaming: boolean;
+  createdAt: string;
+};
 
 /** Seeded devices of both organizations, keyed `<org>/<device name>`. */
 export type SeedDevicesResult = Record<string, SeededDevice>;
@@ -28,6 +36,14 @@ const DEVICES = `
 `;
 const INSERT_DEVICES = `
   mutation SeedInsertDevices($objects: [devices_insert_input!]!) { insert_devices(objects: $objects) { affected_rows } }
+`;
+const RESET_UNPROBED = `
+  mutation SeedResetUnprobed($ids: [uuid!]!) {
+    update_devices(
+      where: { id: { _in: $ids }, health_status: { _neq: unknown } }
+      _set: { health_status: unknown, last_seen_at: null }
+    ) { affected_rows }
+  }
 `;
 // Conflicts (an existing binding) do nothing: no update, no audit row.
 const INSERT_BINDINGS = `
@@ -74,8 +90,9 @@ function deviceObject(
     // Slice 4 runs recognition on the stream-server cameras.
     recognition_enabled: streaming,
     recognition_fps: streaming ? 2 : 1,
-    // Streaming cameras get their state from the live health check; the rest from their (seeded) heartbeat history.
-    ...(streaming ? {} : { health_status: 'healthy', last_seen_at: lastWholeHour(ctx.now).toISOString() }),
+    // Streaming cameras get their state from the live health check; a camera without a stream is never probed, so its
+    // state stays 'unknown'; the other devices get theirs from the (seeded) heartbeat history.
+    ...(streaming || isCamera(spec) ? {} : { health_status: 'healthy', last_seen_at: lastWholeHour(ctx.now).toISOString() }),
   };
 }
 
@@ -139,10 +156,14 @@ export async function seedDevices(
       ),
     });
 
+    // Earlier seeds gave a camera without a stream a 'healthy' state; it is never probed, so it stays 'unknown'.
+    const unprobed = SEED_DEVICES[key].filter((d) => isCamera(d) && !d.stream).map((d) => lookup(deviceIds, d.name, 'device'));
+    if (unprobed.length > 0) await ctx.admin.request(RESET_UNPROBED, { ids: unprobed });
+
     for (const spec of SEED_DEVICES[key]) {
       const row = devices.find((d) => d.name === spec.name);
       if (!row) throw new Error(`seed: device ${spec.name} missing`);
-      result[`${key}/${spec.name}`] = { id: row.id, org: key, name: spec.name, camera: isCamera(spec), createdAt: row.created_at };
+      result[`${key}/${spec.name}`] = { id: row.id, org: key, name: spec.name, camera: isCamera(spec), streaming: Boolean(spec.stream), createdAt: row.created_at };
     }
   }
 

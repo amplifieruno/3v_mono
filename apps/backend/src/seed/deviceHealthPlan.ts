@@ -4,8 +4,9 @@ import { seededRandom } from './random.js';
  * Past device telemetry for the seed (no live producer exists for the past): one sample per whole hour for the 30 days
  * before `now`, strictly before it, so the live health cron (one sample per minute from now on) never collides.
  *
- * - `camera`: probed through the stream-server like the cron does, plus the frame rate of the stream; host metrics
- *   are NULL. While offline the probe still records a sample (no latency, no frames, one error).
+ * - `camera`: probed through the stream-server like the cron does (latency only: the live probe writes a NULL
+ *   frame rate, so does the history); host metrics are NULL. While offline the probe still records a sample (no
+ *   latency, one error). A camera without a stream_url is never probed and has no history (see seedDeviceHealth).
  * - `host` (terminals, sensors): heartbeat with CPU / memory / disk; while offline no heartbeat arrives (no row).
  *
  * An incident yields an `offline` event at its first hour and an `online` event at the first hour after it, with the
@@ -86,7 +87,7 @@ export function buildHealthHistory(
     if (offline && kind === 'host') continue;
     const base = { recorded_at: recordedAt.toISOString(), cpu_usage: null, memory_usage: null, disk_usage: null };
     if (offline) {
-      metrics.push({ ...base, network_latency_ms: null, frame_rate: 0, error_count: 1 });
+      metrics.push({ ...base, network_latency_ms: null, frame_rate: null, error_count: 1 });
       continue;
     }
     // Busier during office hours (UTC+3 day ≈ 05:00–17:00 UTC).
@@ -94,7 +95,7 @@ export function buildHealthHistory(
     const busy = hour >= 5 && hour < 17 ? 1 : 0;
     const latency = round1(6 + random.next() * 14 + busy * 6);
     if (kind === 'camera') {
-      metrics.push({ ...base, network_latency_ms: latency, frame_rate: round1(24 + random.next()), error_count: 0 });
+      metrics.push({ ...base, network_latency_ms: latency, frame_rate: null, error_count: 0 });
       continue;
     }
     const age = (HISTORY_HOURS - hoursAgo) / HISTORY_HOURS;

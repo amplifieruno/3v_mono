@@ -72,6 +72,22 @@ describe('devices', () => {
     }
   });
 
+  it('should reject a stream_url that embeds credentials and accept a plain one', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const f = await createFacility(a);
+    for (const stream_url of ['rtsp://user:pass@host/x', 'rtsp://user@host:554/x', 'http://:secret@host/x']) {
+      await expectError(
+        a.request(INSERT_DEVICE, { object: { facility_id: f.id, name: 'bad', device_type: 'static_video_camera', stream_url } }),
+      );
+    }
+    const ok = await createDevice(a, f.id, { device_type: 'static_video_camera', stream_url: 'rtsp://host:554/path?token=a@b' });
+    expect(ok.id).toBeTruthy();
+    await expectError(
+      a.request(UPDATE_DEVICE, { id: ok.id, set: { stream_url: 'rtsp://u:p@host/x' } }),
+    );
+  });
+
   it('should accept a writable password that is never selectable and is redacted in audit', async () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);

@@ -145,6 +145,28 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     ]);
     expect(cameras.every((c) => c.recognition_enabled === 't' && c.recognition_fps === '2')).toBe(true);
 
+    // Floors are zero-padded; seeded camera history has no frame rate (the live probe writes none).
+    const floors = await runSqlRows(
+      `select a.name from itap.areas a join itap.organizations o on o.id = a.organization_id
+        where o.slug = '${SLUGS[0]}' and a.name ~ '^Floor [0-9]+$' order by a.name`,
+    );
+    expect(floors).toHaveLength(23);
+    expect(floors.every((f) => /^Floor \d\d$/.test(f.name ?? ''))).toBe(true);
+    expect(floors[0]?.name).toBe('Floor 02');
+    const [frames] = await runSqlRows(
+      `select count(*) as n from itap.device_health_metrics m join itap.devices d on d.id = m.device_id
+        where d.stream_url is not null and m.frame_rate is not null`,
+    );
+    expect(Number(frames.n)).toBe(0);
+
+    // A camera without a stream_url is never probed: state unknown, no history.
+    const [unprobed] = await runSqlRows(
+      `select d.health_status, d.last_seen_at, (select count(*) from itap.device_health_metrics m where m.device_id = d.id) as metrics
+         from itap.devices d join itap.organizations o on o.id = d.organization_id
+        where o.slug = '${SLUGS[1]}' and d.name = 'Front Door Camera'`,
+    );
+    expect(unprobed).toMatchObject({ health_status: 'unknown', last_seen_at: 'NULL', metrics: '0' });
+
     // Seeded samples sit on whole hours; the plan geometry lies inside its floor plan.
     const [offHour] = await runSqlRows(
       `select count(*) as n from itap.device_health_metrics m join itap.devices d on d.id = m.device_id

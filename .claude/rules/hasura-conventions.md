@@ -74,7 +74,7 @@ paths:
 
 ## Telemetry Tables
 
-- High-volume telemetry (`device_health_metrics`, `device_events`) has no audit trigger. Its FK to the parent (`devices`) is `NO ACTION` (spec §6.0), so a referenced device cannot be deleted; retire it with `status = 'inactive'`. An organization delete still cascades through `organization_id`.
+- High-volume telemetry (`device_health_metrics`, `device_events`) has no audit trigger. Its FK to the parent (`devices`) is `NO ACTION` by this slice's own decision (not spec §6.0, which says `SET NULL` for logs that reference devices): a per-device series without its device is meaningless, so a referenced device cannot be deleted; retire it with `status = 'inactive'`. An organization delete still cascades through `organization_id`.
 
 ## Numbering and Codes
 

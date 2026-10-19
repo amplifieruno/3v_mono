@@ -8,13 +8,13 @@ Branch `feat/data-layer-foundation`: commits `cd4f96c..HEAD` (`61d548e` .. `baca
 - Validation helpers `itap.valid_windows`, `valid_point`, `valid_shape` (migration `000`); `work_schedules.windows` now uses `valid_windows` (`001`).
 - Facilities: `facilities` (+ statuses), `areas` (materialised-path hierarchy, types/statuses/access levels, `shape` jsonb, same-facility unique key), `floor_plans` (image file in the org bucket, `image/%` mime check). Computed field `areas.current_occupancy` (0 until `area_occupancy` exists in slice 4); function `area_descendants`.
 - Access points: `access_points` (+ kinds/directions), `access_point_devices` (+ device roles), `device_areas` (extra covered areas).
-- Devices: `devices` (+ types/statuses/health statuses; `stream_url` without credentials), `identity_photos.device_id` FK (left FK-less in slice 2), `facility_templates`.
+- Devices: `devices` (+ types/statuses/health statuses; `stream_url` must not embed credentials, enforced by the CHECK `devices_stream_url_no_credentials` from migration `020`; username/password are separate columns), `identity_photos.device_id` FK (left FK-less in slice 2), `facility_templates`.
 - Telemetry: `device_health_metrics`, `device_events` (+ event kinds), append-only, no audit trigger.
 - SQL functions: `apply_facility_template` (volatile, exposed as a Hasura mutation to `org_admin`), `record_device_health` (admin only; writes metrics, health_status, last_seen_at, status, events).
 
 **Backend**
 - `src/events/`: Hasura event/cron trigger router `POST /hasura/events/<name>` with the `x-action-secret` check, payload validation, registry (`defaultEventHandlers`), idempotency key.
-- Crons (generated from `metadata-src/crons.ts`, new `CronSpec.toleranceSeconds`): `heartbeat` (5 min), `device_health_check` (1 min, tolerance 120 s): probes the stream-server snapshot per camera (concurrency 5, 3 s timeout), calls `record_device_health`.
+- Crons (generated from `metadata-src/crons.ts`, new `CronSpec.toleranceSeconds`): `heartbeat` (5 min; deviation from the plan: kept enabled, not removed), `device_health_check` (1 min, tolerance 120 s): probes the stream-server snapshot per camera (concurrency 5, 3 s timeout), calls `record_device_health`.
 - Seed: Nova Tower facility with a 20-floor-style area tree and floor plan images (`facilityPlan.ts`, `floorPlans.ts`), access points and devices (`devicePlan.ts`; cameras bound to stream ids `entrance`/`lobby`/`serverroom`/`warehouse`), device health history (`deviceHealthPlan.ts`), identity photo -> device mapping.
 
 **Generator**: `CronSpec` (schedule, retry, toleranceSeconds), same-facility composite FK and covering-index checks reused.
@@ -65,3 +65,10 @@ pnpm --filter backend exec vitest run src
 pnpm --filter backend test:integration
 RUN_SEED_TEST=1 pnpm --filter backend test:integration -- seed   # opt-in seed test
 ```
+
+## Final review fix wave
+
+- `020_devices_stream_url_no_credentials`: CHECK rejecting userinfo in `stream_url` (earlier wording implied this was already enforced; it was not). Test: `devices.test.ts`.
+- `021_areas_parent_must_exist`: `areas_maintain_path` raises `foreign_key_violation` (`area_parent_not_found`) for a parent that is not found, instead of silently creating a root path. Test: `areas-tree.test.ts` (multi-row insert, child before parent).
+- Seed: camera health history has NULL `frame_rate` (as the live probe writes); cameras without `stream_url` (Riverside Front Door Camera) are `unknown` with no history; floors are zero-padded ("Floor 02" .. "Floor 24"); Floor 24 children are all at least restricted. Idempotent migration of existing dev data: the seed renames legacy single-digit floors in place, resets unprobed cameras to `unknown` and deletes their old history; no `--reset` needed.
+- Rule `hasura-conventions.md`: telemetry `NO ACTION` is stated as this slice's decision, not spec §6.0.

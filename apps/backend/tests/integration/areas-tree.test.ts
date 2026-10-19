@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { asAdmin, asOrgAdmin } from './support/clients.js';
 import { createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
-import { runSql } from './support/sql.js';
+import { randomUUID } from 'node:crypto';
+import { runSql, runSqlRows } from './support/sql.js';
 import { AREAS, createArea, createFacility, createTree, INSERT_AREA, MOVE_AREA, type Area } from './support/facilities.js';
 
 const DESCENDANTS = `
@@ -53,6 +54,21 @@ describe('areas tree', () => {
     rows = await areasById(a, f.id);
     expect(rows.get(zone.id)).toMatchObject({ path: [zone.id], depth: 0, parent_id: null });
     expect(rows.get(room.id)).toMatchObject({ path: [zone.id, room.id], depth: 1 });
+  });
+
+  it('should reject an area whose parent does not exist yet (child listed before parent in one insert)', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const f = await createFacility(a);
+    const [parent, child] = [randomUUID(), randomUUID()];
+    const row = (id: string, name: string, parentId: string | null) =>
+      `('${id}', '${orgA.id}', '${f.id}', ${parentId ? `'${parentId}'` : 'NULL'}, '${name}', 'zone')`;
+    const insert = (rows: string[]) =>
+      `INSERT INTO itap.areas (id, organization_id, facility_id, parent_id, name, area_type) VALUES ${rows.join(', ')}`;
+    await expect(runSql(insert([row(child, 'Child', parent), row(parent, 'Parent', null)]))).rejects.toThrow(/area_parent_not_found/);
+    await runSql(insert([row(parent, 'Parent', null), row(child, 'Child', parent)]));
+    const rows = await runSqlRows(`SELECT depth FROM itap.areas WHERE id = '${child}'`);
+    expect(rows[0]?.depth).toBe('1');
   });
 
   it('should reject re-parenting under the area itself or its descendant with area_cycle, changing nothing (Review Focus 1)', async () => {

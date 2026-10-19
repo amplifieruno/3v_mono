@@ -13,6 +13,20 @@ const SEEDED = `
     }
   }
 `;
+const DROP_HISTORY = `
+  mutation SeedDropHealthHistory($device: uuid!, $before: timestamptz!) {
+    delete_device_health_metrics(where: { device_id: { _eq: $device }, recorded_at: { _lt: $before } }) { affected_rows }
+  }
+`;
+// Earlier seeds wrote a frame rate; the live probe writes none.
+const CLEAR_FRAME_RATE = `
+  mutation SeedClearFrameRate($device: uuid!, $before: timestamptz!) {
+    update_device_health_metrics(
+      where: { device_id: { _eq: $device }, recorded_at: { _lt: $before }, frame_rate: { _is_null: false } }
+      _set: { frame_rate: null }
+    ) { affected_rows }
+  }
+`;
 // One mutation per device (one transaction): a device has either its whole history or none. A sample at an hour the
 // live cron already recorded is skipped.
 const INSERT_HISTORY = `
@@ -36,10 +50,17 @@ export async function seedDeviceHealth(
 ): Promise<SeedDeviceHealthResult> {
   const result: SeedDeviceHealthResult = {};
   for (const [key, device] of Object.entries(devices)) {
+    if (device.camera && !device.streaming) {
+      // Never probed (no stream_url): no history. Earlier seeds wrote one, drop it.
+      await ctx.admin.request(DROP_HISTORY, { device: device.id, before: device.createdAt });
+      result[key] = 0;
+      continue;
+    }
     const { device_health_metrics_aggregate: existing } = await ctx.admin.request<{
       device_health_metrics_aggregate: { aggregate: { count: number } };
     }>(SEEDED, { device: device.id, before: device.createdAt });
     if (existing.aggregate.count > 0) {
+      if (device.camera) await ctx.admin.request(CLEAR_FRAME_RATE, { device: device.id, before: device.createdAt });
       result[key] = 0;
       continue;
     }

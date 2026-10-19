@@ -1,6 +1,6 @@
 import { createHasuraClient } from '../hasura/client.js';
 import type { OrgKey } from './companies.js';
-import { flattenAreas, nodeShape, OFFICE_FLOOR_TEMPLATE, SEED_FACILITIES, TEMPLATE_FLOOR, type FacilitySpec } from './facilityPlan.js';
+import { flattenAreas, floorName, nodeShape, OFFICE_FLOOR_TEMPLATE, SEED_FACILITIES, TEMPLATE_FLOOR, type FacilitySpec } from './facilityPlan.js';
 import { seedFloorPlans } from './floorPlans.js';
 import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 
@@ -81,9 +81,30 @@ async function areaKeys(ctx: SeedContext, facility: string): Promise<Map<string,
   return keys;
 }
 
+const RENAME_AREA = `
+  mutation SeedRenameArea($id: uuid!, $name: String!) { update_areas_by_pk(pk_columns: { id: $id }, _set: { name: $name }) { id } }
+`;
+
+/**
+ * Early seeds named the single-digit floors "Floor 2" ... "Floor 9". The seed keys areas by name path, so they are
+ * renamed in place to the zero-padded names (idempotent: nothing matches once renamed; ids, plans and devices stay).
+ */
+async function renameLegacyFloors(ctx: SeedContext, facility: string, spec: FacilitySpec): Promise<void> {
+  const { areas } = await ctx.admin.request<{ areas: AreaRow[] }>(AREAS, { facility });
+  const rootIds = new Set(areas.filter((a) => !a.parent_id && a.name === spec.root.name).map((a) => a.id));
+  const names = new Set(areas.map((a) => a.name));
+  for (const area of areas) {
+    const legacy = /^Floor ([1-9])$/.exec(area.name);
+    if (!legacy || !area.parent_id || !rootIds.has(area.parent_id)) continue;
+    const name = floorName(Number(legacy[1]));
+    if (!names.has(name)) await ctx.admin.request(RENAME_AREA, { id: area.id, name });
+  }
+}
+
 /** Inserts the planned areas that are missing, one tree level per mutation (parents exist before their children). */
 async function seedAreas(ctx: SeedContext, org: string, facility: string, spec: FacilitySpec): Promise<Map<string, string>> {
   const planned = flattenAreas(spec.root);
+  await renameLegacyFloors(ctx, facility, spec);
   let keys = await areaKeys(ctx, facility);
   const maxDepth = Math.max(...planned.map((p) => p.key.split('/').length));
   for (let depth = 1; depth <= maxDepth; depth += 1) {

@@ -53,7 +53,7 @@ const TENANT_SUITES: Record<number, { suite: string; company: string }> = {
 };
 
 /** Floor 16 is left empty: the seed fills it by applying the "Standard office floor" template. */
-export const TEMPLATE_FLOOR = 'Floor 16';
+export const TEMPLATE_FLOOR = floorName(16);
 
 const LOBBY: AreaNode = {
   name: 'Lobby',
@@ -102,9 +102,14 @@ const FLOOR_12: AreaNode = {
   ],
 };
 
+/** Zero-padded, so ordering by name is the natural floor order ("Floor 02" ... "Floor 24"). */
+export function floorName(n: number): string {
+  return `Floor ${String(n).padStart(2, '0')}`;
+}
+
 function floor(n: number): AreaNode {
   if (n === 12) return FLOOR_12;
-  const name = `Floor ${n}`;
+  const name = floorName(n);
   if (n === 2) {
     return {
       name,

@@ -30,6 +30,26 @@ describe('seed facility plan', () => {
     expect(new Set(areas.map((a) => a.key)).size).toBe(areas.length);
   });
 
+  it('should name floors zero-padded so name order is floor order, with a single template floor', () => {
+    const floors = SEED_FACILITIES.nova.root.children?.map((c) => c.name).filter((n) => n.startsWith('Floor ')) ?? [];
+    expect(floors).toHaveLength(23);
+    expect(floors[0]).toBe('Floor 02');
+    expect(floors.at(-1)).toBe('Floor 24');
+    expect(floors.every((n) => /^Floor \d\d$/.test(n))).toBe(true);
+    expect([...floors].sort()).toEqual(floors);
+  });
+
+  it('should never give a child a lower access level than its parent', () => {
+    const rank = { public: 0, restricted: 1, secure: 2, classified: 3 } as const;
+    for (const org of ORGS) {
+      for (const { key, node } of flattenAreas(SEED_FACILITIES[org].root)) {
+        for (const child of node.children ?? []) {
+          expect(rank[child.access ?? 'public'], `${key}/${child.name}`).toBeGreaterThanOrEqual(rank[node.access ?? 'public']);
+        }
+      }
+    }
+  });
+
   it('should model Riverside with 5 areas', () => {
     expect(flattenAreas(SEED_FACILITIES.riverside.root)).toHaveLength(5);
   });

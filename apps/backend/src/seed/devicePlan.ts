@@ -1,4 +1,5 @@
 import type { OrgKey } from './companies.js';
+import { floorName } from './facilityPlan.js';
 
 /**
  * Seed access points and devices. Areas are referenced by their path key (see facilityPlan); positions are points in
@@ -37,8 +38,8 @@ export type DeviceSpec = {
 
 const LOBBY = 'Nova Tower/Lobby';
 const P1 = 'Nova Tower/Parking/Parking Level P-1';
-const FLOOR3 = 'Nova Tower/Floor 3';
-const FLOOR24 = 'Nova Tower/Floor 24';
+const FLOOR3 = `Nova Tower/${floorName(3)}`;
+const FLOOR24 = `Nova Tower/${floorName(24)}`;
 
 const TURNSTILE_X = [480, 560, 640, 720];
 const turnstiles = TURNSTILE_X.map((x, i) => ({ name: `Turnstile ${i + 1}`, x }));

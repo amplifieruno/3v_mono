@@ -23,11 +23,11 @@ describe('buildHealthHistory', () => {
     expect(new Set(times).size).toBe(HISTORY_HOURS);
   });
 
-  it('should give cameras latency and frame rate but no host metrics', () => {
+  it('should give cameras latency but no frame rate and no host metrics (like the live probe)', () => {
     const { metrics } = buildHealthHistory('nova/Lobby Camera', 'camera', NOW, []);
     for (const m of metrics) {
       expect(m.cpu_usage).toBeNull();
-      expect(m.frame_rate).toBeGreaterThanOrEqual(24);
+      expect(m.frame_rate).toBeNull();
       expect(m.network_latency_ms).toBeGreaterThan(0);
       expect(m.error_count).toBe(0);
     }
@@ -55,7 +55,7 @@ describe('buildHealthHistory', () => {
     ]);
     const down = camera.metrics.filter((m) => m.error_count === 1);
     expect(down.map((m) => m.recorded_at)).toEqual([at(50), at(49), at(48)]);
-    expect(down.every((m) => m.network_latency_ms === null && m.frame_rate === 0)).toBe(true);
+    expect(down.every((m) => m.network_latency_ms === null && m.frame_rate === null)).toBe(true);
 
     // A host sends no heartbeat while offline.
     const host = buildHealthHistory('nova/x', 'host', NOW, [incident]);
