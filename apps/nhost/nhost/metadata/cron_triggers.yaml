@@ -54,6 +54,34 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Loitering / unusual dwell events from occupancy durations
+- name: evaluate_segments
+  webhook: "{{BACKEND_URL}}/hasura/events/evaluate_segments"
+  schedule: 0 * * * *
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 3600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: "Hourly: activity stats, dynamic segment evaluation, segment daily stats"
+- name: evaluate_segments_pending
+  webhook: "{{BACKEND_URL}}/hasura/events/evaluate_segments_pending"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Evaluate dynamic segments of organizations whose segment inputs changed (30 s debounce)
 - name: heartbeat
   webhook: "{{BACKEND_URL}}/hasura/events/heartbeat"
   schedule: "*/5 * * * *"

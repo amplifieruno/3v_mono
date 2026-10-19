@@ -1,0 +1,14 @@
+table:
+  schema: itap
+  name: segment_evaluation_requests
+configuration:
+  custom_name: segment_evaluation_requests
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id

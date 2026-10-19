@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_segment_evaluations
+configuration:
+  custom_name: due_segment_evaluations
+  exposed_as: query

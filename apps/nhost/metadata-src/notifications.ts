@@ -27,6 +27,10 @@ const REPORT_COLUMNS = [
   'ack_rate', 'acknowledged', 'avg_response_seconds', 'channel', 'dead_letter', 'delivered', 'digested', 'escalations',
   'failed', 'organization_id', 'pending', 'sent', 'total',
 ];
+const RULE_TEST_COLUMNS = [
+  'event_id', 'event_type', 'occurred_at', 'organization_id', 'reason', 'recipient_count', 'recipients', 'rule_id', 'severity',
+  'title', 'would_match',
+];
 const userEditableTemplate: BoolExp = { _and: [ownOrganizationRow, { is_system: { _eq: false } }] };
 
 const SUBSCRIPTION_INPUT = [
@@ -161,12 +165,33 @@ export const notificationTables: TableSpec[] = [
       ],
     },
   },
+  {
+    // Row type of itap.test_notification_rule; stores nothing, rows only through the function.
+    name: 'notification_rule_tests',
+    schema: 'itap_results',
+    profile: 'tenant_read',
+    extraPermissions: {
+      select_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: RULE_TEST_COLUMNS,
+            filter: ownOrganizationRow,
+            query_root_fields: [],
+            subscription_root_fields: [],
+          },
+        },
+      ],
+    },
+  },
 ];
 
-/** Owner inbox mutations (rows of the session user only) and the per-channel delivery report. */
+/** Owner inbox mutations (rows of the session user only), the per-channel delivery report and the rule dry run. */
 export const notificationFunctions: FunctionSpec[] = [
   ...['acknowledge_notification', 'mark_notifications_read'].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }),
   ),
   { name: 'delivery_report', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  // Dry run of a notification rule against the latest events (spec §8.1); writes nothing.
+  { name: 'test_notification_rule', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
 ];

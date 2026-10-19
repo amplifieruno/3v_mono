@@ -92,4 +92,23 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Combine due digest items of digest-mode notification rules into one delivery per recipient',
   },
+  {
+    // Debounced segment evaluation (slice 6): organizations whose segment inputs changed at least 30 s ago
+    // (itap.segment_evaluation_requests) get their dynamic segments evaluated at scheduled_time
+    // (apps/backend/src/segments/crons.ts).
+    name: 'evaluate_segments_pending',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Evaluate dynamic segments of organizations whose segment inputs changed (30 s debounce)',
+  },
+  {
+    // Hourly per organization at scheduled_time: refresh_activity_stats, every dynamic segment (time windows,
+    // schedules, behavioral metrics), segment_daily_stats. Idempotent for one scheduled time; up to an hour late runs.
+    name: 'evaluate_segments',
+    schedule: '0 * * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    comment: 'Hourly: activity stats, dynamic segment evaluation, segment daily stats',
+  },
 ];

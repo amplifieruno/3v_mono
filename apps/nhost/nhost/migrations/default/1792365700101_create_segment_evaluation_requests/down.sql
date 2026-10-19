@@ -1,0 +1,15 @@
+DROP FUNCTION itap.finish_segment_evaluation_request(uuid, timestamptz);
+DROP FUNCTION itap.due_segment_evaluations(timestamptz);
+DROP TRIGGER segment_inputs_changed_update ON itap.segments;
+DROP TRIGGER segment_inputs_changed ON itap.segments;
+DROP TRIGGER segment_inputs_changed_delete ON itap.segment_members;
+DROP TRIGGER segment_inputs_changed ON itap.segment_members;
+DROP TRIGGER segment_inputs_changed ON itap.work_schedules;
+DROP TRIGGER segment_inputs_changed ON itap.visits;
+DROP TRIGGER segment_inputs_changed ON itap.watch_list_entries;
+DROP TRIGGER segment_inputs_changed_update ON itap.identities;
+DROP TRIGGER segment_inputs_changed ON itap.identities;
+DROP TRIGGER segment_inputs_changed ON itap.profiles;
+DROP FUNCTION itap.segment_inputs_changed();
+DROP FUNCTION itap.request_segment_evaluation(uuid);
+DROP TABLE itap.segment_evaluation_requests;

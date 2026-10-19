@@ -87,6 +87,8 @@ select_permissions:
         - id
         - kind
         - last_evaluated_at
+        - last_evaluation_error
+        - last_evaluation_failed_at
         - member_count
         - name
         - number

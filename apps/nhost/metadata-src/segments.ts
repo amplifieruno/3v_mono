@@ -26,7 +26,7 @@ export const segmentTables: TableSpec[] = [
     // the membership trigger and the evaluator.
     name: 'segments',
     profile: 'tenant_crud',
-    readOnlyColumns: ['number', 'member_count', 'last_evaluated_at'],
+    readOnlyColumns: ['number', 'member_count', 'last_evaluated_at', 'last_evaluation_error', 'last_evaluation_failed_at'],
     insertOnlyColumns: ['kind', 'target'],
   },
   {
@@ -97,6 +97,10 @@ export const segmentTables: TableSpec[] = [
   },
   // Row type of itap.sync_segment_members (admin secret only; stores nothing).
   { name: 'segment_sync_results', schema: 'itap_results', profile: 'none' },
+  // Debounced evaluation requests per organization (written at commit by input triggers; cron evaluate_segments_pending).
+  { name: 'segment_evaluation_requests', profile: 'none' },
+  // Row type of itap.run_activity_stats (admin secret only; stores nothing).
+  { name: 'activity_stats_refreshes', schema: 'itap_results', profile: 'none' },
 ];
 
 /** Manual membership, the condition field catalog and evaluation (translator context, rule membership sync). */
@@ -113,4 +117,9 @@ export const segmentFunctions: FunctionSpec[] = [
     sessionArgument: 'hasura_session',
     roles: [],
   },
+  // Evaluation crons (admin secret only): evaluate_segments_pending (due / finish), evaluate_segments (hourly).
+  { name: 'due_segment_evaluations', exposedAs: 'query', roles: [] },
+  { name: 'finish_segment_evaluation_request', exposedAs: 'mutation', roles: [] },
+  { name: 'run_activity_stats', exposedAs: 'mutation', roles: [] },
+  { name: 'refresh_segment_daily_stats', exposedAs: 'mutation', roles: [] },
 ];

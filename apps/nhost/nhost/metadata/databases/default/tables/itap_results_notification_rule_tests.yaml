@@ -1,0 +1,26 @@
+table:
+  schema: itap_results
+  name: notification_rule_tests
+configuration:
+  custom_name: notification_rule_tests
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - event_id
+        - event_type
+        - occurred_at
+        - organization_id
+        - reason
+        - recipient_count
+        - recipients
+        - rule_id
+        - severity
+        - title
+        - would_match
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

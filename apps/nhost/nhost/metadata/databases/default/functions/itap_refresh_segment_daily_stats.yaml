@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: refresh_segment_daily_stats
+configuration:
+  custom_name: refresh_segment_daily_stats
+  exposed_as: mutation

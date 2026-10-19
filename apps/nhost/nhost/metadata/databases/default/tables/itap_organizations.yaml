@@ -20,6 +20,14 @@ object_relationships:
           name: organization_settings
         column_mapping:
           id: organization_id
+  - name: segment_evaluation_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_evaluation_requests
+        column_mapping:
+          id: organization_id
 array_relationships:
   - name: access_point_devices
     using:

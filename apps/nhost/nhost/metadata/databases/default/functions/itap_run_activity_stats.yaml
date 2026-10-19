@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: run_activity_stats
+configuration:
+  custom_name: run_activity_stats
+  exposed_as: mutation

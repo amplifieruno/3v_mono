@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: finish_segment_evaluation_request
+configuration:
+  custom_name: finish_segment_evaluation_request
+  exposed_as: mutation
