@@ -132,6 +132,12 @@ describe('tenancy schema', () => {
     );
     expect(data.update_organization_settings.affected_rows).toBe(1);
 
+    // One-to-one: organizations.organization_settings is an object relationship.
+    const viaOrg = await client.request<{ organizations: { organization_settings: { recognition_threshold: number } }[] }>(
+      `{ organizations { organization_settings { recognition_threshold } } }`,
+    );
+    expect(viaOrg.organizations).toEqual([{ organization_settings: { recognition_threshold: 0.7 } }]);
+
     const rows = await asAdmin().request<{
       organization_settings: { organization_id: string; recognition_threshold: number }[];
     }>(

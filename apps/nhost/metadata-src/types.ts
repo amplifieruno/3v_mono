@@ -61,9 +61,9 @@ export interface TableSpec {
   noInsert?: boolean;
   /**
    * Relationship name overrides keyed by FK constraint name. An override applies to the relationship end
-   * that lives in the table owning this spec: the object end in the child's spec, the array end in the
-   * parent's spec. Only for a self-reference are both ends in one spec; then a plain key renames both and
-   * `"<constraint>#array"` renames only the array end. Keys matching no constraint are an error.
+   * that lives in the table owning this spec: the object end in the child's spec, the reverse end (array, or object
+   * for a one-to-one FK) in the parent's spec. Only for a self-reference are both ends in one spec; then a plain key
+   * renames both and `"<constraint>#array"` renames only the reverse end. Keys matching no constraint are an error.
    */
   relationshipNames?: Record<string, string>;
   /** Merged last; an entry replaces the generated entry for the same role. */
@@ -80,6 +80,8 @@ export interface ForeignKey {
   schema?: ManagedSchema;
   /** Schema of `refTable`; defaults to `itap`. External targets (auth.users, storage.files) get only the object end. */
   refSchema?: ManagedSchema | ExternalSchema;
+  /** Child columns are unique (PK or unique key): the reverse side is an object relationship, not an array. */
+  oneToOne?: boolean;
 }
 
 export interface QualifiedTable {

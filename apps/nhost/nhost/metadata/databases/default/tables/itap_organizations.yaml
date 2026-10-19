@@ -12,6 +12,14 @@ object_relationships:
           name: files
         column_mapping:
           logo_file_id: id
+  - name: organization_settings
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_settings
+        column_mapping:
+          id: organization_id
 array_relationships:
   - name: members
     using:
@@ -27,14 +35,6 @@ array_relationships:
         remote_table:
           schema: itap
           name: organization_invitations
-        column_mapping:
-          id: organization_id
-  - name: organization_settings
-    using:
-      manual_configuration:
-        remote_table:
-          schema: itap
-          name: organization_settings
         column_mapping:
           id: organization_id
   - name: user_settings

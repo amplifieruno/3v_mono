@@ -1,6 +1,7 @@
 import { stringify } from 'yaml';
 import type { ForeignKey, ManagedSchema, TableSpec } from '../metadata-src/types.js';
 import { buildTableMetadata } from './build-table-metadata.js';
+import { assertTenantForeignKeys, markOneToOne } from './check-foreign-keys.js';
 
 export interface ColumnRow {
   schema: ManagedSchema;
@@ -10,10 +11,21 @@ export interface ColumnRow {
   generated?: boolean;
 }
 
+export interface IndexRow {
+  schema: ManagedSchema;
+  table: string;
+  name: string;
+  /** Key columns in index order (no INCLUDE columns). Partial and expression indexes are not introspected. */
+  columns: string[];
+  /** Unique index, primary key or unique constraint. */
+  unique: boolean;
+}
+
 export interface Introspection {
   columns: ColumnRow[];
   /** FKs from managed schemas into managed schemas or auth.users / storage.files (`schema`/`refSchema` set). */
   foreignKeys: ForeignKey[];
+  indexes: IndexRow[];
 }
 
 const GENERATED_PREFIX = 'itap_';
@@ -57,10 +69,11 @@ export function planMetadata(specs: TableSpec[], intro: Introspection): Map<stri
     if (row.generated) generatedByTable.set(key, [...(generatedByTable.get(key) ?? []), row.column]);
   }
   validate(specs, columnsByTable);
+  assertTenantForeignKeys(intro);
 
   // FKs into enum tables get no relationships: Hasura exposes the column as a GraphQL enum instead.
   const relatable = new Set(specs.filter((s) => !s.isEnum).map((s) => qualified(s.schema, s.name)));
-  const fks = intro.foreignKeys.filter(
+  const fks = markOneToOne(intro).filter(
     (fk) =>
       relatable.has(qualified(fk.schema, fk.table)) &&
       (relatable.has(qualified(fk.refSchema, fk.refTable)) ||

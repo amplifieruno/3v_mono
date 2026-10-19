@@ -32,7 +32,19 @@ const intro: Introspection = {
       constraint: 'detections_org_fkey',
     },
   ],
+  indexes: [
+    { schema: 'itap', table: 'notes', name: 'notes_org_idx', columns: ['organization_id'], unique: false },
+    { schema: 'itap_results', table: 'detections', name: 'detections_org_idx', columns: ['organization_id'], unique: false },
+  ],
 };
+
+const orgIndex = (table: string, column: string) => ({
+  schema: 'itap' as const,
+  table,
+  name: `${table}_${column}_idx`,
+  columns: ['organization_id', column],
+  unique: false,
+});
 
 const specs: TableSpec[] = [
   { name: 'organizations', profile: 'none' },
@@ -56,6 +68,7 @@ describe('planMetadata', () => {
     const shuffled: Introspection = {
       columns: [...intro.columns].reverse(),
       foreignKeys: [...intro.foreignKeys].reverse(),
+      indexes: [...intro.indexes].reverse(),
     };
     expect([...planMetadata([...specs].reverse(), shuffled)]).toEqual([...planMetadata(specs, intro)]);
   });
@@ -85,6 +98,7 @@ describe('planMetadata', () => {
           constraint: 'notes_kind_fkey',
         },
       ],
+      indexes: [...intro.indexes, orgIndex('notes', 'kind')],
     };
     const files = planMetadata([...specs, { name: 'kinds', isEnum: true, profile: 'none' }], withEnum);
     expect(parse(files.get('itap_notes.yaml') ?? '').object_relationships.map((r: { name: string }) => r.name)).toEqual(
@@ -112,10 +126,41 @@ describe('planMetadata', () => {
           constraint: 'notes_user_fkey',
         },
       ],
+      indexes: [...intro.indexes, orgIndex('notes', 'user_id')],
     };
     const notes = parse(planMetadata(specs, withExternal).get('itap_notes.yaml') ?? '');
     expect(notes.object_relationships.map((r: { name: string }) => r.name)).toEqual(['organization', 'user']);
     expect(notes.insert_permissions[0].permission.columns).toEqual(['user_id']);
+  });
+
+  it('should emit an object relationship on the parent for a one-to-one FK (child FK columns are its PK)', () => {
+    const withSettings: Introspection = {
+      columns: [...intro.columns, { schema: 'itap', table: 'settings', column: 'organization_id' }],
+      foreignKeys: [
+        ...intro.foreignKeys,
+        {
+          schema: 'itap',
+          table: 'settings',
+          columns: ['organization_id'],
+          refSchema: 'itap',
+          refTable: 'organizations',
+          refColumns: ['id'],
+          constraint: 'settings_org_fkey',
+        },
+      ],
+      indexes: [
+        ...intro.indexes,
+        { schema: 'itap', table: 'settings', name: 'settings_pkey', columns: ['organization_id'], unique: true },
+      ],
+    };
+    const files = planMetadata([...specs, { name: 'settings', profile: 'none' }], withSettings);
+    const org = parse(files.get('itap_organizations.yaml') ?? '');
+    expect(org.object_relationships.map((r: { name: string }) => r.name)).toEqual(['settings']);
+    expect(org.array_relationships.map((r: { name: string }) => r.name)).toEqual(['detections', 'notes']);
+  });
+
+  it('should fail on a tenant FK rule violation (missing index)', () => {
+    expect(() => planMetadata(specs, { ...intro, indexes: [] })).toThrow(/notes_org_fkey \(itap\.notes\): no index/);
   });
 
   it('should fail when a spec has no table', () => {

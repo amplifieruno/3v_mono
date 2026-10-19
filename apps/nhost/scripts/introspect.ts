@@ -1,5 +1,5 @@
 import type { ExternalSchema, ForeignKey, ManagedSchema } from '../metadata-src/types.js';
-import type { ColumnRow, Introspection } from './plan-metadata.js';
+import type { ColumnRow, IndexRow, Introspection } from './plan-metadata.js';
 
 export const MANAGED_SCHEMAS: ManagedSchema[] = ['itap', 'itap_results'];
 
@@ -40,6 +40,22 @@ join pg_namespace rn on rn.oid = rc.relnamespace
 where con.contype = 'f' and not c.relispartition
   and n.nspname in (${SCHEMA_LIST})
   and (rn.nspname in (${SCHEMA_LIST}) or (rn.nspname, rc.relname) in (('auth', 'users'), ('storage', 'files')))`;
+
+// Plain (non-partial, non-expression) indexes incl. primary keys and unique constraints; key columns in order.
+const INDEXES_SQL = `
+select coalesce(json_agg(json_build_object(
+  'schema', n.nspname, 'table', c.relname, 'name', ic.relname, 'unique', i.indisunique,
+  'columns', (select json_agg(a.attname order by k.ord)
+              from unnest(i.indkey::int2[]) with ordinality k(attnum, ord)
+              join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum
+              where k.ord <= i.indnkeyatts)
+) order by n.nspname, c.relname, ic.relname), '[]'::json)
+from pg_index i
+join pg_class c on c.oid = i.indrelid
+join pg_namespace n on n.oid = c.relnamespace
+join pg_class ic on ic.oid = i.indexrelid
+where n.nspname in (${SCHEMA_LIST}) and not c.relispartition
+  and i.indpred is null and 0 <> all (i.indkey::int2[])`;
 
 type RunSqlResponse = { result_type?: string; result?: string[][]; error?: string; code?: string };
 
@@ -115,13 +131,29 @@ function toForeignKey(row: Record<string, unknown>): ForeignKey {
   return { schema, table, constraint, columns, refSchema, refTable, refColumns };
 }
 
+function toIndex(row: Record<string, unknown>): IndexRow {
+  const { schema, table, name, columns, unique } = row;
+  if (
+    !isManagedSchema(schema) ||
+    typeof table !== 'string' ||
+    typeof name !== 'string' ||
+    typeof unique !== 'boolean' ||
+    !isStringArray(columns)
+  ) {
+    throw new Error(`Introspection: bad index row ${JSON.stringify(row)}`);
+  }
+  return { schema, table, name, columns, unique };
+}
+
 export async function introspect(admin: HasuraAdmin): Promise<Introspection> {
-  const [columns, foreignKeys] = await Promise.all([
+  const [columns, foreignKeys, indexes] = await Promise.all([
     runJsonSql(admin, COLUMNS_SQL),
     runJsonSql(admin, FOREIGN_KEYS_SQL),
+    runJsonSql(admin, INDEXES_SQL),
   ]);
   return {
     columns: asRecords(columns, 'columns').map(toColumn),
     foreignKeys: asRecords(foreignKeys, 'foreign keys').map(toForeignKey),
+    indexes: asRecords(indexes, 'indexes').map(toIndex),
   };
 }

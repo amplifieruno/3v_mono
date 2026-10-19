@@ -71,7 +71,8 @@ function objectRelationships(spec: TableSpec, outgoing: ForeignKey[]): NamedRel[
   }));
 }
 
-function arrayRelationships(spec: TableSpec, incoming: ForeignKey[]): NamedRel[] {
+/** Reverse-side relationships (named after the child table); one-to-one FKs (`oneToOne`) become object ends. */
+function reverseRelationships(spec: TableSpec, incoming: ForeignKey[]): (NamedRel & { oneToOne: boolean })[] {
   const childKey = (fk: ForeignKey): string => `${fk.schema ?? 'itap'}.${fk.table}`;
   const perChild = new Map<string, number>();
   for (const fk of incoming) perChild.set(childKey(fk), (perChild.get(childKey(fk)) ?? 0) + 1);
@@ -81,6 +82,7 @@ function arrayRelationships(spec: TableSpec, incoming: ForeignKey[]): NamedRel[]
     const derived = (perChild.get(childKey(fk)) ?? 0) > 1 ? `${fk.table}_by_${fkStem(fk.columns)}` : fk.table;
     return {
       constraint: fk.constraint,
+      oneToOne: fk.oneToOne === true,
       rel: {
         name: names[fk.constraint + ARRAY_OVERRIDE_SUFFIX] ?? names[fk.constraint] ?? derived,
         using: {
@@ -192,8 +194,9 @@ export function buildTableMetadata(
   assertKnownColumns(spec, sortedColumns);
   assertKnownOverrides(spec, outgoing, incoming);
 
-  const objectRels = objectRelationships(spec, outgoing);
-  const arrayRels = arrayRelationships(spec, incoming);
+  const reverseRels = reverseRelationships(spec, incoming);
+  const objectRels = [...objectRelationships(spec, outgoing), ...reverseRels.filter((r) => r.oneToOne)];
+  const arrayRels = reverseRels.filter((r) => !r.oneToOne);
   assertUniqueNames(spec, sortedColumns, [...objectRels, ...arrayRels]);
   const sorted = (rels: NamedRel[]): ManualRelationship[] => rels.map((r) => r.rel).sort(byName);
 
