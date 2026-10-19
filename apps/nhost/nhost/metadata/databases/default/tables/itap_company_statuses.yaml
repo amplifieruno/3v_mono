@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: company_statuses
+is_enum: true
+configuration:
+  custom_name: company_statuses

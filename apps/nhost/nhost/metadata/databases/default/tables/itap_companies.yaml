@@ -1,0 +1,69 @@
+table:
+  schema: itap
+  name: companies
+configuration:
+  custom_name: companies
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - contact_email
+        - contact_phone
+        - cost_center
+        - kind
+        - name
+        - status
+        - suite
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - contact_email
+        - contact_phone
+        - cost_center
+        - created_at
+        - id
+        - kind
+        - name
+        - organization_id
+        - status
+        - suite
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - contact_email
+        - contact_phone
+        - cost_center
+        - kind
+        - name
+        - status
+        - suite
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

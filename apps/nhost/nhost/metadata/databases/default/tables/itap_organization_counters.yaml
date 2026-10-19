@@ -1,0 +1,14 @@
+table:
+  schema: itap
+  name: organization_counters
+configuration:
+  custom_name: organization_counters
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
