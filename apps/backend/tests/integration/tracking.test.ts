@@ -85,9 +85,11 @@ describe('Stage A: identity counters and sessions', () => {
 
   it('should open one session and extend it while detections keep coming within the timeout', async () => {
     const w = await createTrackingWorld();
-    for (const s of [0, 60, 200, 450]) await detect(w.orgA.id, w.lobbyCam, w.identity, s);
+    const first = await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    for (const s of [60, 200, 450]) await detect(w.orgA.id, w.lobbyCam, w.identity, s);
     const rows = await sessions(w.identity);
     expect(rows).toHaveLength(1);
+    expect(rows[0].opened_by_detection_id).toBe(first.id);
     expect(rows[0]).toMatchObject({ status: 'active', facility_id: w.facility.id, last_area_id: w.lobby.id, ended_at: null });
     expect(Date.parse(rows[0].started_at)).toBe(Date.parse(at(0)));
     expect(Date.parse(rows[0].last_detected_at)).toBe(Date.parse(at(450)));

@@ -1,11 +1,19 @@
 -- Stage A of the detection pipeline (spec §8.2): AFTER INSERT on detections, same transaction, bounded work.
 -- All time logic uses NEW.detected_at, never now(), so replaying history (seed) runs the same logic.
 --
--- Concurrency: the identity row is locked FOR UPDATE by the BEFORE INSERT trigger detections_derive (before the
--- FK check locks it), so all Stage A work of one identity is serialized: two concurrent detections of the same
--- identity in one facility cannot both open a session (the partial unique index tracking_sessions_one_active_key
--- is the backstop). Any other writer that changes tracking state of an identity (close_stale_sessions) must take
--- the same identity row lock first.
+-- Concurrency: the BEFORE INSERT trigger detections_derive takes pg_advisory_xact_lock(hashtextextended(
+-- 'identity:' || identity_id, 0)) before the FK check locks the identity row, so all Stage A work of one identity
+-- is serialized: two concurrent detections of the same identity in one facility cannot both open a session (the
+-- partial unique index tracking_sessions_one_active_key is the backstop). Any other writer of an identity's
+-- tracking state (close_stale_sessions) must take the same advisory lock first, before touching the identity.
+--
+-- Insert ordering rule: the per-row locks are taken in the statement's row order and AFTER triggers run in row
+-- order. A multi-row detection insert must therefore (a) sort its rows by identity_id (then detected_at) so two
+-- concurrent batches lock identities in the same order and cannot deadlock, and (b) keep each identity's rows in
+-- detected_at order, otherwise rows after a later one are treated as late. Otherwise insert one row per statement.
+--
+-- Equal timestamps: a detection with detected_at = the session's last_detected_at is in order (it extends the
+-- session and may change area); only strictly older ones are late.
 --
 -- Late detections (detected_at < the active session's last_detected_at, or not after the end of the identity's
 -- latest closed session in the facility when none is active) change no tracking state: no session is opened,
@@ -53,6 +61,7 @@ DECLARE
   has_session boolean;
   latest_end timestamptz;
   opened boolean := false;
+  wrote_location boolean;
   ap_direction text;
   movement text;
 BEGIN
@@ -108,15 +117,18 @@ BEGIN
   END IF;
   IF NOT has_session THEN
     INSERT INTO itap.tracking_sessions
-      (organization_id, identity_id, profile_id, facility_id, status, started_at, last_detected_at)
-    VALUES (NEW.organization_id, NEW.identity_id, identity_profile, NEW.facility_id, 'active', NEW.detected_at, NEW.detected_at)
+      (organization_id, identity_id, profile_id, facility_id, status, started_at, last_detected_at, opened_by_detection_id)
+    VALUES (NEW.organization_id, NEW.identity_id, identity_profile, NEW.facility_id, 'active', NEW.detected_at,
+            NEW.detected_at, NEW.id)
     RETURNING * INTO sess;
     opened := true;
   END IF;
 
-  -- 3. Location on area / access point change (the first located detection of a session always counts).
-  IF (NEW.area_id IS NOT NULL AND NEW.area_id IS DISTINCT FROM sess.last_area_id)
-     OR (NEW.access_point_id IS NOT NULL AND NEW.access_point_id IS DISTINCT FROM sess.last_access_point_id) THEN
+  -- 3. Location on area change or at an access point other than the one of the last written location (the first
+  --    located detection of a session always counts).
+  wrote_location := (NEW.area_id IS NOT NULL AND NEW.area_id IS DISTINCT FROM sess.last_area_id)
+    OR (NEW.access_point_id IS NOT NULL AND NEW.access_point_id IS DISTINCT FROM sess.last_location_access_point_id);
+  IF wrote_location THEN
     IF NEW.access_point_id IS NOT NULL THEN
       SELECT ap.direction INTO ap_direction FROM itap.access_points ap
       WHERE ap.organization_id = NEW.organization_id AND ap.id = NEW.access_point_id;
@@ -140,6 +152,8 @@ BEGIN
   UPDATE itap.tracking_sessions s
   SET last_detected_at = greatest(s.last_detected_at, NEW.detected_at),
       last_access_point_id = NEW.access_point_id,
+      last_location_access_point_id = CASE WHEN wrote_location THEN NEW.access_point_id
+                                           ELSE s.last_location_access_point_id END,
       last_area_id = coalesce(NEW.area_id, s.last_area_id),
       areas_visited = CASE
         WHEN NEW.area_id IS NULL OR NEW.area_id = ANY (s.areas_visited) THEN s.areas_visited

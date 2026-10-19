@@ -29,6 +29,8 @@ export type Session = {
   last_detected_at: string;
   last_area_id: string | null;
   last_access_point_id: string | null;
+  last_location_access_point_id: string | null;
+  opened_by_detection_id: string | null;
   areas_visited: string[];
 };
 export type Location = {
@@ -105,7 +107,7 @@ export async function detect(
 }
 
 const SESSION_FIELDS = `id identity_id facility_id status started_at ended_at duration_seconds last_detected_at
-  last_area_id last_access_point_id areas_visited`;
+  last_area_id last_access_point_id last_location_access_point_id opened_by_detection_id areas_visited`;
 
 export async function sessions(identityId: string): Promise<Session[]> {
   const data = await asAdmin().request<{ tracking_sessions: Session[] }>(

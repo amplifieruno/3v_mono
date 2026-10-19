@@ -76,6 +76,13 @@ paths:
 
 - High-volume telemetry (`device_health_metrics`, `device_events`) has no audit trigger. Its FK to the parent (`devices`) is `NO ACTION` by this slice's own decision (not spec §6.0, which says `SET NULL` for logs that reference devices): a per-device series without its device is meaningless, so a referenced device cannot be deleted; retire it with `status = 'inactive'`. An organization delete still cascades through `organization_id`.
 
+## Detection Pipeline
+
+- Stage A (`itap.track_detection`, AFTER INSERT on `detections`, same transaction) maintains `tracking_sessions`, `identity_locations`, `area_occupancy` and the throttled identity counters. All time logic uses `detected_at`, never `now()`.
+- Per-identity serialization: the BEFORE INSERT trigger `detections_derive` takes `pg_advisory_xact_lock(hashtextextended('identity:' || identity_id::text, 0))` before the FK check locks the identity row. Any other writer of an identity's tracking state (e.g. `close_stale_sessions`) must take the same advisory lock first, before it touches (or FK-references) the identity in its transaction. Reason: an UPDATE of a table whose unique key contains a stored generated column (`code`) counts as a key update in PG16 and waits for other transactions' FK `KEY SHARE` locks; a row lock taken after the FK check deadlocks.
+- Insert ordering: one detection row per statement, or multi-row inserts sorted by `identity_id` (then `detected_at`); within one identity rows must be in `detected_at` order (Stage A runs in row order; an older row after a newer one is a late detection and changes no tracking state).
+- Closing a session uses `itap.close_tracking_session(org, session)` (`completed` if the last detection's access point is entry/exit, else `lost`; clears occupancy).
+
 ## Numbering and Codes
 
 - Human-readable numbers: `number bigint NOT NULL` + `code text GENERATED ALWAYS AS ('PREFIX-' || lpad(number::text, 5, '0')) STORED`, `UNIQUE (organization_id, number)` and `(organization_id, code)`, and `BEFORE INSERT ... EXECUTE FUNCTION itap.assign_number('<entity>')` (per-organization counter in `organization_counters`). Never compute numbers in application code.

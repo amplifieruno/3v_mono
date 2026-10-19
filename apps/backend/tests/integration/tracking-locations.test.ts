@@ -34,6 +34,18 @@ describe('Stage A: locations and occupancy', () => {
     expect([Date.parse(occ[0].entered_at), Date.parse(occ[0].last_seen_at)]).toEqual([Date.parse(at(40)), Date.parse(at(41))]);
   });
 
+  it('should not write a location per detection when cameras with and without a door alternate in one area', async () => {
+    const w = await createTrackingWorld();
+    const d0 = await detect(w.orgA.id, w.entranceCam, w.identity, 0);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 1);
+    await detect(w.orgA.id, w.entranceCam, w.identity, 2);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 3);
+    expect((await locations(w.identity)).map((r) => r.detection_id)).toEqual([d0.id]);
+    const [session] = await sessions(w.identity);
+    // The completed/lost rule still sees the last detection's access point; locations compare the last written one.
+    expect(session).toMatchObject({ last_access_point_id: null, last_location_access_point_id: w.entranceDoor.id });
+  });
+
   it('should count occupancy over the area subtree and the facility', async () => {
     const w = await createTrackingWorld();
     const second = await createIdentity(w.a);

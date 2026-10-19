@@ -82,6 +82,16 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: last_access_point_id
+  - name: tracking_sessions_by_last_location_access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: tracking_sessions
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: last_location_access_point_id
 insert_permissions:
   - role: org_admin
     permission:

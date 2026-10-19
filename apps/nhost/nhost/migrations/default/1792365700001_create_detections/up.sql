@@ -8,8 +8,8 @@
 -- access_point_id to the access point the device is bound to as a camera (access_point_devices, role camera; the
 -- oldest binding when there are several). The device FK is two-column so the device timeline index
 -- (organization_id, device_id, detected_at) covers it; facility consistency of the device is guaranteed by the
--- derivation, of the area and access point by same-facility FKs. The derivation also locks the identity row (see
--- below) so that Stage A runs serialized per identity.
+-- derivation, of the area and access point by same-facility FKs. The derivation also takes the per-identity
+-- advisory lock (see below) so that Stage A runs serialized per identity.
 CREATE TABLE itap.detections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES itap.organizations (id) ON DELETE CASCADE,
@@ -63,7 +63,10 @@ CREATE INDEX detections_organization_id_device_id_detected_at_idx
 CREATE INDEX detections_organization_id_facility_id_area_id_idx ON itap.detections (organization_id, facility_id, area_id);
 CREATE INDEX detections_organization_id_facility_id_access_point_id_idx
   ON itap.detections (organization_id, facility_id, access_point_id);
+-- FK-covering index required by the tenant FK rule (organization_id leading); the partial single-column index
+-- serves the storage.files ON DELETE SET NULL lookup (most detections have no thumbnail).
 CREATE INDEX detections_organization_id_thumbnail_file_id_idx ON itap.detections (organization_id, thumbnail_file_id);
+CREATE INDEX detections_thumbnail_file_id_idx ON itap.detections (thumbnail_file_id) WHERE thumbnail_file_id IS NOT NULL;
 
 CREATE FUNCTION itap.detections_derive() RETURNS trigger
 LANGUAGE plpgsql
@@ -96,15 +99,15 @@ BEGIN
     LIMIT 1;
   END IF;
   NEW.area_id := coalesce(NEW.area_id, device_area);
-  -- Serializes Stage A (itap.track_detection) per identity. The lock must be taken here, before the FK check of
-  -- detections_identity_fkey takes its KEY SHARE lock on the identity row: Stage A updates the identity, and an
-  -- identity UPDATE counts as a key update in PG16 (the stored generated `code` column of the unique key is
-  -- recomputed), so it conflicts with KEY SHARE locks of concurrent detection inserts. Locking in the AFTER trigger
-  -- deadlocked two concurrent detections of one identity; here a second insert waits before taking any lock on it.
+  -- Serializes Stage A (itap.track_detection) per identity with a transaction-level advisory lock on
+  -- 'identity:<id>'. It must be taken here, before the FK check of detections_identity_fkey takes its KEY SHARE lock
+  -- on the identity row: Stage A updates the identity, and an identity UPDATE counts as a key update in PG16 (the
+  -- stored generated `code` column of the unique key is recomputed), so it waits for KEY SHARE locks of other
+  -- transactions. A lock taken in the AFTER trigger deadlocked two concurrent detections of one identity (each held
+  -- KEY SHARE and waited for the other); here a second insert waits before it holds any lock on the identity.
+  -- Every other writer of an identity's tracking state (close_stale_sessions) takes the same advisory lock first.
   IF NEW.identity_id IS NOT NULL THEN
-    PERFORM 1 FROM itap.identities i
-    WHERE i.organization_id = NEW.organization_id AND i.id = NEW.identity_id
-    FOR UPDATE;
+    PERFORM pg_advisory_xact_lock(hashtextextended('identity:' || NEW.identity_id::text, 0));
   END IF;
   RETURN NEW;
 END;

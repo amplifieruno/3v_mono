@@ -42,6 +42,16 @@ object_relationships:
           organization_id: organization_id
           facility_id: facility_id
           last_area_id: id
+  - name: last_location_access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          last_location_access_point_id: id
   - name: organization
     using:
       manual_configuration:
@@ -92,6 +102,8 @@ select_permissions:
         - last_access_point_id
         - last_area_id
         - last_detected_at
+        - last_location_access_point_id
+        - opened_by_detection_id
         - organization_id
         - profile_id
         - started_at
