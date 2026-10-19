@@ -57,6 +57,30 @@ describe('detection_created handler', () => {
   });
 });
 
+describe('detection_created handler on a vanished detection', () => {
+  function failingAdmin(stillThere: boolean) {
+    const request = vi.fn(async (query: string) => {
+      if (query.includes('evaluate_detection')) throw new Error('Foreign key violation');
+      if (query.includes('detections_by_pk')) return { detections_by_pk: stillThere ? { id: 'det-1' } : null };
+      throw new Error(`unexpected query ${query}`);
+    });
+    return { admin: { request } as unknown as HasuraClient, request };
+  }
+
+  it('should answer success (no retry) when evaluation fails because the detection is gone', async () => {
+    const { admin } = failingAdmin(false);
+    const result = await detectionCreated.handle(eventPayload({ id: 'det-1' }), { env, admin, idempotencyKey: 'k' });
+    expect(result).toEqual({ detection_id: 'det-1', skipped: 'detection_gone' });
+  });
+
+  it('should rethrow (Hasura retries) when the detection still exists', async () => {
+    const { admin } = failingAdmin(true);
+    await expect(
+      detectionCreated.handle(eventPayload({ id: 'det-1' }), { env, admin, idempotencyKey: 'k' }),
+    ).rejects.toThrow(/Foreign key violation/);
+  });
+});
+
 describe('tracking crons', () => {
   it('should close stale sessions per organization at the scheduled time', async () => {
     const { admin, calls } = fakeAdmin(['org-1', 'org-2']);
