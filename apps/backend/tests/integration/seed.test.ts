@@ -33,9 +33,12 @@ async function state(): Promise<State> {
   return { orgs: data.organizations, members: data.organization_members_aggregate.aggregate.count };
 }
 
-beforeAll(requireBackend);
+// Opt-in: `seed --reset` recreates the demo organizations (new ids), which would disturb a dev database in use.
+const RUN_SEED_TEST = process.env.RUN_SEED_TEST === '1';
 
-describe('seed', () => {
+describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets the demo organizations)', () => {
+  beforeAll(requireBackend);
+
   it('should be idempotent and let admin@itap.demo sign in and switch into both orgs', async () => {
     await seed();
     const first = await state();

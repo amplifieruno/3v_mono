@@ -20,6 +20,7 @@ for (const [key, value] of Object.entries(process.env)) {
 export default defineConfig({
   test: {
     include: ['tests/integration/**/*.test.ts'],
+    setupFiles: ['tests/integration/support/setup.ts'],
     fileParallelism: false,
     testTimeout: 30000,
     env,

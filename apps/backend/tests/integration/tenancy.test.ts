@@ -47,23 +47,23 @@ describe('tenancy schema', () => {
     expect(foreign).toEqual({ organizations: [], organization_members: [] });
   });
 
-  it('should force org_admin member inserts into the token organization', async () => {
-    const { orgA, orgB, user } = await twoOrgs();
+  it('should not let org_admin insert members directly (membership only via invitations)', async () => {
+    const { orgA, user } = await twoOrgs();
     const newcomer = await createTestUser();
     const client = asOrgAdmin(user.id, orgA.id);
 
     await expectDenied(
-      client.request(
-        `mutation ($org: uuid!, $u: uuid!) { insert_organization_members_one(object: { organization_id: $org, user_id: $u }) { id } }`,
-        { org: orgB.id, u: newcomer.id },
-      ),
+      client.request(`mutation ($u: uuid!) { insert_organization_members_one(object: { user_id: $u }) { id } }`, {
+        u: newcomer.id,
+      }),
+      'insert_organization_members_one',
     );
-
-    const inserted = await client.request<{ insert_organization_members_one: { organization_id: string } }>(
-      `mutation ($u: uuid!) { insert_organization_members_one(object: { user_id: $u }) { organization_id } }`,
-      { u: newcomer.id },
+    await expectDenied(
+      client.request(`mutation ($u: uuid!) { insert_organization_members(objects: [{ user_id: $u }]) { affected_rows } }`, {
+        u: newcomer.id,
+      }),
+      'insert_organization_members',
     );
-    expect(inserted.insert_organization_members_one.organization_id).toBe(orgA.id);
   });
 
   it('should let org_admin update only its own organization', async () => {
@@ -178,10 +178,9 @@ describe('tenancy schema', () => {
     await expectDenied(
       client.request(
         `mutation ($o: uuid!) { update_user_settings(where: {}, _set: { last_organization_id: $o }) { affected_rows } }`,
-        {
-          o: user.id,
-        },
+        { o: user.id },
       ),
+      'last_organization_id',
     );
     const stranger = await createTestUser();
     const seen = await asUser(stranger.id).request<{ user_settings: Row[] }>(`{ user_settings { user_id } }`);

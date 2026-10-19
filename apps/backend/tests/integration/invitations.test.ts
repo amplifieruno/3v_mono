@@ -56,7 +56,7 @@ describe('invite_member', () => {
     const inv = await invite(admin.id, org.id, 'audit@itap.test');
     const client = asOrgAdmin(admin.id, org.id);
 
-    await expectDenied(client.request(`query { organization_invitations { token_hash } }`));
+    await expectDenied(client.request(`query { organization_invitations { token_hash } }`), 'token_hash');
     const list = await client.request<{ organization_invitations: { id: string; email: string }[] }>(
       `query { organization_invitations { id email } }`,
     );
@@ -94,11 +94,12 @@ describe('invite_member', () => {
 
   it('should reject a plain user (role user) and direct inserts by org_admin', async () => {
     const { org, admin } = await setup();
-    await expectDenied(asUser(admin.id).request(INVITE, { email: 'x@itap.test' }));
+    await expectDenied(asUser(admin.id).request(INVITE, { email: 'x@itap.test' }), 'invite_member');
     await expectDenied(
       asOrgAdmin(admin.id, org.id).request(
         `mutation { insert_organization_invitations_one(object: { email: "x@itap.test", token_hash: "h", expires_at: "2099-01-01T00:00:00Z", invited_by: "${admin.id}" }) { id } }`,
       ),
+      'insert_organization_invitations_one',
     );
   });
 
@@ -111,6 +112,7 @@ describe('invite_member', () => {
         `mutation ($id: uuid!) { update_organization_invitations_by_pk(pk_columns: { id: $id }, _set: { email: "other@itap.test" }) { id } }`,
         { id: inv.invitation_id },
       ),
+      'email',
     );
     const data = await client.request<{ update_organization_invitations_by_pk: { status: string } | null }>(
       `mutation ($id: uuid!) { update_organization_invitations_by_pk(pk_columns: { id: $id }, _set: { status: revoked }) { status } }`,
@@ -277,11 +279,13 @@ describe('invitation atomicity, audit actor and permissions', () => {
       client.request(`mutation ($id: uuid!) { delete_organization_invitations_by_pk(id: $id) { id } }`, {
         id: inv.invitation_id,
       }),
+      'delete_organization_invitations_by_pk',
     );
     await expectDenied(
       client.request(
         `mutation { claim_invitation(args: { p_token_hash: "x", p_user_id: "${admin.id}", p_email: "a@b.co" }) { id } }`,
       ),
+      'claim_invitation',
     );
   });
 });

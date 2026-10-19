@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { expect } from 'vitest';
 import { HasuraError } from '../../../src/hasura/client.js';
 import { asAdmin, testEnv } from './clients.js';
+import { trackFile, trackOrganization, trackUser } from './registry.js';
 
 export const TEST_PASSWORD = 'Test-Password-123!';
 
@@ -29,23 +30,41 @@ export async function createTestUser(email?: string): Promise<{ id: string; emai
     },
   });
   if (!data?.insertUser) throw new Error('createTestUser: insertUser returned no row');
+  trackUser(data.insertUser.id);
   return data.insertUser;
 }
 
-const DENIED_CODES = ['permission-error', 'validation-failed', 'access-denied'];
-
-/** Asserts the operation fails with a GraphQL permission/validation error; returns the error. */
-export async function expectDenied(promise: Promise<unknown>): Promise<HasuraError> {
-  const outcome = await promise.then(
-    (value) => ({ ok: true as const, value }),
-    (error: unknown) => ({ ok: false as const, error }),
-  );
-  if (outcome.ok) {
-    throw new Error(`Expected a denied GraphQL operation, got data: ${JSON.stringify(outcome.value)}`);
+/** Resolves to the rejection reason; throws `<message>, got data: ...` when the promise resolves. */
+async function rejectionOf(promise: Promise<unknown>, message: string): Promise<unknown> {
+  let value: unknown;
+  try {
+    value = await promise;
+  } catch (error: unknown) {
+    return error;
   }
-  expect(outcome.error).toBeInstanceOf(HasuraError);
-  const error = outcome.error as HasuraError;
-  expect(DENIED_CODES).toContain(error.code);
+  throw new Error(`${message}, got data: ${JSON.stringify(value)}`);
+}
+
+/** Pass as `expected` to `expectDenied` when an insert/update permission check (not a missing field) must fail. */
+export const PERMISSION_CHECK = Symbol('permission-check');
+
+/**
+ * Asserts the operation is denied for the expected reason, so a typo cannot make the test pass:
+ * - `expected` = a field name: the error must be `field '<name>' not found in type: ...` (the role does not see
+ *   that root field / column / input field);
+ * - `expected` = PERMISSION_CHECK: the error must be a `permission-error` (a row failed a permission check).
+ */
+export async function expectDenied(promise: Promise<unknown>, expected: string | typeof PERMISSION_CHECK): Promise<HasuraError> {
+  const rejection = await rejectionOf(promise, 'Expected a denied GraphQL operation');
+  expect(rejection).toBeInstanceOf(HasuraError);
+  const error = rejection as HasuraError;
+  if (expected === PERMISSION_CHECK) {
+    expect(error.code).toBe('permission-error');
+    expect(error.message).toMatch(/permission/);
+  } else {
+    expect(error.code).toBe('validation-failed');
+    expect(error.message).toContain(`field '${expected}' not found in type`);
+  }
   return error;
 }
 
@@ -65,6 +84,7 @@ export async function createTestOrg(name?: string): Promise<{ id: string; name: 
     { object: { name: name ?? `Test Org ${suffix.slice(0, 8)}`, slug: `test-${suffix}` } },
   );
   if (!data.insert_organizations_one) throw new Error('createTestOrg: insert returned no row');
+  trackOrganization(data.insert_organizations_one.id);
   return data.insert_organizations_one;
 }
 
@@ -91,13 +111,9 @@ export async function addMember(
 
 /** Resolves to the HasuraError the operation fails with (fails the test if it succeeds). */
 export async function expectError(promise: Promise<unknown>): Promise<HasuraError> {
-  const outcome = await promise.then(
-    (value) => ({ ok: true as const, value }),
-    (error: unknown) => ({ ok: false as const, error }),
-  );
-  if (outcome.ok) throw new Error(`Expected an error, got data: ${JSON.stringify(outcome.value)}`);
-  expect(outcome.error).toBeInstanceOf(HasuraError);
-  return outcome.error as HasuraError;
+  const rejection = await rejectionOf(promise, 'Expected an error');
+  expect(rejection).toBeInstanceOf(HasuraError);
+  return rejection as HasuraError;
 }
 
 type TestOrg = { id: string; name: string; slug: string };
@@ -141,5 +157,6 @@ export async function uploadFile(
   const body = (await res.json()) as { processedFiles?: { id: string }[] };
   const id = body.processedFiles?.[0]?.id;
   if (!id) throw new Error(`uploadFile: no processed file in response ${JSON.stringify(body)}`);
+  trackFile(id);
   return { id };
 }

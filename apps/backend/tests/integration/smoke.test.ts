@@ -34,12 +34,18 @@ describe('integration harness smoke', () => {
 
   it('should report a user querying admin-only fields as denied', async () => {
     const user = await createTestUser();
-    const error = await expectDenied(asUser(user.id).request('{ authRoles { role } }'));
-    expect(error.code).toBe('validation-failed');
+    await expectDenied(asUser(user.id).request('{ authRoles { role } }'), 'authRoles');
   });
 
   it('should fail expectDenied when the operation succeeds', async () => {
     const user = await createTestUser();
-    await expect(expectDenied(asUser(user.id).request('{ __typename }'))).rejects.toThrow(/Expected a denied/);
+    await expect(expectDenied(asUser(user.id).request('{ __typename }'), '__typename')).rejects.toThrow(/Expected a denied/);
+  });
+
+  it('should fail expectDenied when the error names a different field (e.g. a typo)', async () => {
+    const user = await createTestUser();
+    await expect(expectDenied(asUser(user.id).request('{ authRolez { role } }'), 'authRoles')).rejects.toThrow(
+      /to contain/,
+    );
   });
 });

@@ -69,11 +69,13 @@ describe('audit log', () => {
     const client = asOrgAdmin(user.id, orgA.id);
     await expectDenied(
       client.request(`mutation { insert_audit_log_one(object: { organization_id: "${orgA.id}", entity: "x", action: insert }) { id } }`),
+      'insert_audit_log_one',
     );
     await expectDenied(
       client.request(`mutation { update_audit_log(where: {}, _set: { entity: "y" }) { affected_rows } }`),
+      'update_audit_log',
     );
-    await expectDenied(client.request(`mutation { delete_audit_log(where: {}) { affected_rows } }`));
+    await expectDenied(client.request(`mutation { delete_audit_log(where: {}) { affected_rows } }`), 'delete_audit_log');
   });
 
   it('should write no audit row for an update touching only an ignored or updated_at column', async () => {

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { asAdmin, asOrgAdmin, asUser, orgAdminToken, testEnv, userToken } from './support/clients.js';
-import { createTestOrg, createTwoOrgs, expectDenied, uploadFile } from './support/fixtures.js';
+import { createTestOrg, createTwoOrgs, expectDenied, PERMISSION_CHECK, uploadFile } from './support/fixtures.js';
 
 async function runSql(sql: string): Promise<void> {
   const env = testEnv();
@@ -72,6 +72,7 @@ describe('per-organization storage', () => {
         asOrgAdmin(user.id, orgA.id).request(ADMIN_INSERT_FILE, {
           object: { bucketId: orgA.id, name: 's.txt', size: 1, mimeType: 'text/plain', metadata: { kind } },
         }),
+        PERMISSION_CHECK,
       );
     },
   );
@@ -120,18 +121,20 @@ describe('per-organization storage', () => {
     const { orgA, user } = await createTwoOrgs();
     await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { deleteFile(id: "${randomUUID()}") { id } }`),
+      'deleteFile',
     );
     await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { deleteFiles(where: {}) { affected_rows } }`),
+      'deleteFiles',
     );
-    const denied = await expectDenied(
+    await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { updateFile(pk_columns: {id: "${randomUUID()}"}, _set: {name: "x"}) { id } }`),
+      'updateFile',
     );
-    expect(denied.message).toMatch(/updateFile.*not found in type: 'mutation_root'/);
-    const deniedMany = await expectDenied(
+    await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { updateFiles(where: {}, _set: {name: "x"}) { affected_rows } }`),
+      'updateFiles',
     );
-    expect(deniedMany.message).toMatch(/updateFiles.*not found in type: 'mutation_root'/);
   });
 
   it('should let org_admin read only own bucket and org-logos', async () => {
@@ -144,6 +147,7 @@ describe('per-organization storage', () => {
     expect(ids).not.toContain(orgB.id);
     await expectDenied(
       asOrgAdmin(user.id, orgA.id).request(`mutation { deleteBucket(id: "${orgA.id}") { id } }`),
+      'deleteBucket',
     );
   });
 });

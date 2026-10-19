@@ -101,6 +101,7 @@ describe('organization members', () => {
         }`,
         { u: user.id, s: stranger.id },
       ),
+      'user_id',
     );
     expect(error.message).toContain("field 'user_id' not found in type: 'organization_members_set_input'");
   });

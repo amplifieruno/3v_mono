@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Env } from '../config/env.js';
 import type { HasuraClient } from '../hasura/client.js';
-import { ActionError } from './types.js';
+import { ActionError, type ActionHandler } from './types.js';
 
 const storage = vi.hoisted(() => ({ presignedUrl: vi.fn(), deleteFile: vi.fn(), upload: vi.fn() }));
 vi.mock('../storage/storageClient.js', () => ({ createStorageClient: () => storage }));
@@ -16,7 +16,7 @@ const USER = '11111111-1111-4111-8111-111111111111';
 
 type Row = { id: string; bucketId: string; metadata: { kind?: string } | null } | null;
 
-function run(handler: typeof openFile, row: Row, input: unknown = { file_id: FILE }, organizationId = ORG) {
+function run(handler: ActionHandler<unknown, unknown>, row: Row, input: unknown = { file_id: FILE }, organizationId = ORG) {
   const adminRequest = vi.fn(async () => ({ file: row }));
   const actorRequest = vi.fn(async () => ({}));
   const promise = handler({
