@@ -4,7 +4,10 @@ import type { HasuraClient } from '../hasura/client.js';
 import { ActionError, type ActionHandler } from './types.js';
 
 const storage = vi.hoisted(() => ({ presignedUrl: vi.fn(), deleteFile: vi.fn(), upload: vi.fn() }));
-vi.mock('../storage/storageClient.js', () => ({ createStorageClient: () => storage }));
+vi.mock('../storage/storageClient.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../storage/storageClient.js')>()),
+  createStorageClient: () => storage,
+}));
 
 const { deleteFile, openFile } = await import('./files.js');
 

@@ -1,0 +1,1 @@
+ALTER TABLE itap.organization_settings DROP COLUMN enrollment_duplicate_threshold;

@@ -1,5 +1,8 @@
 import type { Env } from '../config/env.js';
 
+/** `metadata.kind` values whose access is audited (`open_file`) and which org_admin cannot select directly. */
+export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_document', 'dsr_export', 'auth_capture']);
+
 export type StorageClient = {
   presignedUrl(fileId: string): Promise<{ url: string; expiresAt: Date }>;
   deleteFile(fileId: string): Promise<void>;

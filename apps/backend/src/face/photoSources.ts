@@ -1,5 +1,5 @@
 import type { HasuraClient } from '../hasura/client.js';
-import type { StorageClient } from '../storage/storageClient.js';
+import { SENSITIVE_FILE_KINDS, type StorageClient } from '../storage/storageClient.js';
 
 /** Largest accepted source photo. */
 export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
@@ -19,7 +19,7 @@ export class InvalidImageError extends Error {
   }
 }
 
-/** Thrown when a file id is missing or outside the session organization's bucket. */
+/** Thrown when a file id is missing, outside the session organization's bucket, or a sensitive kind. */
 export class PhotoNotFoundError extends Error {
   readonly fileId: string;
 
@@ -37,15 +37,21 @@ export function photoFromBuffer(ref: string, image: Buffer): PhotoSource {
 
 const FILES_QUERY = `
   query EnrollmentFiles($ids: [uuid!]!) {
-    files(where: { id: { _in: $ids } }) { id bucketId mimeType size }
+    files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata }
   }
 `;
 
-type FileRow = { id: string; bucketId: string; mimeType: string | null; size: number | null };
+type FileRow = { id: string; bucketId: string; mimeType: string | null; size: number | null; metadata: unknown };
+
+function fileKind(metadata: unknown): string | undefined {
+  if (typeof metadata !== 'object' || metadata === null || !('kind' in metadata)) return undefined;
+  return typeof metadata.kind === 'string' ? metadata.kind : undefined;
+}
 
 /**
  * Resolves uploaded files of the organization into photo sources. Every id must exist in the organization's own
- * bucket (bucket id = organization uuid), otherwise PhotoNotFoundError (other tenants' files are not disclosed).
+ * bucket (bucket id = organization uuid) and must not be a sensitive kind (SENSITIVE_FILE_KINDS), otherwise
+ * PhotoNotFoundError (other tenants' and sensitive files are not disclosed).
  * Nothing is downloaded here; non-image or oversized files become `invalid_image` when loaded.
  */
 export async function loadOrganizationPhotos(
@@ -61,6 +67,9 @@ export async function loadOrganizationPhotos(
   return fileIds.map((fileId) => {
     const file = byId.get(fileId);
     if (!file || file.bucketId !== bucket) throw new PhotoNotFoundError(fileId);
+    // Sensitive files are read only through audited access: an enrollment crop would bypass that audit.
+    const kind = fileKind(file.metadata);
+    if (kind !== undefined && SENSITIVE_FILE_KINDS.has(kind)) throw new PhotoNotFoundError(fileId);
     return {
       ref: fileId,
       fileId,

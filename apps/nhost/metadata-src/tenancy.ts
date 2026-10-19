@@ -22,6 +22,7 @@ const ORGANIZATION_COLUMNS = [
 
 const SETTINGS_WRITABLE = [
   'recognition_threshold',
+  'enrollment_duplicate_threshold',
   'tracking_timeout_seconds',
   'archive_unknown_after_days',
   'tailgating_window_seconds',

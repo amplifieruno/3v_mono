@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { HasuraClient } from '../hasura/client.js';
 import type { StorageClient } from '../storage/storageClient.js';
+import { profileAllowsBiometrics } from './consent.js';
 import { analyzePhotos, commitPhotos, type AcceptedPhoto, type FaceMatch, type Rejected } from './enrollmentSteps.js';
 import type { InsightFaceClient } from './insightFaceClient.js';
 import type { PhotoSource } from './photoSources.js';
@@ -40,11 +41,25 @@ export class EnrollmentError extends Error {
   }
 }
 
-type IdentityRow = { id: string; code: string; profile_id: string | null; is_primary_for_profile: boolean; status: string };
+type IdentityRow = {
+  id: string;
+  code: string;
+  profile_id: string | null;
+  is_primary_for_profile: boolean;
+  status: string;
+  matching_enabled: boolean;
+};
 
 const IDENTITIES = `
   query EnrollmentIdentities($where: identities_bool_exp!) {
-    identities(where: $where, order_by: { number: asc }) { id code profile_id is_primary_for_profile status }
+    identities(where: $where, order_by: { number: asc }) {
+      id code profile_id is_primary_for_profile status matching_enabled
+    }
+  }
+`;
+const SETTINGS = `
+  query EnrollmentSettings($org: uuid!) {
+    organization_settings_by_pk(organization_id: $org) { enrollment_duplicate_threshold }
   }
 `;
 const PROFILE = `
@@ -77,6 +92,22 @@ async function findIdentities(deps: EnrollmentDeps, where: Record<string, unknow
 
 async function identityById(deps: EnrollmentDeps, id: string): Promise<IdentityRow | undefined> {
   return (await findIdentities(deps, { id: { _eq: id } }))[0];
+}
+
+/** Enrollment duplicate threshold of the organization (independent of recognition_threshold). */
+async function duplicateThreshold(deps: EnrollmentDeps): Promise<number | undefined> {
+  const data = await deps.clients.admin.request<{
+    organization_settings_by_pk: { enrollment_duplicate_threshold: number } | null;
+  }>(SETTINGS, { org: deps.organizationId });
+  return data.organization_settings_by_pk?.enrollment_duplicate_threshold;
+}
+
+async function analyze(deps: EnrollmentDeps, photos: PhotoSource[]) {
+  return analyzePhotos(photos, deps.insightFace, deps.clients.actor, await duplicateThreshold(deps));
+}
+
+function consentWithdrawn(): EnrollmentError {
+  return new EnrollmentError('consent_withdrawn', 'Biometric consent of the profile is withdrawn');
 }
 
 async function duplicateOf(deps: EnrollmentDeps, match: FaceMatch): Promise<EnrollmentError> {
@@ -163,8 +194,9 @@ export async function enrollForProfile(
     org: deps.organizationId,
   });
   if (profiles.length === 0) throw new EnrollmentError('profile_not_found', 'Profile not found');
+  if (!(await profileAllowsBiometrics(deps.clients.admin, deps.organizationId, input.profileId))) throw consentWithdrawn();
 
-  const { accepted, rejected } = await analyzePhotos(input.photos, deps.insightFace, deps.clients.actor);
+  const { accepted, rejected } = await analyze(deps, input.photos);
   const foreign = nearest(accepted, (m) => m.profile_id !== null && m.profile_id !== input.profileId);
   if (foreign) throw await duplicateOf(deps, foreign);
 
@@ -202,7 +234,7 @@ export async function createIdentityFromImages(
   deps: EnrollmentDeps,
   input: { photos: PhotoSource[]; attributes?: Record<string, unknown> },
 ): Promise<EnrollmentOutcome> {
-  const { accepted, rejected } = await analyzePhotos(input.photos, deps.insightFace, deps.clients.actor);
+  const { accepted, rejected } = await analyze(deps, input.photos);
   const match = nearest(accepted, () => true);
   if (match) throw await duplicateOf(deps, match);
   if (accepted.length === 0) throw noValidPhotos(rejected);
@@ -227,8 +259,10 @@ export async function addPhotosToIdentity(
   if (identity.status === 'merged' || identity.status === 'archived') {
     throw new EnrollmentError('identity_not_active', `Identity is ${identity.status}`);
   }
+  // Matching is disabled only by withdrawn biometric consent (spec §8.2): no new face data.
+  if (!identity.matching_enabled) throw consentWithdrawn();
 
-  const analyzed = await analyzePhotos(input.photos, deps.insightFace, deps.clients.actor);
+  const analyzed = await analyze(deps, input.photos);
   const rejected = [...analyzed.rejected];
   const accepted = analyzed.accepted.filter((photo) => {
     if (!photo.match || photo.match.identity_id === identity.id) return true;

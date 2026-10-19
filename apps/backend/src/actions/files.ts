@@ -1,12 +1,9 @@
 import { z } from 'zod';
-import { createStorageClient } from '../storage/storageClient.js';
+import { createStorageClient, SENSITIVE_FILE_KINDS } from '../storage/storageClient.js';
 import { ActionError, defineAction } from './types.js';
 
 export type FileUrl = { url: string; expires_at: string };
 export type DeletedFile = { file_id: string };
-
-/** `metadata.kind` values whose access is audited (and which org_admin cannot select directly). */
-const SENSITIVE_KINDS = new Set(['profile_document', 'dsr_export', 'auth_capture']);
 
 /** Shared bucket holding organization logos; readable via open_file by any org admin, never deletable here. */
 const SHARED_LOGO_BUCKET = 'org-logos';
@@ -66,7 +63,7 @@ export const openFile = defineAction(inputSchema, async ({ env, input, session, 
   const file = await loadOwnFile(input.file_id, session.organizationId, true, (q, v) => admin.request(q, v));
   const { url, expiresAt } = await createStorageClient(env).presignedUrl(file.id);
 
-  if (typeof file.metadata?.kind === 'string' && SENSITIVE_KINDS.has(file.metadata.kind)) {
+  if (typeof file.metadata?.kind === 'string' && SENSITIVE_FILE_KINDS.has(file.metadata.kind)) {
     await actor.request(AUDIT_VIEW, {
       org: session.organizationId?.toLowerCase(),
       user: session.userId ?? null,

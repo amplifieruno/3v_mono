@@ -12,7 +12,10 @@ vi.mock('../face/enrollmentService.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../face/enrollmentService.js')>()),
   ...service,
 }));
-vi.mock('../storage/storageClient.js', () => ({ createStorageClient: () => ({ download: vi.fn() }) }));
+vi.mock('../storage/storageClient.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../storage/storageClient.js')>()),
+  createStorageClient: () => ({ download: vi.fn() }),
+}));
 
 const { EnrollmentError } = await import('../face/enrollmentService.js');
 const { addIdentityPhotos, createIdentityFromPhotos, enrollFace, MAX_PHOTOS } = await import('./enrollment.js');
@@ -23,8 +26,12 @@ const PROFILE = '55555555-5555-4555-8555-555555555555';
 const FILE = '44444444-4444-4444-8444-444444444444';
 const IDENTITY = '66666666-6666-4666-8666-666666666666';
 
-function run(handler: ActionHandler<unknown, unknown>, input: unknown, { bucket = ORG, organizationId = ORG as string | null } = {}) {
-  const adminRequest = vi.fn(async () => ({ files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10 }] }));
+function run(
+  handler: ActionHandler<unknown, unknown>,
+  input: unknown,
+  { bucket = ORG, organizationId = ORG as string | null, metadata = null as unknown } = {},
+) {
+  const adminRequest = vi.fn(async () => ({ files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10, metadata }] }));
   const client = { request: adminRequest } as unknown as HasuraClient;
   return handler({
     env,
@@ -88,6 +95,17 @@ describe('enrollment actions', () => {
     const code = await errorCode(run(enrollFace, { profile_id: PROFILE, file_ids: [FILE] }, { bucket: 'other-org' }));
     expect(code).toBe('file_not_found');
     expect(service.enrollForProfile).not.toHaveBeenCalled();
+  });
+
+  it('should answer file_not_found for a sensitive file kind without calling the service', async () => {
+    for (const kind of ['profile_document', 'dsr_export', 'auth_capture']) {
+      const code = await errorCode(run(enrollFace, { profile_id: PROFILE, file_ids: [FILE] }, { metadata: { kind } }));
+      expect(code).toBe('file_not_found');
+    }
+    expect(service.enrollForProfile).not.toHaveBeenCalled();
+    // A regular own-bucket file of another kind is accepted.
+    await run(enrollFace, { profile_id: PROFILE, file_ids: [FILE] }, { metadata: { kind: 'identity_photo' } });
+    expect(service.enrollForProfile).toHaveBeenCalledTimes(1);
   });
 
   it('should pass service refusals through with their code and message', async () => {

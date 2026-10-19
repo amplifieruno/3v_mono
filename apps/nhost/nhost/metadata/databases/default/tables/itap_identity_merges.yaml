@@ -91,6 +91,7 @@ select_permissions:
         - rolled_back_by
         - status
         - target_identity_id
+        - target_previous_matching_enabled
         - updated_at
       filter:
         organization_id:

@@ -17,13 +17,13 @@ export type AcceptedPhoto = {
   image: Buffer;
   face: ExtractedFace;
   quality: number;
-  /** Nearest identity of the organization within the recognition threshold, if any. */
+  /** Nearest identity of the organization within the match threshold, if any. */
   match: FaceMatch | null;
 };
 
 const MATCH_FACE = `
-  query EnrollmentMatch($embedding: String!) {
-    match_face(args: { p_embedding: $embedding, p_limit: 1 }) { identity_id profile_id distance }
+  query EnrollmentMatch($embedding: String!, $threshold: Float) {
+    match_face(args: { p_embedding: $embedding, p_threshold: $threshold, p_limit: 1 }) { identity_id profile_id distance }
   }
 `;
 
@@ -47,12 +47,14 @@ async function normalizeImage(raw: Buffer): Promise<{ image: Buffer; width: numb
 
 /**
  * Detects, scores and matches each photo, strictly one at a time (one InsightFace call in flight per request).
- * `matcher` carries the caller's organization session, so `match_face` only sees that organization.
+ * `matcher` carries the caller's organization session, so `match_face` only sees that organization; `threshold` is
+ * the maximum match distance (organization_settings.enrollment_duplicate_threshold), else match_face's default.
  */
 export async function analyzePhotos(
   photos: PhotoSource[],
   insightFace: InsightFaceClient,
   matcher: HasuraClient,
+  threshold?: number,
 ): Promise<{ accepted: AcceptedPhoto[]; rejected: Rejected[] }> {
   const accepted: AcceptedPhoto[] = [];
   const rejected: Rejected[] = [];
@@ -87,6 +89,7 @@ export async function analyzePhotos(
     }
     const { match_face: matches } = await matcher.request<{ match_face: FaceMatch[] }>(MATCH_FACE, {
       embedding: vectorLiteral(face.embedding),
+      threshold: threshold ?? null,
     });
     accepted.push({ index, source, image: normalized.image, face, quality, match: matches[0] ?? null });
   }
