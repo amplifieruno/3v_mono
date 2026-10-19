@@ -438,7 +438,6 @@ services:
     container_name: itap-backend-prod
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       HASURA_GRAPHQL_URL: http://graphql:8080/v1/graphql
       GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
       STREAM_SERVER_URL: http://stream-server:8888

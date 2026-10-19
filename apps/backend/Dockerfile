@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 
 # Install pnpm and required system dependencies
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    apk add --no-cache python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev ffmpeg
+    apk add --no-cache python3 make g++
 
 # Dependencies stage
 FROM base AS deps
@@ -29,17 +29,12 @@ WORKDIR /app/apps/backend
 # Build the application (skip type errors for production)
 RUN pnpm build; exit 0
 
-# Download face-api models - skip for production build
-# Models should be mounted as volume or downloaded at runtime
-RUN echo "Skipping model download for production build"
-
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN apk add --no-cache cairo jpeg pango giflib ffmpeg && \
-    corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy workspace files and dependencies from builder
 COPY --from=builder /app ./
@@ -55,8 +50,7 @@ WORKDIR /app/apps/backend
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Install PostgreSQL client and redis-cli for health checks
-RUN apk add --no-cache postgresql-client redis curl
+RUN apk add --no-cache curl
 
 # Set environment
 ENV NODE_ENV=production
@@ -85,9 +79,6 @@ RUN pnpm install --ignore-scripts --filter backend...
 COPY apps/backend ./apps/backend/
 
 WORKDIR /app/apps/backend
-
-# Download models
-RUN chmod +x scripts/download-models.sh && ./scripts/download-models.sh
 
 # Expose port
 EXPOSE 3001

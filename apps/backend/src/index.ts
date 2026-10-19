@@ -1,180 +1,29 @@
-import 'reflect-metadata'
 import 'dotenv/config';
-import dotenv from 'dotenv'
-import { createServer } from 'http'
-import { Server } from 'socket.io'
-import rateLimit from 'express-rate-limit'
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
 
-import { createApp } from './app.js'
-import { loadEnv } from './config/env.js'
-import { AppDataSource } from './config/database.js'
-import { errorHandler } from './middleware/errorHandler.js'
-import { authRoutes } from './routes/auth.js'
-import { identityRoutes } from './routes/identities.js'
-import { profileRoutes } from './routes/profiles.js'
-import faceRoutes from './routes/face.js'
-import recognitionRoutes from './routes/recognition.js'
-import { insightFaceService } from './services/insightFaceService.js'
-import { recognitionManager } from './services/recognitionManager.js'
+import { createApp } from './app.js';
+import { loadEnv } from './config/env.js';
 
-// Load environment variables
-dotenv.config()
+const app = createApp(loadEnv());
+const server = createServer(app);
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
-// Base app: middleware, /health and Hasura Actions (no DB dependency)
-const app = createApp(loadEnv())
-const server = createServer(app)
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
-})
+// Socket.io server is kept for the slice-4 live recognition port; no handlers are registered yet.
+const io = new Server(server, { cors: { origin: corsOrigin, methods: ['GET', 'POST'] } });
 
-const PORT = process.env.PORT || 3001
-const NODE_ENV = process.env.NODE_ENV || 'development'
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-})
-
-// API Routes
-app.use('/api/auth', authRoutes)
-app.use('/api/identities', identityRoutes)
-app.use('/api/profiles', profileRoutes)
-app.use('/api/face', faceRoutes)
-app.use('/api/recognition', recognitionRoutes)
-
-// Socket.io for real-time updates
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id)
-  
-  socket.on('join-room', (roomId: string) => {
-    socket.join(roomId)
-    console.log(`Client ${socket.id} joined room ${roomId}`)
-  })
-
-  socket.on('leave-room', (roomId: string) => {
-    socket.leave(roomId)
-    console.log(`Client ${socket.id} left room ${roomId}`)
-  })
-
-  // Device recognition rooms
-  socket.on('join-device', (data: { deviceId: string }) => {
-    socket.join(`device:${data.deviceId}`)
-    console.log(`Client ${socket.id} joined device room device:${data.deviceId}`)
-  })
-
-  socket.on('leave-device', (data: { deviceId: string }) => {
-    socket.leave(`device:${data.deviceId}`)
-    console.log(`Client ${socket.id} left device room device:${data.deviceId}`)
-  })
-
-  // Real-time face detection
-  socket.on('realtime-face-detection', async (data: { image: ArrayBuffer, timestamp: number }) => {
-    try {
-      console.log(`Processing realtime frame from ${socket.id}, size: ${data.image.byteLength}`)
-      
-      if (!insightFaceService.isReady()) {
-        socket.emit('face-detection-error', { error: 'InsightFace service not ready' })
-        return
-      }
-
-      // Convert ArrayBuffer to Buffer
-      const imageBuffer = Buffer.from(data.image)
-      
-      // Process with InsightFace (high-quality embeddings + age/gender)
-      const result = await insightFaceService.detectFaces(imageBuffer)
-      
-      console.log(`Realtime detection completed: ${result.faces.length} faces in ${result.processing_time}ms`)
-      
-      // Send result back to client
-      socket.emit('face-detection-result', {
-        ...result,
-        timestamp: data.timestamp,
-        client_id: socket.id
-      })
-      
-    } catch (error) {
-      console.error('Realtime face detection error:', error)
-      socket.emit('face-detection-error', { 
-        error: 'Face detection failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      })
-    }
-  })
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id)
-  })
-})
-
-// Error handling middleware (should be last)
-app.use(errorHandler)
-
-// 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`
-  })
-})
+  res.status(404).json({ error: 'Not Found', message: `Route ${req.originalUrl} not found` });
+});
 
-// Start listening first so /health and Hasura Actions work without the legacy DB,
-// then initialize the legacy TypeORM stack (its failure only affects the legacy /api routes).
-async function startServer() {
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`)
-    console.log(`📍 Environment: ${NODE_ENV}`)
-    console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || "http://localhost:5173"}`)
-  })
+const PORT = process.env.PORT || 3001;
 
-  try {
-    await AppDataSource.initialize()
-    console.log('Database connection initialized successfully')
-  } catch (error) {
-    console.error('Legacy database initialization failed (legacy /api routes unavailable):', error)
-  }
+server.listen(PORT, () => {
+  process.stdout.write(`Server running on port ${PORT} (CORS: ${corsOrigin})\n`);
+});
 
-  // Initialize InsightFace-REST service for high-quality face recognition
-  try {
-    await insightFaceService.initialize()
-    console.log('InsightFace-REST service initialized successfully')
-  } catch (error) {
-    console.warn('InsightFace service initialization failed:', error instanceof Error ? error.message : error)
-    console.warn('Will fall back to basic face detection if available')
-  }
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
+});
 
-  // Initialize recognition manager for continuous video processing
-  recognitionManager.setIo(io)
-  try {
-    await recognitionManager.initialize()
-    console.log('Recognition manager initialized')
-  } catch (error) {
-    console.warn('Recognition manager initialization failed:', error instanceof Error ? error.message : error)
-  }
-}
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully')
-  server.close(() => {
-    console.log('HTTP server closed')
-  })
-  
-  try {
-    await recognitionManager.shutdown()
-    if (AppDataSource.isInitialized) await AppDataSource.destroy()
-    console.log('Database connections closed')
-    process.exit(0)
-  } catch (error) {
-    console.error('Error during shutdown:', error)
-    process.exit(1)
-  }
-})
-
-startServer()
-
-export { io }
+export { io };
