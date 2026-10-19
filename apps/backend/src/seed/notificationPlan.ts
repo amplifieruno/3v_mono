@@ -226,6 +226,10 @@ export type RuleSpec = {
   escalate: boolean;
 };
 
+/**
+ * The final review split the former "Blacklist and watch-list matches" rule (escalating both kinds) into the two
+ * rules below; a database seeded before keeps the old rule (rules are keyed by name) and needs `pnpm seed --reset`.
+ */
 export const NOTIFICATION_RULES: RuleSpec[] = [
   {
     name: 'Blacklist matches',
