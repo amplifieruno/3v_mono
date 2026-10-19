@@ -37,8 +37,12 @@ export async function escalationIncident(
   createdAt = T0,
   fields: Record<string, unknown> = {},
 ): Promise<string> {
-  const incident = await createIncident(a, { escalation_policy_id: policy, severity: 'critical', ...fields });
-  await runSql(`update itap.incidents set created_at = '${createdAt}' where organization_id = '${orgId}' and id = '${incident.id}'`);
+  // Created without a policy, then policy and time set in ONE statement: the live escalate cron never sees the
+  // incident with a policy but its real (current) created_at.
+  const incident = await createIncident(a, { escalation_policy_id: null, severity: 'critical', ...fields });
+  const policySql = policy === null ? 'NULL' : `'${policy}'`;
+  await runSql(`update itap.incidents set escalation_policy_id = ${policySql}, created_at = '${createdAt}'
+    where organization_id = '${orgId}' and id = '${incident.id}'`);
   return incident.id;
 }
 

@@ -173,6 +173,54 @@ describe('escalate: recipients', () => {
   });
 });
 
+describe('escalate: manual and empty steps', () => {
+  it('should send the next step on manual escalation and time the following step from it', async () => {
+    const w = await world();
+    const g1 = await recipientGroup(w.a, [{ user_id: w.bob, channel: 'in_app' }]);
+    const g2 = await recipientGroup(w.a, [{ user_id: w.carol, channel: 'in_app' }]);
+    const p = await escalationPolicy(w.a, [
+      { after_minutes: 60, channel: 'in_app', recipient_group_id: g1 },
+      { after_minutes: 10, channel: 'in_app', recipient_group_id: g2 },
+    ]);
+    const incident = await escalationIncident(w.a, w.orgA.id, p.id, new Date(Date.now() - 60_000).toISOString());
+    const manual = await callFn<{ escalation_step: number; last_escalated_at: string }>(
+      w.a, 'escalate_incident', { p_incident: incident, p_reason: 'no answer' }, INCIDENT_FIELDS,
+    );
+    expect(manual.escalation_step).toBe(1);
+    expect(trail(await escalationDeliveries(w.orgA.id, incident))).toEqual([[p.steps[0], 0, w.bob]]);
+    const [log] = (await activities(w.a, incident)).filter((x) => x.kind === 'escalated');
+    expect(log).toMatchObject({ actor_id: w.user.id, details: { step: 1, step_id: p.steps[0], manual: true, reason: 'no answer', recipients: 1 } });
+    // Step 2 is due 10 minutes after the manual escalation (+1 ms: the stored time has microseconds).
+    expect(await escalate(w.orgA.id, minutes(9.99, manual.last_escalated_at))).toEqual([]);
+    expect(await escalate(w.orgA.id, minutes(10 + 1 / 60_000, manual.last_escalated_at))).toMatchObject([{ escalation_step: 2 }]);
+    expect(trail(await escalationDeliveries(w.orgA.id, incident))).toEqual([[p.steps[0], 0, w.bob], [p.steps[1], 0, w.carol]]);
+    // Past the last step (no repeat) a manual escalation only bumps and logs.
+    const after = await callFn<{ escalation_step: number }>(w.a, 'escalate_incident', { p_incident: incident }, INCIDENT_FIELDS);
+    expect(after.escalation_step).toBe(3);
+    expect(await escalationDeliveries(w.orgA.id, incident)).toHaveLength(2);
+  });
+
+  it('should log why a step reached nobody', async () => {
+    const w = await world();
+    const gone = await member(w.orgA.id);
+    const g = await recipientGroup(w.a, [{ user_id: gone, channel: 'in_app' }]);
+    const schedule = await onCallSchedule(w.a, [gone]);
+    await setMember(w.orgA.id, gone, `status = 'deactivated', deactivated_at = now()`);
+    const p = await escalationPolicy(w.a, [
+      { after_minutes: 0, channel: 'in_app', recipient_group_id: g },
+      { after_minutes: 0, channel: 'in_app', on_call_schedule_id: schedule },
+    ]);
+    const incident = await escalationIncident(w.a, w.orgA.id, p.id);
+    await escalate(w.orgA.id, minutes(1));
+    await escalate(w.orgA.id, minutes(2));
+    const log = (await activities(w.a, incident)).filter((x) => x.kind === 'escalated');
+    expect(log.map((x) => x.details)).toEqual([
+      expect.objectContaining({ step: 1, recipients: 0, reason: 'no_active_recipients' }),
+      expect.objectContaining({ step: 2, recipients: 0, reason: 'no_on_call_member' }),
+    ]);
+  });
+});
+
 describe('escalate cron', () => {
   beforeAll(requireBackend);
 
