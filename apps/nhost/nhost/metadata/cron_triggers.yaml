@@ -1,3 +1,17 @@
+- name: aggregate_stats
+  webhook: "{{BACKEND_URL}}/hasura/events/aggregate_stats"
+  schedule: 5 * * * *
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 3600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: "Hourly: area hourly stats, facility daily stats, area transitions of the previous hour"
 - name: close_stale_sessions
   webhook: "{{BACKEND_URL}}/hasura/events/close_stale_sessions"
   schedule: "*/2 * * * *"

@@ -24,6 +24,8 @@ select_permissions:
         - tailgating_window_seconds
         - default_retention_days
         - detection_counter_throttle_seconds
+        - abnormal_movement_max_count
+        - abnormal_movement_min_total
         - created_at
         - updated_at
       filter:
@@ -41,6 +43,8 @@ update_permissions:
         - tailgating_window_seconds
         - default_retention_days
         - detection_counter_throttle_seconds
+        - abnormal_movement_max_count
+        - abnormal_movement_min_total
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

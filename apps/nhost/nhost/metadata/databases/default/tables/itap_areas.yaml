@@ -62,6 +62,16 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: from_area_id
+  - name: area_hourly_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: area_hourly_stats
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: area_id
   - name: area_occupancy
     using:
       manual_configuration:
@@ -72,6 +82,26 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: area_id
+  - name: area_transitions_daily_by_from_area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: area_transitions_daily
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: from_area_id
+  - name: area_transitions_daily_by_to_area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: area_transitions_daily
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: to_area_id
   - name: children
     using:
       manual_configuration:

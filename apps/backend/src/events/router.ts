@@ -3,6 +3,7 @@ import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
+import { aggregateStatsCron } from './analyticsCrons.js';
 import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
@@ -45,6 +46,7 @@ export const defaultEventHandlers: EventHandlers = {
   send_digests: sendDigests,
   evaluate_segments_pending: evaluateSegmentsPending,
   evaluate_segments: evaluateSegmentsHourly,
+  aggregate_stats: aggregateStatsCron,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

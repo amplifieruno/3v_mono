@@ -112,4 +112,14 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Hourly: activity stats, dynamic segment evaluation, segment daily stats',
   },
+  {
+    // Hourly at minute 5 (the hour has closed): itap.aggregate_stats(org, scheduled_time) per organization re-aggregates
+    // the previous UTC hour and the facility-local day(s) it touches (idempotent upserts). Activity stats stay with
+    // evaluate_segments. Up to an hour late still runs; a missed hour is re-aggregated by the next seed / manual range.
+    name: 'aggregate_stats',
+    schedule: '5 * * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    comment: 'Hourly: area hourly stats, facility daily stats, area transitions of the previous hour',
+  },
 ];

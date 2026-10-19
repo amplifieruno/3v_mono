@@ -28,6 +28,8 @@ const SETTINGS_WRITABLE = [
   'tailgating_window_seconds',
   'default_retention_days',
   'detection_counter_throttle_seconds',
+  'abnormal_movement_max_count',
+  'abnormal_movement_min_total',
 ];
 
 const MEMBER_COLUMNS = [

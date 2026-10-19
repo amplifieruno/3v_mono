@@ -1,0 +1,20 @@
+table:
+  schema: itap_results
+  name: flow_matrix_rows
+configuration:
+  custom_name: flow_matrix_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - count
+        - facility_id
+        - from_area_id
+        - organization_id
+        - to_area_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

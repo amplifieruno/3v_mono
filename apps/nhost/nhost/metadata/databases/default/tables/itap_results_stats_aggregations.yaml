@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: stats_aggregations
+configuration:
+  custom_name: stats_aggregations

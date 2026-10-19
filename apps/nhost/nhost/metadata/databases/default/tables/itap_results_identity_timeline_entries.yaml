@@ -1,0 +1,32 @@
+table:
+  schema: itap_results
+  name: identity_timeline_entries
+configuration:
+  custom_name: identity_timeline_entries
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - area_id
+        - detection_id
+        - device_id
+        - event_id
+        - event_type
+        - facility_id
+        - identity_id
+        - kind
+        - movement_type
+        - occurred_at
+        - organization_id
+        - session_id
+        - severity
+        - status
+        - title
+        - visit_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: aggregate_stats
+configuration:
+  custom_name: aggregate_stats
+  exposed_as: mutation

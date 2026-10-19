@@ -1,0 +1,29 @@
+table:
+  schema: itap_results
+  name: dashboard_kpi_rows
+configuration:
+  custom_name: dashboard_kpi_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - as_of
+        - current_occupancy
+        - deliveries_failed_24h
+        - devices_offline
+        - local_date
+        - open_incidents
+        - open_incidents_critical
+        - open_incidents_high
+        - open_incidents_info
+        - open_incidents_low
+        - open_incidents_medium
+        - organization_id
+        - segment_top_movers
+        - unique_visitors_today
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

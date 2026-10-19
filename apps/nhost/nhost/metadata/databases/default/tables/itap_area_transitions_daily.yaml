@@ -1,0 +1,60 @@
+table:
+  schema: itap
+  name: area_transitions_daily
+configuration:
+  custom_name: area_transitions_daily
+object_relationships:
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: from_area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          from_area_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: to_area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          to_area_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - count
+        - created_at
+        - day
+        - facility_id
+        - from_area_id
+        - id
+        - organization_id
+        - to_area_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

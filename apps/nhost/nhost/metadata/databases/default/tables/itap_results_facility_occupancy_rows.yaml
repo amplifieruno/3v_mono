@@ -1,0 +1,23 @@
+table:
+  schema: itap_results
+  name: facility_occupancy_rows
+configuration:
+  custom_name: facility_occupancy_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - capacity
+        - direct_occupancy
+        - facility_id
+        - name
+        - occupancy
+        - organization_id
+        - parent_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

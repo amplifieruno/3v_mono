@@ -1,0 +1,46 @@
+table:
+  schema: itap
+  name: facility_daily_stats
+configuration:
+  custom_name: facility_daily_stats
+object_relationships:
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - avg_visit_minutes
+        - created_at
+        - day
+        - dwell_seconds
+        - facility_id
+        - guest_visits
+        - id
+        - known_identities
+        - organization_id
+        - peak_hour
+        - peak_occupancy
+        - unique_identities
+        - unknown_identities
+        - updated_at
+        - visits
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

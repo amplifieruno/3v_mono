@@ -1,0 +1,25 @@
+table:
+  schema: itap_results
+  name: occupancy_series_rows
+configuration:
+  custom_name: occupancy_series_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - avg_dwell_seconds
+        - bucket_start
+        - day
+        - dwell_seconds
+        - entries
+        - exits
+        - facility_id
+        - organization_id
+        - peak_occupancy
+        - unique_identities
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

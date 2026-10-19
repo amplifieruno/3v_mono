@@ -1,0 +1,54 @@
+table:
+  schema: itap
+  name: area_hourly_stats
+configuration:
+  custom_name: area_hourly_stats
+object_relationships:
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - avg_dwell_seconds
+        - created_at
+        - dwell_seconds
+        - entries
+        - exits
+        - facility_id
+        - hour
+        - id
+        - organization_id
+        - peak_occupancy
+        - unique_identities
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

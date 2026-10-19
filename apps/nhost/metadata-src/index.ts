@@ -1,3 +1,4 @@
+import { analyticsFunctions, analyticsTables } from './analytics.js';
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
 import { deviceFunctions, deviceTables } from './devices.js';
@@ -35,6 +36,7 @@ export const tables: TableSpec[] = [
   ...notificationTables,
   ...webhookTables,
   ...segmentTables,
+  ...analyticsTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -53,4 +55,5 @@ export const functions: FunctionSpec[] = [
   ...notificationFunctions,
   ...sendingFunctions,
   ...segmentFunctions,
+  ...analyticsFunctions,
 ];
