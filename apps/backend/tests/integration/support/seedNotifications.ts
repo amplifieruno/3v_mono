@@ -17,6 +17,9 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
             (select count(*) from itap.on_call_schedule_members where organization_id = ${org}) as on_call,
             (select string_agg(s.channel || ':' || s.after_minutes, ',' order by s.step_no) from itap.escalation_policy_steps s
                join itap.escalation_policies p on p.id = s.policy_id where p.organization_id = ${org} and p.repeat) as steps,
+            (select max_cycles::text from itap.escalation_policies where organization_id = ${org}) as max_cycles,
+            (select r.name from itap.event_rules r join itap.event_rule_versions v on v.id = r.current_version_id
+               where r.organization_id = ${org} and v.escalation_policy_id is not null) as escalating_rule,
             (select count(*) from itap.notification_subscriptions where organization_id = ${org}) as subscriptions,
             (select url from itap.webhook_subscriptions where organization_id = ${org}) as webhook_url,
             (select count(*) from itap.event_rules r join itap.event_rule_versions v on v.id = r.current_version_id
@@ -31,6 +34,8 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
     steps: 'in_app:0,email:0,sms:10',
     subscriptions: '2',
     escalating_rules: '1',
+    escalating_rule: 'Blacklist match',
+    max_cycles: '3',
   });
   expect(config.webhook_url).toMatch(/\/hasura\/events\/webhook-sink$/);
 
@@ -70,19 +75,27 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
     expect(h.signature).toBe(hmac(h.secret ?? '', JSON.stringify(JSON.parse(h.body ?? '{}'))));
   }
 
-  // Watch-rule incidents escalated in history; the open critical one is the live demo, still under its policy.
+  // Blacklist incidents escalated in history; the open critical one is the live demo, still under its policy.
+  // Its inbox rows are read but not acknowledged (the incident is not).
   const incidents = await runSqlRows(
     `select i.status, i.severity, i.escalation_step::text as step, i.escalation_policy_id is not null as policy,
             (select count(*) from itap.incident_activities a where a.incident_id = i.id and a.kind = 'escalated'
                and a.actor_id is null and a.occurred_at < i.last_escalated_at + interval '1 second') as escalated
        from itap.incidents i where i.organization_id = ${org} and i.escalation_policy_id is not null`,
   );
-  expect(incidents.length).toBeGreaterThanOrEqual(3);
+  expect(incidents.length).toBeGreaterThanOrEqual(2);
   expect(incidents.every((i) => Number(i.escalated) >= 2)).toBe(true);
   const open = incidents.filter((i) => i.status === 'open');
   expect(open).toHaveLength(1);
   expect(open[0]).toMatchObject({ severity: 'critical' });
   expect(Number(open[0].step)).toBeGreaterThanOrEqual(5);
+  const [demoInbox] = await runSqlRows(
+    `select count(n.acknowledged_at) as acknowledged, count(n.read_at) filter (where n.created_at < now() - interval '1 day') as read_old
+       from itap.user_notifications n join itap.incidents i on i.id = n.incident_id
+      where i.organization_id = ${org} and i.status = 'open' and i.escalation_policy_id is not null`,
+  );
+  expect(demoInbox.acknowledged).toBe('0');
+  expect(Number(demoInbox.read_old)).toBeGreaterThan(0);
 
   const [admin] = await runSqlRows(`select id from auth.users where email = 'admin@itap.demo'`);
   const [orgRow] = await runSqlRows(`select id from itap.organizations where slug = '${slug}'`);

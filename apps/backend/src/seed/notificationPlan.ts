@@ -162,7 +162,12 @@ export const ON_CALL_SCHEDULE = { name: 'Security on-call', shiftLengthHours: 12
 /** Rotation order: the operator, then the Nova admin, then the main admin. */
 export const onCallOrder = (users: SeedUsers): string[] => [users.operator, users.novaAdmin, users.admin];
 
-export const ESCALATION_POLICY = { name: 'Critical incidents', description: 'Security team at once, then the on-call phone after 10 minutes; repeats until acknowledged', repeat: true };
+export const ESCALATION_POLICY = {
+  name: 'Critical incidents',
+  description: 'Security team at once, then the on-call phone after 10 minutes; repeats up to three times until acknowledged',
+  repeat: true,
+  max_cycles: 3,
+};
 /**
  * A step has one channel, so "security team in_app + email at 0 min" is two 0-minute steps (taken on consecutive
  * cron runs), then the on-call member by SMS 10 minutes later.
@@ -186,6 +191,22 @@ export function escalationTimes(createdAt: number, acknowledgedAt: number | null
   let at = Math.floor(createdAt / MIN) * MIN;
   const times = STEP_DELAYS_MIN.map((delay) => (at += delay * MIN));
   return acknowledgedAt === null ? times : times.filter((t) => t < acknowledgedAt);
+}
+
+const MINUTE_MS = 60_000;
+
+/**
+ * Escalation instants of one history incident (all at or before `latest`, the replay end, except the demo's):
+ *   acknowledged: the steps before the acknowledgement;
+ *   the demo (open, live): the first pass, then cycle 1 steps 1-2 at 7 and 6 minutes before `now`, so its on-call
+ *     step is due about 4 minutes later (the intermediate cycles are not simulated);
+ *   open, not the demo: none. The policy is set together with the escalations, so such an incident never gets one
+ *     (an unacknowledged incident under the policy would start escalating live).
+ */
+export function historyEscalations(args: { createdAt: number; acknowledgedAt: number | null; demo: boolean; latest: number; now: number }): number[] {
+  if (args.acknowledgedAt === null && !args.demo) return [];
+  const pass = escalationTimes(args.createdAt, args.acknowledgedAt).filter((t) => t <= args.latest);
+  return args.demo ? [...pass, args.now - 7 * MINUTE_MS, args.now - 6 * MINUTE_MS] : pass;
 }
 
 export type RuleSpec = {

@@ -1,6 +1,6 @@
 import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
 import { escalationFields } from './historyNotifications.js';
-import { escalationTimes } from './notificationPlan.js';
+import { historyEscalations } from './notificationPlan.js';
 import type { SeedContext } from './tenancy.js';
 
 /**
@@ -12,13 +12,14 @@ import type { SeedContext } from './tenancy.js';
  * keeps the seed time (set by trigger). Newest incidents stay open; older ones are progressively further along.
  * Idempotent: skipped once any incident has been acknowledged.
  *
- * Escalation (slice 5): incidents of the escalating rule get the escalation policy together with their automatic
- * escalations at the simulated cron instants before their acknowledgement (notificationPlan.escalationTimes), in the
- * acknowledgement's transaction, so the live escalate cron never sees one unacknowledged under a policy. The newest
+ * Escalation (slice 5): incidents of the escalating rule (Blacklist match) get the escalation policy together with
+ * their automatic escalations at the simulated cron instants before their acknowledgement
+ * (notificationPlan.historyEscalations), in the acknowledgement's transaction right after it, so the live escalate
+ * cron never sees one unacknowledged under a policy (and their old inbox rows count as acknowledged). The newest
  * critical one (not the false-positive persona) stays open as the live demo: its first pass is history, then a second
- * cycle's steps 1-2 at 7 and 6 minutes before the request, so its on-call step is due about 4 minutes later and the
- * policy keeps repeating until someone acknowledges it (the intermediate cycles are not simulated). Other occurrences
- * then start at 'acknowledged' on the status ladder.
+ * cycle's steps 1-2 at 7 and 6 minutes before the request, so its on-call step is due about 4 minutes later (the
+ * policy repeats up to max_cycles; the intermediate cycles are not simulated). Other occurrences then start at
+ * 'acknowledged' on the status ladder. Without a demo, an open escalating incident gets no escalations and no policy.
  */
 type IncidentRow = {
   id: string;
@@ -88,10 +89,10 @@ const STEP_DELAY: Record<Step['kind'], [number, number]> = {
   close: [1440, 1800],
 };
 
-/** `before`: fields run first in the same request (the escalations before an acknowledgement). */
-async function runStep(actor: HasuraClient, org: string, incident: string, step: Step, assignee: string, before: string[] = []): Promise<void> {
+/** `after`: fields run after the step in the same request (the escalations that preceded an acknowledgement). */
+async function runStep(actor: HasuraClient, org: string, incident: string, step: Step, assignee: string, after: string[] = []): Promise<void> {
   const call = (field: string, extra = '') =>
-    actor.request(`mutation SeedIncidentStep($id: uuid!) { ${before.join('\n')} ${field}(args: { p_incident: $id${extra} }) { id } }`, { id: incident });
+    actor.request(`mutation SeedIncidentStep($id: uuid!) { ${field}(args: { p_incident: $id${extra} }) { id } ${after.join('\n')} }`, { id: incident });
   switch (step.kind) {
     case 'assign':
       await actor.request(`mutation SeedAssign($id: uuid!, $to: uuid!) { update_incidents_by_pk(pk_columns: { id: $id }, _set: { assigned_to: $to }) { id } }`, { id: incident, to: assignee });
@@ -213,12 +214,11 @@ export async function seedIncidentHistory(
     });
     const actor = actors[rank % 2 === 0 ? 0 : 1];
     const ackIndex = steps.findIndex((s) => s.kind === 'acknowledge');
-    let escalateAt: number[] = [];
-    if (escalation && escalates(incident)) {
-      escalateAt = escalationTimes(start, ackIndex < 0 ? null : times[ackIndex]).filter((t) => t <= latest);
-      if (incident === demo) escalateAt.push(Date.now() - 7 * MINUTE, Date.now() - 6 * MINUTE);
-      escalations += escalateAt.length;
-    }
+    const escalateAt =
+      escalation && escalates(incident)
+        ? historyEscalations({ createdAt: start, acknowledgedAt: ackIndex < 0 ? null : times[ackIndex], demo: incident === demo, latest, now: Date.now() })
+        : [];
+    escalations += escalateAt.length;
     const escalate = escalation
       ? escalationFields({ org: args.org, incident: incident.id, policy: escalation.policyId, times: escalateAt, until: Date.now() })
       : [];

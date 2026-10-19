@@ -4,7 +4,7 @@ import type { SeedContext } from './tenancy.js';
 
 /**
  * Notification side of the Nova Tower history (slice 5): escalations of history incidents at simulated instants,
- * the escalation policy on the watch rule for live incidents, and the signatures of the replayed webhook deliveries.
+ * the escalation policy on the blacklist rule for live incidents, and the signatures of the replayed webhook deliveries.
  */
 
 /**
@@ -63,7 +63,7 @@ export async function attachEscalationPolicy(
   return rule.id;
 }
 
-/** The watch rule's id (incidents of the rule carry it in their dedup key). */
+/** A rule id by name (incidents of the rule carry it in their dedup key). */
 export async function ruleId(ctx: SeedContext, org: string, name: string): Promise<string | null> {
   const { event_rules: rules } = await ctx.admin.request<{ event_rules: { id: string }[] }>(RULE, { org, name });
   return rules[0]?.id ?? null;

@@ -185,7 +185,8 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(nova.history_events).toBeGreaterThan(1_000);
     expect(nova.watch_lists).toBe(3);
     expect(nova.watch_list_entries).toBeGreaterThanOrEqual(5);
-    expect(nova.event_rules).toBe(6);
+    // Blacklist and watch-list matches are separate rules (only blacklist incidents escalate).
+    expect(nova.event_rules).toBe(7);
     expect(nova.shift_handovers).toBe(3);
     expect(nova.operator_workspaces).toBe(4);
     const org = `(select id from itap.organizations where slug = '${SLUGS[0]}')`;
@@ -238,7 +239,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       inactive_status: 'terminated',
       offline_device: 'Parking Gate Terminal',
       gate_seen_recently: 'true',
-      match_rules: 'Watch & blacklist match',
+      match_rules: 'Blacklist match,Watch-list match',
     });
     expect(Number(coverage.dwell_by_rule)).toBeGreaterThanOrEqual(1);
     // One person in front of a camera for minutes: one detection_known per session.
@@ -277,7 +278,7 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
       { days: [1, 2, 3, 4, 5], from: '07:00', to: '21:00' },
       { days: [6], from: '09:00', to: '15:00' },
     ]);
-    expect(config).toMatchObject({ published: '5', loitering: '2', blacklisted: '1' });
+    expect(config).toMatchObject({ published: '6', loitering: '2', blacklisted: '1' });
 
     const [extra] = await runSqlRows(
       `select (select count(*) from itap.profiles p where p.organization_id = ${org} and p.profile_type = 'employee'
@@ -295,8 +296,8 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
                   where x.incident_id = i.id and itap.profile_is_blacklisted((select p from itap.profiles p where p.id = y.profile_id)))) as persona_fp`,
     );
     expect(Number(extra.unlinked)).toBeGreaterThanOrEqual(8);
-    // by_kind: the watch rule's second version (escalation policy) keeps its watch_list_kinds.
-    expect(extra).toMatchObject({ by_kind: '3', doubled: '0', late_entries: '0', unrounded: '0', persona_fp: '1' });
+    // by_kind: VIP, watch list, and both versions of the blacklist rule (v2 adds the escalation policy).
+    expect(extra).toMatchObject({ by_kind: '4', doubled: '0', late_entries: '0', unrounded: '0', persona_fp: '1' });
   });
 
   it('should seed notification configuration and replay-compatible notification history', async () => {

@@ -20,7 +20,8 @@ import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 /**
  * Nova Tower notification configuration (design §9, slice 5), seeded before the device health history and the
  * history replay so Stage C fans the replayed events out through it: templates, recipient groups, the on-call
- * rotation, the "Critical incidents" policy, notification rules and the webhook subscription to the dev sink.
+ * rotation, the "Critical incidents" policy (repeat, max 3 cycles), notification rules and, when the backend's dev
+ * webhook sink is enabled (WEBHOOK_SINK_ENABLED), a webhook subscription to it.
  * Dated at the configuration time (before the replay). Idempotent: rows keyed by name (webhook: by description);
  * children are written only with a new parent.
  */
@@ -164,7 +165,9 @@ export async function seedNotifications(
     })),
   );
 
-  if (!have.webhook_subscriptions.some((w) => w.description === WEBHOOK_DESCRIPTION)) {
+  // Only where the backend's dev sink is enabled (WEBHOOK_SINK_ENABLED, dev compose): elsewhere every delivery would
+  // fail (404) and dead-letter.
+  if (ctx.env.WEBHOOK_SINK_ENABLED && !have.webhook_subscriptions.some((w) => w.description === WEBHOOK_DESCRIPTION)) {
     created += await insert(actor, 'webhook_subscriptions', [
       {
         ...owned,
