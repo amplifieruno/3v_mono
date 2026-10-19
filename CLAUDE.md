@@ -113,7 +113,10 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 ### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
 - **Data access**: Hasura GraphQL client with the admin secret (`src/hasura/`)
-- **Role**: Hasura Actions handlers (`src/actions/`: tenancy, files, `upload_profile_document`, `enroll_face`, `create_identity_from_photos`, `add_identity_photos`), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
+- **Role**: Hasura Actions handlers (`src/actions/`: tenancy, files, `upload_profile_document`, `enroll_face`, `create_identity_from_photos`, `add_identity_photos`), Hasura event/cron trigger router (`src/events/`, below), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
+- **Events router**: `POST /hasura/events/<trigger name>` (same `x-action-secret` as actions). Handlers are registered in `defaultEventHandlers` (`src/events/router.ts`) via `defineEventHandler` / `defineCronHandler`; a non-2xx answer makes Hasura retry, so handlers must be idempotent (`ctx.idempotencyKey`). Cron triggers are declared in `apps/nhost/metadata-src/crons.ts` (`CronSpec`, incl. `toleranceSeconds`) and generated into `cron_triggers.yaml`
+- **Crons**: `heartbeat` (every 5 min, pipeline proof, writes nothing); `device_health_check` (every minute, tolerance 120 s): probes the stream-server per active camera (`/streams/<id>/snapshot.jpg`, id = last path segment of `stream_url`) and calls the SQL function `record_device_health`, which writes `device_health_metrics`, updates `devices.health_status`/`last_seen_at`/`status` (`connection_error` on outage) and emits `device_events`
+- **Seed layout** (`pnpm seed`, `src/seed/`): organization Nova Tower (facility with a floor/zone/room area tree and floor plans, access points and devices incl. cameras bound to the stream-server ids `entrance`/`lobby`/`serverroom`/`warehouse`, health history); plans are pure data (`facilityPlan.ts`, `devicePlan.ts`, `deviceHealthPlan.ts`)
 - **Legacy removed**: TypeORM, REST routes, recognition manager, face-api.js/TensorFlow, Redis are gone; all data goes through Hasura
 - **Runs in Docker** (dev compose service `backend`, port 3001) so Hasura can reach it; no Redis
 - **Real-time**: Socket.io
@@ -238,7 +241,7 @@ pnpm --filter nhost metadata:generate  # Regenerate itap.* Hasura metadata (neve
 pnpm --filter nhost test            # Metadata generator unit tests
 pnpm --filter backend exec vitest run src   # Backend unit tests
 pnpm --filter backend test:integration      # Integration tests against the running dev stack
-pnpm seed                           # Seed demo orgs/users, companies, profiles, enrolled faces (needs insightface; --reset wipes seed data)
+pnpm seed                           # Seed demo orgs/users, companies, profiles, enrolled faces, facilities, areas, devices, health history (needs insightface; --reset wipes seed data)
 cd apps/admin-ui && pnpm gql        # Generate GraphQL types
 cd apps/admin-ui && pnpm gql-w      # Watch mode for GraphQL codegen
 ```

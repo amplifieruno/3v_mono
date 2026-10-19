@@ -51,6 +51,31 @@ paths:
 - File columns: `BEFORE INSERT OR UPDATE ... EXECUTE FUNCTION itap.check_file_bucket('photo_file_id', ...)` (file must be in the row's organization bucket). `organizations.logo_file_id` must be in the shared `org-logos` bucket.
 - Assignment/recipient user columns: `BEFORE INSERT OR UPDATE ... EXECUTE FUNCTION itap.active_member_check('assignee_user_id', ...)` (active, unexpired member). Unknown column arguments raise `undefined_column`.
 
+## Event and Cron Triggers
+
+- Hasura event triggers and cron triggers call the backend router `POST /hasura/events/<trigger name>` (`apps/backend/src/events`, authenticated with `x-action-secret` like actions). Register the handler in `defaultEventHandlers` (`defineEventHandler` / `defineCronHandler`); the registry key IS the trigger name, and the payload's trigger name must match.
+- Cron triggers are GENERATED: add a `CronSpec` to `apps/nhost/metadata-src/crons.ts` (`name`, `schedule`, `includeInMetadata`, optional `retry`, `toleranceSeconds`) and run `metadata:generate`; never edit `cron_triggers.yaml` by hand.
+- `toleranceSeconds` (default 21600 = 6 h) is how late a missed run is still delivered. Frequent probes set it to about two periods (`device_health_check`: 120) so an outage does not replay hours of stale runs; set it high only for work that must run eventually.
+- Handlers are idempotent (Hasura retries deliver the same payload `id`; use `ctx.idempotencyKey` with unique keys / `ON CONFLICT`) and do the real work in SQL functions called per organization; a handler error is a 500 so Hasura retries.
+
+## Same-Facility Composite Foreign Keys
+
+- A row that references two entities of one facility (a device and its area, an access point and its device) carries `facility_id` and uses three-column FKs: `(organization_id, facility_id, x_id) REFERENCES t (organization_id, facility_id, id)`. The parent needs `UNIQUE (organization_id, facility_id, id)`. Constraint names `<table>_<ref>_fkey`; the covering index leads `organization_id, facility_id, x_id`. A mismatch of facilities is then impossible at the database level.
+
+## Shape and Window Columns
+
+- jsonb columns are validated by IMMUTABLE CHECK helpers (`itap.valid_shape`, `itap.valid_windows`, `itap.valid_point`) that never raise and return false for NULL, so a nullable column says `CHECK (shape IS NULL OR itap.valid_shape(shape))`.
+- `valid_windows`: JSON array (possibly empty) of objects with exactly the keys `days` (non-empty array of integers 1..7, ISO weekday), `from` (`HH:MM`, 00:00..23:59) and `to` (`HH:MM` or `24:00`; `to < from` is an overnight window). Read by `itap.in_windows`.
+- `valid_shape` (floor-plan pixel space): `{"type":"Polygon","coordinates":[ring,...]}` (first ring is the outline, the rest are holes; a ring has at least 3 distinct points, a closing point is optional) or `{"type":"Circle","center":[x,y],"radius":r}` with r > 0; exactly these keys.
+
+## Statement-Level Guards for Tree Moves
+
+- Row-level BEFORE triggers cannot see what other rows of the same UPDATE do. For hierarchies (`areas.parent_id`, materialised path) use a statement-level AFTER trigger with transition tables (`REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows`) to reject a single statement that re-parents rows to different parents (`area_multi_parent_move`); moving several rows under one parent stays allowed, and Hasura `update_*_many` runs one statement per entry. Subtree path rewrites run in an AFTER trigger at statement end.
+
+## Telemetry Tables
+
+- High-volume telemetry (`device_health_metrics`, `device_events`) has no audit trigger. Its FK to the parent (`devices`) is `NO ACTION` (spec §6.0), so a referenced device cannot be deleted; retire it with `status = 'inactive'`. An organization delete still cascades through `organization_id`.
+
 ## Numbering and Codes
 
 - Human-readable numbers: `number bigint NOT NULL` + `code text GENERATED ALWAYS AS ('PREFIX-' || lpad(number::text, 5, '0')) STORED`, `UNIQUE (organization_id, number)` and `(organization_id, code)`, and `BEFORE INSERT ... EXECUTE FUNCTION itap.assign_number('<entity>')` (per-organization counter in `organization_counters`). Never compute numbers in application code.

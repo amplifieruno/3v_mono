@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Identity Tracking and Access Platform - Monorepo",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "type": "module",
   "scripts": {
     "build": "pnpm -r build",

@@ -2,12 +2,15 @@ import { randomUUID } from 'node:crypto';
 import type { HasuraClient } from '../hasura/client.js';
 import type { StorageClient } from '../storage/storageClient.js';
 import { profileAllowsBiometrics } from './consent.js';
-import { analyzePhotos, commitPhotos, type AcceptedPhoto, type FaceMatch, type Rejected } from './enrollmentSteps.js';
+import { analyzePhotos, commitPhotos as commitRaw, type AcceptedPhoto, type FaceMatch, type Rejected } from './enrollmentSteps.js';
+import { EnrollmentError, mapGuardError } from './guardErrors.js';
 import type { InsightFaceClient } from './insightFaceClient.js';
 import type { PhotoSource } from './photoSources.js';
 
 /** Recorded on embeddings; matches the recognizer the compose `insightface` service loads (REC_NAME). */
 export const DEFAULT_MODEL_VERSION = 'insightface:w600k_mbf';
+
+export { EnrollmentError };
 
 export type EnrollmentDeps = {
   clients: {
@@ -29,17 +32,6 @@ export type EnrollmentOutcome = {
   templates: number;
   rejected: { ref: string; reason: Rejected['reason'] }[];
 };
-
-/** Business refusal; the action layer maps it to ActionError(code, message). */
-export class EnrollmentError extends Error {
-  readonly code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.name = 'EnrollmentError';
-    this.code = code;
-  }
-}
 
 type IdentityRow = {
   id: string;
@@ -154,6 +146,17 @@ async function finish(
     templates: data.identity_embeddings_aggregate.aggregate.count,
     rejected: [...rejected].sort((a, b) => a.index - b.index).map(({ ref, reason }) => ({ ref, reason })),
   };
+}
+
+type CommitArgs = Parameters<typeof commitRaw>;
+
+/** commitPhotos with SQL guard errors mapped to coded EnrollmentErrors. */
+async function commitPhotos(...args: CommitArgs): Promise<void> {
+  try {
+    await commitRaw(...args);
+  } catch (error: unknown) {
+    throw mapGuardError(error);
+  }
 }
 
 function commitDeps(deps: EnrollmentDeps) {
