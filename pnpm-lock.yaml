@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: 0446059d1d2421f5d98e93427385b7ff
+
 importers:
 
   .:
@@ -139,28 +141,28 @@ importers:
         version: 2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/core':
         specifier: ^5.0.1
-        version: 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/devtools':
         specifier: ^2.0.1
-        version: 2.0.2(@refinedev/cli@2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/devtools-server@2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 2.0.2(@refinedev/cli@2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/devtools-server@2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/hasura':
         specifier: ^7.0.0
-        version: 7.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(gql-query-builder@3.8.0)(graphql-request@5.2.0(graphql@15.10.1))(graphql-ws@6.0.6(graphql@15.10.1)(ws@8.17.1))
+        version: 7.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(gql-query-builder@3.8.0)(graphql-request@5.2.0(graphql@15.10.1))(graphql-ws@6.0.6(graphql@15.10.1)(ws@8.17.1))
       '@refinedev/kbar':
         specifier: ^2.0.0
-        version: 2.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 2.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/react-hook-form':
         specifier: ^5.0.0
-        version: 5.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-hook-form@7.62.0(react@19.1.0))(react@19.1.0)
+        version: 5.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-hook-form@7.62.0(react@19.1.0))(react@19.1.0)
       '@refinedev/react-router':
         specifier: ^2.0.0
-        version: 2.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-router@7.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+        version: 2.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-router@7.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
       '@refinedev/react-table':
         specifier: ^6.0.0
-        version: 6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-table@8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-table@8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/simple-rest':
         specifier: ^6.0.0
-        version: 6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
+        version: 6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
       '@tailwindcss/vite':
         specifier: ^4.1.8
         version: 4.1.14(vite@6.3.5(@types/node@20.19.9)(jiti@2.6.1)(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0))
@@ -2588,6 +2590,7 @@ packages:
       '@tanstack/react-query': ^5.81.5
       '@types/react': ^18.0.0 || ^19.0.0
       '@types/react-dom': ^18.0.0 || ^19.0.0
+      graphql: '*'
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
@@ -9958,12 +9961,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@refinedev/devtools-internal': 2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query': 5.84.1(react@19.1.0)
       '@types/react': 19.2.2
       '@types/react-dom': 19.2.1(@types/react@19.2.2)
+      graphql: 15.10.1
       lodash: 4.17.21
       lodash-es: 4.17.21
       papaparse: 5.5.3
@@ -10027,11 +10031,11 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
-  '@refinedev/devtools@2.0.2(@refinedev/cli@2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/devtools-server@2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@refinedev/devtools@2.0.2(@refinedev/cli@2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@refinedev/devtools-server@2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@aliemir/dom-to-fiber-utils': 0.4.1
       '@refinedev/cli': 2.16.49(@types/node@20.19.9)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/devtools-server': 2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@refinedev/devtools-shared': 2.0.0(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react': 19.2.2
@@ -10042,9 +10046,9 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
-  '@refinedev/hasura@7.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(gql-query-builder@3.8.0)(graphql-request@5.2.0(graphql@15.10.1))(graphql-ws@6.0.6(graphql@15.10.1)(ws@8.17.1))':
+  '@refinedev/hasura@7.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(gql-query-builder@3.8.0)(graphql-request@5.2.0(graphql@15.10.1))(graphql-ws@6.0.6(graphql@15.10.1)(ws@8.17.1))':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       camelcase: 6.3.0
       gql-query-builder: 3.8.0
       graphql: 15.10.1
@@ -10054,9 +10058,9 @@ snapshots:
       lodash: 4.17.21
       lodash-es: 4.17.21
 
-  '@refinedev/kbar@2.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@refinedev/kbar@2.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       kbar: 0.1.0-beta.40(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
@@ -10064,9 +10068,9 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@refinedev/react-hook-form@5.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-hook-form@7.62.0(react@19.1.0))(react@19.1.0)':
+  '@refinedev/react-hook-form@5.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-hook-form@7.62.0(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react': 19.2.2
       '@types/react-dom': 19.2.1(@types/react@19.2.2)
       lodash: 4.17.21
@@ -10075,9 +10079,9 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
       react-hook-form: 7.62.0(react@19.1.0)
 
-  '@refinedev/react-router@2.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-router@7.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)':
+  '@refinedev/react-router@2.0.1(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react-router@7.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react': 19.2.2
       '@types/react-dom': 19.2.1(@types/react@19.2.2)
       qs: 6.13.0
@@ -10085,18 +10089,18 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
       react-router: 7.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
 
-  '@refinedev/react-table@6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-table@8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@refinedev/react-table@6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@tanstack/react-table@8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-table': 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       lodash: 4.17.21
       lodash-es: 4.17.21
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
-  '@refinedev/simple-rest@6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))':
+  '@refinedev/simple-rest@6.0.0(@refinedev/core@5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))':
     dependencies:
-      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@refinedev/core': 5.0.4(@tanstack/react-query@5.84.1(react@19.1.0))(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(graphql@15.10.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       axios: 1.11.0
       query-string: 7.1.3
     transitivePeerDependencies:

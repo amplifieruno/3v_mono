@@ -52,5 +52,14 @@
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "packageExtensions": {
+      "@refinedev/core": {
+        "peerDependencies": {
+          "graphql": "*"
+        }
+      }
+    }
   }
 }
