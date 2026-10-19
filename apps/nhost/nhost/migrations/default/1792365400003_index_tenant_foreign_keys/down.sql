@@ -1,0 +1,5 @@
+DROP INDEX itap.audit_log_organization_id_action_idx;
+DROP INDEX itap.organization_invitations_accepted_by_idx;
+CREATE INDEX organization_invitations_accepted_by_idx ON itap.organization_invitations (accepted_by);
+DROP INDEX itap.organization_invitations_role_idx;
+DROP INDEX itap.organization_invitations_status_idx;

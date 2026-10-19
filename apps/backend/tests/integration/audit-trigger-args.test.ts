@@ -1,20 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { asAdmin, testEnv } from './support/clients.js';
+import { asAdmin } from './support/clients.js';
+import { runSql } from './support/sql.js';
 import { createTestOrg } from './support/fixtures.js';
 
 type AuditRow = { action: string; entity_id: string; changes: Record<string, unknown> };
-
-async function runSql(sql: string): Promise<void> {
-  const env = testEnv();
-  const url = new URL('/v2/query', env.HASURA_GRAPHQL_URL).toString();
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-hasura-admin-secret': env.GRAPHQL_ADMIN_SECRET },
-    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql } }),
-  });
-  if (!res.ok) throw new Error(`run_sql failed: ${await res.text()}`);
-}
 
 const DROP = 'DROP TABLE IF EXISTS itap.audit_scratch;';
 const AUDIT = `

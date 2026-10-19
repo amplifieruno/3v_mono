@@ -76,8 +76,27 @@ insert_permissions:
                           metadata:
                             _contains:
                               kind: auth_capture
-          - bucket_id:
-              _eq: org-logos
+          - _and:
+              - bucket_id:
+                  _eq: org-logos
+              - mime_type:
+                  _like: image/%
+              - _or:
+                  - metadata:
+                      _is_null: true
+                  - _and:
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: profile_document
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: dsr_export
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: auth_capture
       columns:
         - bucket_id
         - etag

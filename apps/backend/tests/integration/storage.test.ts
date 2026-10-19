@@ -1,17 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { asAdmin, asOrgAdmin, asUser, orgAdminToken, testEnv, userToken } from './support/clients.js';
+import { asAdmin, asOrgAdmin, asUser, orgAdminToken, userToken } from './support/clients.js';
+import { runSql } from './support/sql.js';
 import { createTestOrg, createTwoOrgs, expectDenied, PERMISSION_CHECK, uploadFile } from './support/fixtures.js';
-
-async function runSql(sql: string): Promise<void> {
-  const env = testEnv();
-  const res = await fetch(new URL('/v2/query', env.HASURA_GRAPHQL_URL).toString(), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-hasura-admin-secret': env.GRAPHQL_ADMIN_SECRET },
-    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql } }),
-  });
-  if (!res.ok) throw new Error(`run_sql failed: ${await res.text()}`);
-}
 
 const BUCKET = `query B($id: String!) { bucket(id: $id) { id } }`;
 const FILE = `query F($id: uuid!) { file(id: $id) { id bucketId metadata } }`;
@@ -101,15 +92,6 @@ describe('per-organization storage', () => {
     const client = asOrgAdmin(user.id, orgA.id);
     expect((await client.request<{ file: unknown }>(FILE, { id: sensitive.insertFile.id })).file).toBeNull();
     expect((await client.request<{ files: unknown[] }>(FILES_IN, { b: orgB.id })).files).toHaveLength(0);
-  });
-
-  it('should share org-logos: org admin can upload and a plain user can select it', async () => {
-    const { orgA, user } = await createTwoOrgs();
-    const result = await uploadFile(orgAdminToken(user.id, orgA.id), 'org-logos');
-    expect('id' in result).toBe(true);
-    if (!('id' in result)) return;
-    const asU = await asUser(user.id).request<{ file: { id: string } | null }>(FILE_NO_META, { id: result.id });
-    expect(asU.file?.id).toBe(result.id);
   });
 
   it('should not let a plain user upload to an organization bucket', async () => {

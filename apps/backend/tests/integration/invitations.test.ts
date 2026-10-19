@@ -1,28 +1,9 @@
 import { createHash } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asAdmin, asOrgAdmin, asUser } from './support/clients.js';
-import { addMember, createTestOrg, createTestUser, expectDenied, expectError } from './support/fixtures.js';
+import { addMember, createTestUser, expectDenied, expectError } from './support/fixtures.js';
+import { ACCEPT, INVITE, invite, setup } from './support/invitations.js';
 import { requireBackend } from './support/backend.js';
-
-type Invitation = { invitation_id: string; token: string; expires_at: string };
-
-const INVITE = `
-  mutation ($email: String!, $role: String) {
-    invite_member(email: $email, role: $role) { invitation_id token expires_at }
-  }
-`;
-const ACCEPT = `mutation ($token: String!) { accept_invitation(token: $token) { organization_id } }`;
-
-async function invite(adminId: string, orgId: string, email: string): Promise<Invitation> {
-  const data = await asOrgAdmin(adminId, orgId).request<{ invite_member: Invitation }>(INVITE, { email });
-  return data.invite_member;
-}
-
-async function setup() {
-  const [org, admin, invitee] = await Promise.all([createTestOrg(), createTestUser(), createTestUser()]);
-  await addMember(org.id, admin.id);
-  return { org, admin, invitee };
-}
 
 beforeAll(requireBackend);
 
@@ -92,6 +73,14 @@ describe('invite_member', () => {
     expect(error.code).toBe('already_member');
   });
 
+  it('should allow inviting a member whose membership has expired', async () => {
+    const { org, admin, invitee } = await setup();
+    const { id } = await addMember(org.id, invitee.id);
+    await setMemberExpiry(id, new Date(Date.now() - 60_000));
+    const inv = await invite(admin.id, org.id, invitee.email);
+    expect(inv.token).toBeTruthy();
+  });
+
   it('should reject a plain user (role user) and direct inserts by org_admin', async () => {
     const { org, admin } = await setup();
     await expectDenied(asUser(admin.id).request(INVITE, { email: 'x@itap.test' }), 'invite_member');
@@ -124,6 +113,23 @@ describe('invite_member', () => {
     expect(error.code).toBe('invitation_not_pending');
   });
 });
+
+async function setMemberExpiry(id: string, at: Date): Promise<void> {
+  await asAdmin().request(
+    `mutation ($id: uuid!, $at: timestamptz!) { update_organization_members_by_pk(pk_columns: { id: $id }, _set: { expires_at: $at }) { id } }`,
+    { id, at: at.toISOString() },
+  );
+}
+
+async function membership(orgId: string, userId: string): Promise<{ status: string; expires_at: string | null }> {
+  const { organization_members: rows } = await asAdmin().request<{
+    organization_members: { status: string; expires_at: string | null }[];
+  }>(
+    `query ($o: uuid!, $u: uuid!) { organization_members(where: { organization_id: { _eq: $o }, user_id: { _eq: $u } }) { status expires_at } }`,
+    { o: orgId, u: userId },
+  );
+  return rows[0];
+}
 
 async function expireInvitation(id: string): Promise<void> {
   await asAdmin().request(
@@ -174,6 +180,24 @@ describe('accept_invitation', () => {
     expect(members).toEqual([{ status: 'active', deactivated_at: null, deactivated_by: null }]);
   });
 
+  it('should renew an active membership whose expires_at has passed and clear expires_at', async () => {
+    const { org, admin, invitee } = await setup();
+    const { id } = await addMember(org.id, invitee.id);
+    await setMemberExpiry(id, new Date(Date.now() - 60_000));
+    const inv = await invite(admin.id, org.id, invitee.email);
+    await asUser(invitee.id).request(ACCEPT, { token: inv.token });
+    expect(await membership(org.id, invitee.id)).toEqual({ status: 'active', expires_at: null });
+  });
+
+  it('should clear expires_at when reactivating a deactivated membership', async () => {
+    const { org, admin, invitee } = await setup();
+    const { id } = await addMember(org.id, invitee.id, 'deactivated');
+    await setMemberExpiry(id, new Date(Date.now() + 86_400_000));
+    const inv = await invite(admin.id, org.id, invitee.email);
+    await asUser(invitee.id).request(ACCEPT, { token: inv.token });
+    expect(await membership(org.id, invitee.id)).toEqual({ status: 'active', expires_at: null });
+  });
+
   it('should reject a different email with email_mismatch and leave the invitation pending', async () => {
     const { org, admin, invitee } = await setup();
     const stranger = await createTestUser();
@@ -203,89 +227,5 @@ describe('accept_invitation', () => {
     const user = await createTestUser();
     const error = await expectError(asUser(user.id).request(ACCEPT, { token: 'nope-nope-nope' }));
     expect(error.code).toBe('invitation_not_found');
-  });
-});
-
-const MEMBER_COUNT = `query ($o: uuid!, $u: uuid!) { organization_members_aggregate(where: { organization_id: { _eq: $o }, user_id: { _eq: $u } }) { aggregate { count } } }`;
-
-async function memberCount(orgId: string, userId: string): Promise<number> {
-  const data = await asAdmin().request<{ organization_members_aggregate: { aggregate: { count: number } } }>(
-    MEMBER_COUNT,
-    { o: orgId, u: userId },
-  );
-  return data.organization_members_aggregate.aggregate.count;
-}
-
-describe('invitation atomicity, audit actor and permissions', () => {
-  it('should leave no membership when a revoked invitation is accepted', async () => {
-    const { org, admin, invitee } = await setup();
-    const inv = await invite(admin.id, org.id, invitee.email);
-    await asOrgAdmin(admin.id, org.id).request(
-      `mutation ($id: uuid!) { update_organization_invitations_by_pk(pk_columns: { id: $id }, _set: { status: revoked }) { id } }`,
-      { id: inv.invitation_id },
-    );
-    const error = await expectError(asUser(invitee.id).request(ACCEPT, { token: inv.token }));
-    expect(error.code).toBe('invitation_not_pending');
-    expect(await memberCount(org.id, invitee.id)).toBe(0);
-  });
-
-  it('should create exactly one membership when the same token is accepted twice concurrently', async () => {
-    const { org, admin, invitee } = await setup();
-    const inv = await invite(admin.id, org.id, invitee.email);
-    const results = await Promise.allSettled([
-      asUser(invitee.id).request(ACCEPT, { token: inv.token }),
-      asUser(invitee.id).request(ACCEPT, { token: inv.token }),
-    ]);
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
-    expect((rejected.reason as { code: string }).code).toBe('invitation_not_pending');
-    expect(await memberCount(org.id, invitee.id)).toBe(1);
-  });
-
-  it('should reject accepting when the user is already an active member and keep the invitation pending', async () => {
-    const { org, admin, invitee } = await setup();
-    const inv = await invite(admin.id, org.id, invitee.email);
-    await addMember(org.id, invitee.id);
-    const error = await expectError(asUser(invitee.id).request(ACCEPT, { token: inv.token }));
-    expect(error.code).toBe('already_member');
-    const { organization_invitations: rows } = await asAdmin().request<{ organization_invitations: { status: string }[] }>(
-      `query ($id: uuid!) { organization_invitations(where: { id: { _eq: $id } }) { status } }`,
-      { id: inv.invitation_id },
-    );
-    expect(rows[0].status).toBe('pending');
-  });
-
-  it('should record the caller as audit user for invite and accept', async () => {
-    const { org, admin, invitee } = await setup();
-    const inv = await invite(admin.id, org.id, invitee.email);
-    await asUser(invitee.id).request(ACCEPT, { token: inv.token });
-
-    const { audit_log } = await asAdmin().request<{ audit_log: { action: string; entity: string; user_id: string | null }[] }>(
-      `query ($o: uuid!) { audit_log(where: { organization_id: { _eq: $o }, entity: { _in: ["organization_invitations", "organization_members"] } }, order_by: { occurred_at: asc }) { action entity user_id } }`,
-      { o: org.id },
-    );
-    const forEntity = (entity: string, action: string) =>
-      audit_log.filter((r) => r.entity === entity && r.action === action).map((r) => r.user_id);
-    expect(forEntity('organization_invitations', 'insert')).toEqual([admin.id]);
-    expect(forEntity('organization_invitations', 'update')).toEqual([invitee.id]);
-    expect(forEntity('organization_members', 'insert')).toContain(invitee.id);
-  });
-
-  it('should not let org_admin delete invitations or call the claim function', async () => {
-    const { org, admin } = await setup();
-    const inv = await invite(admin.id, org.id, 'keep@itap.test');
-    const client = asOrgAdmin(admin.id, org.id);
-    await expectDenied(
-      client.request(`mutation ($id: uuid!) { delete_organization_invitations_by_pk(id: $id) { id } }`, {
-        id: inv.invitation_id,
-      }),
-      'delete_organization_invitations_by_pk',
-    );
-    await expectDenied(
-      client.request(
-        `mutation { claim_invitation(args: { p_token_hash: "x", p_user_id: "${admin.id}", p_email: "a@b.co" }) { id } }`,
-      ),
-      'claim_invitation',
-    );
   });
 });

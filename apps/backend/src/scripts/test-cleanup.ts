@@ -1,7 +1,8 @@
 /**
  * Removes integration-test leftovers: organizations with slug `test-%`, users with an `@itap.test` email,
- * the files in their buckets (through hasura-storage, so object storage stays consistent), orphaned
- * organization buckets (uuid bucket id without an organization) and the audit rows of those organizations.
+ * the files in their buckets (through hasura-storage, so object storage stays consistent), test uploads to the
+ * shared org-logos bucket (name `test-%`), orphaned organization buckets (uuid bucket id without an
+ * organization) and the audit rows of those organizations.
  *
  * `removeTestData` is also used by the integration-test fixture registry to clean up after each suite.
  * Usage: `pnpm --filter backend test:cleanup`.
@@ -93,6 +94,7 @@ const LEFTOVERS = `
     all: organizations { id }
     buckets { id }
     users(where: { email: { _like: "%@itap.test" } }) { id }
+    logos: files(where: { bucketId: { _eq: "org-logos" }, name: { _like: "test-%" } }) { id }
   }
 `;
 
@@ -101,9 +103,10 @@ type Leftovers = {
   all: { id: string }[];
   buckets: { id: string }[];
   users: { id: string }[];
+  logos: { id: string }[];
 };
 
-/** Finds every test leftover: test organizations and users, plus uuid buckets of test or deleted organizations. */
+/** Finds every test leftover: test orgs, users and org-logos uploads, plus uuid buckets of test or deleted orgs. */
 export async function findTestData(admin: HasuraClient): Promise<CleanupScope> {
   const data = await admin.request<Leftovers>(LEFTOVERS);
   const testOrgs = new Set(data.organizations.map((o) => o.id));
@@ -112,7 +115,7 @@ export async function findTestData(admin: HasuraClient): Promise<CleanupScope> {
     organizationIds: [...testOrgs],
     bucketIds: data.buckets.map((b) => b.id).filter((id) => UUID.test(id) && !kept.has(id)),
     userIds: data.users.map((u) => u.id),
-    fileIds: [],
+    fileIds: data.logos.map((f) => f.id),
   };
 }
 

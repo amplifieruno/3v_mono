@@ -19,10 +19,16 @@ const EXPIRE_STALE = `
   }
 `;
 
+/** An active, unexpired membership (an expired one may be renewed by a new invitation). */
 const ACTIVE_MEMBER = `
-  query InviteActiveMember($org: uuid!, $email: citext!) {
+  query InviteActiveMember($org: uuid!, $email: citext!, $now: timestamptz!) {
     organization_members(
-      where: { organization_id: { _eq: $org }, status: { _eq: active }, user: { email: { _eq: $email } } }
+      where: {
+        organization_id: { _eq: $org }
+        status: { _eq: active }
+        _or: [{ expires_at: { _is_null: true } }, { expires_at: { _gt: $now } }]
+        user: { email: { _eq: $email } }
+      }
       limit: 1
     ) { id }
   }
@@ -71,15 +77,16 @@ export const inviteMember = defineAction(inviteSchema, async ({ input, session, 
   const { userId, organizationId } = session;
   if (!userId || !organizationId) throw new ActionError('unauthenticated', 'An organization session is required');
 
+  const now = new Date();
   const active = await admin.request<{ organization_members: { id: string }[] }>(ACTIVE_MEMBER, {
     org: organizationId,
     email: input.email,
+    now: now.toISOString(),
   });
   if (active.organization_members.length > 0) {
     throw new ActionError('already_member', 'This person is already an active member');
   }
 
-  const now = new Date();
   // A lapsed pending invitation would otherwise block re-inviting through the partial unique index.
   await actor.request(EXPIRE_STALE, { org: organizationId, email: input.email, now: now.toISOString() });
 

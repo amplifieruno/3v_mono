@@ -132,6 +132,12 @@ export async function createTwoOrgs(): Promise<{ orgA: TestOrg; orgB: TestOrg; u
   return { orgA, orgB, user, other };
 }
 
+/** A valid 1x1 PNG (hasura-storage sniffs the content type). */
+const PNG_PIXEL = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 export type UploadResult = { id: string } | { status: number };
 
 /**
@@ -142,12 +148,13 @@ export async function uploadFile(
   token: string,
   bucketId: string,
   metadata?: Record<string, unknown>,
+  mimeType = 'text/plain',
 ): Promise<UploadResult> {
-  const name = `test-${randomUUID()}.txt`;
+  const name = `test-${randomUUID()}.${mimeType === 'text/plain' ? 'txt' : 'png'}`;
   const form = new FormData();
   form.append('bucket-id', bucketId);
   form.append('metadata[]', JSON.stringify({ name, ...(metadata ? { metadata } : {}) }));
-  form.append('file[]', new Blob(['hello itap'], { type: 'text/plain' }), name);
+  form.append('file[]', new Blob([mimeType === 'image/png' ? PNG_PIXEL : 'hello itap'], { type: mimeType }), name);
   const res = await fetch(`${testEnv().NHOST_STORAGE_URL}/files`, {
     method: 'POST',
     headers: { authorization: `Bearer ${token}` },

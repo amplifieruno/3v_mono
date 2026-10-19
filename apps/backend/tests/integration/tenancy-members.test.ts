@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin } from './support/clients.js';
-import { addMember, createTestUser, createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
+import { asAdmin, asOrgAdmin } from './support/clients.js';
+import { runSql } from './support/sql.js';
+import { addMember, createTestOrg, createTestUser, createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
 
 type Affected = { update_organization_members: { affected_rows: number } };
 type Member = { status: string; deactivated_at: string | null; deactivated_by: string | null };
@@ -104,5 +105,38 @@ describe('organization members', () => {
       'user_id',
     );
     expect(error.message).toContain("field 'user_id' not found in type: 'organization_members_set_input'");
+  });
+
+  it('should reject a vacation delegate whose membership has expired', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const expired = await createTestUser();
+    const { id } = await addMember(orgA.id, expired.id);
+    await asAdmin().request(
+      `mutation ($id: uuid!, $at: timestamptz!) { update_organization_members_by_pk(pk_columns: { id: $id }, _set: { expires_at: $at }) { id } }`,
+      { id, at: new Date(Date.now() - 60_000).toISOString() },
+    );
+    const error = await expectError(
+      asOrgAdmin(user.id, orgA.id).request(SET_DELEGATE, { userId: user.id, delegate: expired.id }),
+    );
+    expect(error.message).toContain('member_not_active:vacation_delegate_user_id');
+  });
+});
+
+describe('itap.active_member_check', () => {
+  it('should fail loudly when a trigger argument is not a column of the table', async () => {
+    const org = await createTestOrg();
+    await runSql(`
+      DROP TABLE IF EXISTS itap.member_scratch;
+      CREATE TABLE itap.member_scratch (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL, delegate uuid);
+      CREATE TRIGGER member_scratch_typo BEFORE INSERT ON itap.member_scratch
+        FOR EACH ROW EXECUTE FUNCTION itap.active_member_check('delegat');
+    `);
+    try {
+      await expect(
+        runSql(`INSERT INTO itap.member_scratch (organization_id, delegate) VALUES ('${org.id}', NULL);`),
+      ).rejects.toThrow(/active_member_check: unknown column delegat/);
+    } finally {
+      await runSql('DROP TABLE IF EXISTS itap.member_scratch;');
+    }
   });
 });
