@@ -21,6 +21,7 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           template_id: id
+          target: target
 array_relationships:
   - name: event_rule_version_scopes
     using:

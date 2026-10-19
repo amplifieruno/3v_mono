@@ -118,6 +118,9 @@ describe('segment templates', () => {
     // Template conditions follow the same language (an empty template is useless).
     expect((await expectError(insertOne(w.a, 'segment_templates', { name: 'Empty', target: 'profiles', conditions: {} }))).message)
       .toMatch(/segment_condition_invalid/);
+    // A segment's template has the segment's target.
+    expect((await expectError(dynamicSegment(w.a, 'profiles', { field: 'has_face', operator: 'eq', value: true }, { template_id: own.id }))).message)
+      .toMatch(/segments_template_fkey|Foreign key/i);
     // Segments created from a template keep the link; deleting the template detaches them.
     const s = await dynamicSegment(w.a, 'identities', FREQUENT, { template_id: own.id });
     await deleteByPk(w.a, 'segment_templates', own.id);

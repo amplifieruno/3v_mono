@@ -45,10 +45,15 @@ describe('segment field catalog', () => {
     expect(byName.visits_last_30d.operators).toEqual(expect.arrayContaining(['gte', 'between', 'is_null']));
     expect(byName.has_face.operators).toEqual(['eq']);
     expect(byName.member_of_segment.value_type).toBe('segment');
-    const identities = (await catalog(w.a, 'identities')).map((f) => f.field);
+    // jsonb-path fields take only what a Hasura where can express on them.
+    expect(byName['custom_fields.floor'].operators).toEqual(['eq', 'neq', 'in', 'nin', 'is_null']);
+    const identityFields = await catalog(w.a, 'identities');
+    const identities = identityFields.map((f) => f.field);
+    expect(identityFields.find((f) => f.field === 'attributes.gender')?.operators).toEqual(['eq', 'neq', 'in', 'nin', 'is_null']);
+    expect(identityFields.find((f) => f.field === 'age')?.operators).toEqual(expect.arrayContaining(['gte', 'between', 'is_null']));
     expect(identities.sort()).toEqual(
       [
-        'after_hours_visits_30d', 'attributes.age', 'attributes.gender', 'avg_dwell_minutes', 'detection_count', 'first_seen_at',
+        'after_hours_visits_30d', 'age', 'attributes.gender', 'avg_dwell_minutes', 'detection_count', 'first_seen_at',
         'last_seen_days_ago', 'linked', 'member_of_segment', 'status', 'visited_area_id', 'visits_last_30d',
       ].sort(),
     );
@@ -61,6 +66,7 @@ describe('segment condition validation', () => {
   it('should reject malformed structures with the path of the first error', async () => {
     const w = await segmentWorld();
     const ok = { field: 'visits_last_30d', operator: 'gte', value: 3 };
+    await insertOne(w.a, 'custom_attribute_definitions', { entity: 'profile', key: 'floor', label: 'Floor', data_type: 'number' });
     await rejectsAt(w.a, 'identities', [], '$');
     await rejectsAt(w.a, 'identities', { op: 'xor', children: [ok] }, '$.op');
     await rejectsAt(w.a, 'identities', { op: 'and', children: [] }, '$.children');
@@ -80,6 +86,19 @@ describe('segment condition validation', () => {
     await rejectsAt(w.a, 'profiles', { field: 'end_date', operator: 'lte', value: { relative_days: 'x' } }, '$.value');
     await rejectsAt(w.a, 'profiles', { field: 'profile_type', operator: 'is_null', value: true }, '$.operator');
     await rejectsAt(w.a, 'profiles', { field: 'custom_fields.unknown', operator: 'eq', value: 1 }, '$.field');
+    // Size and range caps.
+    const many = (n: number) => Array.from({ length: n }, () => ok);
+    await dynamicSegment(w.a, 'identities', { op: 'or', children: many(100) });
+    await rejectsAt(w.a, 'identities', { op: 'or', children: many(101) }, '$.children');
+    const counts = (n: number) => Array.from({ length: n }, (_, i) => i);
+    await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'in', value: counts(500) });
+    await rejectsAt(w.a, 'identities', { field: 'detection_count', operator: 'in', value: counts(501) }, '$.value');
+    await rejectsAt(w.a, 'identities', { field: 'detection_count', operator: 'gt', value: 2147483648 }, '$.value');
+    await rejectsAt(w.a, 'identities', { field: 'avg_dwell_minutes', operator: 'gt', value: 1e16 }, '$.value');
+    await rejectsAt(w.a, 'identities', { field: 'first_seen_at', operator: 'gt', value: { relative_days: -36501 } }, '$.value');
+    await rejectsAt(w.a, 'identities', { field: 'attributes.gender', operator: 'contains', value: 'f' }, '$.operator');
+    await rejectsAt(w.a, 'profiles', { field: 'custom_fields.floor', operator: 'gt', value: 3 }, '$.operator');
+    await dynamicSegment(w.a, 'identities', { field: 'age', operator: 'between', value: [18, 30] });
     const deep = { op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [{ op: 'not', children: [ok] }] }] }] }] }] }] }] };
     await rejectsAt(w.a, 'identities', deep, '$.children[0].children[0].children[0].children[0].children[0].children[0].children[0]');
     // A valid tree with every kind of value is accepted.
@@ -125,6 +144,18 @@ describe('segment condition validation', () => {
     await expect(
       runSqlRows(`SELECT itap.validate_segment_conditions('${w.orgA.id}', 'profiles', '{"field":"company_id","operator":"eq","value":"${otherCompany.id}"}')`),
     ).rejects.toThrow(/segment_condition_invalid:\$\.value/);
+  });
+
+  it('should derive identities.age from attributes.age when it is a whole number', async () => {
+    const w = await segmentWorld();
+    const ages = [];
+    for (const age of [34, '41', 34.5, 'old', null]) {
+      const [row] = await runSqlRows(
+        `INSERT INTO itap.identities (organization_id, attributes) VALUES ('${w.orgA.id}', '${JSON.stringify({ age })}') RETURNING age`,
+      );
+      ages.push(row.age);
+    }
+    expect(ages).toEqual(['34', '41', 'NULL', 'NULL', 'NULL']);
   });
 
   it('should keep org_admin out of the other organization segments when referencing', async () => {

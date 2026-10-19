@@ -241,6 +241,7 @@ select_permissions:
   - role: org_admin
     permission:
       columns:
+        - age
         - attributes
         - code
         - confidence

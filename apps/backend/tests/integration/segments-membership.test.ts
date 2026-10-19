@@ -103,7 +103,10 @@ describe('segment_members table', () => {
 
   it('should enforce target consistency, one active row per subject and immutable history', async () => {
     const w = await segmentWorld();
-    const s = await manualSegment(w.a, 'identities');
+    const manual = await manualSegment(w.a, 'identities');
+    // Rule rows belong to dynamic segments only.
+    await expect(insertRuleRows(w.orgA.id, manual.id, 'identity_id', [w.identity])).rejects.toThrow(/segment_member_rule_on_manual/);
+    const s = await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'gte', value: 0 });
     const profile = await createProfile(w.a);
     const insert = (cols: string, vals: string) =>
       runSql(`INSERT INTO itap.segment_members (organization_id, segment_id, ${cols}, source) VALUES ('${w.orgA.id}', '${s.id}', ${vals}, 'rule')`);
@@ -126,8 +129,9 @@ describe('segment_members table', () => {
 
   it('should keep member_count exact for multi-row statements', async () => {
     const w = await segmentWorld();
-    const s = await manualSegment(w.a, 'identities');
-    const other = await manualSegment(w.a, 'identities');
+    const rule = { field: 'detection_count', operator: 'gte', value: 0 };
+    const s = await dynamicSegment(w.a, 'identities', rule);
+    const other = await dynamicSegment(w.a, 'identities', rule);
     const ids = [w.identity, await createIdentity(w.a), await createIdentity(w.a)];
     await insertRuleRows(w.orgA.id, s.id, 'identity_id', ids);
     await insertRuleRows(w.orgA.id, other.id, 'identity_id', ids.slice(0, 1));
@@ -137,8 +141,14 @@ describe('segment_members table', () => {
     // Closing an already-closed row changes nothing.
     await runSql(`UPDATE itap.segment_members SET removed_at = removed_at WHERE segment_id = '${s.id}'`);
     expect(await memberCount(s.id)).toBe(1);
-    // Deleting the segment removes its membership history with it.
-    await runSql(`DELETE FROM itap.segments WHERE id = '${other.id}'`);
-    expect(await memberRows(other.id)).toEqual([]);
+    // A segment with membership history or daily stats is archived, not deleted; one without history can go.
+    await expect(runSql(`DELETE FROM itap.segments WHERE id = '${other.id}'`)).rejects.toThrow(/segment_members_segment_fkey/);
+    const fresh = await manualSegment(w.a, 'identities');
+    await runSql(
+      `INSERT INTO itap.segment_daily_stats (organization_id, segment_id, day) VALUES ('${w.orgA.id}', '${fresh.id}', '2026-01-05')`,
+    );
+    await expect(runSql(`DELETE FROM itap.segments WHERE id = '${fresh.id}'`)).rejects.toThrow(/segment_daily_stats_segment_fkey/);
+    const empty = await manualSegment(w.a, 'identities');
+    await runSql(`DELETE FROM itap.segments WHERE id = '${empty.id}'`);
   });
 });

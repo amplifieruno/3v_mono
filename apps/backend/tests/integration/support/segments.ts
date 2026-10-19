@@ -93,9 +93,30 @@ export async function memberCount(segment: string): Promise<number> {
   return Number(row.member_count);
 }
 
-/** Simulates the evaluator (task 2): inserts active rule rows. */
+/** Simulates the evaluator (task 2): inserts active rule rows (dynamic segments only; manual ones refuse them). */
 export async function insertRuleRows(org: string, segment: string, column: 'identity_id' | 'profile_id', ids: string[]): Promise<void> {
   const target = column === 'identity_id' ? 'identities' : 'profiles';
   const values = ids.map((id) => `('${org}', '${segment}', '${target}', '${id}', 'rule')`).join(', ');
   await runSqlRows(`INSERT INTO itap.segment_members (organization_id, segment_id, target, ${column}, source) VALUES ${values}`);
+}
+
+/** Merges `sources` into `target` (merge_identities); returns the merge id. */
+export async function mergeInto(client: HasuraClient, target: string, sources: string[]): Promise<string> {
+  const data = await client.request<{ merge_identities: { id: string }[] }>(
+    `mutation($t: uuid!, $s: _uuid!) { merge_identities(args: {p_target: $t, p_sources: $s}) { id } }`,
+    { t: target, s: pgArray(sources) },
+  );
+  return data.merge_identities[0].id;
+}
+
+export async function rollbackMerge(client: HasuraClient, merge: string): Promise<void> {
+  await client.request(`mutation($id: uuid!) { rollback_merge(args: {p_merge_id: $id}) { id } }`, { id: merge });
+}
+
+/** Membership rows of a segment with exact ids and times (for before/after comparisons). */
+export async function exactRows(segment: string): Promise<Record<string, string | null>[]> {
+  return runSqlRows(
+    `SELECT id, coalesce(identity_id, profile_id) AS subject, source, added_by, added_at, removed_at, removed_by
+     FROM itap.segment_members WHERE segment_id = '${segment}' ORDER BY id`,
+  );
 }
