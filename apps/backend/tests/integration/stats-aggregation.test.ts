@@ -157,11 +157,12 @@ describe('stats aggregation', () => {
     expect(await dailyStats(w.orgA.id)).toEqual([expect.objectContaining({ unique_identities: '1', visits: '2' })]);
   });
 
-  it('should aggregate the hour before the scheduled time per organization from the cron handler', async () => {
+  it('should aggregate the trailing window before the scheduled time per organization from the cron handler', async () => {
     const w = await statsWorld();
     const result = await runAggregateCron([w.orgA.id, w.orgB.id], at(HOUR + 300));
     expect(result).toEqual({ organizations: 2, rows: 2 });
-    expect((await hourlyStats(w.orgA.id)).map((r) => r.hour)).toEqual(Array(3).fill(String(BASE)));
+    // Timeout 2 h: [hour(09:05 - 2 h - 180 s) - 1 h, 09:00) = 06:00 .. 09:00 (no data at 06:00).
+    expect((await hourlyStats(w.orgA.id)).map((r) => r.hour)).toEqual([...Array(2).fill(String(BASE - HOUR)), ...Array(3).fill(String(BASE))]);
     expect(await dailyStats(w.orgA.id)).toHaveLength(1);
     expect(await hourlyStats(w.orgB.id)).toEqual([]);
     await expect(runAggregateCron([w.orgA.id], 'not a time')).rejects.toThrow(/scheduled_time/);

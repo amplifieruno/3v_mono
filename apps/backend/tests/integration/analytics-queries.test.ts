@@ -69,6 +69,22 @@ describe('analytics query functions', () => {
     expect(await query(b, 'facility_occupancy_now', { p_facility: w.facility.id }, 'occupancy')).toEqual([]);
   });
 
+  it('should count current occupancy by effective identity after a merge', async () => {
+    const w = await createTrackingWorld();
+    const source = await createIdentity(w.a);
+    const nowSeconds = Math.floor((Date.now() - ms(at(0))) / 1000) - 5;
+    await detect(w.orgA.id, w.lobbyCam, w.identity, nowSeconds);
+    await detect(w.orgA.id, w.floorCam, source, nowSeconds);
+    const occupancy = async () => Object.fromEntries((await query<{ area_id: string | null; occupancy: number }>(w.a,
+      'facility_occupancy_now', { p_facility: w.facility.id }, 'area_id occupancy')).map((r) => [r.area_id ?? 'facility', r.occupancy]));
+    expect(await occupancy()).toMatchObject({ facility: 2, [w.building.id]: 2, [w.lobby.id]: 1, [w.zone.id]: 1 });
+    // The merged source keeps its occupancy row until its session closes; both rows are one person now.
+    await mergeInto(w.a, w.identity, [source]);
+    expect(await occupancy()).toMatchObject({ facility: 1, [w.building.id]: 1, [w.lobby.id]: 1, [w.zone.id]: 1 });
+    const [kpis] = await query<{ current_occupancy: number }>(w.a, 'dashboard_kpis', {}, 'current_occupancy');
+    expect(kpis.current_occupancy).toBe(1);
+  });
+
   it('should return the identity timeline including the history of identities merged into it', async () => {
     const w = await createTrackingWorld();
     await setTrackingTimeout(w.orgA.id, 7200);
