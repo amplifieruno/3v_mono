@@ -112,11 +112,11 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 
 ### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
-- **Data access**: Hasura GraphQL client with the admin secret (`src/hasura/`); legacy TypeORM code (identities/profiles) remains only until slice 2 removes it
+- **Data access**: Hasura GraphQL client with the admin secret (`src/hasura/`)
 - **Role**: Hasura Actions handlers (`src/actions/`), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
 - **Runs in Docker** (dev compose service `backend`, port 3001) so Hasura can reach it; no Redis
 - **Real-time**: Socket.io
-- **Face Recognition**: InsightFace REST client (legacy face-api.js/TensorFlow.js deps are removed in slice 2)
+- **Face Recognition**: InsightFace REST client (`src/face/`)
 
 ### Data Layer (`apps/nhost/`)
 - **GraphQL Engine**: Hasura (via Nhost)
