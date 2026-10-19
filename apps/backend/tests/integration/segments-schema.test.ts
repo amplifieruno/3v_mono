@@ -26,7 +26,10 @@ describe('segments', () => {
     });
     expect(dynamic.code).toBe('SEGMENT-00002');
     // Dynamic needs conditions; manual has none.
-    expect((await expectError(dynamicSegment(w.a, 'profiles', {}))).message).toMatch(/segments_conditions_match_kind/);
+    expect((await expectError(dynamicSegment(w.a, 'profiles', {}))).message).toMatch(/segment_conditions_required/);
+    expect((await expectError(updateByPk(w.a, 'segments', dynamic.id, { conditions: {} }))).message).toMatch(
+      /segment_conditions_required/,
+    );
     expect((await expectError(manualSegment(w.a, 'profiles', { conditions: FREQUENT }))).message).toMatch(
       /segments_conditions_match_kind/,
     );

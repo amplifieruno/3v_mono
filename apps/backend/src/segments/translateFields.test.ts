@@ -19,8 +19,13 @@ describe('behavioral metrics (activity stats relationship; no stats row = every 
     expect(identity('after_hours_visits_30d', 'nin', [0])).toEqual({
       identity_activity_stats: { after_hours_visits_30d: { _is_null: false, _nin: [0] } },
     });
-    expect(profile('visited_area_id', 'in', ['a1', 'a2'])).toEqual({ profile_activity_stats: { top_area_id: { _in: ['a1', 'a2'] } } });
-    expect(profile('visited_area_id', 'neq', 'a1')).toEqual({ profile_activity_stats: { top_area_id: { _neq: 'a1' } } });
+    expect(profile('top_area_id', 'in', ['a1', 'a2'])).toEqual({
+      profile_activity_stats: { top_area_id: { _is_null: false, _in: ['a1', 'a2'] } },
+    });
+    expect(profile('top_area_id', 'neq', 'a1')).toEqual({ profile_activity_stats: { top_area_id: { _is_null: false, _neq: 'a1' } } });
+    expect(profile('top_area_id', 'is_null', true)).toEqual({
+      _or: [{ _not: { profile_activity_stats: {} } }, { profile_activity_stats: { top_area_id: { _is_null: true } } }],
+    });
   });
 
   it('should treat a missing stats row as null for is_null', () => {

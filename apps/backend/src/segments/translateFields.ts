@@ -9,8 +9,8 @@ const METRIC_COLUMNS: Record<string, string> = {
   visits_last_30d: 'visits_last_30d',
   avg_dwell_minutes: 'avg_dwell_minutes',
   after_hours_visits_30d: 'after_hours_visits_30d',
-  // Most entered area in the stats window (activity stats top_area_id).
-  visited_area_id: 'top_area_id',
+  // Most entered area in the stats window.
+  top_area_id: 'top_area_id',
 };
 const OPEN_MEMBERSHIP = { removed_at: { _is_null: true } };
 
@@ -24,7 +24,8 @@ function metric(leaf: Leaf, values: unknown[], env: LeafEnv): Where {
   const rel = STATS[env.target];
   const column = METRIC_COLUMNS[leaf.field];
   if (leaf.operator === 'is_null') return statsIsNull(rel, column, values[0]);
-  return { [rel]: columnLeaf(column, leaf, values, column !== 'top_area_id') };
+  // Every stats column gets the null guard: a NULL column and a missing row both make comparisons false.
+  return { [rel]: columnLeaf(column, leaf, values, true) };
 }
 
 /** last_seen_days_ago = whole days between last_seen_at and the evaluation time: d >= n <=> last_seen_at <= at - n days. */

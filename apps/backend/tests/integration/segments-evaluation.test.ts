@@ -116,7 +116,7 @@ describe('preview_segment and evaluate_segment', () => {
     expect((await expectError(evaluate(w.a, manual.id))).message).toMatch(/segment_not_dynamic/);
     const bad = { field: 'nope', operator: 'eq', value: 1 };
     expect((await expectError(preview(w.a, 'profiles', bad))).message).toMatch(/segment_condition_invalid:\$\.field/);
-    const foreignArea = { field: 'visited_area_id', operator: 'eq', value: w.areaB.id };
+    const foreignArea = { field: 'top_area_id', operator: 'eq', value: w.areaB.id };
     expect((await expectError(preview(w.a, 'profiles', foreignArea))).message).toMatch(/segment_condition_invalid:\$\.value/);
     expect((await expectError(preview(w.a, 'groups', ops('x')))).code).toBe('invalid_input');
   });
@@ -142,11 +142,12 @@ describe('preview_segment and evaluate_segment', () => {
     expect(sorted((await preview(w.a, 'profiles', scoped(false))).sample_ids)).toEqual(sorted([offShift, noSchedule]));
 
     const visitor = await createProfile(w.a, { profile_type: 'visitor' });
-    const now = Date.now();
+    // Noon of today's organization-local day (test organizations are UTC): inside the evaluation day at any time.
+    const noon = `${new Date().toISOString().slice(0, 10)}T12:00:00.000Z`;
     await insertOne(w.a, 'visits', {
       visitor_profile_id: visitor,
-      expected_start: new Date(now).toISOString(),
-      expected_end: new Date(now + 3600_000).toISOString(),
+      expected_start: noon,
+      expected_end: new Date(Date.parse(noon) + 3600_000).toISOString(),
     });
     await addMembers(w.a, group.id, [visitor]);
     const today = (operator: string, value: unknown) => ({

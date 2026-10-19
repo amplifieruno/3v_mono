@@ -5,12 +5,12 @@ import { insertOne, updateByPk } from './support/operations.js';
 import { dynamicSegment, manualSegment, segmentWorld } from './support/segments.js';
 import { runSqlRows } from './support/sql.js';
 
-type Field = { field: string; value_type: string; operators: string[]; enum_values: string[] | null };
+type Field = { field: string; value_type: string; operators: string[]; enum_values: string[] | null; label: string };
 
 const catalog = async (client: HasuraClient, target: string): Promise<Field[]> =>
   (
     await client.request<{ segment_fields: Field[] }>(
-      `query($t: String!) { segment_fields(args: {p_target: $t}, order_by: {field: asc}) { field value_type operators enum_values } }`,
+      `query($t: String!) { segment_fields(args: {p_target: $t}, order_by: {field: asc}) { field value_type operators enum_values label } }`,
       { t: target },
     )
   ).segment_fields;
@@ -35,7 +35,7 @@ describe('segment field catalog', () => {
       expect.arrayContaining([
         'profile_type', 'status', 'access_level', 'company_id', 'department', 'job_title', 'start_date', 'end_date',
         'work_schedule_id', 'on_shift_now', 'has_face', 'is_blacklisted', 'visit_status_today', 'member_of_segment',
-        'visits_last_30d', 'avg_dwell_minutes', 'last_seen_days_ago', 'visited_area_id', 'after_hours_visits_30d',
+        'visits_last_30d', 'avg_dwell_minutes', 'last_seen_days_ago', 'top_area_id', 'after_hours_visits_30d',
         'custom_fields.badge_color', 'custom_fields.floor',
       ]),
     );
@@ -44,6 +44,7 @@ describe('segment field catalog', () => {
     expect(byName['custom_fields.floor'].value_type).toBe('number');
     expect(byName.visits_last_30d.operators).toEqual(expect.arrayContaining(['gte', 'between', 'is_null']));
     expect(byName.has_face.operators).toEqual(['eq']);
+    expect(byName.top_area_id).toMatchObject({ value_type: 'area', operators: ['eq', 'neq', 'in', 'nin', 'is_null'], label: 'Most visited area (30 days)' });
     expect(byName.member_of_segment.value_type).toBe('segment');
     // jsonb-path fields take only what a Hasura where can express on them.
     expect(byName['custom_fields.floor'].operators).toEqual(['eq', 'neq', 'in', 'nin', 'is_null']);
@@ -54,7 +55,7 @@ describe('segment field catalog', () => {
     expect(identities.sort()).toEqual(
       [
         'after_hours_visits_30d', 'age', 'attributes.gender', 'avg_dwell_minutes', 'detection_count', 'first_seen_at',
-        'last_seen_days_ago', 'linked', 'member_of_segment', 'status', 'visited_area_id', 'visits_last_30d',
+        'last_seen_days_ago', 'linked', 'member_of_segment', 'status', 'top_area_id', 'visits_last_30d',
       ].sort(),
     );
     // Another organization does not see org A's custom fields.
@@ -124,9 +125,9 @@ describe('segment condition validation', () => {
     const w = await segmentWorld();
     const company = await insertOne(w.a, 'companies', { name: 'Acme', kind: 'tenant' });
     const otherCompany = await insertOne(w.b, 'companies', { name: 'Other', kind: 'tenant' });
-    await dynamicSegment(w.a, 'identities', { field: 'visited_area_id', operator: 'in', value: [w.zone.id, w.lobby.id] });
-    await rejectsAt(w.a, 'identities', { field: 'visited_area_id', operator: 'in', value: [w.zone.id, w.areaB.id] }, '$.value[1]');
-    await rejectsAt(w.a, 'identities', { field: 'visited_area_id', operator: 'eq', value: 'not-a-uuid' }, '$.value');
+    await dynamicSegment(w.a, 'identities', { field: 'top_area_id', operator: 'in', value: [w.zone.id, w.lobby.id] });
+    await rejectsAt(w.a, 'identities', { field: 'top_area_id', operator: 'in', value: [w.zone.id, w.areaB.id] }, '$.value[1]');
+    await rejectsAt(w.a, 'identities', { field: 'top_area_id', operator: 'eq', value: 'not-a-uuid' }, '$.value');
     await dynamicSegment(w.a, 'profiles', { field: 'company_id', operator: 'eq', value: company.id });
     await rejectsAt(w.a, 'profiles', { field: 'company_id', operator: 'eq', value: otherCompany.id }, '$.value');
     const manualProfiles = await manualSegment(w.a, 'profiles');

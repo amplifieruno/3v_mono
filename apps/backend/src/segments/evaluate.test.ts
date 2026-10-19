@@ -16,6 +16,13 @@ describe('mapSegmentError', () => {
     });
   });
 
+  it('should map only the known codes, not any segment_* text', () => {
+    const graphql = new HasuraError('validation-failed', "field 'segment_members' not found in type: 'query_root'");
+    expect(mapSegmentError(graphql)).toBe(graphql);
+    const unknown = new HasuraError('constraint-violation', 'segment_member_immutable');
+    expect(mapSegmentError(unknown)).toBe(unknown);
+  });
+
   it('should leave other errors alone', () => {
     const other = new HasuraError('unexpected', 'database query error');
     expect(mapSegmentError(other)).toBe(other);

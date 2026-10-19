@@ -13,10 +13,11 @@ import {
   mergeInto,
   openRows,
   preview,
+  removeMembers,
   segmentWorld,
   syncMembers,
 } from './support/segments.js';
-import { runSql } from './support/sql.js';
+import { runSql, runSqlRows } from './support/sql.js';
 import { at, createIdentity, detect } from './support/tracking.js';
 
 const DAY = 86400;
@@ -49,6 +50,19 @@ describe('sync_segment_members', () => {
     expect((await expectError(syncMembers(actor, manual.id, [i1], at(3 * DAY)))).message).toMatch(/segment_not_dynamic/);
     const otherOrg = asActor(w.orgB.id, w.other.id);
     expect((await expectError(syncMembers(otherOrg, segment.id, [i1], at(3 * DAY)))).message).toMatch(/segment_not_found/);
+  });
+
+  it("should open a rule row no earlier than the subject's last closed row (no overlapping intervals)", async () => {
+    const w = await segmentWorld();
+    const actor = asActor(w.orgA.id, w.user.id);
+    const segment = await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'gte', value: 0 });
+    await addMembers(w.a, segment.id, [w.identity]);
+    const [closed] = await removeMembers(w.a, segment.id, [w.identity]);
+    // An evaluation time before the manual row closed (now): the rule row starts when the manual row ended.
+    expect(await syncMembers(actor, segment.id, [w.identity], at(0))).toMatchObject({ added: 1 });
+    const rows = await exactRows(segment.id);
+    const rule = rows.find((r) => r.source === 'rule');
+    expect(Date.parse(String(rule?.added_at))).toBe(Date.parse(String(closed.removed_at)));
   });
 
   it('should not be callable by org_admin directly', async () => {
@@ -88,6 +102,23 @@ describe('behavioral metric conditions', () => {
     });
     expect(await evaluate(w.a, unknownFrequent.id)).toMatchObject({ added: 1, member_count: 1 });
     expect(await openRows(unknownFrequent.id)).toEqual([[w.identity, 'rule']]);
+  });
+
+  it('should treat a stats row with a NULL top area like a missing stats row', async () => {
+    const w = await segmentWorld();
+    const [stale, unseen, recent] = [w.identity, await createIdentity(w.a), await createIdentity(w.a)];
+    await detect(w.orgA.id, w.lobbyCam, stale, 0);
+    await detect(w.orgA.id, w.lobbyCam, recent, 35 * DAY);
+    // Window = 30 days before day 40: stale keeps a row (last_seen_at) without a top area; unseen has no row.
+    await runSql(`SELECT itap.refresh_activity_stats('${w.orgA.id}', '${at(40 * DAY)}')`);
+    const group = await manualSegment(w.a, 'identities');
+    await addMembers(w.a, group.id, [stale, unseen, recent]);
+    const inGroup = (leaf: unknown) => ({ op: 'and', children: [leaf, { field: 'member_of_segment', operator: 'eq', value: group.id }] });
+    const lobby = { field: 'top_area_id', operator: 'eq', value: w.lobby.id };
+    expect((await preview(w.a, 'identities', inGroup(lobby))).sample_ids).toEqual([recent]);
+    expect(sorted((await preview(w.a, 'identities', inGroup({ op: 'not', children: [lobby] }))).sample_ids)).toEqual(sorted([stale, unseen]));
+    const isNull = { field: 'top_area_id', operator: 'is_null', value: true };
+    expect(sorted((await preview(w.a, 'identities', inGroup(isNull))).sample_ids)).toEqual(sorted([stale, unseen]));
   });
 });
 
@@ -151,6 +182,27 @@ describe('membership locks and merges (task 1 carry-overs)', () => {
     await w.a.request(`mutation($id: uuid!) { rollback_merge(args: {p_merge_id: $id}) { id } }`, { id: merge });
     // Rollback drops the folded manual row and reopens both closed rows (source manual, target rule).
     expect(await exactRows(segment.id)).toEqual(before);
+  });
+
+  it('should pin or fold cleanly when an evaluation closes the target rule row during a merge', async () => {
+    const w = await segmentWorld();
+    const actor = asActor(w.orgA.id, w.user.id);
+    const segment = await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'gte', value: 0 });
+    for (let round = 0; round < 5; round += 1) {
+      const target = await createIdentity(w.a);
+      const source = await createIdentity(w.a);
+      await syncMembers(actor, segment.id, [target], new Date(Date.now() + round * 2000).toISOString());
+      await addMembers(w.a, segment.id, [source]);
+      const [merge] = await Promise.all([
+        mergeInto(w.a, target, [source]),
+        syncMembers(actor, segment.id, [], new Date(Date.now() + round * 2000 + 1000).toISOString()),
+      ]);
+      expect((await openRows(segment.id)).filter(([s]) => s === target || s === source)).toEqual([[target, 'manual']]);
+      const moves = await runSqlRows(
+        `SELECT count(*) FILTER (WHERE row_id IS NULL) AS missing FROM itap.identity_merge_moves WHERE merge_id = '${merge}'`,
+      );
+      expect(moves[0].missing).toBe('0');
+    }
   });
 
   it('should not deadlock or add merged identities when manual adds race with merges', async () => {

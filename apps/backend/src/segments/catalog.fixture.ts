@@ -21,7 +21,7 @@ const behavioral: CatalogField[] = [
   f('avg_dwell_minutes', 'number', nullable(NUMBER)),
   f('last_seen_days_ago', 'integer', nullable(INTEGER)),
   f('after_hours_visits_30d', 'integer', nullable(INTEGER)),
-  f('visited_area_id', 'area', REF),
+  f('top_area_id', 'area', nullable(REF)),
 ];
 
 export const profileCatalog: CatalogField[] = [

@@ -46,12 +46,22 @@ export class SegmentError extends Error {
   }
 }
 
-/** SQL codes (`segment_*`, with an optional `:<path>`) and translator errors -> SegmentError; anything else as is. */
+/** The itap.raise_code codes the evaluation path can raise (segment_condition_invalid carries `:<path>`). */
+const KNOWN_CODES = [
+  'segment_condition_invalid',
+  'segment_target_invalid',
+  'segment_not_found',
+  'segment_not_dynamic',
+  'segment_evaluation_time_required',
+];
+const CODE_PATTERN = new RegExp(`(?:^|\\s)(${KNOWN_CODES.join('|')})(:\\S+)?(?:$|\\s)`);
+
+/** Known SQL codes and translator errors -> SegmentError; anything else (incl. GraphQL errors) as is. */
 export function mapSegmentError(error: unknown): unknown {
   if (error instanceof SegmentTranslateError) return new SegmentError('segment_condition_invalid', `segment_condition_invalid:${error.path}`);
   if (!(error instanceof HasuraError)) return error;
-  const match = /\b(segment_[a-z_]+)(:\S+)?/.exec(`${error.detail ?? ''} ${error.message}`);
-  return match ? new SegmentError(match[1], match[0]) : error;
+  const match = CODE_PATTERN.exec(`${error.detail ?? ''} ${error.message}`);
+  return match ? new SegmentError(match[1], `${match[1]}${match[2] ?? ''}`) : error;
 }
 
 type ContextRow = {
