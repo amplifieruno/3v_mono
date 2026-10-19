@@ -92,3 +92,17 @@ select_permissions:
         organization_id:
           _eq: X-Hasura-Organization-Id
       allow_aggregations: true
+event_triggers:
+  - name: detection_created
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+    retry_conf:
+      num_retries: 5
+      interval_sec: 5
+      timeout_sec: 30
+    webhook: "{{BACKEND_URL}}/hasura/events/detection_created"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

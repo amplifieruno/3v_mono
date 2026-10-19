@@ -142,6 +142,7 @@ select_permissions:
         - code
         - created_at
         - created_by
+        - dedup_key
         - description
         - disposition
         - escalation_policy_id

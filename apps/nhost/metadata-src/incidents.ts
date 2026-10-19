@@ -51,6 +51,8 @@ export const incidentTables: TableSpec[] = [
       'resolved_by',
       'resolved_at',
       'resolution',
+      // Set only on incidents opened by event rules (one per session and rule).
+      'dedup_key',
     ],
     extraPermissions: {
       // Closed incidents are frozen (closed is terminal).

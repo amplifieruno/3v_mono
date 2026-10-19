@@ -7,7 +7,7 @@ import { identityFunctions, identityTables } from './identities.js';
 import { incidentFunctions, incidentTables } from './incidents.js';
 import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
-import { trackingTables } from './tracking.js';
+import { trackingFunctions, trackingTables } from './tracking.js';
 import type { FunctionSpec, TableSpec } from './types.js';
 
 /**
@@ -34,6 +34,7 @@ export const functions: FunctionSpec[] = [
   ...profileFunctions,
   ...facilityFunctions,
   ...deviceFunctions,
+  ...trackingFunctions,
   ...eventFunctions,
   ...incidentFunctions,
 ];

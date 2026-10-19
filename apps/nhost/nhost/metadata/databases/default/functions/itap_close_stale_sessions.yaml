@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: close_stale_sessions
+configuration:
+  custom_name: close_stale_sessions
+  exposed_as: mutation

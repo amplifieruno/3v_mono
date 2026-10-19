@@ -21,4 +21,22 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Probe the stream-server per camera: metrics, health_status, last_seen_at, device_events',
   },
+  {
+    // Tracking sessions of people who never came back (spec §8.3): closed per organization at scheduled_time by
+    // itap.close_stale_sessions (apps/backend/src/events/trackingCrons.ts).
+    name: 'close_stale_sessions',
+    schedule: '*/2 * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Close active tracking sessions idle longer than the tracking timeout; clear their occupancy',
+  },
+  {
+    // Time-based events (loitering, unusual_dwell) from area_occupancy durations at scheduled_time, per
+    // organization (itap.evaluate_dwell_rules).
+    name: 'evaluate_dwell_rules',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Loitering / unusual dwell events from occupancy durations',
+  },
 ];

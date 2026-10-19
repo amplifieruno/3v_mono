@@ -2,8 +2,10 @@ import express, { Router, type NextFunction, type Request, type Response } from 
 import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
+import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
+import { closeStaleSessions, evaluateDwellRules } from './trackingCrons.js';
 import {
   cronTriggerPayloadSchema,
   eventTriggerPayloadSchema,
@@ -26,6 +28,9 @@ export {
 export const defaultEventHandlers: EventHandlers = {
   heartbeat,
   device_health_check: deviceHealthCheck,
+  detection_created: detectionCreated,
+  close_stale_sessions: closeStaleSessions,
+  evaluate_dwell_rules: evaluateDwellRules,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: evaluate_detection
+configuration:
+  custom_name: evaluate_detection
+  exposed_as: mutation

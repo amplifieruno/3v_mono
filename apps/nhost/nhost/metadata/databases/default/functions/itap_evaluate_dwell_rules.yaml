@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: evaluate_dwell_rules
+configuration:
+  custom_name: evaluate_dwell_rules
+  exposed_as: mutation
