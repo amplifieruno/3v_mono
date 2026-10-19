@@ -1,4 +1,5 @@
 import type { Env } from '../config/env.js';
+import { mapAbort } from '../http/abort.js';
 
 export type HasuraSession = { role: string; userId?: string; organizationId?: string };
 
@@ -29,9 +30,12 @@ type GraphQLResponse<T> = {
   error?: string;
 };
 
-/** Parses a Hasura GraphQL HTTP response; every failure shape becomes a HasuraError. */
-export async function parseHasuraResponse<T>(res: Response): Promise<T> {
-  const text = await res.text();
+/**
+ * Parses a Hasura GraphQL HTTP response; every failure shape becomes a HasuraError. `readBody` reads the text (the
+ * caller maps a timeout during the read).
+ */
+export async function parseHasuraResponse<T>(res: Response, readBody: () => Promise<string> = () => res.text()): Promise<T> {
+  const text = await readBody();
   let body: GraphQLResponse<T>;
   try {
     body = JSON.parse(text) as GraphQLResponse<T>;
@@ -76,13 +80,10 @@ export function createHasuraClient(env: Env, session?: HasuraSession, options: H
     async request<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
       const init: RequestInit = { method: 'POST', headers, body: JSON.stringify({ query, variables }) };
       if (options.timeoutMs !== undefined) init.signal = AbortSignal.timeout(options.timeoutMs);
-      const res = await fetch(env.HASURA_GRAPHQL_URL, init).catch((error: unknown) => {
-        if (error instanceof Error && error.name === 'TimeoutError') {
-          throw new HasuraError('timeout', `Hasura request timed out after ${options.timeoutMs} ms`);
-        }
-        throw error;
-      });
-      return parseHasuraResponse<T>(res);
+      const timedOut = () => new HasuraError('timeout', `Hasura request timed out after ${options.timeoutMs} ms`);
+      const res = await mapAbort(fetch(env.HASURA_GRAPHQL_URL, init), timedOut);
+      // The signal also covers the body read; a timeout there is the same HasuraError, not a raw DOMException.
+      return parseHasuraResponse<T>(res, () => mapAbort(res.text(), timedOut));
     },
   };
 }

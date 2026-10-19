@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHasuraClient, HasuraError } from './client.js';
 import type { Env } from '../config/env.js';
+import { hangingBodyFetch } from '../http/fetchStubs.js';
 
 const env: Env = {
   HASURA_GRAPHQL_URL: 'http://hasura.test/v1/graphql',
@@ -103,5 +104,14 @@ describe('createHasuraClient timeout', () => {
     await createHasuraClient(env).request('query { ok }');
     const [, init] = fn.mock.calls[0] as unknown as [string, RequestInit];
     expect(init.signal).toBeUndefined();
+  });
+});
+
+describe('createHasuraClient timeout during the body read', () => {
+  it('should fail with HasuraError code timeout instead of a raw DOMException', async () => {
+    vi.stubGlobal('fetch', hangingBodyFetch());
+    const error = await createHasuraClient(env, undefined, { timeoutMs: 20 }).request('query { ok }').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HasuraError);
+    expect((error as HasuraError).code).toBe('timeout');
   });
 });

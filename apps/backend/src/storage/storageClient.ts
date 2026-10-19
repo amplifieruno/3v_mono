@@ -1,4 +1,5 @@
 import type { Env } from '../config/env.js';
+import { mapAbort } from '../http/abort.js';
 
 /** `metadata.kind` values whose access is audited (`open_file`) and which org_admin cannot select directly. */
 export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_document', 'dsr_export', 'auth_capture']);
@@ -27,34 +28,58 @@ export class StorageError extends Error {
   }
 }
 
-async function fail(res: Response, what: string): Promise<never> {
-  const text = await res.text().catch(() => '');
-  throw new StorageError(`${what} failed (${res.status}): ${text.slice(0, 200)}`, res.status);
-}
+/** Status reported by a StorageError for a request that timed out (no HTTP status was received, or only headers). */
+export const STORAGE_TIMEOUT_STATUS = 504;
+
+/** Default per-request limit when the env does not set STORAGE_TIMEOUT_MS. */
+export const DEFAULT_STORAGE_TIMEOUT_MS = 30_000;
+
+export type StorageClientOptions = {
+  /** Per-request limit (connect + body read); defaults to env STORAGE_TIMEOUT_MS. */
+  timeoutMs?: number;
+};
 
 /** hasura-storage 0.7 client authenticated with the admin secret (bypasses bucket permissions). */
-export function createStorageClient(env: Env): StorageClient {
+export function createStorageClient(env: Env, options: StorageClientOptions = {}): StorageClient {
   const base = env.NHOST_STORAGE_URL.replace(/\/+$/, '');
   const headers = { 'x-hasura-admin-secret': env.GRAPHQL_ADMIN_SECRET };
+  const timeoutMs = options.timeoutMs ?? env.STORAGE_TIMEOUT_MS ?? DEFAULT_STORAGE_TIMEOUT_MS;
+
+  /**
+   * One request under one timeout signal. `read` consumes the body (or fails on a non-2xx answer); a timeout while
+   * connecting or reading becomes a StorageError (status 504, or the received status), never a raw DOMException.
+   */
+  async function call<T>(what: string, path: string, init: RequestInit, read: (res: Response) => Promise<T>): Promise<T> {
+    const timedOut = (status: number) => () => new StorageError(`${what} timed out after ${timeoutMs} ms`, status);
+    const signal = AbortSignal.timeout(timeoutMs);
+    const res = await mapAbort(fetch(`${base}${path}`, { ...init, headers, signal }), timedOut(STORAGE_TIMEOUT_STATUS));
+    if (!res.ok) {
+      const text = await mapAbort(res.text(), timedOut(res.status)).catch((error: unknown) => {
+        if (error instanceof StorageError) throw error;
+        return '';
+      });
+      throw new StorageError(`${what} failed (${res.status}): ${text.slice(0, 200)}`, res.status);
+    }
+    return mapAbort(read(res), timedOut(STORAGE_TIMEOUT_STATUS));
+  }
 
   return {
     async presignedUrl(fileId) {
-      const res = await fetch(`${base}/files/${encodeURIComponent(fileId)}/presignedurl`, { headers });
-      if (!res.ok) return fail(res, 'Presigned URL request');
       // `expiration` is the lifetime in seconds.
-      const body = (await res.json()) as { url: string; expiration: number };
+      const body = await call('Presigned URL request', `/files/${encodeURIComponent(fileId)}/presignedurl`, {}, (res) =>
+        res.json() as Promise<{ url: string; expiration: number }>,
+      );
       return { url: body.url, expiresAt: new Date(Date.now() + body.expiration * 1000) };
     },
 
     async deleteFile(fileId) {
-      const res = await fetch(`${base}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers });
-      if (!res.ok) return fail(res, 'File delete');
+      await call('File delete', `/files/${encodeURIComponent(fileId)}`, { method: 'DELETE' }, async () => undefined);
     },
 
     async download(fileId) {
-      const res = await fetch(`${base}/files/${encodeURIComponent(fileId)}`, { headers });
-      if (!res.ok) return fail(res, 'File download');
-      return Buffer.from(await res.arrayBuffer());
+      return call('File download', `/files/${encodeURIComponent(fileId)}`, {}, async (res) =>
+        Buffer.from(await res.arrayBuffer()),
+      );
     },
 
     async upload({ bucketId, name, mimeType, data, metadata }) {
@@ -62,11 +87,12 @@ export function createStorageClient(env: Env): StorageClient {
       form.append('bucket-id', bucketId);
       form.append('metadata[]', JSON.stringify({ name, ...(metadata ? { metadata } : {}) }));
       form.append('file[]', new Blob([new Uint8Array(data)], { type: mimeType }), name);
-      const res = await fetch(`${base}/files`, { method: 'POST', headers, body: form });
-      if (!res.ok) return fail(res, 'File upload');
-      const body = (await res.json()) as { processedFiles?: { id: string }[] };
+      const { status, body } = await call('File upload', '/files', { method: 'POST', body: form }, async (res) => ({
+        status: res.status,
+        body: (await res.json()) as { processedFiles?: { id: string }[] },
+      }));
       const id = body.processedFiles?.[0]?.id;
-      if (!id) throw new StorageError('File upload returned no processed file', res.status);
+      if (!id) throw new StorageError('File upload returned no processed file', status);
       return { id };
     },
   };

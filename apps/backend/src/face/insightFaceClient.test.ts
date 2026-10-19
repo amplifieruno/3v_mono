@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInsightFaceClient, InsightFaceError } from './insightFaceClient.js';
+import { hangingBodyFetch } from '../http/fetchStubs.js';
 
 const vec = (value = 0.01) => Array.from({ length: 512 }, () => value);
 
@@ -98,5 +99,14 @@ describe('createInsightFaceClient timeout', () => {
     const client = createInsightFaceClient('http://insightface:18080', { timeoutMs: 20 });
     await expect(client.extract(Buffer.from('x'))).rejects.toThrow(/timed out after 20 ms/);
     await expect(client.extract(Buffer.from('x'))).rejects.toBeInstanceOf(InsightFaceError);
+  });
+});
+
+describe('createInsightFaceClient timeout during the body read', () => {
+  it('should fail with an InsightFaceError instead of a raw DOMException', async () => {
+    vi.stubGlobal('fetch', hangingBodyFetch());
+    const error = await createInsightFaceClient('http://if', { timeoutMs: 20 }).extract(Buffer.from('x')).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(InsightFaceError);
+    expect((error as Error).message).toMatch(/timed out after 20 ms/);
   });
 });

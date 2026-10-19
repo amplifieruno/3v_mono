@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mapAbort } from '../http/abort.js';
 
 export const EMBEDDING_DIM = 512;
 
@@ -56,7 +57,8 @@ export function createInsightFaceClient(baseUrl: string, options: { timeoutMs?: 
 
   return {
     async extract(image) {
-      const res = await fetch(url, {
+      const timedOut = () => new InsightFaceError(`InsightFace /extract timed out after ${timeoutMs} ms`);
+      const request = fetch(url, {
         signal: AbortSignal.timeout(timeoutMs),
         method: 'POST',
         // InsightFace-REST answers 500 when Accept is absent (it tests `'…msgpack' in accept`).
@@ -68,13 +70,10 @@ export function createInsightFaceClient(baseUrl: string, options: { timeoutMs?: 
           extract_embedding: true,
           extract_ga: true,
         }),
-      }).catch((error: unknown) => {
-        if (error instanceof Error && error.name === 'TimeoutError') {
-          throw new InsightFaceError(`InsightFace /extract timed out after ${timeoutMs} ms`);
-        }
-        throw error;
       });
-      const text = await res.text();
+      const res = await mapAbort(request, timedOut);
+      // The signal also covers the body read: a timeout there is the same InsightFaceError.
+      const text = await mapAbort(res.text(), timedOut);
       if (!res.ok) throw new InsightFaceError(`InsightFace /extract failed (${res.status}): ${text.slice(0, 200)}`);
 
       let body: unknown;
