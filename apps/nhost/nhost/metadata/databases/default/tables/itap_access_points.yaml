@@ -52,6 +52,36 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: access_point_id
+  - name: detections
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: detections
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: access_point_id
+  - name: identity_locations
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_locations
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: access_point_id
+  - name: last_access_point_tracking_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: tracking_sessions
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: last_access_point_id
 insert_permissions:
   - role: org_admin
     permission:

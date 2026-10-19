@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: tracking_session_statuses
+is_enum: true
+configuration:
+  custom_name: tracking_session_statuses

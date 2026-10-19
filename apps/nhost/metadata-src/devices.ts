@@ -13,6 +13,7 @@ export const deviceTables: TableSpec[] = [
     name: 'access_points',
     profile: 'tenant_crud',
     insertOnlyColumns: ['facility_id'],
+    relationshipNames: { tracking_sessions_last_access_point_fkey: 'last_access_point_tracking_sessions' },
   },
   {
     // Lifecycle by status: a device that anything references cannot be deleted. Credentials: password is a secret

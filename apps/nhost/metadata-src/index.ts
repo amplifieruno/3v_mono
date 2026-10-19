@@ -5,6 +5,7 @@ import { facilityFunctions, facilityTables } from './facilities.js';
 import { identityFunctions, identityTables } from './identities.js';
 import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
+import { trackingTables } from './tracking.js';
 import type { FunctionSpec, TableSpec } from './types.js';
 
 /**
@@ -19,6 +20,7 @@ export const tables: TableSpec[] = [
   ...identityTables,
   ...facilityTables,
   ...deviceTables,
+  ...trackingTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */

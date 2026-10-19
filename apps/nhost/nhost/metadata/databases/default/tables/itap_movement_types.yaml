@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: movement_types
+is_enum: true
+configuration:
+  custom_name: movement_types

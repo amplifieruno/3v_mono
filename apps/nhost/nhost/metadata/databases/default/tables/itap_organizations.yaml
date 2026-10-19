@@ -37,6 +37,14 @@ array_relationships:
           name: access_points
         column_mapping:
           id: organization_id
+  - name: area_occupancy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: area_occupancy
+        column_mapping:
+          id: organization_id
   - name: areas
     using:
       manual_configuration:
@@ -67,6 +75,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: custom_attribute_definitions
+        column_mapping:
+          id: organization_id
+  - name: detections
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: detections
         column_mapping:
           id: organization_id
   - name: device_areas
@@ -147,6 +163,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: identity_embeddings
+        column_mapping:
+          id: organization_id
+  - name: identity_locations
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_locations
         column_mapping:
           id: organization_id
   - name: identity_merge_moves
@@ -235,6 +259,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: profiles
+        column_mapping:
+          id: organization_id
+  - name: tracking_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: tracking_sessions
         column_mapping:
           id: organization_id
   - name: user_settings

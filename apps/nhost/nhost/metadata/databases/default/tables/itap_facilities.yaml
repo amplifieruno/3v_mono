@@ -22,12 +22,30 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: area_occupancy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: area_occupancy
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: areas
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: areas
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: detections
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: detections
         column_mapping:
           organization_id: organization_id
           id: facility_id
@@ -49,12 +67,35 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: identity_locations
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_locations
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: tracking_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: tracking_sessions
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
 computed_fields:
   - name: areas_count
     definition:
       function:
         schema: itap
         name: facility_areas_count
+  - name: current_occupancy
+    definition:
+      function:
+        schema: itap
+        name: facility_current_occupancy
 insert_permissions:
   - role: org_admin
     permission:
@@ -96,6 +137,7 @@ select_permissions:
         - updated_at
       computed_fields:
         - areas_count
+        - current_occupancy
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

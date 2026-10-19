@@ -1,0 +1,171 @@
+-- Stage A of the detection pipeline (spec §8.2): AFTER INSERT on detections, same transaction, bounded work.
+-- All time logic uses NEW.detected_at, never now(), so replaying history (seed) runs the same logic.
+--
+-- Concurrency: the identity row is locked FOR UPDATE by the BEFORE INSERT trigger detections_derive (before the
+-- FK check locks it), so all Stage A work of one identity is serialized: two concurrent detections of the same
+-- identity in one facility cannot both open a session (the partial unique index tracking_sessions_one_active_key
+-- is the backstop). Any other writer that changes tracking state of an identity (close_stale_sessions) must take
+-- the same identity row lock first.
+--
+-- Late detections (detected_at < the active session's last_detected_at, or not after the end of the identity's
+-- latest closed session in the facility when none is active) change no tracking state: no session is opened,
+-- closed or extended, no location is written and occupancy is untouched (only the identity counters may move
+-- first_seen_at back). Attaching them as locations would insert past transitions into a path that has already
+-- moved on; Stage B therefore sees no state change for them and emits nothing.
+
+-- Closes an active session (spec §8.2 / §8.3 rule, shared with close_stale_sessions): `completed` when the last
+-- detection of the session was at an is_entry_exit access point (tracking_sessions.last_access_point_id, set from
+-- every in-order detection), else `lost`; ended_at = last_detected_at; the session's occupancy row is cleared.
+-- Returns the new status, or NULL when the session was not active. Internal (not tracked).
+CREATE FUNCTION itap.close_tracking_session(p_organization uuid, p_session uuid) RETURNS text
+LANGUAGE plpgsql
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  closed_status text;
+BEGIN
+  UPDATE itap.tracking_sessions s
+  SET status = CASE WHEN EXISTS (
+        SELECT 1 FROM itap.access_points ap
+        WHERE ap.organization_id = s.organization_id AND ap.id = s.last_access_point_id AND ap.is_entry_exit
+      ) THEN 'completed' ELSE 'lost' END,
+      ended_at = s.last_detected_at
+  WHERE s.organization_id = p_organization AND s.id = p_session AND s.status = 'active'
+  RETURNING s.status INTO closed_status;
+  IF closed_status IS NOT NULL THEN
+    DELETE FROM itap.area_occupancy o WHERE o.organization_id = p_organization AND o.session_id = p_session;
+  END IF;
+  RETURN closed_status;
+END;
+$$;
+
+CREATE FUNCTION itap.track_detection() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  timeout_seconds integer;
+  throttle_seconds integer;
+  identity_profile uuid;
+  identity_first timestamptz;
+  identity_last timestamptz;
+  sess itap.tracking_sessions%ROWTYPE;
+  has_session boolean;
+  latest_end timestamptz;
+  opened boolean := false;
+  ap_direction text;
+  movement text;
+BEGIN
+  IF NEW.identity_id IS NULL OR NEW.facility_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  SELECT st.tracking_timeout_seconds, st.detection_counter_throttle_seconds INTO timeout_seconds, throttle_seconds
+  FROM itap.organization_settings st WHERE st.organization_id = NEW.organization_id;
+  timeout_seconds := coalesce(timeout_seconds, 300);
+  throttle_seconds := coalesce(throttle_seconds, 10);
+
+  -- 1. Identity counters, written at most once per throttle window of detected_at (spec §8.1). A write recounts
+  --    detection_count exactly; last_seen_at never decreases; an earlier detection always lowers first_seen_at.
+  SELECT i.profile_id, i.first_seen_at, i.last_seen_at INTO identity_profile, identity_first, identity_last
+  FROM itap.identities i
+  WHERE i.organization_id = NEW.organization_id AND i.id = NEW.identity_id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  IF identity_last IS NULL OR NEW.detected_at >= identity_last + make_interval(secs => throttle_seconds)
+     OR NEW.detected_at < identity_first THEN
+    UPDATE itap.identities i
+    SET last_seen_at = greatest(i.last_seen_at, NEW.detected_at),
+        first_seen_at = least(i.first_seen_at, NEW.detected_at),
+        detection_count = (
+          SELECT count(*) FROM itap.detections d
+          WHERE d.organization_id = NEW.organization_id AND d.identity_id = NEW.identity_id
+        )
+    WHERE i.organization_id = NEW.organization_id AND i.id = NEW.identity_id;
+  END IF;
+
+  -- 2. Session: extend, or close on timeout and open a new one; late detections stop here.
+  SELECT * INTO sess FROM itap.tracking_sessions s
+  WHERE s.organization_id = NEW.organization_id AND s.identity_id = NEW.identity_id
+    AND s.facility_id = NEW.facility_id AND s.status = 'active';
+  has_session := FOUND;
+  IF has_session THEN
+    IF NEW.detected_at < sess.last_detected_at THEN
+      RETURN NULL;
+    END IF;
+    IF NEW.detected_at - sess.last_detected_at > make_interval(secs => timeout_seconds) THEN
+      PERFORM itap.close_tracking_session(NEW.organization_id, sess.id);
+      has_session := false;
+    END IF;
+  ELSE
+    SELECT s.last_detected_at INTO latest_end FROM itap.tracking_sessions s
+    WHERE s.organization_id = NEW.organization_id AND s.identity_id = NEW.identity_id AND s.facility_id = NEW.facility_id
+    ORDER BY s.started_at DESC
+    LIMIT 1;
+    IF latest_end IS NOT NULL AND NEW.detected_at <= latest_end THEN
+      RETURN NULL;
+    END IF;
+  END IF;
+  IF NOT has_session THEN
+    INSERT INTO itap.tracking_sessions
+      (organization_id, identity_id, profile_id, facility_id, status, started_at, last_detected_at)
+    VALUES (NEW.organization_id, NEW.identity_id, identity_profile, NEW.facility_id, 'active', NEW.detected_at, NEW.detected_at)
+    RETURNING * INTO sess;
+    opened := true;
+  END IF;
+
+  -- 3. Location on area / access point change (the first located detection of a session always counts).
+  IF (NEW.area_id IS NOT NULL AND NEW.area_id IS DISTINCT FROM sess.last_area_id)
+     OR (NEW.access_point_id IS NOT NULL AND NEW.access_point_id IS DISTINCT FROM sess.last_access_point_id) THEN
+    IF NEW.access_point_id IS NOT NULL THEN
+      SELECT ap.direction INTO ap_direction FROM itap.access_points ap
+      WHERE ap.organization_id = NEW.organization_id AND ap.id = NEW.access_point_id;
+    END IF;
+    movement := CASE
+      WHEN ap_direction = 'out' THEN 'exit'
+      WHEN ap_direction = 'in' OR opened THEN 'entry'
+      ELSE 'movement'
+    END;
+    INSERT INTO itap.identity_locations
+      (organization_id, identity_id, session_id, facility_id, area_id, access_point_id, device_id, detection_id,
+       position, confidence, movement_type, occurred_at)
+    SELECT NEW.organization_id, NEW.identity_id, sess.id, NEW.facility_id, NEW.area_id, NEW.access_point_id,
+           NEW.device_id, NEW.id, d.position, NEW.confidence, movement, NEW.detected_at
+    FROM (SELECT 1) one
+    LEFT JOIN itap.devices d ON d.organization_id = NEW.organization_id AND d.id = NEW.device_id
+    ON CONFLICT (organization_id, detection_id) DO NOTHING;
+  END IF;
+
+  -- Transition record on the session: last area / access point, visited areas, last detection time.
+  UPDATE itap.tracking_sessions s
+  SET last_detected_at = greatest(s.last_detected_at, NEW.detected_at),
+      last_access_point_id = NEW.access_point_id,
+      last_area_id = coalesce(NEW.area_id, s.last_area_id),
+      areas_visited = CASE
+        WHEN NEW.area_id IS NULL OR NEW.area_id = ANY (s.areas_visited) THEN s.areas_visited
+        ELSE s.areas_visited || NEW.area_id
+      END
+  WHERE s.organization_id = NEW.organization_id AND s.id = sess.id;
+
+  -- Occupancy: one row per (facility, identity); entering another area (or a new session) resets entered_at.
+  IF NEW.area_id IS NOT NULL THEN
+    INSERT INTO itap.area_occupancy AS o
+      (organization_id, facility_id, area_id, identity_id, session_id, entered_at, last_seen_at)
+    VALUES (NEW.organization_id, NEW.facility_id, NEW.area_id, NEW.identity_id, sess.id, NEW.detected_at, NEW.detected_at)
+    ON CONFLICT (organization_id, facility_id, identity_id) DO UPDATE
+    SET entered_at = CASE WHEN o.area_id = EXCLUDED.area_id AND o.session_id IS NOT DISTINCT FROM EXCLUDED.session_id
+                          THEN o.entered_at ELSE EXCLUDED.entered_at END,
+        last_seen_at = CASE WHEN o.area_id = EXCLUDED.area_id AND o.session_id IS NOT DISTINCT FROM EXCLUDED.session_id
+                            THEN greatest(o.last_seen_at, EXCLUDED.last_seen_at) ELSE EXCLUDED.last_seen_at END,
+        area_id = EXCLUDED.area_id,
+        session_id = EXCLUDED.session_id;
+  ELSE
+    UPDATE itap.area_occupancy o SET last_seen_at = greatest(o.last_seen_at, NEW.detected_at)
+    WHERE o.organization_id = NEW.organization_id AND o.session_id = sess.id;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER track_detection AFTER INSERT ON itap.detections
+  FOR EACH ROW EXECUTE FUNCTION itap.track_detection();

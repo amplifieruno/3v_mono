@@ -13,7 +13,10 @@ export const facilityTables: TableSpec[] = [
     name: 'facilities',
     profile: 'tenant_crud',
     readOnlyColumns: ['number'],
-    computedFields: [{ name: 'areas_count', function: 'facility_areas_count' }],
+    computedFields: [
+      { name: 'areas_count', function: 'facility_areas_count' },
+      { name: 'current_occupancy', function: 'facility_current_occupancy' },
+    ],
   },
   {
     // path/depth are maintained by trigger (areas_maintain_path); moving an area to another facility is not
@@ -26,6 +29,7 @@ export const facilityTables: TableSpec[] = [
     relationshipNames: {
       'areas_parent_fkey#array': 'children',
       floor_plans_area_fkey: 'floor_plan',
+      tracking_sessions_last_area_fkey: 'last_area_tracking_sessions',
     },
   },
   { name: 'floor_plans', profile: 'tenant_crud', insertOnlyColumns: ['facility_id'] },

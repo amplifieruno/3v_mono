@@ -1,0 +1,94 @@
+table:
+  schema: itap
+  name: detections
+configuration:
+  custom_name: detections
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          access_point_id: id
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: thumbnail_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          thumbnail_file_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - area_id
+        - bbox
+        - confidence
+        - created_at
+        - detected_at
+        - device_id
+        - facility_id
+        - frame_height
+        - frame_width
+        - id
+        - identity_id
+        - is_new_identity
+        - organization_id
+        - quality_score
+        - similarity
+        - thumbnail_file_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
