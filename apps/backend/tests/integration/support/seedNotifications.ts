@@ -20,6 +20,8 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
             (select max_cycles::text from itap.escalation_policies where organization_id = ${org}) as max_cycles,
             (select r.name from itap.event_rules r join itap.event_rule_versions v on v.id = r.current_version_id
                where r.organization_id = ${org} and v.escalation_policy_id is not null) as escalating_rule,
+            (select string_agg(name, ',' order by name) from itap.notification_rules
+               where organization_id = ${org} and escalation_policy_id is not null) as escalating_notification_rules,
             (select count(*) from itap.notification_subscriptions where organization_id = ${org}) as subscriptions,
             (select url from itap.webhook_subscriptions where organization_id = ${org}) as webhook_url,
             (select count(*) from itap.event_rules r join itap.event_rule_versions v on v.id = r.current_version_id
@@ -29,12 +31,13 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
     templates: '22',
     ru_templates: '11',
     groups: 'Facility managers,On-call,Security team',
-    rules: 'NRULE-00001,NRULE-00002,NRULE-00003,NRULE-00004',
+    rules: 'NRULE-00001,NRULE-00002,NRULE-00003,NRULE-00004,NRULE-00005',
     on_call: '3',
     steps: 'in_app:0,email:0,sms:10',
     subscriptions: '2',
     escalating_rules: '1',
     escalating_rule: 'Blacklist match',
+    escalating_notification_rules: 'Blacklist matches',
     max_cycles: '3',
   });
   expect(config.webhook_url).toMatch(/\/hasura\/events\/webhook-sink$/);

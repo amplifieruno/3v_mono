@@ -1,10 +1,12 @@
 import { createHasuraClient } from '../hasura/client.js';
 import { signWebhookBody } from '../webhooks/signature.js';
+import { NOTIFICATION_RULES } from './notificationPlan.js';
 import type { SeedContext } from './tenancy.js';
 
 /**
  * Notification side of the Nova Tower history (slice 5): escalations of history incidents at simulated instants,
- * the escalation policy on the blacklist rule for live incidents, and the signatures of the replayed webhook deliveries.
+ * the escalation policy on the blacklist event and notification rules for live incidents, and the signatures of the
+ * replayed webhook deliveries.
  */
 
 /**
@@ -61,6 +63,26 @@ export async function attachEscalationPolicy(
     { v: draft.id, policy: args.policyId },
   );
   return rule.id;
+}
+
+/**
+ * Puts the escalation policy on the notification rules marked `escalate` (NOTIFICATION_RULES), after the history for
+ * the same reason as attachEscalationPolicy: with the policy in place during the replay Stage C would put it on every
+ * replayed incident of the rule. Idempotent: only rules without a policy. Returns the number of rules updated.
+ */
+export async function attachRulePolicies(ctx: SeedContext, args: { org: string; adminUser: string; policyId: string }): Promise<number> {
+  const names = NOTIFICATION_RULES.filter((r) => r.escalate).map((r) => r.name);
+  const actor = createHasuraClient(ctx.env, { role: 'admin', userId: args.adminUser, organizationId: args.org });
+  const data = await actor.request<{ update_notification_rules: { affected_rows: number } }>(
+    `mutation SeedRulePolicies($org: uuid!, $names: [String!]!, $policy: uuid!) {
+      update_notification_rules(
+        where: { organization_id: { _eq: $org }, name: { _in: $names }, escalation_policy_id: { _is_null: true } }
+        _set: { escalation_policy_id: $policy }
+      ) { affected_rows }
+    }`,
+    { org: args.org, names, policy: args.policyId },
+  );
+  return data.update_notification_rules.affected_rows;
 }
 
 /** A rule id by name (incidents of the rule carry it in their dedup key). */

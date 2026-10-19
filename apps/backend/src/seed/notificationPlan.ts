@@ -218,20 +218,36 @@ export type RuleSpec = {
   template: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   digest: 'none' | 'hourly' | 'daily';
+  /**
+   * The rule carries the escalation policy (Stage C puts it on the event's incident). Attached only after the
+   * history (historyNotifications.attachRulePolicies), like the event rule's: replayed incidents get their policy
+   * together with their simulated escalations.
+   */
   escalate: boolean;
 };
 
 export const NOTIFICATION_RULES: RuleSpec[] = [
   {
-    name: 'Blacklist and watch-list matches',
-    description: 'Security team, in-app and email, at once (critical: never deferred by quiet hours)',
-    eventTypes: ['blacklist_match', 'watchlist_match'],
+    name: 'Blacklist matches',
+    description: 'Security team, in-app and email, at once (critical: never deferred by quiet hours); escalates',
+    eventTypes: ['blacklist_match'],
     channels: ['in_app', 'email'],
     group: SECURITY_TEAM,
     template: 'blacklist_alert',
     priority: 'critical',
     digest: 'none',
     escalate: true,
+  },
+  {
+    name: 'Watch-list matches',
+    description: 'Security team, in-app and email, at once (critical: never deferred by quiet hours); no escalation',
+    eventTypes: ['watchlist_match'],
+    channels: ['in_app', 'email'],
+    group: SECURITY_TEAM,
+    template: 'blacklist_alert',
+    priority: 'critical',
+    digest: 'none',
+    escalate: false,
   },
   {
     name: 'Restricted areas and after-hours presence',

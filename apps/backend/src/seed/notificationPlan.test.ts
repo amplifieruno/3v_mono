@@ -44,6 +44,13 @@ describe('notification seed plan', () => {
     for (const step of ESCALATION_STEPS) if ('group' in step) expect(groups.has(step.group)).toBe(true);
   });
 
+  it('should escalate only blacklist matches: watch-list matches have their own rule without a policy', () => {
+    const escalating = NOTIFICATION_RULES.filter((r) => r.escalate);
+    expect(escalating.map((r) => [r.name, r.eventTypes])).toEqual([['Blacklist matches', ['blacklist_match']]]);
+    const watch = NOTIFICATION_RULES.find((r) => r.eventTypes.includes('watchlist_match'));
+    expect(watch).toMatchObject({ name: 'Watch-list matches', eventTypes: ['watchlist_match'], escalate: false });
+  });
+
   it('should put both admins and an external address in the security team, each user on in_app and email', () => {
     const [security] = groupSpecs({ admin: 'a', novaAdmin: 'n', operator: 'o' });
     expect(security.name).toBe('Security team');

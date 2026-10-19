@@ -159,7 +159,8 @@ export async function seedNotifications(
       conditions: { facility_id: facility },
       recipient_group_id: need(groups, r.group, 'group'),
       template_id: need(templates, `${r.template}/${r.channels[0]}/en`, 'template'),
-      escalation_policy_id: r.escalate ? policyId : null,
+      // Escalating rules get the policy after the history (historyNotifications.attachRulePolicies).
+      escalation_policy_id: null,
       notification_rule_event_types: { data: r.eventTypes.map((event_type) => ({ ...child, event_type })) },
       notification_rule_channels: { data: r.channels.map((channel) => ({ ...child, channel })) },
     })),

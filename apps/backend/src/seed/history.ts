@@ -3,7 +3,7 @@ import type { SeedFacilitiesResult } from './facilities.js';
 import { floorName, SEED_FACILITIES } from './facilityPlan.js';
 import { BLACKLIST_RULE, seedHistoryConfig } from './historyConfig.js';
 import { seedIncidentHistory } from './historyIncidents.js';
-import { attachEscalationPolicy, ruleId, signHistoryWebhooks } from './historyNotifications.js';
+import { attachEscalationPolicy, attachRulePolicies, ruleId, signHistoryWebhooks } from './historyNotifications.js';
 import { seedOperatorHistory } from './historyOperators.js';
 import { historyPeople } from './historyPeople.js';
 import { buildHistoryPlan } from './historyPlan.js';
@@ -21,7 +21,8 @@ import type { SeedContext, SeedTenancyResult } from './tenancy.js';
  * lifecycle, shift handovers, workspaces, estimated locations); then a week of light Riverside history.
  * Notifications (slice 5): the personal subscriptions are written before the replay, so Stage C produces the history's
  * deliveries, inbox rows and webhook deliveries; incidents of the blacklist rule escalate at simulated times; afterwards
- * the blacklist rule gets the escalation policy for live incidents and the replayed webhook deliveries are signed.
+ * the blacklist event rule and the escalating notification rule (Blacklist matches) get the escalation policy for
+ * live incidents and the replayed webhook deliveries are signed.
  */
 export type SeedHistoryResult = {
   replay: ReplayResult;
@@ -82,6 +83,7 @@ export async function seedHistory(
     escalation: blacklistRule ? { ruleId: blacklistRule, policyId: notifications.policyId } : null,
   });
   await attachEscalationPolicy(ctx, { org, adminUser: users.admin, ruleName: BLACKLIST_RULE, policyId: notifications.policyId });
+  await attachRulePolicies(ctx, { org, adminUser: users.admin, policyId: notifications.policyId });
   const webhooksSigned = await signHistoryWebhooks(ctx, org);
   const operators = await seedOperatorHistory(ctx, {
     org,
