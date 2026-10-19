@@ -68,6 +68,9 @@ describe('itap.valid_shape', () => {
     expect(await check('valid_shape', { type: 'Polygon', coordinates: [] })).toBe(false);
     expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [1, 1]]] })).toBe(false);
     expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1]]] })).toBe(false);
+    // fewer than 3 distinct points (repeated points do not count)
+    expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [0, 0], [1, 1], [0, 0]]] })).toBe(false);
+    expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [0, 0], [1, 1]]] })).toBe(false);
     expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [1, 1], ['a', 2]]] })).toBe(false);
     expect(await check('valid_shape', { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [2, 0]]], extra: 1 })).toBe(false);
   });

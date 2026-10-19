@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin } from './support/clients.js';
+import { asAdmin, asOrgAdmin } from './support/clients.js';
 import { createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
 import { runSql } from './support/sql.js';
 import { AREAS, createArea, createFacility, createTree, INSERT_AREA, MOVE_AREA, type Area } from './support/facilities.js';
@@ -83,7 +83,7 @@ describe('areas tree', () => {
         `update itap.areas set parent_id = case id when '${tree.floor1.id}' then '${tree.floor2.id}'::uuid else '${tree.floor1.id}'::uuid end
          where id in ('${tree.floor1.id}', '${tree.floor2.id}');`,
       ),
-    ).rejects.toThrow(/area_cycle/);
+    ).rejects.toThrow(/area_cycle|area_multi_parent_move/);
     expect(await areasById(a, f.id)).toEqual(before);
   });
 
@@ -133,6 +133,18 @@ describe('areas tree', () => {
     const local = await createArea(a, f1.id, 'Local');
     const e2 = await expectError(a.request(MOVE_AREA, { id: local.id, parent: foreignParent.id }));
     expect(e2.message).toMatch(/foreign key/i);
+  });
+
+  it('should reject a parent or facility of another organization', async () => {
+    const { orgA, orgB, user, other } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const b = asOrgAdmin(other.id, orgB.id);
+    const fa = await createFacility(a);
+    const fb = await createFacility(b);
+    const foreignParent = await createArea(b, fb.id, 'B root');
+    const local = await createArea(a, fa.id, 'A root');
+    expect((await expectError(a.request(MOVE_AREA, { id: local.id, parent: foreignParent.id }))).message).toMatch(/foreign key/i);
+    expect((await expectError(createArea(a, fb.id, 'Intruder'))).message).toMatch(/foreign key/i);
   });
 
   it('should keep path and depth read-only and facility_id insert-only', async () => {
@@ -204,5 +216,7 @@ describe('area_descendants', () => {
     const b = asOrgAdmin(other.id, orgB.id);
     expect((await b.request<{ area_descendants: unknown[] }>(DESCENDANTS, { area: building.id })).area_descendants).toEqual([]);
     await expectDenied(b.request(`query { area_refs { id } }`), 'area_refs');
+    const noOrg = await expectError(asAdmin().request(DESCENDANTS, { area: building.id }));
+    expect(`${noOrg.message} ${noOrg.detail ?? ''}`).toContain('organization_required');
   });
 });

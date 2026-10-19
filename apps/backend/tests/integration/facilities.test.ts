@@ -154,6 +154,13 @@ describe('floor_plans', () => {
     await expectError(
       a.request(INSERT_FLOOR_PLAN, { object: { facility_id: f2.id, area_id: floor.id, name: 'x', width_px: 0, height_px: 10 } }),
     );
+    const text = fileId(await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id));
+    const notImage = await expectError(
+      a.request(INSERT_FLOOR_PLAN, {
+        object: { facility_id: f2.id, area_id: floor.id, name: 'x', width_px: 10, height_px: 10, image_file_id: text },
+      }),
+    );
+    expect(notImage.message).toContain('floor_plan_not_image');
     const foreign = fileId(await uploadFile(orgAdminToken(other.id, orgB.id), orgB.id, undefined, 'image/png'));
     await expectError(
       a.request(INSERT_FLOOR_PLAN, {
