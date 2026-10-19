@@ -49,6 +49,18 @@ export async function createIdentity(
   return data.insert_identities_one;
 }
 
+/**
+ * Inserts an identity with the admin secret (plus the org session), for states org_admin may not write directly
+ * (statuses `verified` / `pending_verification` belong to the verification workflow).
+ */
+export async function createIdentityAsAdmin(orgId: string, object: Record<string, unknown> = {}): Promise<{ id: string; code: string }> {
+  const data = await asAdminWithSession(orgId).request<{ insert_identities_one: { id: string; code: string } }>(
+    INSERT_IDENTITY,
+    { object: { organization_id: orgId, ...object } },
+  );
+  return data.insert_identities_one;
+}
+
 /** Inserts an embedding the way the backend does (admin secret + the caller's org session). */
 export async function addEmbedding(orgId: string, identityId: string, values: number[], qualityScore: number): Promise<string> {
   const data = await asAdminWithSession(orgId).request<{ insert_identity_embeddings_one: { id: string } }>(

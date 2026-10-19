@@ -11,8 +11,11 @@ export const profileTables: TableSpec[] = [
   { name: 'custom_attribute_types', isEnum: true, profile: 'none' },
   { name: 'custom_attribute_definitions', profile: 'tenant_crud', insertOnlyColumns: ['entity', 'key'] },
   {
+    // Lifecycle by status (spec §6.0): inactive/terminated, not deleted (consent evidence and documents stay;
+    // erasure: DSR flow, slice 10).
     name: 'profiles',
     profile: 'tenant_crud',
+    noDelete: true,
     readOnlyColumns: ['number', 'identities_count', 'source_integration_id'],
     computedFields: [{ name: 'has_face', function: 'profile_has_face' }],
   },
@@ -22,9 +25,11 @@ export const profileTables: TableSpec[] = [
   { name: 'consent_methods', isEnum: true, profile: 'none' },
   {
     // Created by the upload_profile_document action (the file is a sensitive kind org_admin cannot upload itself).
+    // Not deletable either: the sensitive file would be orphaned (erasure: DSR flow, slice 10).
     name: 'profile_documents',
     profile: 'tenant_crud',
     noInsert: true,
+    noDelete: true,
     readOnlyColumns: ['profile_id', 'file_id'],
   },
   { name: 'consent_records', profile: 'tenant_crud', insertOnlyColumns: ['profile_id'] },

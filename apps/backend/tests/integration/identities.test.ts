@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin, orgAdminToken } from './support/clients.js';
+import { asAdmin, asOrgAdmin, orgAdminToken } from './support/clients.js';
 import { createIdentity } from './support/faces.js';
 import { createTwoOrgs, expectDenied, expectError, uploadFile } from './support/fixtures.js';
 import { runSql, runSqlRows } from './support/sql.js';
@@ -99,7 +99,7 @@ describe('identities', () => {
       linked_by: null,
     });
 
-    await a.request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
+    await asAdmin().request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
     await runSql(`update itap.identities set profile_id = null where profile_id = '${p1}'`);
     expect((await a.request<Counts>(PROFILE, { id: p1 })).profiles_by_pk.identities_count).toBe(0);
   });
@@ -109,7 +109,7 @@ describe('identities', () => {
     const a = asOrgAdmin(user.id, orgA.id);
     const p = await newProfile(user.id, orgA.id);
     const identity = await createIdentity(user.id, orgA.id, { profile_id: p });
-    await a.request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
+    await asAdmin().request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
     expect((await a.request<Counts>(PROFILE, { id: p })).profiles_by_pk.identities_count).toBe(0);
   });
 
@@ -144,7 +144,7 @@ describe('identities', () => {
     expect((await b.request<{ identities: unknown[] }>(`query { identities { id } }`)).identities).toEqual([]);
     const updated = await b.request<{ update_identities: { affected_rows: number } }>(UPDATE_IDENTITY, {
       id: identity.id,
-      set: { is_synthetic: true },
+      set: { attributes: { note: 'foreign' } },
     });
     expect(updated.update_identities.affected_rows).toBe(0);
   });
@@ -174,7 +174,7 @@ describe('identity photos', () => {
     expect(primaryErr.message).toContain('file_not_in_org_bucket:primary_photo_file_id');
     await a.request(UPDATE_IDENTITY, { id: identity.id, set: { primary_photo_file_id: own.id } });
 
-    await a.request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
+    await asAdmin().request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
     const left = await runSqlRows(`select count(*) as n from itap.identity_photos where identity_id = '${identity.id}'`);
     expect(left[0].n).toBe('0');
   });

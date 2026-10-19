@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asOrgAdmin } from './support/clients.js';
-import { addEmbedding, axis, createIdentity } from './support/faces.js';
+import { addEmbedding, axis, createIdentity, createIdentityAsAdmin } from './support/faces.js';
 import { createTwoOrgs, expectError } from './support/fixtures.js';
 import {
   addPhotoAndEmbedding,
@@ -24,10 +24,7 @@ describe('split_identity', () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const p = await newProfile(user.id, orgA.id);
-    const original = await createIdentity(user.id, orgA.id, {
-      profile_id: p,
-      status: 'verified',
-    });
+    const original = await createIdentityAsAdmin(orgA.id, { profile_id: p, status: 'verified' });
     const keep = await addPhotoAndEmbedding(user.id, orgA.id, original.id, 0);
     const take = await addPhotoAndEmbedding(user.id, orgA.id, original.id, 1);
     const extra = await addEmbedding(orgA.id, original.id, axis(2), 0.4);
@@ -176,6 +173,6 @@ describe('reserved identity status and sources', () => {
     ).rejects.toThrow(/identity_merged_frozen/);
     expect(await identityState(source.id)).toEqual({ status: 'merged', profile_id: null, is_primary_for_profile: false });
     // Other columns stay editable.
-    await a.request(UPDATE_IDENTITY, { id: source.id, set: { is_synthetic: true } });
+    await a.request(UPDATE_IDENTITY, { id: source.id, set: { attributes: { note: 'merged' } } });
   });
 });

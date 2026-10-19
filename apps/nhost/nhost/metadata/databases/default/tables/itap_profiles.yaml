@@ -196,9 +196,3 @@ update_permissions:
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
-delete_permissions:
-  - role: org_admin
-    permission:
-      filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin } from './support/clients.js';
+import { asAdmin, asOrgAdmin } from './support/clients.js';
 import { addEmbedding, axis, createIdentity, vectorLiteral } from './support/faces.js';
 import { createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
 import { runSql, runSqlRows } from './support/sql.js';
@@ -90,7 +90,7 @@ describe('identity embeddings and template upkeep', () => {
     const err = await expectError(addEmbedding(orgA.id, identity.id, [1, 0, 0], 0.5));
     expect(err.message).toMatch(/dimensions|expected 512/i);
     await addEmbedding(orgA.id, identity.id, axis(0), 0.5);
-    await asOrgAdmin(user.id, orgA.id).request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
+    await asAdmin().request(`mutation($id: uuid!) { delete_identities_by_pk(id: $id) { id } }`, { id: identity.id });
     const left = await runSqlRows(`select count(*) as n from itap.identity_embeddings where identity_id = '${identity.id}'`);
     expect(left[0].n).toBe('0');
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asOrgAdmin } from './support/clients.js';
-import { addEmbedding, axis, createIdentity } from './support/faces.js';
+import { addEmbedding, axis, createIdentity, createIdentityAsAdmin } from './support/faces.js';
 import { createTwoOrgs, expectError } from './support/fixtures.js';
 import {
   addPhoto,
@@ -28,7 +28,7 @@ describe('merge_identities', () => {
     const a = asOrgAdmin(user.id, orgA.id);
     const target = await createIdentity(user.id, orgA.id);
     const s1 = await createIdentity(user.id, orgA.id);
-    const s2 = await createIdentity(user.id, orgA.id, { status: 'verified' });
+    const s2 = await createIdentityAsAdmin(orgA.id, { status: 'verified' });
     await addPhotoAndEmbedding(user.id, orgA.id, target.id, 0);
     const r1 = await addPhotoAndEmbedding(user.id, orgA.id, s1.id, 1);
     const r2 = await addPhotoAndEmbedding(user.id, orgA.id, s2.id, 2);
@@ -217,9 +217,7 @@ describe('rollback_merge', () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const target = await createIdentity(user.id, orgA.id);
-    const source = await createIdentity(user.id, orgA.id, {
-      status: 'verified',
-    });
+    const source = await createIdentityAsAdmin(orgA.id, { status: 'verified' });
     const own = await addPhotoAndEmbedding(user.id, orgA.id, target.id, 0);
     const moved = await addPhotoAndEmbedding(user.id, orgA.id, source.id, 1);
     const merge = (

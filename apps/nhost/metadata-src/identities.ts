@@ -14,8 +14,12 @@ export const identityTables: TableSpec[] = [
   { name: 'verification_statuses', isEnum: true, profile: 'none' },
   { name: 'merge_statuses', isEnum: true, profile: 'none' },
   {
+    // Lifecycle by status (spec §6.0): archived, not deleted (erasure: DSR flow, slice 10). Statuses verified /
+    // pending_verification are reserved for the verification workflow (trigger identities_verification_status).
     name: 'identities',
     profile: 'tenant_crud',
+    noDelete: true,
+    insertOnlyColumns: ['is_synthetic'],
     readOnlyColumns: [
       'number',
       'confidence',

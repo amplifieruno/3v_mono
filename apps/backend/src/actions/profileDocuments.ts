@@ -8,6 +8,9 @@ export type UploadedProfileDocument = { document_id: string; file_id: string };
 /** Largest accepted document, decoded. */
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
+/** Document formats accepted for profile documents (rendered inline by the admin UI; no active content). */
+export const DOCUMENT_MIME_TYPES: ReadonlySet<string> = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
+
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
 const inputSchema = z.object({
@@ -15,7 +18,7 @@ const inputSchema = z.object({
   kind: z.enum(['id_card', 'contract', 'nda', 'badge_photo', 'other']),
   title: z.string().trim().min(1).max(200),
   file_name: z.string().trim().min(1).max(255),
-  mime_type: z.string().trim().min(1).max(127),
+  mime_type: z.string().trim().toLowerCase().min(1).max(127),
   content_base64: z.string().regex(BASE64, 'must be non-empty base64'),
 });
 
@@ -90,6 +93,9 @@ export const uploadProfileDocument = defineAction(
   async ({ env, input, session, admin, actor }): Promise<UploadedProfileDocument> => {
     const organizationId = session.organizationId?.toLowerCase();
     if (!organizationId) throw new ActionError('no_organization', 'An organization session is required');
+    if (!DOCUMENT_MIME_TYPES.has(input.mime_type)) {
+      throw new ActionError('unsupported_mime_type', 'Allowed types: PDF, PNG, JPEG, WebP');
+    }
     if (decodedSize(input.content_base64) > MAX_DOCUMENT_BYTES) {
       throw new ActionError('file_too_large', 'The document exceeds 10 MB');
     }

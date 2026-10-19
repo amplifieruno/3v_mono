@@ -77,6 +77,28 @@ describe('uploadProfileDocument', () => {
     expect(storage.upload).not.toHaveBeenCalled();
   });
 
+  it('should answer unsupported_mime_type outside the allowlist, before checking the profile or uploading', async () => {
+    for (const mime of ['text/html', 'image/svg+xml', 'application/octet-stream']) {
+      const { promise, adminRequest } = run(uploadProfileDocument, input({ mime_type: mime }));
+      expect(await errorCode(promise)).toBe('unsupported_mime_type');
+      expect(adminRequest).not.toHaveBeenCalled();
+    }
+    expect(storage.upload).not.toHaveBeenCalled();
+  });
+
+  it('should accept the allowlisted mime types case-insensitively and store them lowercased', async () => {
+    for (const mime of ['application/pdf', 'image/png', 'image/jpeg', 'IMAGE/WEBP']) {
+      const { promise } = run(uploadProfileDocument, input({ mime_type: mime }));
+      await promise;
+    }
+    expect(storage.upload.mock.calls.map(([arg]) => (arg as { mimeType: string }).mimeType)).toEqual([
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+    ]);
+  });
+
   it('should answer file_too_large above 10 MB decoded, before decoding or uploading', async () => {
     const big = Buffer.alloc(MAX_DOCUMENT_BYTES + 1).toString('base64');
     const { promise, adminRequest } = run(uploadProfileDocument, input({ content_base64: big }));

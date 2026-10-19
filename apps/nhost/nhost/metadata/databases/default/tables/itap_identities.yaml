@@ -184,18 +184,11 @@ update_permissions:
         - attributes
         - custom_fields
         - is_primary_for_profile
-        - is_synthetic
         - link_strength
         - primary_photo_file_id
         - profile_id
         - source
         - status
-      filter:
-        organization_id:
-          _eq: X-Hasura-Organization-Id
-delete_permissions:
-  - role: org_admin
-    permission:
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

@@ -93,6 +93,15 @@ describe('upload_profile_document', () => {
     expect((await asOrgAdmin(other.id, orgB.id).request<{ profile_documents: unknown[] }>(DOCS, { p: foreign })).profile_documents).toEqual([]);
   });
 
+  it('should answer unsupported_mime_type for a mime type outside the allowlist', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const profile = await newProfile(user.id, orgA.id);
+    const error = await expectError(asOrgAdmin(user.id, orgA.id).request(UPLOAD, vars(profile, { m: 'text/html' })));
+    expect(error.code).toBe('unsupported_mime_type');
+    const rows = await runSqlRows(`select count(*)::text as n from itap.profile_documents where profile_id = '${profile}'`);
+    expect(rows[0].n).toBe('0');
+  });
+
   it('should answer file_too_large above 10 MB decoded', async () => {
     const { orgA, user } = await createTwoOrgs();
     const profile = await newProfile(user.id, orgA.id);
@@ -120,7 +129,8 @@ describe('upload_profile_document', () => {
     expect(error.code).toBe('invalid_input');
 
     await a.request(UPLOAD, vars(profile));
-    await a.request(`mutation($id: uuid!) { delete_profiles_by_pk(id: $id) { id } }`, { id: profile });
+    // org_admin cannot delete profiles (lifecycle by status); the cascade is checked with the admin secret.
+    await asAdmin().request(`mutation($id: uuid!) { delete_profiles_by_pk(id: $id) { id } }`, { id: profile });
     const rows = await runSqlRows(`select count(*)::text as n from itap.profile_documents where profile_id = '${profile}'`);
     expect(rows[0].n).toBe('0');
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asOrgAdmin } from './support/clients.js';
-import { createIdentity } from './support/faces.js';
+import { createIdentity, createIdentityAsAdmin } from './support/faces.js';
 import { createTwoOrgs, expectError } from './support/fixtures.js';
 import {
   addCandidate,
@@ -28,7 +28,7 @@ describe('chained merges', () => {
   it('should refuse to roll back a merge whose target was merged later, and undo newest first exactly', async () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
-    const s = await createIdentity(user.id, orgA.id, { status: 'verified' });
+    const s = await createIdentityAsAdmin(orgA.id, { status: 'verified' });
     const t = await createIdentity(user.id, orgA.id);
     const t2 = await createIdentity(user.id, orgA.id);
     const rs = await addPhotoAndEmbedding(user.id, orgA.id, s.id, 0);

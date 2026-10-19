@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asOrgAdmin } from './support/clients.js';
+import { asAdmin, asOrgAdmin } from './support/clients.js';
 import { createIdentity } from './support/faces.js';
 import { createTwoOrgs, expectDenied, expectError } from './support/fixtures.js';
 import {
@@ -79,13 +79,14 @@ describe('verification requests', () => {
     expect(err.message).toContain('verification_not_pending');
   });
 
-  it('should reject a pending request without touching the identity status', async () => {
+  it('should reject a pending request and return the identity to unverified', async () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const identity = await createIdentity(user.id, orgA.id);
     const { insert_verification_requests_one: request } = await a.request<{
       insert_verification_requests_one: { id: string };
     }>(INSERT_REQUEST, { o: { identity_id: identity.id } });
+    expect((await identityState(identity.id)).status).toBe('pending_verification');
     const rejected = await a.request<{ reject_verification: Decision[] }>(REJECT, { id: request.id, reason: 'blurry' });
     expect(rejected.reject_verification[0]).toMatchObject({
       status: 'rejected',
@@ -109,7 +110,7 @@ describe('verification requests', () => {
     }>(INSERT_REQUEST, { o: { identity_id: identity.id } });
     const err = await expectError(asOrgAdmin(other.id, orgB.id).request(APPROVE, { id: request.id }));
     expect(err.message).toContain('verification_not_found');
-    expect((await identityState(identity.id)).status).toBe('unverified');
+    expect((await identityState(identity.id)).status).toBe('pending_verification');
     for (const column of ['status', 'decided_by', 'decided_at', 'requested_by']) {
       const value = column === 'status' ? 'approved' : column === 'decided_at' ? new Date().toISOString() : user.id;
       await expectDenied(
@@ -242,7 +243,8 @@ describe('profile links', () => {
     });
     await createIdentity(user.id, orgA.id, { profile_id: kept });
 
-    const deleted = await a.request<{
+    // org_admin cannot delete profiles (lifecycle by status); the unlink cascade is checked with the admin secret.
+    const deleted = await asAdmin().request<{
       delete_profiles_by_pk: { id: string } | null;
     }>(`mutation($id: uuid!) { delete_profiles_by_pk(id: $id) { id } }`, {
       id: doomed,
