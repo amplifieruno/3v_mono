@@ -9,6 +9,7 @@
 - "!include itap_check_out_visit.yaml"
 - "!include itap_close_incident.yaml"
 - "!include itap_close_stale_sessions.yaml"
+- "!include itap_consider_template.yaml"
 - "!include itap_create_event_rule_draft.yaml"
 - "!include itap_escalate_incident.yaml"
 - "!include itap_evaluate_detection.yaml"

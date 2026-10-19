@@ -18,6 +18,11 @@ const envSchema = z.object({
   STREAM_SERVER_URL: z.string().url().default('http://stream-server:8888'),
   SEED_PASSWORD: z.string().min(1).optional(),
   ORG_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  // Live camera recognition (src/recognition) runs in the server process unless set to 'false'.
+  RECOGNITION_ENABLED: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim().toLowerCase() !== 'false'),
 });
 
 export type Env = z.output<typeof envSchema>;

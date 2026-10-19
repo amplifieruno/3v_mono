@@ -123,4 +123,11 @@ export const identityFunctions: FunctionSpec[] = [
   ...['merge_identities', 'rollback_merge', 'split_identity', 'approve_verification', 'reject_verification'].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }),
   ),
+  // Internal: template rule of the live recognition pipeline (spec §7). Admin secret only (no roles).
+  {
+    name: 'consider_template',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: called by the backend recognition session with an explicit organization',
+  },
 ];

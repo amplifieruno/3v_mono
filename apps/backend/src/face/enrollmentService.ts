@@ -121,7 +121,7 @@ function noValidPhotos(rejected: Rejected[]): EnrollmentError {
 }
 
 /** Detected age/gender of the best photo, used as initial attributes of a new identity. */
-function detectedAttributes(accepted: AcceptedPhoto[]): Record<string, unknown> {
+export function detectedAttributes(accepted: AcceptedPhoto[]): Record<string, unknown> {
   const best = [...accepted].sort((a, b) => b.quality - a.quality)[0];
   if (!best) return {};
   return {

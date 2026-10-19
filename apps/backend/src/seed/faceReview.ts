@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
-import { DEFAULT_MODEL_VERSION, type EnrollmentDeps } from '../face/enrollmentService.js';
-import { analyzePhotos, commitPhotos } from '../face/enrollmentSteps.js';
+import { createCameraIdentity } from '../face/cameraIdentity.js';
+import type { EnrollmentDeps } from '../face/enrollmentService.js';
+import { analyzePhotos } from '../face/enrollmentSteps.js';
 import type { PhotoSource } from '../face/photoSources.js';
 
 /**
@@ -29,13 +29,7 @@ export async function cameraIdentity(
   // No duplicate check: a camera track of a known face is exactly what the duplicate-candidate queue reviews.
   const { accepted, rejected } = await analyzePhotos(photos, deps.insightFace, deps.clients.actor);
   if (accepted.length === 0) throw new Error(`seed: no usable face for ${seedRef} (${rejected.map((r) => r.reason).join(', ')})`);
-  const id = randomUUID();
-  await commitPhotos(
-    { actor: deps.clients.actor, storage: deps.storage, organizationId: deps.organizationId, modelVersion: deps.modelVersion ?? DEFAULT_MODEL_VERSION },
-    { identityId: id, newIdentity: { organization_id: deps.organizationId, source: 'camera', attributes: ref } },
-    'capture',
-    accepted,
-  );
+  const { id } = await createCameraIdentity(deps, accepted, { attributes: ref });
   return { id, status: 'unverified' };
 }
 

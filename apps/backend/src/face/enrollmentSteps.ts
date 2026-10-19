@@ -100,6 +100,8 @@ export type CommitTarget = {
   identityId: string;
   /** Insert object for a new identity (id = identityId); absent when adding to an existing one. */
   newIdentity?: Record<string, unknown>;
+  /** Extra columns of every identity photo row (e.g. `device_id`, `captured_at` of camera captures). */
+  photoFields?: Record<string, unknown>;
 };
 
 export type CommitDeps = {
@@ -112,15 +114,15 @@ export type CommitDeps = {
 /**
  * Uploads a crop per accepted photo (`metadata.kind = 'identity_photo'`), then writes the identity (when new),
  * photos and embeddings in one GraphQL mutation (one transaction) through `actor`, so audit rows record the caller.
- * A failed write removes the uploaded crops.
+ * A failed write removes the uploaded crops. Returns the crop file ids in photo order.
  */
 export async function commitPhotos(
   deps: CommitDeps,
   target: CommitTarget,
   kind: 'enrollment' | 'manual' | 'capture',
   photos: AcceptedPhoto[],
-): Promise<void> {
-  if (photos.length === 0 && !target.newIdentity) return;
+): Promise<string[]> {
+  if (photos.length === 0 && !target.newIdentity) return [];
   const { actor, storage, organizationId } = deps;
   const cropIds: string[] = [];
   try {
@@ -141,7 +143,13 @@ export async function commitPhotos(
     }
 
     const base = { organization_id: organizationId, identity_id: target.identityId };
-    const photoRows = photos.map((p, i) => ({ ...base, file_id: cropIds[i], kind, quality_score: p.quality }));
+    const photoRows = photos.map((p, i) => ({
+      ...base,
+      ...target.photoFields,
+      file_id: cropIds[i],
+      kind,
+      quality_score: p.quality,
+    }));
     const embeddingRows = photos.map((p, i) => ({
       ...base,
       embedding: vectorLiteral(p.face.embedding),
@@ -179,6 +187,7 @@ export async function commitPhotos(
         embeddings: embeddingRows,
       },
     );
+    return cropIds;
   } catch (error: unknown) {
     await Promise.all(cropIds.map((id) => storage.deleteFile(id).catch(() => undefined)));
     throw error;

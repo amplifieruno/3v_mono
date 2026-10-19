@@ -7,6 +7,7 @@ import { addIdentityPhotos, createIdentityFromPhotos, enrollFace } from './enrol
 import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
 import { uploadProfileDocument } from './profileDocuments.js';
+import { recognitionStart, recognitionStatus, recognitionStop } from './recognition.js';
 import { switchOrganization } from './switchOrganization.js';
 import { ActionError, type ActionHandler } from './types.js';
 
@@ -22,6 +23,9 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   enroll_face: enrollFace,
   create_identity_from_photos: createIdentityFromPhotos,
   add_identity_photos: addIdentityPhotos,
+  recognition_start: recognitionStart,
+  recognition_stop: recognitionStop,
+  recognition_status: recognitionStatus,
 };
 
 const payloadSchema = z.object({

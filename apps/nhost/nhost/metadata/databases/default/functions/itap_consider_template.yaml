@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: consider_template
+configuration:
+  custom_name: consider_template
+  exposed_as: mutation

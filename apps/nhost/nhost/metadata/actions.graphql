@@ -15,6 +15,12 @@ type Mutation {
   enroll_face(profile_id: uuid!, file_ids: [uuid!]!): EnrollmentResult!
   create_identity_from_photos(file_ids: [uuid!]!, attributes: jsonb): EnrollmentResult!
   add_identity_photos(identity_id: uuid!, file_ids: [uuid!]!): EnrollmentResult!
+  recognition_start(device_id: uuid!): RecognitionStatus!
+  recognition_stop(device_id: uuid!): RecognitionStatus!
+}
+
+type Query {
+  recognition_status(device_id: uuid!): RecognitionStatus!
 }
 
 type OrgToken {
@@ -59,4 +65,17 @@ type EnrollmentResult {
 type RejectedPhoto {
   file_id: uuid!
   reason: String!
+}
+
+type RecognitionStatus {
+  device_id: uuid!
+  enabled: Boolean!
+  running: Boolean!
+  fps: Int!
+  frames_processed: Int!
+  frames_dropped: Int!
+  faces_detected: Int!
+  detections: Int!
+  last_frame_at: timestamptz
+  last_error: String
 }
