@@ -50,6 +50,7 @@ paths:
 - Audit: `CREATE TRIGGER audit AFTER INSERT OR UPDATE OR DELETE ... EXECUTE FUNCTION itap.audit_row_change('secret_col', 'ignore:system_col')` (plain args are redacted, `ignore:` columns are skipped). `audit_log.entity` is always the table name.
 - File columns: `BEFORE INSERT OR UPDATE ... EXECUTE FUNCTION itap.check_file_bucket('photo_file_id', ...)` (file must be in the row's organization bucket). `organizations.logo_file_id` must be in the shared `org-logos` bucket.
 - Assignment/recipient user columns: `BEFORE INSERT OR UPDATE ... EXECUTE FUNCTION itap.active_member_check('assignee_user_id', ...)` (active, unexpired member). Unknown column arguments raise `undefined_column`.
+- Session-member columns (`added_by`, `author_id`, `from_user_id`): `BEFORE INSERT ... EXECUTE FUNCTION itap.stamp_session_member('<col>')` fills a NULL column with the session user when that user is a member of the row's organization; mark the column read-only in metadata. BEFORE triggers fire in name order, so name the stamp trigger so it sorts before an `active_member_check` on the same column.
 
 ## Event and Cron Triggers
 
@@ -82,6 +83,11 @@ paths:
 - Per-identity serialization: the BEFORE INSERT trigger `detections_derive` takes `pg_advisory_xact_lock(hashtextextended('identity:' || identity_id::text, 0))` before the FK check locks the identity row. Any other writer of an identity's tracking state (e.g. `close_stale_sessions`) must take the same advisory lock first, before it touches (or FK-references) the identity in its transaction. Reason: an UPDATE of a table whose unique key contains a stored generated column (`code`) counts as a key update in PG16 and waits for other transactions' FK `KEY SHARE` locks; a row lock taken after the FK check deadlocks.
 - Insert ordering: one detection row per statement, or multi-row inserts sorted by `identity_id` (then `detected_at`); within one identity rows must be in `detected_at` order (Stage A runs in row order; an older row after a newer one is a late detection and changes no tracking state).
 - Closing a session uses `itap.close_tracking_session(org, session)` (`completed` if the last detection's access point is entry/exit, else `lost`; clears occupancy).
+
+## Versioned Entities
+
+- Event rules (and access policies, slice 8) follow spec §6.0: header (`current_version_id` read-only) + versions (`status` -> `version_statuses`: draft / pending_approval / published / superseded; `version` per header) + children with `version_id` (CASCADE). Helpers in migration `*_create_versioning_helpers`: triggers `assign_version_number('<parent col>', '<schema.header>')`, `guard_version_status()` (published/superseded reserved for publishing via the transaction-local flag `itap.version_context`; frozen versions' content never changes), `guard_version_children('version_id', '<schema.versions>')` (children change only while the version is open); functions `itap.create_draft_version(versions, header, parent col, children[], org, parent)` (open draft or a copy of the current version with its children) and `itap.publish_version(versions, header, parent col, org, version, actor)` (supersede previous, publish, flip `current_version_id`; republishing a superseded version = rollback). Tracked wrappers (`create_event_rule_draft`, `publish_event_rule_version`) resolve the session organization and write the `publish` audit row.
+- Partial unique indexes: one `published` and one open (`draft`/`pending_approval`) version per header.
 
 ## Numbering and Codes
 

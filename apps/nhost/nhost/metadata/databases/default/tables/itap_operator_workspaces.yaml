@@ -1,0 +1,83 @@
+table:
+  schema: itap
+  name: operator_workspaces
+configuration:
+  custom_name: operator_workspaces
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - layout
+        - is_default
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        user_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - id
+        - is_default
+        - layout
+        - name
+        - organization_id
+        - updated_at
+        - user_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - layout
+        - is_default
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id

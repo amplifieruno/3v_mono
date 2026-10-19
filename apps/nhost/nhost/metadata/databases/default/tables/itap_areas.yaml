@@ -112,12 +112,41 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: area_id
+  - name: event_rule_version_scopes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_version_scopes
+        column_mapping:
+          organization_id: organization_id
+          id: area_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: area_id
   - name: identity_locations
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: identity_locations
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: area_id
+  - name: incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
         column_mapping:
           organization_id: organization_id
           facility_id: facility_id

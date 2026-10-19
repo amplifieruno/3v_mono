@@ -17,7 +17,10 @@ export const profileTables: TableSpec[] = [
     profile: 'tenant_crud',
     noDelete: true,
     readOnlyColumns: ['number', 'identities_count', 'source_integration_id'],
-    computedFields: [{ name: 'has_face', function: 'profile_has_face' }],
+    computedFields: [
+      { name: 'has_face', function: 'profile_has_face' },
+      { name: 'is_blacklisted', function: 'profile_is_blacklisted' },
+    ],
   },
   { name: 'profile_document_kinds', isEnum: true, profile: 'none' },
   { name: 'consent_purposes', isEnum: true, profile: 'none' },

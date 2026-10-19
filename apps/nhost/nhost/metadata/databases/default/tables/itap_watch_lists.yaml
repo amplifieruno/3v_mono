@@ -1,0 +1,73 @@
+table:
+  schema: itap
+  name: watch_lists
+configuration:
+  custom_name: watch_lists
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: watch_list_entries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_list_entries
+        column_mapping:
+          organization_id: organization_id
+          id: watch_list_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - color
+        - description
+        - kind
+        - name
+        - severity
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - color
+        - created_at
+        - description
+        - id
+        - kind
+        - name
+        - organization_id
+        - severity
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - color
+        - description
+        - kind
+        - name
+        - severity
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: close_incident
+configuration:
+  custom_name: close_incident
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: publish_event_rule_version
+configuration:
+  custom_name: publish_event_rule_version
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

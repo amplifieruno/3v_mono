@@ -1,8 +1,10 @@
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
 import { deviceFunctions, deviceTables } from './devices.js';
+import { eventFunctions, eventTables } from './events.js';
 import { facilityFunctions, facilityTables } from './facilities.js';
 import { identityFunctions, identityTables } from './identities.js';
+import { incidentFunctions, incidentTables } from './incidents.js';
 import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
 import { trackingTables } from './tracking.js';
@@ -21,6 +23,8 @@ export const tables: TableSpec[] = [
   ...facilityTables,
   ...deviceTables,
   ...trackingTables,
+  ...eventTables,
+  ...incidentTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -30,4 +34,6 @@ export const functions: FunctionSpec[] = [
   ...profileFunctions,
   ...facilityFunctions,
   ...deviceFunctions,
+  ...eventFunctions,
+  ...incidentFunctions,
 ];

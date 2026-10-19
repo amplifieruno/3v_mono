@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: watch_list_kinds
+is_enum: true
+configuration:
+  custom_name: watch_list_kinds

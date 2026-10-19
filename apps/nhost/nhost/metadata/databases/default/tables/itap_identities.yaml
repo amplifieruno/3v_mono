@@ -57,6 +57,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: identity_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: identity_duplicate_candidates_by_identity_a
     using:
       manual_configuration:
@@ -129,6 +138,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: identity_b_id
+  - name: incident_identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_identities
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: merges_as_source
     using:
       manual_configuration:
@@ -162,6 +180,15 @@ array_relationships:
         remote_table:
           schema: itap
           name: verification_requests
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
+  - name: watch_list_entries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_list_entries
         column_mapping:
           organization_id: organization_id
           id: identity_id

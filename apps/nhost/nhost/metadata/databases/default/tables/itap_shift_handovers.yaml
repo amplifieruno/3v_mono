@@ -1,0 +1,105 @@
+table:
+  schema: itap
+  name: shift_handovers
+configuration:
+  custom_name: shift_handovers
+object_relationships:
+  - name: from_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          from_user_id: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: to_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          to_user_id: user_id
+array_relationships:
+  - name: shift_handover_incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handover_incidents
+        column_mapping:
+          organization_id: organization_id
+          id: handover_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - shift_ended_at
+        - shift_started_at
+        - summary
+        - to_user_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - acknowledged_at
+        - created_at
+        - from_user_id
+        - id
+        - organization_id
+        - shift_ended_at
+        - shift_started_at
+        - summary
+        - to_user_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - to_user_id
+        - shift_started_at
+        - shift_ended_at
+        - summary
+      filter:
+        _and:
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - from_user_id:
+                  _eq: X-Hasura-User-Id
+          - acknowledged_at:
+              _is_null: true
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - _and:
+              - organization_id:
+                  _eq: X-Hasura-Organization-Id
+              - from_user_id:
+                  _eq: X-Hasura-User-Id
+          - acknowledged_at:
+              _is_null: true

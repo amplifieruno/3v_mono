@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: event_severities
+is_enum: true
+configuration:
+  custom_name: event_severities

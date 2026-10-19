@@ -1,0 +1,119 @@
+table:
+  schema: itap
+  name: event_rule_versions
+configuration:
+  custom_name: event_rule_versions
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: published_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          published_by: user_id
+  - name: rule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rules
+        column_mapping:
+          organization_id: organization_id
+          rule_id: id
+array_relationships:
+  - name: current_of_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rules
+        column_mapping:
+          organization_id: organization_id
+          id: current_version_id
+  - name: event_rule_version_scopes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_version_scopes
+        column_mapping:
+          organization_id: organization_id
+          id: version_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          organization_id: organization_id
+          id: rule_version_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - creates_incident
+        - escalation_policy_id
+        - parameters
+        - rule_id
+        - severity
+        - status
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - creates_incident
+        - escalation_policy_id
+        - id
+        - organization_id
+        - parameters
+        - published_at
+        - published_by
+        - rule_id
+        - severity
+        - status
+        - updated_at
+        - version
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - creates_incident
+        - escalation_policy_id
+        - parameters
+        - severity
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _in:
+                - draft
+                - pending_approval

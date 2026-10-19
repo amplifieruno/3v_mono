@@ -1,0 +1,97 @@
+table:
+  schema: itap
+  name: watch_list_entries
+configuration:
+  custom_name: watch_list_entries
+object_relationships:
+  - name: added_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          added_by: user_id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: watch_list
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_lists
+        column_mapping:
+          organization_id: organization_id
+          watch_list_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - expires_at
+        - identity_id
+        - profile_id
+        - reason
+        - watch_list_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - added_by
+        - created_at
+        - expires_at
+        - id
+        - identity_id
+        - organization_id
+        - profile_id
+        - reason
+        - updated_at
+        - watch_list_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - expires_at
+        - reason
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

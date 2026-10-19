@@ -79,6 +79,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: device_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          organization_id: organization_id
+          id: device_id
   - name: identity_locations
     using:
       manual_configuration:

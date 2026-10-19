@@ -39,6 +39,15 @@ object_relationships:
           organization_id: organization_id
           vacation_delegate_user_id: user_id
 array_relationships:
+  - name: event_rule_versions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_versions
+        column_mapping:
+          organization_id: organization_id
+          user_id: published_by
   - name: identity_merges_by_merged_by
     using:
       manual_configuration:
@@ -57,6 +66,60 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: rolled_back_by
+  - name: incident_activities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_activities
+        column_mapping:
+          organization_id: organization_id
+          user_id: actor_id
+  - name: incident_notes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_notes
+        column_mapping:
+          organization_id: organization_id
+          user_id: author_id
+  - name: incidents_by_acknowledged_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          user_id: acknowledged_by
+  - name: incidents_by_assigned_to
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          user_id: assigned_to
+  - name: incidents_by_created_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: incidents_by_resolved_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          user_id: resolved_by
   - name: linked_identities
     using:
       manual_configuration:
@@ -66,6 +129,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: linked_by
+  - name: operator_workspaces
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: operator_workspaces
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
   - name: organization_invitations
     using:
       manual_configuration:
@@ -93,6 +165,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: vacation_delegate_user_id
+  - name: shift_handovers_by_from_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handovers
+        column_mapping:
+          organization_id: organization_id
+          user_id: from_user_id
+  - name: shift_handovers_by_to_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handovers
+        column_mapping:
+          organization_id: organization_id
+          user_id: to_user_id
   - name: verification_requests_by_assigned_to
     using:
       manual_configuration:
@@ -120,6 +210,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: requested_by
+  - name: watch_list_entries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_list_entries
+        column_mapping:
+          organization_id: organization_id
+          user_id: added_by
 select_permissions:
   - role: org_admin
     permission:

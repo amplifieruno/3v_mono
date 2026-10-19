@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: incident_dispositions
+is_enum: true
+configuration:
+  custom_name: incident_dispositions

@@ -1,0 +1,17 @@
+DROP TABLE itap.incident_note_files;
+DROP TABLE itap.incident_notes;
+DROP FUNCTION itap.incident_notes_log_activity();
+DROP TABLE itap.incident_identities;
+DROP TABLE itap.incident_events;
+DROP FUNCTION itap.incident_events_check_event();
+DROP TRIGGER incident_activity_log ON itap.incidents;
+DROP FUNCTION itap.incident_activity_log();
+DROP FUNCTION itap.session_member(uuid);
+DROP TABLE itap.incident_activities;
+DROP TABLE itap.incidents;
+DROP FUNCTION itap.incidents_validate_transition();
+DROP FUNCTION itap.incident_transition_allowed(text, text);
+DROP TABLE itap.incident_identity_roles;
+DROP TABLE itap.incident_activity_kinds;
+DROP TABLE itap.incident_dispositions;
+DROP TABLE itap.incident_statuses;

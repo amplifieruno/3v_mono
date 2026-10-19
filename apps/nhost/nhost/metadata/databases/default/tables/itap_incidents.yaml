@@ -1,0 +1,180 @@
+table:
+  schema: itap
+  name: incidents
+configuration:
+  custom_name: incidents
+object_relationships:
+  - name: acknowledged_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          acknowledged_by: user_id
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: assigned_to_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          assigned_to: user_id
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: resolved_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          resolved_by: user_id
+array_relationships:
+  - name: incident_activities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_activities
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+  - name: incident_events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_events
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+  - name: incident_identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_identities
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+  - name: incident_notes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_notes
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+  - name: shift_handover_incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handover_incidents
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - assigned_to
+        - description
+        - escalation_policy_id
+        - external_ref
+        - facility_id
+        - severity
+        - title
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - acknowledged_at
+        - acknowledged_by
+        - area_id
+        - assigned_to
+        - code
+        - created_at
+        - created_by
+        - description
+        - disposition
+        - escalation_policy_id
+        - escalation_step
+        - external_ref
+        - facility_id
+        - id
+        - last_escalated_at
+        - number
+        - organization_id
+        - resolution
+        - resolved_at
+        - resolved_by
+        - severity
+        - status
+        - title
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - assigned_to
+        - description
+        - escalation_policy_id
+        - external_ref
+        - facility_id
+        - severity
+        - title
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

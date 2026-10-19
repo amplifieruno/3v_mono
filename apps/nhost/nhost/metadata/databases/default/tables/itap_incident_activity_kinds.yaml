@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: incident_activity_kinds
+is_enum: true
+configuration:
+  custom_name: incident_activity_kinds

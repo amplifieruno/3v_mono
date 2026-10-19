@@ -48,6 +48,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: identities
     using:
       manual_configuration:
@@ -111,12 +120,26 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: watch_list_entries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_list_entries
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
 computed_fields:
   - name: has_face
     definition:
       function:
         schema: itap
         name: profile_has_face
+  - name: is_blacklisted
+    definition:
+      function:
+        schema: itap
+        name: profile_is_blacklisted
 insert_permissions:
   - role: org_admin
     permission:
@@ -176,6 +199,7 @@ select_permissions:
         - work_schedule_id
       computed_fields:
         - has_face
+        - is_blacklisted
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

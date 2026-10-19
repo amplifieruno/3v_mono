@@ -1,0 +1,107 @@
+table:
+  schema: itap
+  name: events
+configuration:
+  custom_name: events
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          access_point_id: id
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: rule_version
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_versions
+        column_mapping:
+          organization_id: organization_id
+          rule_version_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_decision_id
+        - access_point_id
+        - area_id
+        - authentication_attempt_id
+        - created_at
+        - dedup_key
+        - detection_id
+        - device_id
+        - event_type
+        - facility_id
+        - id
+        - identity_id
+        - occurred_at
+        - organization_id
+        - payload
+        - profile_id
+        - rule_version_id
+        - session_id
+        - severity
+        - title
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

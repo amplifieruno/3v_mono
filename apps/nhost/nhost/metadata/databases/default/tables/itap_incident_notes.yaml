@@ -1,0 +1,88 @@
+table:
+  schema: itap
+  name: incident_notes
+configuration:
+  custom_name: incident_notes
+object_relationships:
+  - name: author
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          author_id: user_id
+  - name: incident
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          incident_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: incident_note_files
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_note_files
+        column_mapping:
+          organization_id: organization_id
+          id: note_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - body
+        - incident_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - author_id
+        - body
+        - created_at
+        - id
+        - incident_id
+        - organization_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - body
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - author_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - author_id:
+              _eq: X-Hasura-User-Id

@@ -117,6 +117,38 @@ array_relationships:
           name: devices
         column_mapping:
           id: organization_id
+  - name: event_rule_version_scopes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_version_scopes
+        column_mapping:
+          id: organization_id
+  - name: event_rule_versions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_versions
+        column_mapping:
+          id: organization_id
+  - name: event_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rules
+        column_mapping:
+          id: organization_id
+  - name: events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: events
+        column_mapping:
+          id: organization_id
   - name: facilities
     using:
       manual_configuration:
@@ -213,12 +245,68 @@ array_relationships:
           name: identity_relationships
         column_mapping:
           id: organization_id
+  - name: incident_activities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_activities
+        column_mapping:
+          id: organization_id
+  - name: incident_events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_events
+        column_mapping:
+          id: organization_id
+  - name: incident_identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_identities
+        column_mapping:
+          id: organization_id
+  - name: incident_note_files
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_note_files
+        column_mapping:
+          id: organization_id
+  - name: incident_notes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incident_notes
+        column_mapping:
+          id: organization_id
+  - name: incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          id: organization_id
   - name: members
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: organization_members
+        column_mapping:
+          id: organization_id
+  - name: operator_workspaces
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: operator_workspaces
         column_mapping:
           id: organization_id
   - name: organization_counters
@@ -261,6 +349,22 @@ array_relationships:
           name: profiles
         column_mapping:
           id: organization_id
+  - name: shift_handover_incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handover_incidents
+        column_mapping:
+          id: organization_id
+  - name: shift_handovers
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: shift_handovers
+        column_mapping:
+          id: organization_id
   - name: tracking_sessions
     using:
       manual_configuration:
@@ -283,6 +387,22 @@ array_relationships:
         remote_table:
           schema: itap
           name: verification_requests
+        column_mapping:
+          id: organization_id
+  - name: watch_list_entries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_list_entries
+        column_mapping:
+          id: organization_id
+  - name: watch_lists
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_lists
         column_mapping:
           id: organization_id
   - name: work_schedules

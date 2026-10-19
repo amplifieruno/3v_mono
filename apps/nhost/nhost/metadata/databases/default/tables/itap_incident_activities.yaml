@@ -1,0 +1,48 @@
+table:
+  schema: itap
+  name: incident_activities
+configuration:
+  custom_name: incident_activities
+object_relationships:
+  - name: actor
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          actor_id: user_id
+  - name: incident
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          incident_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - actor_id
+        - created_at
+        - details
+        - id
+        - incident_id
+        - kind
+        - occurred_at
+        - organization_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
