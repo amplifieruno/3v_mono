@@ -95,6 +95,43 @@ describe('Stage A: identity counters and sessions', () => {
     expect(audit[0].n).toBe('0');
   });
 
+  it('should add the detections since the last counter write instead of recounting all of them', async () => {
+    const w = await createTrackingWorld();
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 100);
+    expect((await identityCounters(w.identity)).detection_count).toBe(1);
+    // Stand-in for a long history: a write must add to the stored count, never recount the identity's detections.
+    await runSql(`UPDATE itap.identities SET detection_count = 1000 WHERE id = '${w.identity}'`);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 103);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 105);
+    expect((await identityCounters(w.identity)).detection_count).toBe(1000);
+    // Same detected_at as the last write: counted at once (a later range count could not tell it apart).
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 100);
+    expect((await identityCounters(w.identity)).detection_count).toBe(1001);
+    // Past the throttle window: adds 103, 105 and 120.
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 120);
+    expect((await identityCounters(w.identity)).detection_count).toBe(1004);
+    // Late detections (inside or before the seen range) are counted at once.
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 110);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 10);
+    const late = await identityCounters(w.identity);
+    expect(late.detection_count).toBe(1006);
+    expect(Date.parse(late.first_seen_at ?? '')).toBe(Date.parse(at(10)));
+    expect(Date.parse(late.last_seen_at ?? '')).toBe(Date.parse(at(120)));
+  });
+
+  it('should count exactly for a multi-row insert in detected_at order with equal timestamps', async () => {
+    const w = await createTrackingWorld();
+    const objects = [0, 0, 3, 12, 12].map((s) => ({
+      organization_id: w.orgA.id, device_id: w.lobbyCam.id, identity_id: w.identity, detected_at: at(s), confidence: 0.9,
+    }));
+    await asAdmin().request(`mutation($o: [detections_insert_input!]!) { insert_detections(objects: $o) { affected_rows } }`, {
+      o: objects,
+    });
+    const counters = await identityCounters(w.identity);
+    expect(counters.detection_count).toBe(5);
+    expect(Date.parse(counters.last_seen_at ?? '')).toBe(Date.parse(at(12)));
+  });
+
   it('should open one session and extend it while detections keep coming within the timeout', async () => {
     const w = await createTrackingWorld();
     const first = await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
