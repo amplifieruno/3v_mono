@@ -12,7 +12,6 @@ const METRIC_COLUMNS: Record<string, string> = {
   // Most entered area in the stats window.
   top_area_id: 'top_area_id',
 };
-const OPEN_MEMBERSHIP = { removed_at: { _is_null: true } };
 
 /** is_null on a stats column: no stats row counts as null. */
 function statsIsNull(rel: string, column: string, isNull: unknown): Where {
@@ -91,10 +90,13 @@ function visitStatusToday(leaf: Leaf, values: unknown[], env: LeafEnv): Where {
   }
 }
 
-function memberOfSegment(leaf: Leaf, values: unknown[]): Where {
+/** Membership as of the evaluation time: a row opened at or before `at` and not yet closed at `at`. */
+function memberOfSegment(leaf: Leaf, values: unknown[], env: LeafEnv): Where {
   const positive = leaf.operator === 'eq' || leaf.operator === 'in';
   const ids = comparison(leaf.operator === 'eq' || leaf.operator === 'neq' ? 'eq' : 'in', values);
-  const member = { segment_members: { segment_id: ids, ...OPEN_MEMBERSHIP } };
+  const at = env.ctx.at;
+  const openAt = { added_at: { _lte: at }, _or: [{ removed_at: { _is_null: true } }, { removed_at: { _gt: at } }] };
+  const member = { segment_members: { segment_id: ids, ...openAt } };
   return positive ? member : { _not: member };
 }
 
@@ -103,7 +105,7 @@ export function translateDerived(leaf: Leaf, values: unknown[], env: LeafEnv): W
   if (Object.hasOwn(METRIC_COLUMNS, leaf.field)) return metric(leaf, values, env);
   if (leaf.field === 'last_seen_days_ago') return lastSeenDaysAgo(leaf, values, env);
   if (leaf.field.includes('.')) return jsonPath(leaf, values);
-  if (leaf.field === 'member_of_segment') return memberOfSegment(leaf, values);
+  if (leaf.field === 'member_of_segment') return memberOfSegment(leaf, values, env);
   if (env.target === 'profiles' && leaf.field === 'on_shift_now') return onShiftNow(values, env);
   if (env.target === 'profiles' && leaf.field === 'visit_status_today') return visitStatusToday(leaf, values, env);
   if (env.target === 'identities' && leaf.field === 'linked') return { profile_id: { _is_null: values[0] !== true } };

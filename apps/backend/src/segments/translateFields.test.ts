@@ -104,8 +104,8 @@ describe('derived profile and identity fields', () => {
     expect(profile('visit_status_today', 'is_null', false)).toEqual(rel(today));
   });
 
-  it('should match member_of_segment against open membership rows', () => {
-    const open = { removed_at: { _is_null: true } };
+  it('should match member_of_segment against membership rows open at the evaluation time', () => {
+    const open = { added_at: { _lte: context.at }, _or: [{ removed_at: { _is_null: true } }, { removed_at: { _gt: context.at } }] };
     expect(profile('member_of_segment', 'eq', 's1')).toEqual({ segment_members: { segment_id: { _eq: 's1' }, ...open } });
     expect(identity('member_of_segment', 'in', ['s1', 's2'])).toEqual({ segment_members: { segment_id: { _in: ['s1', 's2'] }, ...open } });
     expect(profile('member_of_segment', 'neq', 's1')).toEqual({ _not: { segment_members: { segment_id: { _eq: 's1' }, ...open } } });

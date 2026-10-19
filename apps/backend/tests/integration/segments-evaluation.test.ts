@@ -11,9 +11,10 @@ import {
   memberCount,
   openRows,
   preview,
+  removeMembers,
   segmentWorld,
 } from './support/segments.js';
-import { runSqlRows } from './support/sql.js';
+import { runSql, runSqlRows } from './support/sql.js';
 
 const sorted = (ids: (string | null)[]) => [...ids].sort();
 const ops = (department: string) => ({ field: 'department', operator: 'eq', value: department });
@@ -159,5 +160,25 @@ describe('preview_segment and evaluate_segment', () => {
     expect((await preview(w.a, 'profiles', today('is_null', true))).count).toBe(3);
     expect((await preview(w.a, 'profiles', { field: 'member_of_segment', operator: 'neq', value: group.id })).sample_ids)
       .not.toContain(visitor);
+  });
+
+  it('should count member_of_segment only for rows open at the evaluation time', async () => {
+    const w = await segmentWorld();
+    const [future, closing, closed] = [await createProfile(w.a), await createProfile(w.a), await createProfile(w.a)];
+    const group = await manualSegment(w.a, 'profiles');
+    await addMembers(w.a, group.id, [closed]);
+    const [row] = await removeMembers(w.a, group.id, [closed]);
+    // future: opens tomorrow (not yet a member); closing: closes tomorrow (still a member now); closed: closed now.
+    await runSql(
+      `INSERT INTO itap.segment_members (organization_id, segment_id, target, profile_id, source, added_by, added_at, removed_at, removed_by)
+       VALUES ('${w.orgA.id}', '${group.id}', 'profiles', '${future}', 'manual', '${row.added_by}', now() + interval '1 day', NULL, NULL),
+              ('${w.orgA.id}', '${group.id}', 'profiles', '${closing}', 'manual', '${row.added_by}', now() - interval '1 hour',
+               now() + interval '1 day', '${row.removed_by}')`,
+    );
+    const member = { field: 'member_of_segment', operator: 'eq', value: group.id };
+    expect((await preview(w.a, 'profiles', member)).sample_ids).toEqual([closing]);
+    const outside = (await preview(w.a, 'profiles', { field: 'member_of_segment', operator: 'neq', value: group.id }, 100)).sample_ids;
+    expect(outside).toEqual(expect.arrayContaining([future, closed]));
+    expect(outside).not.toContain(closing);
   });
 });
