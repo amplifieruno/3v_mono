@@ -1,5 +1,6 @@
 import type { HasuraClient } from '../../../src/hasura/client.js';
-import { asOrgAdmin } from './clients.js';
+import { createHasuraClient } from '../../../src/hasura/client.js';
+import { asOrgAdmin, testEnv } from './clients.js';
 import { createArea, createFacility } from './facilities.js';
 import { insertOne } from './operations.js';
 import { runSqlRows } from './sql.js';
@@ -119,4 +120,59 @@ export async function exactRows(segment: string): Promise<Record<string, string 
     `SELECT id, coalesce(identity_id, profile_id) AS subject, source, added_by, added_at, removed_at, removed_by
      FROM itap.segment_members WHERE segment_id = '${segment}' ORDER BY id`,
   );
+}
+
+export type EvaluateResult = {
+  segment_id: string;
+  added: number;
+  removed: number;
+  member_count: number;
+  evaluated_at: string;
+  stale: boolean;
+};
+export type PreviewResult = { count: number; sample_ids: string[]; sample_labels: string[] };
+
+/** Action evaluate_segment (org_admin). */
+export async function evaluate(client: HasuraClient, segment: string): Promise<EvaluateResult> {
+  const data = await client.request<{ evaluate_segment: EvaluateResult }>(
+    `mutation($id: uuid!) { evaluate_segment(segment_id: $id) { segment_id added removed member_count evaluated_at stale } }`,
+    { id: segment },
+  );
+  return data.evaluate_segment;
+}
+
+/** Action preview_segment (org_admin). */
+export async function preview(client: HasuraClient, target: string, conditions: unknown, limit?: number): Promise<PreviewResult> {
+  const data = await client.request<{ preview_segment: PreviewResult }>(
+    `query($t: String!, $c: jsonb!, $l: Int) { preview_segment(target: $t, conditions: $c, limit: $l) { count sample_ids sample_labels } }`,
+    { t: target, c: conditions, l: limit },
+  );
+  return data.preview_segment;
+}
+
+export type SyncResult = { added: number; removed: number; member_count: number; stale: boolean };
+
+/** itap.sync_segment_members through Hasura (admin secret + organization session, like the backend actor). */
+export async function syncMembers(client: HasuraClient, segment: string, ids: string[], when: string): Promise<SyncResult> {
+  const data = await client.request<{ sync_segment_members: SyncResult[] }>(
+    `mutation($s: uuid!, $ids: _uuid!, $at: timestamptz!) {
+       sync_segment_members(args: {p_segment: $s, p_ids: $ids, p_at: $at}) { added removed member_count stale }
+     }`,
+    { s: segment, ids: pgArray(ids), at: when },
+  );
+  return data.sync_segment_members[0];
+}
+
+/** Open membership rows of a segment: [subject, source] sorted by subject. */
+export async function openRows(segment: string): Promise<[string | null, string | null][]> {
+  const rows = await runSqlRows(
+    `SELECT coalesce(identity_id, profile_id) AS subject, source FROM itap.segment_members
+     WHERE segment_id = '${segment}' AND removed_at IS NULL ORDER BY subject`,
+  );
+  return rows.map((r) => [r.subject, r.source]);
+}
+
+/** Admin secret with an organization session (what the backend's actor client sends). */
+export function asActor(org: string, user?: string): HasuraClient {
+  return createHasuraClient(testEnv(), { role: 'admin', organizationId: org, userId: user });
 }

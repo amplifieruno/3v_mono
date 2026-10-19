@@ -1,0 +1,23 @@
+table:
+  schema: itap_results
+  name: segment_evaluation_contexts
+configuration:
+  custom_name: segment_evaluation_contexts
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - day_end
+        - day_start
+        - evaluated_at
+        - local_date
+        - on_shift_schedule_ids
+        - organization_id
+        - segment_active
+        - timezone
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

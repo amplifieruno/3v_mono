@@ -144,6 +144,31 @@ actions:
     permissions:
       - role: org_admin
     comment: Live recognition counters of a camera of the organization (frames, faces, detections, last error)
+  - name: preview_segment
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/preview_segment'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 60
+      type: query
+    permissions:
+      - role: org_admin
+    comment: Validates unsaved segment conditions and returns the match count and a sample (backend translator, caller permissions)
+  - name: evaluate_segment
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/evaluate_segment'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 120
+    permissions:
+      - role: org_admin
+    comment: Evaluates a dynamic segment now and syncs its rule members (sync_segment_members); manual members are never removed
 custom_types:
   enums: []
   input_objects: []
@@ -157,4 +182,6 @@ custom_types:
     - name: EnrollmentResult
     - name: RejectedPhoto
     - name: RecognitionStatus
+    - name: SegmentPreview
+    - name: SegmentEvaluation
   scalars: []

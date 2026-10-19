@@ -4,6 +4,16 @@ const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
 const userEditableTemplate: BoolExp = { _and: [ownOrganizationRow, { is_system: { _eq: false } }] };
 const FIELD_COLUMNS = ['enum_values', 'field', 'label', 'operators', 'organization_id', 'target', 'value_type'];
+const CONTEXT_COLUMNS = [
+  'day_end',
+  'day_start',
+  'evaluated_at',
+  'local_date',
+  'on_shift_schedule_ids',
+  'organization_id',
+  'segment_active',
+  'timezone',
+];
 
 /** Segments (spec §6.5) and behavioral activity stats (spec §6.10). */
 export const segmentTables: TableSpec[] = [
@@ -66,12 +76,41 @@ export const segmentTables: TableSpec[] = [
       ],
     },
   },
+  {
+    // Row type of itap.segment_evaluation_context (time / timezone inputs of the backend translator; stores nothing).
+    name: 'segment_evaluation_contexts',
+    schema: 'itap_results',
+    profile: 'tenant_read',
+    extraPermissions: {
+      select_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: CONTEXT_COLUMNS,
+            filter: ownOrganizationRow,
+            query_root_fields: [],
+            subscription_root_fields: [],
+          },
+        },
+      ],
+    },
+  },
+  // Row type of itap.sync_segment_members (admin secret only; stores nothing).
+  { name: 'segment_sync_results', schema: 'itap_results', profile: 'none' },
 ];
 
-/** Manual membership and the condition field catalog. */
+/** Manual membership, the condition field catalog and evaluation (translator context, rule membership sync). */
 export const segmentFunctions: FunctionSpec[] = [
   ...['add_segment_members', 'remove_segment_members'].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }),
   ),
   { name: 'segment_fields', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  { name: 'segment_evaluation_context', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  {
+    // The evaluator's writer: evaluate_segment action / evaluation crons (backend actor with the organization session).
+    name: 'sync_segment_members',
+    exposedAs: 'mutation',
+    sessionArgument: 'hasura_session',
+    roles: [],
+  },
 ];

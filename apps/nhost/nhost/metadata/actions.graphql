@@ -17,10 +17,12 @@ type Mutation {
   add_identity_photos(identity_id: uuid!, file_ids: [uuid!]!): EnrollmentResult!
   recognition_start(device_id: uuid!): RecognitionStatus!
   recognition_stop(device_id: uuid!): RecognitionStatus!
+  evaluate_segment(segment_id: uuid!): SegmentEvaluation!
 }
 
 type Query {
   recognition_status(device_id: uuid!): RecognitionStatus!
+  preview_segment(target: String!, conditions: jsonb!, limit: Int): SegmentPreview!
 }
 
 type OrgToken {
@@ -78,4 +80,19 @@ type RecognitionStatus {
   detections: Int!
   last_frame_at: timestamptz
   last_error: String
+}
+
+type SegmentPreview {
+  count: Int!
+  sample_ids: [uuid!]!
+  sample_labels: [String!]!
+}
+
+type SegmentEvaluation {
+  segment_id: uuid!
+  added: Int!
+  removed: Int!
+  member_count: Int!
+  evaluated_at: timestamptz!
+  stale: Boolean!
 }
