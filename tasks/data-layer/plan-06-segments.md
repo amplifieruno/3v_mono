@@ -8,14 +8,14 @@
 
 **Tech Stack:** Postgres 16, Hasura v2.46 (actions, event and cron triggers), Express/TypeScript, zod, vitest.
 
-**Spec:** `tasks/data-layer/design.md` — §6.5 (segments, members, templates, daily stats, field catalog), §6.10 (identity/profile activity stats — behavioral metrics), §8.0 (one evaluator), §8.3 (`evaluate_segments`), §8.4 (`segment_inputs_changed`), §8.5 (`evaluate_segment`, `preview_segment`).
+**Spec:** `tasks/data-layer/design.md` — §6.5 (segments, members, templates, daily stats, field catalog), §6.10 (identity/profile activity stats — behavioral metrics), §8.0 (one evaluator), §8.3 (`evaluate_segments`), §8.4 (segment input debounce: request triggers + `evaluate_segments_pending`), §8.5 (`evaluate_segment`, `preview_segment`).
 
 ## Global Constraints
 
 - All conventions so far apply.
 - `segments`: code `SEGMENT`; kind manual/dynamic; target identities/profiles; conditions jsonb (validated by `itap.validate_condition_refs`: referenced ids belong to the org; referenced segments must be manual and same target — prevents cycles); status active/inactive/archived; active_from/active_until; schedule (windows); member_count **ro**; last_evaluated_at **ro**; template_id.
 - `segment_members`: one table, `target` column + FK `(organization_id, segment_id, target)` → segments (declarative kind check); exactly one of identity/profile matching target; source manual/rule; added/removed timestamps and actors; partial unique on active rows; rows closed (`removed_at`), never deleted; manual rows never removed by evaluation.
-- Behavioral metrics (`visits_last_30d`, `avg_dwell_minutes`, `last_seen_days_ago`, `visited_area_id`, `after_hours_visits_30d`) come from `identity_activity_stats` / `profile_activity_stats` (slice 7 builds the real aggregation cron; this slice creates the stats tables and a simple SQL refresh function `itap.refresh_activity_stats(org, at)` computing them from tracking_sessions/identity_locations so segments work now — slice 7 reuses/extends it).
+- Behavioral metrics (`visits_last_30d`, `avg_dwell_minutes`, `last_seen_days_ago`, `top_area_id`, `after_hours_visits_30d`) come from `identity_activity_stats` / `profile_activity_stats` (slice 7 builds the real aggregation cron; this slice creates the stats tables and a simple SQL refresh function `itap.refresh_activity_stats(org, at)` computing them from tracking_sessions/identity_locations so segments work now — slice 7 reuses/extends it).
 - Condition language (spec §6.5): groups `{op: and|or|not, children}`, leaves `{field, operator, value}`; field catalog per target (exact list in a shared module `packages/shared` or backend `segments/catalog.ts` — one source of truth used by validation (backend) and documented); operators per field type (eq, neq, in, nin, gt, gte, lt, lte, contains, is_null, between).
 - Event rule version scopes with `segment_id`: add the FK now and make `matching_rule_versions` honor segment scopes (identity/profile membership at event time — active membership rows).
 

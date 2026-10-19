@@ -169,15 +169,18 @@ Schema `itap`. Nhost `auth.*`, `storage.*` used as-is. Function result tables in
 ### 6.5 Segments (FS §4, SA_3 §2.1.3)
 | Table | Key columns | Notes |
 |---|---|---|
-| `segments` | number, name, description, color, icon, kind (`manual/dynamic`), target (`identities/profiles`), conditions jsonb, status (`active/inactive/archived`), active_from, active_until, schedule jsonb, member_count **ro**, last_evaluated_at **ro**, template_id | |
-| `segment_members` | segment_id, target, identity_id, profile_id, source (`manual/rule`), added_by, added_at, removed_at, removed_by | Exactly one of identity/profile, consistent with `target` (CHECK); FK `(organization_id, segment_id, target) → segments(organization_id, id, target)` makes kind = segment target declarative. Partial unique on active rows (`removed_at is null`). Rows are closed, never deleted → churn history. |
-| `segment_templates` | name, description, target, conditions, category, is_system | |
-| `segment_daily_stats` | segment_id, day, member_count, added, removed | **ro**, trend & churn (SA_3) |
+| `segments` | number, name, description, color, icon, kind (`manual/dynamic`), target (`identities/profiles`), conditions jsonb, status (`active/inactive/archived`), active_from, active_until, schedule jsonb, member_count **ro**, last_evaluated_at **ro**, last_evaluation_error **ro**, last_evaluation_failed_at **ro**, template_id | `kind` and `target` are immutable after creation. Manual: `conditions = '{}'`; dynamic: conditions required. `schedule` NULL or `[]` = no restriction. Template FK `(organization_id, template_id, target)` (template of the same target) `SET NULL (template_id)`. A segment named by another segment's/template's condition, an event rule scope or a notification rule cannot be deleted. |
+| `segment_members` | segment_id, target, identity_id, profile_id, source (`manual/rule`), added_by, added_at, removed_at, removed_by | Exactly one of identity/profile, consistent with `target` (CHECK); FK `(organization_id, segment_id, target) → segments(organization_id, id, target)` makes kind = segment target declarative; rule rows only on dynamic segments. Partial unique on active rows (`removed_at is null`). Rows are closed, never deleted → churn history; the FK to `segments` is NO ACTION (a segment with history is archived, not deleted). Written only by functions (`add/remove_segment_members`, `sync_segment_members`, merges); org_admin has select only. |
+| `segment_templates` | name, description, target, conditions, category, is_system | System templates read-only. |
+| `segment_daily_stats` | segment_id, day, member_count, added, removed | **ro**, trend & churn (SA_3); FK NO ACTION. A close and open of one subject at the same instant (pin) counts as neither added nor removed. |
 
-Conditions: groups `{op:'and'|'or'|'not', children}`; leaves `{field, operator, value}`. Field catalog per target:
-- **profiles**: profile columns, custom fields, company, work schedule (`on_shift_now`), visit status, membership in **manual** segments, behavioral (`visits_last_30d`, `avg_dwell_minutes`, `last_seen_days_ago`, `visited_area_id`, `after_hours_visits_30d`) from `profile_activity_stats`.
-- **identities**: status, attributes (age, gender), first_seen, detection_count, linked/unlinked, membership in **manual** segments, the same behavioral metrics from `identity_activity_stats` (works for unknown identities).
-- Referencing only manual segments rules out evaluation cycles.
+Conditions: groups `{op:'and'|'or'|'not', children}` (exact keys; `not` has one child; at most 100 children, depth 7); leaves `{field, operator, value}`. The field catalog is the SQL function `itap.segment_field_catalog(target, org)` (tracked query `segment_fields`), the single source for validation, the translator and the UI. Operators per type: text (eq, neq, in, nin, contains), enum (eq, neq, in, nin), integer (eq, neq, in, nin, gt, gte, lt, lte, between), number (no in/nin), boolean (eq), date (eq, neq, gt..lt, between), timestamp (gt..lt, between), references (eq, neq, in, nin); nullable fields add `is_null`. At most 500 values in `in/nin`. jsonb paths (`attributes.*`, `custom_fields.<key>`) support eq/neq/in/nin/is_null only. Dates/timestamps accept an absolute value or `{"relative_days": n}` (|n| <= 36500), resolved at evaluation time. Errors: `segment_condition_invalid:<json path>`.
+- **profiles**: profile columns, `custom_fields.<key>`, company, work schedule (`on_shift_now`), `visit_status_today`, `has_face`, `is_blacklisted`, membership in **manual** segments (`member_of_segment`), behavioral (`visits_last_30d`, `avg_dwell_minutes`, `last_seen_days_ago`, `after_hours_visits_30d`, `top_area_id` = most entered area in 30 days) from `profile_activity_stats`.
+- **identities**: status, `age` (stored generated column from `attributes.age`), `attributes.gender`, first_seen_at, detection_count, `linked`, membership in **manual** segments, the same behavioral metrics from `identity_activity_stats` (works for unknown identities).
+- Referencing only manual segments (with immutable kind/target and undeletable referenced segments) rules out evaluation cycles. References to areas/companies/schedules/segments must belong to the organization (checked at save).
+- **Null semantics are two-valued**: a comparison on a missing value (no stats row, null column) is false and `not` is a plain negation, so `not(visits_last_30d >= 2)` matches never-seen subjects; `is_null` is the explicit test.
+- Membership writers: `add/remove_segment_members` (manual; adding a current rule member pins it: rule row closed, manual row opened at the same instant), `sync_segment_members(segment, ids, at)` (dynamic; backend only). Lock order: subjects `FOR KEY SHARE` in id order → segment `FOR UPDATE` → member rows. Merges fold open manual memberships onto the target via the merge move log (pin if the target is a rule member); rollback restores exactly.
+- Evaluation: one evaluator (backend translator → Hasura `where` under an org session); membership is "as of" a timestamp `at` (`last_evaluated_at` ordering makes older syncs stale). A segment outside its active window/schedule or not `active` closes its rule rows. Failures are recorded on the segment (`last_evaluation_error`).
 
 ### 6.6 Facilities, areas, floor plans (FS §7, SA_3 §2.1.5)
 | Table | Key columns | Notes |
@@ -237,8 +240,8 @@ Event types (`event_types`): `detection_unknown, detection_known, watchlist_matc
 | `area_hourly_stats` | area_id, hour, unique_identities, entries, exits, avg_dwell_seconds, peak_occupancy | **ro** |
 | `facility_daily_stats` | facility_id, day, unique_identities, known_identities, unknown_identities, visits, avg_visit_minutes, peak_occupancy, peak_hour | **ro** |
 | `area_transitions_daily` | facility_id, day, from_area_id, to_area_id, count | **ro** |
-| `identity_activity_stats` | identity_id, visits_last_30d, avg_dwell_minutes, last_seen_at, after_hours_visits_30d, top_area_id | **ro** |
-| `profile_activity_stats` | profile_id, same metrics rolled up over linked identities | **ro** |
+| `identity_activity_stats` | identity_id (unique), visits_last_30d, avg_dwell_minutes, last_seen_at, after_hours_visits_30d, top_area_id (SET NULL), as_of | **ro**; built by `itap.refresh_activity_stats(org, at)` (30-day window before `at`; rows only for subjects ever seen; identities map to their effective merge target, merged identities have no row; top area counts entries; slice 7 extends) |
+| `profile_activity_stats` | profile_id (unique), same metrics rolled up over linked (effective) identities, as_of | **ro** |
 | `dashboards` | name, description, layout jsonb, widgets jsonb, is_shared, owner_id | |
 
 ### 6.11 Search & bulk (FS §6, SA_3 §2.1.4, §2.1.2)
@@ -343,7 +346,7 @@ Triggers:
 
 Query functions: `match_face`, `area_descendants`, `facility_occupancy_now`, `identity_timeline`, `occupancy_series(facility, from, to, bucket)`, `flow_matrix(facility, from, to)`, `dashboard_kpis()`, `delivery_report(from, to)` (volumes, ack rates, response times per channel), `policy_analytics(from, to)`.
 
-Mutation functions (called directly by the UI or by action handlers, always org-scoped): `merge_identities`, `rollback_merge`, `split_identity`, `merge_profiles`, `approve_verification`, `reject_verification`, `acknowledge_incident`, `escalate_incident` (manual), `resolve_incident`, `sync_segment_members(segment_id, ids)`, `check_in_visit`, `check_out_visit`, `start_emergency_override`, `end_emergency_override`, `check_access(access_point_id, identity_id|profile_id)` (evaluates published versions + grants, writes decision + event), `test_event_rule(rule_id, from, to)` and `simulate_access_policy(policy_id, from, to)` (replay history, return diffs without writing events), `test_notification_rule(rule_id)`.
+Mutation functions (called directly by the UI or by action handlers, always org-scoped): `merge_identities`, `rollback_merge`, `split_identity`, `merge_profiles`, `approve_verification`, `reject_verification`, `acknowledge_incident`, `escalate_incident` (manual), `resolve_incident`, `sync_segment_members(segment_id, ids, at)`, `add_segment_members` / `remove_segment_members`, `run_activity_stats`, `refresh_segment_daily_stats`, `check_in_visit`, `check_out_visit`, `start_emergency_override`, `end_emergency_override`, `check_access(access_point_id, identity_id|profile_id)` (evaluates published versions + grants, writes decision + event), `test_event_rule(rule_id, from, to)` and `simulate_access_policy(policy_id, from, to)` (replay history, return diffs without writing events), `test_notification_rule(rule, limit)` (dry run against the last N events: would-match, reason, recipients; ignores `is_active`; writes nothing).
 
 ### 8.2 Detection pipeline
 **Stage A — tracking state (SQL, AFTER INSERT on `detections`, same transaction, small and bounded):**
@@ -371,7 +374,8 @@ Time-based rules (`loitering`, `unusual_dwell`) are evaluated by cron (§8.3) fr
 | `escalate` | 1 min | incidents with `acknowledged_at is null` past the current step's `after_minutes` since `last_escalated_at` → next step deliveries (on-call schedule resolved to current member), `incident_activities` |
 | `end_emergency_overrides` | 1 min | past `ends_at` → end + `emergency_override_ended` event |
 | `aggregate_stats` | hourly | hourly/daily/transition stats, identity & profile activity stats, segment daily stats, identity confidence refinement (match frequency, verification, template quality) |
-| `evaluate_segments` | hourly | dynamic segments (time windows, schedules) via the backend translator + `sync_segment_members` |
+| `evaluate_segments` | hourly | `run_activity_stats` → all dynamic segments (active, or with open rule rows; time windows, schedules) via the backend translator + `sync_segment_members` → `refresh_segment_daily_stats`; per-segment failures recorded on the segment. Also picks up time-based inputs (watch-list entry expiry) |
+| `evaluate_segments_pending` | 1 min | organizations with a `segment_evaluation_requests` row whose first unprocessed request is ≥ 30 s old → evaluate their dynamic segments at `max(scheduled, now())`; stays pending after a stale sync or transient failure |
 | `run_report_schedules` | 15 min | due schedules → `reports` |
 | `run_saved_searches` | hourly | scheduled searches → `saved_search_match` events |
 | `run_export_definitions` | 15 min | due exports → `export_jobs` (incremental uses watermark) |
@@ -384,6 +388,8 @@ Time-based rules (`loitering`, `unusual_dwell`) are evaluated by cron (§8.3) fr
 | `purge_trigger_logs` | daily | finished Hasura event/cron logs older than 3 days |
 
 ### 8.4 Event triggers (external side effects only)
+Segment input changes are not an event trigger: deferred constraint triggers (commit time, once per transaction and organization) on profiles, identities (insert/delete; status/profile_id/attributes), watch_list_entries, watch_lists.kind, visits, work_schedules, manual segment_members and segment definitions write `segment_evaluation_requests` (`requested_at`, `first_requested_at`); the cron `evaluate_segments_pending` consumes them (debounce = batching window, so continuous writers cannot starve evaluation).
+
 | Trigger | On | Does |
 |---|---|---|
 | `send_delivery` | insert `notification_deliveries` (non in-app) | email → log/Mailhog if configured; sms/push/webhook → stub `sent/delivered`; failures → retries → `dead_letter` |
@@ -393,7 +399,6 @@ Time-based rules (`loitering`, `unusual_dwell`) are evaluated by cron (§8.3) fr
 | `run_bulk_job` | insert `bulk_jobs` | process file row by row, progress, partial commit |
 | `run_sync` | insert `integration_sync_runs` | stub: HR applies a fixture file (creates/updates/deactivates profiles with `source_integration_id/external_id`), others plausible counts; failure → `integration_failed` event |
 | `fulfil_dsr` | insert `data_subject_requests` | access/portability bundle; erasure anonymizes |
-| `segment_inputs_changed` | update of user-editable profile/identity columns, insert/close of manual `segment_members` | re-evaluate dynamic segments referencing them (debounced per org; ignores `source='rule'`) |
 
 ### 8.5 Actions (backend)
 `switch_organization`, `invite_member`, `accept_invitation`, `enroll_face`, `create_identity_from_photos`, `add_identity_photos`, `search_faces` (writes `search_requests` + `search_results`), `evaluate_segment`, `preview_segment`, `upload_profile_document`, `delete_file`, `recognition_start/stop/status`, `apply_facility_template`, `rotate_client_key` (plaintext once), `authenticate_face` (SA_6; also backend REST for client apps with key auth; writes attempts + `auth_success/auth_failed` events), `open_file`, `run_integration_sync`, `generate_incident_report`, `get_system_status`, `publish_policy_to_terminals` (marks terminals synced; demo of revocation convergence).
