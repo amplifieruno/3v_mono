@@ -46,6 +46,7 @@ describe('openFile', () => {
     const { promise, actorRequest } = run(openFile, { id: FILE, bucketId: ORG, metadata: { kind: 'dsr_export' } });
     expect(await promise).toEqual({ url: 'http://s/f', expires_at: '2030-01-01T00:00:00.000Z' });
     expect(actorRequest).toHaveBeenCalledWith(expect.stringContaining('view_sensitive'), { org: ORG, user: USER, file: FILE });
+    expect((actorRequest.mock.calls[0] as unknown as [string])[0]).toContain('entity: "files"');
   });
 
   it('should not audit non-sensitive or kind-less files', async () => {
@@ -74,15 +75,26 @@ describe('openFile', () => {
 });
 
 describe('deleteFile', () => {
-  it('should delete a file in the own bucket', async () => {
-    const { promise } = run(deleteFile, { id: FILE, bucketId: ORG, metadata: null });
+  it('should delete a file in the own bucket and audit the delete as the caller', async () => {
+    const { promise, actorRequest } = run(deleteFile, { id: FILE, bucketId: ORG, metadata: null });
     expect(await promise).toEqual({ file_id: FILE });
     expect(storage.deleteFile).toHaveBeenCalledWith(FILE);
+    expect(actorRequest).toHaveBeenCalledTimes(1);
+    const [query, variables] = actorRequest.mock.calls[0] as unknown as [string, Record<string, unknown>];
+    expect(query).toMatch(/action: delete, entity: "files"/);
+    expect(variables).toEqual({ org: ORG, user: USER, file: FILE });
   });
 
   it('should answer file_not_found for other buckets and org-logos without deleting', async () => {
     expect(await errorCode(run(deleteFile, { id: FILE, bucketId: OTHER, metadata: null }).promise)).toBe('file_not_found');
     expect(await errorCode(run(deleteFile, { id: FILE, bucketId: 'org-logos', metadata: null }).promise)).toBe('file_not_found');
     expect(storage.deleteFile).not.toHaveBeenCalled();
+  });
+
+  it('should not audit when the storage delete fails', async () => {
+    storage.deleteFile.mockRejectedValueOnce(new Error('storage down'));
+    const { promise, actorRequest } = run(deleteFile, { id: FILE, bucketId: ORG, metadata: null });
+    await expect(promise).rejects.toThrow('storage down');
+    expect(actorRequest).not.toHaveBeenCalled();
   });
 });

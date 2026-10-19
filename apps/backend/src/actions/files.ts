@@ -17,10 +17,19 @@ const FILE_QUERY = `
   }
 `;
 
+// Audit `entity` is the table name (storage.files), as written by the row-change trigger elsewhere.
 const AUDIT_VIEW = `
   mutation AuditViewSensitive($org: uuid!, $user: uuid, $file: uuid!) {
     insert_audit_log_one(
-      object: { organization_id: $org, user_id: $user, action: view_sensitive, entity: "file", entity_id: $file }
+      object: { organization_id: $org, user_id: $user, action: view_sensitive, entity: "files", entity_id: $file }
+    ) { id }
+  }
+`;
+
+const AUDIT_DELETE = `
+  mutation AuditDeleteFile($org: uuid!, $user: uuid, $file: uuid!) {
+    insert_audit_log_one(
+      object: { organization_id: $org, user_id: $user, action: delete, entity: "files", entity_id: $file }
     ) { id }
   }
 `;
@@ -67,9 +76,14 @@ export const openFile = defineAction(inputSchema, async ({ env, input, session, 
   return { url, expires_at: expiresAt.toISOString() };
 });
 
-/** Deletes a file from the session organization's own bucket (never from the shared logo bucket). */
-export const deleteFile = defineAction(inputSchema, async ({ env, input, session, admin }): Promise<DeletedFile> => {
+/** Deletes a file from the session organization's own bucket (never from the shared logo bucket); audited. */
+export const deleteFile = defineAction(inputSchema, async ({ env, input, session, admin, actor }): Promise<DeletedFile> => {
   const file = await loadOwnFile(input.file_id, session.organizationId, false, (q, v) => admin.request(q, v));
   await createStorageClient(env).deleteFile(file.id);
+  await actor.request(AUDIT_DELETE, {
+    org: session.organizationId?.toLowerCase(),
+    user: session.userId ?? null,
+    file: file.id,
+  });
   return { file_id: file.id };
 });

@@ -8,7 +8,7 @@ const OPEN = `mutation ($id: uuid!) { open_file(file_id: $id) { url expires_at }
 const DELETE = `mutation ($id: uuid!) { delete_file(file_id: $id) { file_id } }`;
 const AUDIT = `
   query ($org: uuid!, $file: uuid!) {
-    audit_log(where: { organization_id: { _eq: $org }, entity: { _eq: "file" }, entity_id: { _eq: $file } }) {
+    audit_log(where: { organization_id: { _eq: $org }, entity: { _eq: "files" }, entity_id: { _eq: $file } }) {
       action user_id
     }
   }
@@ -78,6 +78,11 @@ describe('open_file / delete_file actions', () => {
 
     const { delete_file } = await client.request<{ delete_file: { file_id: string } }>(DELETE, { id });
     expect(delete_file.file_id).toBe(id);
+    const audit = await asAdmin().request<{ audit_log: { action: string; user_id: string }[] }>(AUDIT, {
+      org: orgA.id,
+      file: id,
+    });
+    expect(audit.audit_log).toEqual([{ action: 'delete', user_id: user.id }]);
     expect((await expectError(open(client, id))).code).toBe('file_not_found');
   });
 

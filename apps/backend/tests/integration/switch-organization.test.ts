@@ -81,7 +81,7 @@ describe('switch_organization action', () => {
       { u: user.id, org: orgA.id },
     );
     expect(data.user_settings_by_pk?.last_organization_id).toBe(orgA.id);
-    expect(data.audit_log).toEqual([{ user_id: user.id, entity: 'organization', entity_id: orgA.id }]);
+    expect(data.audit_log).toEqual([{ user_id: user.id, entity: 'organizations', entity_id: orgA.id }]);
   });
 
   it('should not let an org token renew itself (no switch_organization for org_admin, no user role)', async () => {

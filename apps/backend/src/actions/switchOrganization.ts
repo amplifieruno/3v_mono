@@ -35,7 +35,7 @@ const RECORD_SWITCH = `
       on_conflict: { constraint: user_settings_pkey, update_columns: [last_organization_id] }
     ) { user_id }
     insert_audit_log_one(
-      object: { organization_id: $org, user_id: $user, action: switch_org, entity: "organization", entity_id: $org }
+      object: { organization_id: $org, user_id: $user, action: switch_org, entity: "organizations", entity_id: $org }
     ) { id }
   }
 `;

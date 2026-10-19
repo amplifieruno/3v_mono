@@ -116,6 +116,7 @@ describe('switchOrganization', () => {
     const [query, variables] = actorRequest.mock.calls[0] as unknown as [string, Record<string, unknown>];
     expect(query).toContain('insert_user_settings_one');
     expect(query).toContain('insert_audit_log_one');
+    expect(query).toContain('entity: "organizations"');
     expect(variables).toEqual({ user: USER, org: ORG });
   });
 });
