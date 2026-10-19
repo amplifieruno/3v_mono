@@ -1,0 +1,96 @@
+table:
+  schema: itap
+  name: notification_deliveries
+configuration:
+  custom_name: notification_deliveries
+object_relationships:
+  - name: escalation_step
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policy_steps
+        column_mapping:
+          organization_id: organization_id
+          escalation_step_id: id
+  - name: incident
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          incident_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: recipient_user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          recipient_user_id: user_id
+  - name: rule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          organization_id: organization_id
+          rule_id: id
+  - name: subscription
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          subscription_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - acknowledged_at
+        - attempts
+        - channel
+        - content
+        - created_at
+        - deliver_after
+        - delivered_at
+        - error
+        - escalation_cycle
+        - escalation_step_id
+        - event_id
+        - id
+        - incident_id
+        - organization_id
+        - priority
+        - recipient_address
+        - recipient_key
+        - recipient_user_id
+        - report_id
+        - rule_id
+        - sent_at
+        - status
+        - subscription_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - subscription_id:
+                  _is_null: true
+              - recipient_user_id:
+                  _eq: X-Hasura-User-Id
+      allow_aggregations: true

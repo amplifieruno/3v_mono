@@ -206,7 +206,7 @@ describe('notification rules', () => {
       s.a, 'notification_rules', { name: 'r1' }, 'code priority is_active digest_mode last_triggered_at',
     );
     expect(rule).toMatchObject({ code: 'NRULE-00001', priority: 'medium', is_active: true, digest_mode: 'none', last_triggered_at: null });
-    const second = await insertOne<{ code: string }>(s.a, 'notification_rules', { name: 'r2', conditions: { facility_ids: [] } }, 'code');
+    const second = await insertOne<{ code: string }>(s.a, 'notification_rules', { name: 'r2', conditions: { min_severity: 'high' } }, 'code');
     expect(second.code).toBe('NRULE-00002');
     const arr = await expectError(insertOne(s.a, 'notification_rules', { name: 'r3', conditions: [1] }));
     expect(arr.message).toMatch(/notification_rules_conditions_object/);

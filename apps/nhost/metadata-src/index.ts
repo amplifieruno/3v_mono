@@ -6,7 +6,7 @@ import { facilityFunctions, facilityTables } from './facilities.js';
 import { identityFunctions, identityTables } from './identities.js';
 import { incidentFunctions, incidentTables } from './incidents.js';
 import { maintenanceFunctions, maintenanceTables } from './maintenance.js';
-import { notificationTables } from './notifications.js';
+import { notificationFunctions, notificationTables } from './notifications.js';
 import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
 import { lifecycleFunctions, trackingFunctions, trackingTables } from './tracking.js';
@@ -46,4 +46,5 @@ export const functions: FunctionSpec[] = [
   ...visitFunctions,
   ...lifecycleFunctions,
   ...maintenanceFunctions,
+  ...notificationFunctions,
 ];

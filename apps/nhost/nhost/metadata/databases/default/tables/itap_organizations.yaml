@@ -317,6 +317,14 @@ array_relationships:
           name: organization_members
         column_mapping:
           id: organization_id
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          id: organization_id
   - name: notification_rule_channels
     using:
       manual_configuration:
@@ -459,6 +467,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: tracking_sessions
+        column_mapping:
+          id: organization_id
+  - name: user_notifications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: user_notifications
         column_mapping:
           id: organization_id
   - name: user_settings

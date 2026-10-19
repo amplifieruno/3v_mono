@@ -57,6 +57,16 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           watch_list_id: id
+array_relationships:
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          organization_id: organization_id
+          id: subscription_id
 insert_permissions:
   - role: org_admin
     permission:

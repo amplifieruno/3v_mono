@@ -113,12 +113,30 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: incident_id
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
   - name: shift_handover_incidents
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: shift_handover_incidents
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
+  - name: user_notifications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: user_notifications
         column_mapping:
           organization_id: organization_id
           id: incident_id

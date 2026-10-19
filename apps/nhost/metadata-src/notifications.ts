@@ -1,10 +1,28 @@
-import type { BoolExp, TableSpec } from './types.js';
+import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 
 const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
+// User-owned rows (subscriptions, inbox): the session user's rows of the session organization.
 const ownSubscription: BoolExp = {
   _and: [ownOrganizationRow, { user_id: { _eq: 'X-Hasura-User-Id' } }],
 };
+const ownNotification = ownSubscription;
+const visibleDelivery: BoolExp = {
+  _and: [
+    ownOrganizationRow,
+    { _or: [{ subscription_id: { _is_null: true } }, { recipient_user_id: { _eq: 'X-Hasura-User-Id' } }] },
+  ],
+};
+const DELIVERY_COLUMNS = [
+  'acknowledged_at', 'attempts', 'channel', 'content', 'created_at', 'deliver_after', 'delivered_at', 'error',
+  'escalation_cycle', 'escalation_step_id', 'event_id', 'id', 'incident_id', 'organization_id', 'priority',
+  'recipient_address', 'recipient_key', 'recipient_user_id', 'report_id', 'rule_id', 'sent_at', 'status',
+  'subscription_id',
+];
+const INBOX_COLUMNS = [
+  'acknowledged_at', 'body', 'created_at', 'delivery_id', 'event_id', 'id', 'incident_id', 'organization_id', 'priority',
+  'read_at', 'title', 'updated_at', 'user_id',
+];
 const userEditableTemplate: BoolExp = { _and: [ownOrganizationRow, { is_system: { _eq: false } }] };
 
 const SUBSCRIPTION_INPUT = ['channel', 'event_type', 'facility_id', 'identity_id', 'min_severity', 'profile_id', 'watch_list_id'];
@@ -78,4 +96,34 @@ export const notificationTables: TableSpec[] = [
       delete_permissions: [{ role: ORG_ADMIN, permission: { filter: ownSubscription } }],
     },
   },
+  { name: 'notification_delivery_statuses', isEnum: true, profile: 'none' },
+  {
+    // Append-only log written by Stage C / escalation / digests; status fields updated by the senders. Not audited.
+    // Subscriptions are private (like their audit rows): a subscription delivery is visible to its recipient only.
+    name: 'notification_deliveries',
+    profile: 'tenant_read',
+    extraPermissions: {
+      select_permissions: [
+        { role: ORG_ADMIN, permission: { columns: DELIVERY_COLUMNS, filter: visibleDelivery, allow_aggregations: true } },
+      ],
+    },
+  },
+  {
+    // In-app inbox: owner-only; the owner may set/clear read_at and set acknowledged_at (stamped with now() by trigger).
+    name: 'user_notifications',
+    profile: 'tenant_read',
+    extraPermissions: {
+      select_permissions: [
+        { role: ORG_ADMIN, permission: { columns: INBOX_COLUMNS, filter: ownNotification, allow_aggregations: true } },
+      ],
+      update_permissions: [
+        { role: ORG_ADMIN, permission: { columns: ['acknowledged_at', 'read_at'], filter: ownNotification, check: ownNotification } },
+      ],
+    },
+  },
 ];
+
+/** Owner inbox mutations (rows of the session user only). */
+export const notificationFunctions: FunctionSpec[] = ['acknowledge_notification', 'mark_notifications_read'].map(
+  (name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }),
+);

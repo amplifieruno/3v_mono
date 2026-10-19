@@ -129,6 +129,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: linked_by
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          organization_id: organization_id
+          user_id: recipient_user_id
   - name: notification_subscriptions
     using:
       manual_configuration:
@@ -210,6 +219,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: to_user_id
+  - name: user_notifications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: user_notifications
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
   - name: verification_requests_by_assigned_to
     using:
       manual_configuration:

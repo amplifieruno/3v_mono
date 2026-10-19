@@ -40,6 +40,15 @@ object_relationships:
           organization_id: organization_id
           template_id: id
 array_relationships:
+  - name: notification_deliveries
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_deliveries
+        column_mapping:
+          organization_id: organization_id
+          id: rule_id
   - name: notification_rule_channels
     using:
       manual_configuration:

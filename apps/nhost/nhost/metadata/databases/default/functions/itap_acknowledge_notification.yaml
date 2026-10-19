@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: acknowledge_notification
+configuration:
+  custom_name: acknowledge_notification
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

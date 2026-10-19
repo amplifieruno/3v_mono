@@ -1,0 +1,74 @@
+table:
+  schema: itap
+  name: user_notifications
+configuration:
+  custom_name: user_notifications
+object_relationships:
+  - name: incident
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          incident_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - acknowledged_at
+        - body
+        - created_at
+        - delivery_id
+        - event_id
+        - id
+        - incident_id
+        - organization_id
+        - priority
+        - read_at
+        - title
+        - updated_at
+        - user_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - acknowledged_at
+        - read_at
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
