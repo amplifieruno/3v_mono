@@ -1,0 +1,49 @@
+# Data Layer Slice 8 — Physical Access Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Versioned access policies with an approval workflow, one-time and time-bound grants, a deterministic SQL decision engine (`check_access`) with contextual signals and a risk score, face-as-credential decisions at camera-bound access points, policy-based `restricted_area_entry` and `tailgating`, emergency overrides, policy distribution to terminals with bounded revocation convergence, policy simulation and analytics — with 30 days of decisions produced by the same engine during the history replay.
+
+**Architecture:** Builds on slices 1–7 (summaries; `.claude/rules/hasura-conventions.md`). Policies use the slice-4 versioning helpers (`create_draft_version` / `publish_version`). The engine is one SQL function evaluated in the caller's transaction (budget: p95 < 100 ms per SA_5 §3.4 — measured in tests), writing `access_decisions` + `access_granted/access_denied` events through `emit_event` (Stage C fans out). Stage B calls the engine for detections at access points bound to a camera. Distribution is a policy epoch per organization compared with each terminal's synced epoch; revocations are pushed by a minute cron (stubbed terminal push, real state), allows converge lazily.
+
+**Tech Stack:** Postgres 16, Hasura v2.46 (functions, cron/event triggers), Express/TypeScript (terminal sync stub), vitest.
+
+**Spec:** `tasks/data-layer/design.md` — §6.13, §6.7 (devices.policy_version_synced / policy_synced_at), §6.0 (versioned entities, windows/time), §8.1 (`check_access`, `simulate_access_policy`, `policy_analytics`, `start/end_emergency_override`), §8.2 (`restricted_area_entry` by policy/grant, `tailgating`), §8.3 (`end_emergency_overrides`), §8.5 (`publish_policy_to_terminals`); SA_5 §2.1.4 (`docs/stages/SA_5_EN.md`).
+
+## Global Constraints
+
+- All conventions apply. `access_decisions` is **ro**, append-only, not audited (high volume); `signals` jsonb holds the full evaluation trace (evaluated versions in order, matched subject/target, schedule result, grant used, override, contextual signals, risk components) so a decision is reproducible from its record.
+- Deterministic evaluation order (document in conventions): (1) active emergency override covering the target (lock_all → deny, unlock_all/evacuation → allow; evacuation allows exits only when direction known); (2) published policy versions whose subjects match the person and targets cover the access point (target facility/area subtree/access point) and whose schedule/valid window includes the instant **in the target facility's timezone**, sorted by priority desc, then effect deny before allow, then version id; first match decides; (3) a valid grant (unused if single_use; consumed atomically) allows when no deny matched; (4) default deny. Risk: computed from signals (area over capacity, recent denied attempts in 10 min, device health not healthy, unknown identity); a policy version may set `max_risk` — above it the allow becomes deny with reason `risk_exceeded`. DST: windows are evaluated on local wall-clock time; a window covering a skipped hour is simply shorter, a repeated hour matches both instances (document).
+- Approval: submit → pending_approval; approve by a **different** member than the submitter (four-eyes) publishes; reject → draft with reason. Archiving clears `current_version_id`.
+- Subjects: exactly-one of profile / segment (membership at decision time) / profile_type / access_level (clearance rank ≥ via `itap.access_rank`). Targets: exactly-one of facility / area (subtree) / access point.
+- Grants: exactly-one of area / access point; profile required; valid window; single_use with `used_at` set inside `check_access` under row lock (one consumer).
+- Distribution: `organization_settings.policy_epoch` (bigint) bumped on publish/archive/grant change/override start-end; `devices.policy_version_synced` (epoch) / `policy_synced_at` for access terminals; an update is `urgent` when it can only reduce access (deny publish, archive of an allow, grant revoke/expiry, lock override) — urgent epochs must be applied to all active terminals within the convergence bound (`policy_revocation_bound_seconds`, default 60) by the 1-minute cron `sync_terminal_policies`; non-urgent within 15 min. Terminal push is a stub that records success (real state change), unreachable terminals (health critical/offline) stay stale and are reported.
+- Events: `access_granted` / `access_denied` (dedup key `decision:<id>`), `tailgating` (key `ap:<id>:tailgating:<bucket>`), `restricted_area_entry` (policy-based), `emergency_override_started/ended`.
+
+## Review Focus
+
+1. Two concurrent decisions consuming the same single-use grant: exactly one allow.
+2. A deny version and an allow version of equal priority covering the same person and door: deny wins, deterministically, and the trace says why.
+3. A schedule window evaluated across a DST change and for a facility in a different timezone from the organization: correct local-time result.
+4. Revoking access (deny publish or grant revoke) → every reachable terminal shows the new epoch within the bound; an offline terminal is reported stale, not silently "synced".
+5. An emergency lock override covering a door denies even a valid grant; when it ends (manually or by `ends_at`) normal evaluation resumes and both events exist.
+
+---
+
+### Task 1: Schema — policies (versioned, approval), subjects/targets, grants, overrides, decisions, distribution columns
+Enums (`access_effects`, `override_modes`, `access_decision_results` (granted/denied), decision reasons enum or text with CHECK list); tables per spec §6.13 + `access_policy_versions.max_risk`, `rejection_reason`; settings columns `policy_epoch`, `policy_revocation_bound_seconds`; devices sync columns already exist (verify; add `policy_sync_error`). Functions: `create_access_policy_draft`, `submit_access_policy_version`, `approve_access_policy_version` (four-eyes; publishes via `publish_version`; audit `approve` + `publish`), `reject_access_policy_version`, `archive_access_policy`, `revoke_access_grant`; epoch bump triggers. Permissions: org_admin CRUD on headers/draft versions/children (guards from versioning helpers), grants (insert/revoke; used_at ro), overrides via functions only, decisions select-only. Tests: versioning + approval (four-eyes), exactly-one checks, epoch bumps and urgency flag.
+
+### Task 2: Decision engine — `check_access`
+SQL `itap.check_access(hasura_session, access_point_id, identity_id?, profile_id?, device_id?, at?)` (tracked mutation for org_admin/terminals demo) and internal `itap.evaluate_access(org, ap, identity, profile, device, at, p_record bool)` used by Stage B and simulation; evaluation order per Global Constraints; contextual signals + risk; decision row + event; latency_ms measured with clock_timestamp; p95 < 100 ms in an integration benchmark on the seeded DB (≥200 calls). Tests: Review Focus 1, 2, 3; each reason; trace completeness.
+
+### Task 3: Pipeline integration — face-as-credential, restricted_area_entry, tailgating
+Stage B (replace latest definitions; purely additive): detection at an access point whose camera binding role is `camera` and the access point has a terminal or `face_credential` flag → `evaluate_access(..., p_record => true)` once per session per access point per N seconds (dedup); policy-based `restricted_area_entry` on area entry when no published version/grant allows that area (keep rank check as fallback when the org has no policies); `tailgating`: ≥2 distinct effective identities at the same access point within `tailgating_window_seconds` against ≤1 granted decision → event. Tests: end-to-end through detections; dedup; no double decisions on redelivery.
+
+### Task 4: Overrides, distribution, simulation, analytics
+`start_emergency_override` / `end_emergency_override` (justification required, areas junction, events, supervisor notification via Stage C rule seeded later), cron `end_emergency_overrides` (1 min); cron `sync_terminal_policies` (1 min; urgent within bound, lazy otherwise; stub push; stale report) + action `publish_policy_to_terminals` (force push now; returns per-terminal result); `simulate_access_policy(hasura_session, version_id, from, to)` (re-evaluate historical decisions/access-point detections with the draft version substituted, return diffs: would-change granted→denied / denied→granted with counts and samples; writes nothing); `policy_analytics(hasura_session, from, to)` (hit rates per version, denial reasons, top denied subjects/doors, unused versions, overlap/consolidation hints). Tests: Review Focus 4, 5; simulation no writes; analytics numbers.
+
+### Task 5: Seed
+Nova Tower policies (published: Employees — main turnstiles office hours; Contractors — weekdays with max_risk; Visitors — via grants from visits; Server room — IT segment allow + deny all others priority high; Executive floor — exec segment; one draft, one pending approval submitted by the second admin), grants (visitor day grants from visits, one single-use used, one revoked), 30-day decisions produced by the engine during the detection replay (detections at access-point cameras) incl. some denials and a tailgating case, one past emergency override (fire drill, evacuation, 20 min) with events, terminals synced with one stale offline terminal, notification rule for override events. Seed test invariants; seed time budget ≲ +45 s.
+
+### Task 6: Docs, summary, gates
+`summary-08-physical-access.md`, design.md (§6.13, §8.x as built), roadmap, CLAUDE.md, conventions (evaluation order, DST rule, urgency/convergence, trace format); gates; push.
