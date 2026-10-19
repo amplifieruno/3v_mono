@@ -252,22 +252,22 @@ Event types (`event_types`): `detection_unknown, detection_known, watchlist_matc
 ### 6.12 Notifications (FS §11, SA_5 §2.1.3)
 | Table | Key columns | Notes |
 |---|---|---|
-| `notification_rules` | number, name, description, conditions jsonb, priority, recipient_group_id, template_id, escalation_policy_id, is_active, digest_mode (`none/hourly/daily`), last_triggered_at **ro** | |
+| `notification_rules` | number, name, description, conditions jsonb, priority, recipient_group_id, template_id, escalation_policy_id, is_active, digest_mode (`none/hourly/daily`), last_triggered_at **ro** | `escalation_policy_id`: Stage C puts it on the event's open incident when that incident has no policy (first matching rule with a policy, by id) |
 | `notification_rule_event_types` | rule_id, event_type | |
-| `notification_rule_channels` | rule_id, channel → `notification_channels` | |
+| `notification_rule_channels` | rule_id, channel → `notification_channels` | never `webhook` (CHECK) |
 | `notification_templates` | name, channel, locale, subject, body, is_system | |
 | `recipient_groups` | name, description | |
 | `recipient_group_members` | group_id, user_id, external_address, channel | exactly-one of user/address |
-| `escalation_policies` | name, repeat, max_cycles (NULL = unbounded, >= 1) | A repeating policy stops after `max_cycles` cycles |
-| `escalation_policy_steps` | policy_id, step_no, after_minutes, recipient_group_id, on_call_schedule_id, channel | exactly-one of group/schedule |
+| `escalation_policies` | name, repeat, max_cycles (>= 1; required when `repeat`, CHECK) | A repeating policy stops after `max_cycles` cycles; without repeat one pass |
+| `escalation_policy_steps` | policy_id, step_no, after_minutes, recipient_group_id, on_call_schedule_id, channel | exactly-one of group/schedule; channel never `webhook` (CHECK) |
 | `on_call_schedules` | name, timezone, shift_length_hours, rotation_start_at | Resolved to the current member by escalation (§8.3) |
 | `on_call_schedule_members` | schedule_id, user_id (composite member FK), position | Ordered rotation |
-| `notification_subscriptions` | user_id, event_type, facility_id, identity_id, profile_id, watch_list_id, channel, min_severity | Self-service, facility-scoped, identity-specific (SA_5) |
-| `notification_deliveries` | rule_id, escalation_step_id, subscription_id, report_id, event_id, incident_id, recipient_user_id, recipient_address, channel, status (`pending/sent/delivered/failed/retrying/dead_letter/digested`), digested_into, attempts, content, sent_at, delivered_at, acknowledged_at, escalation_cycle, error | **ro**; exactly-one origin (rule / escalation step / subscription / report) and exactly-one recipient (CHECKs); one partial unique index per origin (`rule_id, event_id, recipient, channel` / `escalation_step_id, incident_id, escalation_cycle, recipient` / `subscription_id, event_id` / `report_id, recipient, channel`) — idempotent despite nullable columns |
-| `user_notifications` | user_id, delivery_id, event_id, incident_id, title, body, priority, read_at, acknowledged_at | In-app inbox; owner may set read/ack |
-| `webhook_subscriptions` | url, secret **secret**, is_active | |
+| `notification_subscriptions` | user_id, event_type, facility_id, identity_id, profile_id, watch_list_id, channel, min_severity, is_active | Self-service, facility-scoped, identity-specific (SA_5); unsubscribe = `is_active` false (history kept); channel never `webhook` |
+| `notification_deliveries` | rule_id, escalation_step_id, subscription_id, report_id, event_id, incident_id, recipient_user_id, recipient_address, channel, status (`pending/sent/delivered/failed/retrying/dead_letter/digested`), digested_into, attempts, deliver_after, content, sent_at, delivered_at, acknowledged_at, escalation_cycle, error | **ro**; exactly-one origin (rule / escalation step / subscription / report) and exactly-one recipient (CHECKs); one partial unique index per origin (`rule_id, event_id, recipient, channel` / `escalation_step_id, incident_id, escalation_cycle, recipient` / `subscription_id, event_id` / `report_id, recipient, channel`) — idempotent despite nullable columns; `deliver_after` = quiet-hours/digest release time, then the 60 s sending lease (original time in `content.scheduled_for`); `error` on dead letters: `max_attempts`, `recipient_inactive` |
+| `user_notifications` | user_id, delivery_id, event_id, incident_id, title, body, priority, read_at, acknowledged_at | In-app inbox; owner may set read/ack; `acknowledge_notification` of an escalation page also acknowledges its open, unacknowledged incident |
+| `webhook_subscriptions` | url, secret **secret**, description, is_active, last_delivery_status **ro**, last_delivery_at **ro** | last_delivery_* written by the sender |
 | `webhook_subscription_event_types` | subscription_id, event_type | |
-| `webhook_deliveries` | subscription_id, event_id, status, attempts, response_code, signature, sent_at, error | **ro** (HMAC-SHA256, retries — SA_2/SA_5) |
+| `webhook_deliveries` | subscription_id, event_id, event_type, body jsonb, status, attempts, response_code, signature, sent_at, next_attempt_at, error | **ro** (HMAC-SHA256, retries — SA_2/SA_5); body built at fan-out; `next_attempt_at` = lease / backoff |
 
 ### 6.13 Physical access control (SA_5 §2.1.4)
 | Table | Key columns | Notes |
@@ -360,7 +360,7 @@ Published event-rule versions in scope then set severity, `rule_version_id`, and
 
 Time-based rules (`loitering`, `unusual_dwell`) are evaluated by cron (§8.3) from `area_occupancy` durations, key `(occupancy row, type)`.
 
-**Stage C — notification fan-out (SQL, AFTER INSERT on `events`)**: match active notification rules (event-type and channel junctions, conditions, priority rank) and subscriptions (min severity rank) of active members → `notification_deliveries` + `user_notifications` (in-app delivered immediately); webhook subscriptions → `webhook_deliveries` (pending). Per-origin partial unique indexes make it idempotent. This runs inside stage B's transaction, not the detection insert.
+**Stage C — notification fan-out (SQL `itap.fan_out_events`, called by `finish_events` after incident creation and the rule counters; also by `emit_device_event`)**: match active notification rules (event-type and channel junctions, conditions, priority rank) and subscriptions (min severity rank) of active members → `notification_deliveries` + `user_notifications` (in-app delivered immediately); webhook subscriptions → `webhook_deliveries` (pending); a matching rule's `escalation_policy_id` goes onto the event's open incident if it has none. Per-origin partial unique indexes make it idempotent. This runs inside the event writer's transaction (stage B or a cron), at the end of its lock order (event keys → incident counter → rule rows → deliveries), not in the detection insert.
 
 ### 8.3 Cron triggers
 | Cron | Schedule | Does |
@@ -379,6 +379,9 @@ Time-based rules (`loitering`, `unusual_dwell`) are evaluated by cron (§8.3) fr
 | `retention_cleanup` | daily | per policy (facility-specific first), skipping legal-hold coverage; files via storage API |
 | `find_duplicates` | daily | identity template similarity → identity candidates; name/email/employee_id → profile candidates |
 | `send_digests` | hourly | digest-mode rules |
+| `retry_deliveries` | 1 min | notification deliveries due again (backoff passed, expired lease, never-triggered row, released quiet hours) → claim and send (stubs) |
+| `retry_webhooks` | 1 min | webhook deliveries whose `next_attempt_at` passed (backoff or lease) → claim and POST; `dead_letter` after 5 attempts |
+| `purge_trigger_logs` | daily | finished Hasura event/cron logs older than 3 days |
 
 ### 8.4 Event triggers (external side effects only)
 | Trigger | On | Does |
