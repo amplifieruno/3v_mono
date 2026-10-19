@@ -14,9 +14,20 @@ const TENANT_ROLE = 'org_admin';
 const NEVER_WRITABLE = new Set(['id', ORG_COLUMN, 'created_at', 'updated_at', 'created_by']);
 const ARRAY_OVERRIDE_SUFFIX = '#array';
 
-/** Array-end stem: FK columns without `organization_id`, each minus `_id`; `organization` for the org FK. */
-function fkStem(columns: string[]): string {
-  const own = columns.filter((c) => c !== ORG_COLUMN);
+/**
+ * Own FK columns: without `organization_id` and, for scoped composite FKs such as
+ * `(organization_id, facility_id, parent_id) -> areas (organization_id, facility_id, id)`, without the scope columns
+ * that reference a same-named column (`facility_id -> facility_id`); kept when nothing else would remain.
+ */
+function ownColumns(fk: Pick<ForeignKey, 'columns' | 'refColumns'>): string[] {
+  const own = fk.columns.filter((c) => c !== ORG_COLUMN);
+  const unscoped = own.filter((c) => fk.refColumns[fk.columns.indexOf(c)] !== c);
+  return unscoped.length > 0 ? unscoped : own;
+}
+
+/** Array-end stem: own FK columns, each minus `_id`; `organization` for the org FK. */
+function fkStem(fk: Pick<ForeignKey, 'columns' | 'refColumns'>): string {
+  const own = ownColumns(fk);
   if (own.length === 0) return 'organization';
   return own.map((c) => c.replace(/_id$/, '')).join('_');
 }
@@ -35,8 +46,8 @@ export function singularize(word: string): string {
  * append the singular of the referenced table's last segment (`organization_members` → `assigned_to_member`).
  */
 function objectName(fk: ForeignKey): string {
-  const own = fk.columns.filter((c) => c !== ORG_COLUMN);
-  const stem = fkStem(fk.columns);
+  const own = ownColumns(fk);
+  const stem = fkStem(fk);
   if (own.length === 0 || own.every((c) => c.endsWith('_id'))) return stem;
   const segments = fk.refTable.split('_');
   return `${stem}_${singularize(segments[segments.length - 1])}`;
@@ -79,7 +90,7 @@ function reverseRelationships(spec: TableSpec, incoming: ForeignKey[]): (NamedRe
 
   const names = spec.relationshipNames ?? {};
   return incoming.map((fk) => {
-    const derived = (perChild.get(childKey(fk)) ?? 0) > 1 ? `${fk.table}_by_${fkStem(fk.columns)}` : fk.table;
+    const derived = (perChild.get(childKey(fk)) ?? 0) > 1 ? `${fk.table}_by_${fkStem(fk)}` : fk.table;
     return {
       constraint: fk.constraint,
       oneToOne: fk.oneToOne === true,

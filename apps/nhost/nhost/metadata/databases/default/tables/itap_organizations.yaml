@@ -21,6 +21,14 @@ object_relationships:
         column_mapping:
           id: organization_id
 array_relationships:
+  - name: areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          id: organization_id
   - name: companies
     using:
       manual_configuration:
@@ -43,6 +51,22 @@ array_relationships:
         remote_table:
           schema: itap
           name: custom_attribute_definitions
+        column_mapping:
+          id: organization_id
+  - name: facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          id: organization_id
+  - name: floor_plans
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: floor_plans
         column_mapping:
           id: organization_id
   - name: identities

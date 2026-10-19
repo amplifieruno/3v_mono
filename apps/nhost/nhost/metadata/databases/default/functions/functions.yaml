@@ -1,5 +1,6 @@
 - "!include itap_accept_invitation.yaml"
 - "!include itap_approve_verification.yaml"
+- "!include itap_area_descendants.yaml"
 - "!include itap_match_face.yaml"
 - "!include itap_merge_identities.yaml"
 - "!include itap_merge_profiles.yaml"

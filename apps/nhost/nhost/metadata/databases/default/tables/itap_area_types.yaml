@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: area_types
+is_enum: true
+configuration:
+  custom_name: area_types

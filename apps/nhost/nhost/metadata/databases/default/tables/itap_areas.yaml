@@ -1,0 +1,127 @@
+table:
+  schema: itap
+  name: areas
+configuration:
+  custom_name: areas
+object_relationships:
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: floor_plan
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: floor_plans
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: area_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: parent
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          parent_id: id
+array_relationships:
+  - name: children
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: parent_id
+computed_fields:
+  - name: current_occupancy
+    definition:
+      function:
+        schema: itap
+        name: area_current_occupancy
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - area_type
+        - capacity
+        - description
+        - facility_id
+        - loitering_threshold_seconds
+        - name
+        - parent_id
+        - shape
+        - status
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - area_type
+        - capacity
+        - created_at
+        - depth
+        - description
+        - facility_id
+        - id
+        - loitering_threshold_seconds
+        - name
+        - organization_id
+        - parent_id
+        - path
+        - shape
+        - status
+        - updated_at
+      computed_fields:
+        - current_occupancy
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - area_type
+        - capacity
+        - description
+        - loitering_threshold_seconds
+        - name
+        - parent_id
+        - shape
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

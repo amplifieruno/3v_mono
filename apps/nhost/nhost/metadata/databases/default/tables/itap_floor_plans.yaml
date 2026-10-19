@@ -1,0 +1,98 @@
+table:
+  schema: itap
+  name: floor_plans
+configuration:
+  custom_name: floor_plans
+object_relationships:
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: image_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          image_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - facility_id
+        - height_px
+        - image_file_id
+        - level
+        - name
+        - scale_m_per_px
+        - width_px
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - created_at
+        - facility_id
+        - height_px
+        - id
+        - image_file_id
+        - level
+        - name
+        - organization_id
+        - scale_m_per_px
+        - updated_at
+        - width_px
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - height_px
+        - image_file_id
+        - level
+        - name
+        - scale_m_per_px
+        - width_px
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

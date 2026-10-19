@@ -1,0 +1,24 @@
+table:
+  schema: itap_results
+  name: area_refs
+configuration:
+  custom_name: area_refs
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - area_type
+        - depth
+        - facility_id
+        - id
+        - name
+        - organization_id
+        - parent_id
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

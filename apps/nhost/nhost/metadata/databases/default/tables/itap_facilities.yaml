@@ -1,0 +1,107 @@
+table:
+  schema: itap
+  name: facilities
+configuration:
+  custom_name: facilities
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: floor_plans
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: floor_plans
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+computed_fields:
+  - name: areas_count
+    definition:
+      function:
+        schema: itap
+        name: facility_areas_count
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - address
+        - contact
+        - custom_fields
+        - description
+        - latitude
+        - longitude
+        - name
+        - operating_hours
+        - status
+        - timezone
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - address
+        - code
+        - contact
+        - created_at
+        - custom_fields
+        - description
+        - id
+        - latitude
+        - longitude
+        - name
+        - number
+        - operating_hours
+        - organization_id
+        - status
+        - timezone
+        - updated_at
+      computed_fields:
+        - areas_count
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - address
+        - contact
+        - custom_fields
+        - description
+        - latitude
+        - longitude
+        - name
+        - operating_hours
+        - status
+        - timezone
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

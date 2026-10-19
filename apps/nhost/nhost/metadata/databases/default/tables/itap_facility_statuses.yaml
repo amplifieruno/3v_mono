@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: facility_statuses
+is_enum: true
+configuration:
+  custom_name: facility_statuses
