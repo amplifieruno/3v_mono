@@ -68,4 +68,37 @@ describe('Stage B: tailgating', () => {
       payload: expect.objectContaining({ people: 2, granted: 1 }),
     });
   });
+
+  it('should not report two denied faces (no door opened for anyone)', async () => {
+    const w = await accessTrackingWorld();
+    await evaluate((await detect(w.orgA.id, w.entranceCam, w.identity, 0)).id);
+    await evaluate((await detect(w.orgA.id, w.entranceCam, await createIdentity(w.a), 1)).id);
+    expect(await tailgating(w.orgA.id)).toEqual([]);
+  });
+
+  it('should report one event for detections straddling a bucket boundary, whatever the evaluation order', async () => {
+    const w = await accessTrackingWorld();
+    const emp = await person(w.a, { profile_type: 'employee' });
+    await publishTrackingPolicy(w, { profile_type: 'employee' }, { access_point_id: w.entranceDoor.id });
+    // B (unknown, bucket 1) is evaluated before A (granted, bucket 0); then both are redelivered.
+    const b = await detect(w.orgA.id, w.entranceCam, w.identity, 6);
+    await evaluate(b.id);
+    const a = await detect(w.orgA.id, w.entranceCam, emp.identity, 4);
+    await evaluate(a.id);
+    await evaluate(a.id);
+    await evaluate(b.id);
+    expect(await tailgating(w.orgA.id)).toHaveLength(1);
+  });
+
+  it('should report one event for concurrent detections at a door without face credential', async () => {
+    const w = await accessTrackingWorld();
+    const emp = await person(w.a, { profile_type: 'employee' });
+    await publishTrackingPolicy(w, { profile_type: 'employee' }, { access_point_id: w.exitDoor.id });
+    await evaluateAccess(w.orgA.id, w.exitDoor.id, { profile: emp.profile, at: at(3), record: true });
+    const people = [emp.identity, w.identity, await createIdentity(w.a), await createIdentity(w.a)];
+    const detections = [];
+    for (const [i, id] of people.entries()) detections.push(await detect(w.orgA.id, w.exitCam, id, 3 + i));
+    await Promise.all([...detections, ...detections].map((d) => evaluate(d.id)));
+    expect(await tailgating(w.orgA.id)).toHaveLength(1);
+  });
 });

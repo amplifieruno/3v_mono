@@ -9,7 +9,7 @@ import {
   setSetting,
   trackingGrant,
 } from './support/stageBAccess.js';
-import { at, createIdentity, detect } from './support/tracking.js';
+import { at, createIdentity, detect, sessions } from './support/tracking.js';
 
 /** Stage B (slice 8 task 3): face-as-credential decisions at camera-bound access points. */
 
@@ -44,6 +44,12 @@ describe('Stage B: face as credential', () => {
     });
     // The session events of the same detection are still there.
     expect(events.map((e) => e.event_type)).toContain('detection_known');
+    // The decision event belongs to the session, also for a later frame that changes no tracking state.
+    const [session] = await sessions(emp.identity);
+    expect(granted?.session_id).toBe(session.id);
+    await evaluate((await detect(w.orgA.id, w.entranceCam, emp.identity, 20)).id);
+    const later = (await accessEvents(w.orgA.id)).filter((e) => e.occurred_at.startsWith('2026-01-05T08:00:20'));
+    expect(later.map((e) => e.session_id)).toEqual([session.id]);
   });
 
   it('should deny an unknown face and a known face without a rule, with access_denied events', async () => {

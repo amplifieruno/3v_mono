@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { updateByPk } from './support/operations.js';
+import { insertOne, updateByPk } from './support/operations.js';
 import { runSql } from './support/sql.js';
 import { evaluate, orgEvents } from './support/stageB.js';
 import {
@@ -110,5 +110,28 @@ describe('Stage B: restricted_area_entry by policy', () => {
     await evaluate((await detect(w.orgA.id, w.floorCam, visitor.identity, 0)).id);
     await evaluate((await detect(w.orgA.id, w.floorCam, w.identity, 1)).id);
     expect((await restricted(w.orgA.id)).map((e) => e.identity_id)).toEqual([w.identity]);
+  });
+
+  it('should not govern an area through a deny alone, but still report a person the deny matches', async () => {
+    const w = await accessTrackingWorld();
+    const banned = await insertOne(w.a, 'segments', { name: `Banned ${Date.now()}`, kind: 'manual', target: 'profiles' });
+    const member = await person(w.a, { profile_type: 'employee' });
+    const colleague = await person(w.a, { profile_type: 'employee' });
+    await runSql(`insert into itap.segment_members (organization_id, segment_id, target, profile_id, source, added_at)
+      values ('${w.orgA.id}', '${banned.id}', 'profiles', '${member.profile}', 'manual', '2026-01-01T00:00:00Z')`);
+    await publishTrackingPolicy(w, { segment_id: banned.id }, { facility_id: w.facility.id }, { effect: 'deny', priority: 90 });
+    // Ungoverned for everyone the deny does not match (rank fallback), denied for the segment member.
+    expect(await areaAccessAllowed(w.orgA.id, w.zone.id, colleague.identity, null, 0)).toBeNull();
+    expect(await areaAccessAllowed(w.orgA.id, w.zone.id, member.identity, null, 0)).toBe(false);
+    await evaluate((await detect(w.orgA.id, w.floorCam, colleague.identity, 0)).id);
+    await evaluate((await detect(w.orgA.id, w.lobbyCam, colleague.identity, 5)).id);
+    await evaluate((await detect(w.orgA.id, w.floorCam, member.identity, 10)).id);
+    const events = await restricted(w.orgA.id);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      profile_id: member.profile,
+      area_id: w.zone.id,
+      payload: expect.objectContaining({ basis: 'policy' }),
+    });
   });
 });
