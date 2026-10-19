@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: trigger_log_purges
+configuration:
+  custom_name: trigger_log_purges

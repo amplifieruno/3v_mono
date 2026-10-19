@@ -97,6 +97,7 @@
 - "!include itap_profiles.yaml"
 - "!include itap_results_area_refs.yaml"
 - "!include itap_results_face_matches.yaml"
+- "!include itap_results_trigger_log_purges.yaml"
 - "!include itap_shift_handover_incidents.yaml"
 - "!include itap_shift_handovers.yaml"
 - "!include itap_tracking_session_statuses.yaml"

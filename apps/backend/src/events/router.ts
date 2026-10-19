@@ -5,6 +5,7 @@ import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
+import { purgeTriggerLogs } from './purgeTriggerLogs.js';
 import { closeStaleSessions, evaluateDwellRules, lifecycleJobs } from './trackingCrons.js';
 import {
   cronTriggerPayloadSchema,
@@ -32,6 +33,7 @@ export const defaultEventHandlers: EventHandlers = {
   close_stale_sessions: closeStaleSessions,
   evaluate_dwell_rules: evaluateDwellRules,
   lifecycle_jobs: lifecycleJobs,
+  purge_trigger_logs: purgeTriggerLogs,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

@@ -48,4 +48,13 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Daily: no-show visits, expire visitor/contractor profiles past end_date, expire invitations',
   },
+  {
+    // Hasura's event/cron delivery logs grow with every detection (detection_created): delete finished rows older
+    // than 3 days, for every trigger (itap.purge_trigger_logs). Daily 03:30 UTC; up to an hour late still runs.
+    name: 'purge_trigger_logs',
+    schedule: '30 3 * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    comment: 'Daily: delete delivered/failed event trigger and cron logs older than 3 days',
+  },
 ];

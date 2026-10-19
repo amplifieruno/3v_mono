@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: purge_trigger_logs
+configuration:
+  custom_name: purge_trigger_logs
+  exposed_as: mutation
