@@ -136,6 +136,7 @@ insert_permissions:
       columns:
         - area_id
         - direction
+        - face_credential
         - facility_id
         - from_area_id
         - is_entry_exit
@@ -155,6 +156,7 @@ select_permissions:
         - area_id
         - created_at
         - direction
+        - face_credential
         - facility_id
         - from_area_id
         - id
@@ -175,6 +177,7 @@ update_permissions:
       columns:
         - area_id
         - direction
+        - face_credential
         - from_area_id
         - is_entry_exit
         - kind

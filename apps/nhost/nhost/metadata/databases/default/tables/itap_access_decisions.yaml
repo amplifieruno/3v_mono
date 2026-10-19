@@ -92,6 +92,7 @@ select_permissions:
         - access_point_id
         - created_at
         - decided_at
+        - detection_id
         - device_id
         - epoch
         - facility_id

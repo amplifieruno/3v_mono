@@ -27,6 +27,7 @@ select_permissions:
         - abnormal_movement_max_count
         - abnormal_movement_min_total
         - policy_revocation_bound_seconds
+        - face_credential_cooldown_seconds
         - policy_epoch
         - policy_epoch_at
         - policy_urgent_epoch
@@ -51,6 +52,7 @@ update_permissions:
         - abnormal_movement_max_count
         - abnormal_movement_min_total
         - policy_revocation_bound_seconds
+        - face_credential_cooldown_seconds
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
