@@ -25,7 +25,7 @@ function fakeAdmin(claim: unknown[] = [claimed]) {
   return { admin: { request } as unknown as HasuraClient, finishes };
 }
 
-const lookup = async () => ['172.18.0.4'];
+const lookup = async () => ['93.184.216.34'];
 
 describe('sendWebhookDelivery', () => {
   it('should POST the JSON body with event, delivery and signature headers and record a 2xx as ok', async () => {
@@ -80,5 +80,18 @@ describe('sendWebhookDelivery', () => {
     expect(await sendWebhookDelivery('wd-1', { admin, fetch, lookup })).toEqual({ delivery_id: 'wd-1', skipped: 'not_claimed' });
     expect(fetch).not.toHaveBeenCalled();
     expect(finishes).toEqual([]);
+  });
+});
+
+describe('sendWebhookDelivery private targets', () => {
+  it('should refuse a private address unless private targets are allowed', async () => {
+    const privateLookup = async () => ['10.1.2.3'];
+    const ok: WebhookFetch = async () => new Response(null, { status: 200 });
+    const denied = fakeAdmin();
+    await sendWebhookDelivery('wd-1', { admin: denied.admin, fetch: ok, lookup: privateLookup });
+    expect(denied.finishes[0]).toMatchObject({ ok: false, retryable: false, error: 'blocked_address: 10.1.2.3' });
+    const allowed = fakeAdmin();
+    await sendWebhookDelivery('wd-1', { admin: allowed.admin, fetch: ok, lookup: privateLookup, allowPrivateTargets: true });
+    expect(allowed.finishes[0]).toMatchObject({ ok: true, code: 200 });
   });
 });

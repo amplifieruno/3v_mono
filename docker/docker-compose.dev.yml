@@ -127,6 +127,8 @@ services:
       RECOGNITION_ENABLED: ${RECOGNITION_ENABLED:-true}
       # Dev/test webhook receiver at /hasura/events/webhook-sink (integration tests, seeded webhook subscription).
       WEBHOOK_SINK_ENABLED: 'true'
+      # Webhook targets on loopback/private networks (the dev sink is http://backend:3001).
+      WEBHOOK_ALLOW_PRIVATE_TARGETS: 'true'
       CORS_ORIGIN: http://localhost:5173
     ports:
       - '127.0.0.1:${BACKEND_PORT:-3001}:3001'

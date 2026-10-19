@@ -53,8 +53,9 @@ export type SendRow = {
   sent_at: string | null;
   delivered_at: string | null;
   error: string | null;
+  content: Record<string, unknown>;
 };
-const SEND_FIELDS = 'id channel status attempts deliver_after sent_at delivered_at error';
+const SEND_FIELDS = 'id channel status attempts deliver_after sent_at delivered_at error content';
 
 export async function deliveryRow(id: string): Promise<SendRow | null> {
   const data = await asAdmin().request<{ notification_deliveries_by_pk: SendRow | null }>(
@@ -64,19 +65,43 @@ export async function deliveryRow(id: string): Promise<SendRow | null> {
   return data.notification_deliveries_by_pk;
 }
 
-/** Inserts a delivery row directly (trusted SQL, as a cron would): fires the send_delivery trigger. */
+/**
+ * Inserts a delivery row directly (trusted SQL, as a cron would): fires the send_delivery trigger, unless `silent`
+ * (session_replication_role = replica in the same transaction: no triggers, as if Hasura never delivered the event).
+ */
 export async function insertDelivery(
   orgId: string,
   ruleId: string,
-  fields: { channel: string; address: string; deliverAfter?: string; content?: Record<string, unknown> },
+  fields: {
+    channel: string;
+    address: string;
+    deliverAfter?: string;
+    content?: Record<string, unknown>;
+    createdAt?: string;
+    silent?: boolean;
+  },
 ): Promise<string> {
   const id = randomUUID();
   const deliverAfter = fields.deliverAfter ? `'${fields.deliverAfter}'` : 'NULL';
-  await runSql(`insert into itap.notification_deliveries
-    (id, organization_id, rule_id, event_id, recipient_address, channel, deliver_after, content)
+  const createdAt = fields.createdAt ? `'${fields.createdAt}'` : 'now()';
+  await runSql(`${fields.silent ? 'SET LOCAL session_replication_role = replica;' : ''}
+    insert into itap.notification_deliveries
+    (id, organization_id, rule_id, event_id, recipient_address, channel, deliver_after, content, created_at)
     values ('${id}', '${orgId}', '${ruleId}', '${randomUUID()}', '${fields.address}', '${fields.channel}', ${deliverAfter},
-            '${JSON.stringify(fields.content ?? { subject: 'Test', body: 'Body', title: 'Test' })}'::jsonb)`);
+            '${JSON.stringify(fields.content ?? { subject: 'Test', body: 'Body', title: 'Test' })}'::jsonb, ${createdAt})`);
   return id;
+}
+
+/**
+ * True once an attempt has finished (not in flight): dead_letter, sent/delivered, or a retry scheduled about
+ * `backoff(attempts)` ahead. An attempt in flight holds a 60 s lease, which never matches a backoff (30 s, 2, 10, 30 min).
+ */
+export const BACKOFF_SECONDS = [30, 120, 600, 1800];
+export function attemptFinished(status: string, attempts: number, next: string | null): boolean {
+  if (status === 'dead_letter' || status === 'sent' || status === 'delivered' || status === 'failed') return true;
+  if (status !== 'retrying' || attempts < 1 || !next) return false;
+  const wait = (Date.parse(next) - Date.now()) / 1000;
+  return Math.abs(wait - BACKOFF_SECONDS[Math.min(attempts, 4) - 1]) < 15;
 }
 
 export type WebhookRow = {

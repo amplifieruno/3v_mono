@@ -60,7 +60,7 @@ export const sendDelivery = defineEventHandler(async (payload, ctx) => {
 export const sendWebhook = defineEventHandler(async (payload, ctx) => {
   const id = rowId(payload.event.data.new);
   if (!id) return { skipped: 'no_delivery_id' };
-  return sendWebhookDelivery(id, { admin: ctx.admin });
+  return sendWebhookDelivery(id, { admin: ctx.admin, allowPrivateTargets: ctx.env.WEBHOOK_ALLOW_PRIVATE_TARGETS });
 });
 
 /** Cron `retry_deliveries` (every minute): retrying notification deliveries whose backoff passed. */
@@ -73,6 +73,6 @@ export const retryDeliveries = defineCronHandler(async (payload, ctx) =>
 /** Cron `retry_webhooks` (every minute): webhook deliveries whose next_attempt_at passed (or never attempted). */
 export const retryWebhooks = defineCronHandler(async (payload, ctx) =>
   sendDue(ctx, DUE_WEBHOOKS, 'due_webhook_deliveries', scheduledAt(payload), (id) =>
-    sendWebhookDelivery(id, { admin: ctx.admin }),
+    sendWebhookDelivery(id, { admin: ctx.admin, allowPrivateTargets: ctx.env.WEBHOOK_ALLOW_PRIVATE_TARGETS }),
   ),
 );

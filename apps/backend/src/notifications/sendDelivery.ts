@@ -26,10 +26,11 @@ const FINISH = `
 type Claimed = ChannelDelivery & { attempts: number };
 
 /**
- * One attempt of a notification delivery (send_delivery trigger, retry_deliveries cron; spec §8.4). The claim is a
- * conditional UPDATE in SQL (non in_app, pending/retrying, due, not a digest item) that marks it `sent` with
- * attempts + 1, so redeliveries and concurrent handlers send it once; anything not claimable is skipped. The stub
- * result is recorded by itap.finish_notification_delivery (delivered / retrying with backoff / dead_letter).
+ * One attempt of a notification delivery (send_delivery trigger, retry_deliveries cron; spec §8.4). The claim is SQL
+ * (non in_app, pending/retrying, due, not a digest item): attempts + 1 and a 60 s lease in deliver_after, so
+ * redeliveries and concurrent handlers send it once and a lost attempt is re-sent by the cron after the lease. The
+ * stub result is recorded by itap.finish_notification_delivery (sent / delivered / retrying with backoff /
+ * dead_letter); a result for a superseded attempt changes nothing.
  */
 export async function sendNotificationDelivery(id: string, deps: DeliverySendDeps): Promise<DeliverySendResult> {
   const { claim_notification_delivery: rows } = await deps.admin.request<{ claim_notification_delivery: Claimed[] }>(CLAIM, { id });

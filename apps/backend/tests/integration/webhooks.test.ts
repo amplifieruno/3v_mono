@@ -7,6 +7,8 @@ import { insertOne, updateByPk } from './support/operations.js';
 import {
   cronPayload,
   hmac,
+  attemptFinished,
+  BACKOFF_SECONDS,
   insertPayload,
   postTrigger,
   secondsBetween,
@@ -16,6 +18,7 @@ import {
   waitFor,
   webhookDeliveries,
   webhookRow,
+  type WebhookRow,
 } from './support/sending.js';
 import { runSql } from './support/sql.js';
 import type { HasuraClient } from '../../src/hasura/client.js';
@@ -110,26 +113,21 @@ describe('send_webhook', () => {
     await subscription(w.a, `${SINK_URL}/500`, ['detection_unknown']);
     await unknownArrival(w);
     const [first] = await webhookDeliveries(w.orgA.id);
-    const backoff = [30, 120, 600, 1800];
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      if (attempt > 1) {
-        await runSql(`update itap.webhook_deliveries set next_attempt_at = now() - interval '1 second' where id = '${first.id}'`);
-        expect((await postTrigger('retry_webhooks', cronPayload('retry_webhooks'))).status).toBe(200);
-      }
-      const row = await waitFor(
-        () => webhookRow(first.id),
-        (r) => (r?.attempts ?? 0) >= attempt && r?.response_code === 500 && ['retrying', 'dead_letter'].includes(r?.status ?? ''),
-      );
-      expect(row?.attempts).toBe(attempt);
-      if (attempt < 5) {
-        expect(row?.status).toBe('retrying');
-        const wait = secondsBetween(new Date().toISOString(), row?.next_attempt_at ?? '');
-        expect(wait).toBeGreaterThan(backoff[attempt - 1] - 15);
-        expect(wait).toBeLessThanOrEqual(backoff[attempt - 1]);
-      } else {
-        expect(row).toMatchObject({ status: 'dead_letter', next_attempt_at: null });
-      }
+    const finished = (r: WebhookRow | null) =>
+      r !== null && r.attempts >= 1 && r.response_code === 500 && attemptFinished(r.status, r.attempts, r.next_attempt_at);
+    let row = await waitFor(() => webhookRow(first.id), finished);
+    // The real retry_webhooks cron may take some attempts itself: assert counts and windows, not who sent.
+    for (let round = 0; row.status !== 'dead_letter' && round < 10; round++) {
+      expect(row.status).toBe('retrying');
+      const wait = secondsBetween(new Date().toISOString(), row.next_attempt_at ?? '');
+      expect(wait).toBeGreaterThan(BACKOFF_SECONDS[row.attempts - 1] - 15);
+      expect(wait).toBeLessThanOrEqual(BACKOFF_SECONDS[row.attempts - 1]);
+      const before = row.attempts;
+      await runSql(`update itap.webhook_deliveries set next_attempt_at = now() - interval '1 second' where id = '${first.id}'`);
+      expect((await postTrigger('retry_webhooks', cronPayload('retry_webhooks'))).status).toBe(200);
+      row = await waitFor(() => webhookRow(first.id), (r) => finished(r) && (r?.attempts ?? 0) > before);
     }
+    expect(row).toMatchObject({ status: 'dead_letter', attempts: 5, next_attempt_at: null });
     const received = await sinkFor(first.id);
     expect(received).toHaveLength(5);
     expect(new Set(received.map((r) => r.headers['x-itap-signature'])).size).toBe(1);
@@ -138,15 +136,12 @@ describe('send_webhook', () => {
 
   it('should not send for a subscription deactivated after fan-out', async () => {
     const w = await notificationWorld();
+    const event = await unknownArrival(w);
     const sub = await subscription(w.a, SINK_URL, ['detection_unknown']);
-    await runSql(`alter table itap.webhook_deliveries disable trigger user`);
-    let id = '';
-    try {
-      await unknownArrival(w);
-      id = (await webhookDeliveries(w.orgA.id))[0]?.id ?? '';
-    } finally {
-      await runSql(`alter table itap.webhook_deliveries enable trigger user`);
-    }
+    // Fan out with triggers off in this one transaction only (the send_webhook trigger never fires for the row).
+    await runSql(`SET LOCAL session_replication_role = replica;
+      select itap.fan_out_events('${w.orgA.id}', array['${event.id}'::uuid])`);
+    const id = (await webhookDeliveries(w.orgA.id))[0]?.id ?? '';
     expect(id).not.toBe('');
     await updateByPk(w.a, 'webhook_subscriptions', sub.id, { is_active: false });
     await postTrigger('send_webhook', insertPayload('send_webhook', 'webhook_deliveries', id));

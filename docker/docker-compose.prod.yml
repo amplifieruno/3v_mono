@@ -455,6 +455,8 @@ services:
       PORT: ${BACKEND_PORT:-3001}
       # The dev/test webhook sink never runs in production.
       WEBHOOK_SINK_ENABLED: 'false'
+      # Webhook targets on loopback/private networks (the dev sink is http://backend:3001).
+      WEBHOOK_ALLOW_PRIVATE_TARGETS: 'false'
     depends_on:
       postgres:
         condition: service_healthy

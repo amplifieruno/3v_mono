@@ -34,6 +34,12 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value?.trim().toLowerCase() === 'true'),
+  // Webhook targets on loopback / private networks (10/8, 172.16/12, 192.168/16, fc00::/7) are allowed only when
+  // 'true' (dev: the sink is http://backend:3001). Link-local / metadata addresses are always refused.
+  WEBHOOK_ALLOW_PRIVATE_TARGETS: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim().toLowerCase() === 'true'),
 });
 
 export type Env = z.output<typeof envSchema>;

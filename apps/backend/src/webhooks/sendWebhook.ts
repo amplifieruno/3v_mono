@@ -9,6 +9,8 @@ export interface WebhookSendDeps {
   admin: HasuraClient;
   fetch?: WebhookFetch;
   lookup?: LookupFn;
+  /** WEBHOOK_ALLOW_PRIVATE_TARGETS (dev): loopback/private addresses allowed. */
+  allowPrivateTargets?: boolean;
   timeoutMs?: number;
 }
 
@@ -74,7 +76,10 @@ export async function sendWebhookDelivery(id: string, deps: WebhookSendDeps): Pr
   if (!row?.subscription) return { delivery_id: id, skipped: 'not_claimed' };
   const body = JSON.stringify(row.body);
   const signature = signWebhookBody(row.subscription.secret, body);
-  const target = await checkWebhookTarget(row.subscription.url, deps.lookup);
+  const target = await checkWebhookTarget(row.subscription.url, {
+    lookup: deps.lookup,
+    allowPrivate: deps.allowPrivateTargets ?? false,
+  });
   const outcome: Outcome = !('reason' in target)
     ? await post(
         row.subscription.url,

@@ -3,11 +3,11 @@ import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 
 export type SinkRequest = { at: string; path: string; status: number; headers: Record<string, string>; body: string };
 
-const KEEP = 200;
+const KEEP = 2000;
 
 /**
  * Dev/test webhook receiver (mounted at /hasura/events/webhook-sink only when WEBHOOK_SINK_ENABLED=true):
- * `POST /` or `POST /:status` answers that status (default 200) and keeps the last 200 requests in memory with their
+ * `POST /` or `POST /:status` answers that status (default 200) and keeps the last 2000 requests in memory with their
  * headers and raw body; `GET /` (x-action-secret) lists them, so tests can verify signatures.
  */
 export function webhookSinkRouter(actionSecret: string): Router {
