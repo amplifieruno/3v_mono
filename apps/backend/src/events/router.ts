@@ -1,0 +1,87 @@
+import express, { Router, type NextFunction, type Request, type Response } from 'express';
+import type { Env } from '../config/env.js';
+import { createHasuraClient } from '../hasura/client.js';
+import { requireWebhookSecret } from '../hasura/webhookSecret.js';
+import { heartbeat } from './heartbeat.js';
+import {
+  cronTriggerPayloadSchema,
+  eventTriggerPayloadSchema,
+  idempotencyKey,
+  type EventHandlers,
+  type TriggerResult,
+} from './types.js';
+
+export {
+  defineCronHandler,
+  defineEventHandler,
+  idempotencyKey,
+  type CronTriggerPayload,
+  type EventHandlers,
+  type EventTriggerPayload,
+  type TriggerContext,
+} from './types.js';
+
+/** Handler registry: the key is the Hasura trigger name (`/hasura/events/<name>`). */
+export const defaultEventHandlers: EventHandlers = {
+  heartbeat,
+};
+
+function sendError(res: Response, status: number, error: string, message: string): void {
+  res.status(status).json({ ok: false, error, message });
+}
+
+/**
+ * Hasura event and cron trigger webhook router: `POST /:name`. Authenticated like actions (x-action-secret, checked
+ * before parsing). Any non-2xx answer makes Hasura retry per the trigger's retry_conf, so handler errors are 500.
+ */
+export function eventsRouter(env: Env, handlers: EventHandlers = defaultEventHandlers): Router {
+  const router = Router();
+  router.use(requireWebhookSecret(env.ACTION_SECRET));
+  router.use(express.json({ limit: '1mb' }));
+
+  router.post('/:name', async (req: Request, res: Response) => {
+    const name = req.params.name;
+    const handler = Object.hasOwn(handlers, name) ? handlers[name] : undefined;
+    if (!handler) {
+      sendError(res, 404, 'unknown_trigger', `Unknown trigger: ${name}`);
+      return;
+    }
+    const ctxFor = (id: string) => ({ env, admin: createHasuraClient(env), idempotencyKey: idempotencyKey(name, id) });
+
+    let run: (() => Promise<TriggerResult>) | undefined;
+    if (handler.kind === 'event') {
+      const parsed = eventTriggerPayloadSchema.safeParse(req.body);
+      if (parsed.success && parsed.data.trigger.name === name) {
+        run = () => handler.handle(parsed.data, ctxFor(parsed.data.id));
+      }
+    } else {
+      const parsed = cronTriggerPayloadSchema.safeParse(req.body);
+      if (parsed.success && parsed.data.name === name) {
+        run = () => handler.handle(parsed.data, ctxFor(parsed.data.id));
+      }
+    }
+    if (!run) {
+      sendError(res, 400, 'invalid_payload', `Invalid ${handler.kind} trigger payload for ${name}`);
+      return;
+    }
+
+    try {
+      const result = await run();
+      res.status(200).json({ ok: true, ...(result ?? {}) });
+    } catch (error: unknown) {
+      console.error(`Trigger ${name} failed:`, error);
+      sendError(res, 500, 'internal', 'Internal error');
+    }
+  });
+
+  // Malformed JSON from an authenticated caller.
+  router.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (error instanceof SyntaxError) {
+      sendError(res, 400, 'invalid_payload', 'Invalid JSON body');
+      return;
+    }
+    next(error);
+  });
+
+  return router;
+}

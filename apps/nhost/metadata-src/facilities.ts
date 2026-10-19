@@ -52,4 +52,6 @@ export const facilityTables: TableSpec[] = [
 
 export const facilityFunctions: FunctionSpec[] = [
   { name: 'area_descendants', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  // Creates a template's area tree in a facility (atomic); returns the created areas.
+  { name: 'apply_facility_template', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
 ];

@@ -82,6 +82,60 @@ export interface TableSpec {
   relationshipNames?: Record<string, string>;
   /** Merged last; an entry replaces the generated entry for the same role. */
   extraPermissions?: HasuraPermissions;
+  /**
+   * Hasura event triggers on this table (design §8.4: external side effects only; handlers idempotent). Webhook
+   * `{{BACKEND_URL}}/hasura/events/<name>`, header `x-action-secret` from env ACTION_SECRET, retries default to
+   * 3 x 10 s with a 60 s timeout.
+   */
+  eventTriggers?: EventTriggerSpec[];
+}
+
+export type TriggerOperation = 'insert' | 'update' | 'delete';
+
+/** Retry overrides (defaults: num_retries 3, retry_interval_seconds 10, timeout_seconds 60). */
+export interface RetrySpec {
+  num_retries?: number;
+  retry_interval_seconds?: number;
+  timeout_seconds?: number;
+}
+
+export interface EventTriggerSpec {
+  /** Unique per source; lowercase snake_case, at most 42 characters (Hasura's limit). */
+  name: string;
+  operations: TriggerOperation[];
+  /** Columns whose change fires an update trigger (default: all); only valid with the update operation. */
+  columns?: string[];
+  retry?: RetrySpec;
+}
+
+/** A Hasura cron trigger (design §8.3), generated into cron_triggers.yaml; handled at /hasura/events/<name>. */
+export interface CronSpec {
+  name: string;
+  /** Standard 5-field cron expression, UTC. */
+  schedule: string;
+  payload?: Record<string, unknown>;
+  comment?: string;
+  retry?: RetrySpec;
+  /** Always true: the cron lives in exported metadata (git), not only in the database. */
+  includeInMetadata: true;
+}
+
+export interface WebhookHeader {
+  name: string;
+  value_from_env: string;
+}
+
+export interface EventTriggerMetadata {
+  name: string;
+  definition: {
+    enable_manual: false;
+    insert?: { columns: '*' };
+    update?: { columns: '*' | string[] };
+    delete?: { columns: '*' };
+  };
+  retry_conf: { num_retries: number; interval_sec: number; timeout_sec: number };
+  webhook: string;
+  headers: WebhookHeader[];
 }
 
 export interface ForeignKey {
@@ -120,6 +174,7 @@ export interface TableMetadata extends HasuraPermissions {
   object_relationships?: ManualRelationship[];
   array_relationships?: ManualRelationship[];
   computed_fields?: { name: string; definition: { function: QualifiedTable } }[];
+  event_triggers?: EventTriggerMetadata[];
 }
 
 /**

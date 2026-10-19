@@ -2,6 +2,7 @@ import { stringify } from 'yaml';
 import type { ForeignKey, ManagedSchema, TableSpec } from '../metadata-src/types.js';
 import { buildTableMetadata } from './build-table-metadata.js';
 import { assertTenantForeignKeys, markOneToOne } from './check-foreign-keys.js';
+import { assertUniqueEventTriggerNames } from './build-trigger-metadata.js';
 
 export interface ColumnRow {
   schema: ManagedSchema;
@@ -69,6 +70,7 @@ export function planMetadata(specs: TableSpec[], intro: Introspection): Map<stri
     if (row.generated) generatedByTable.set(key, [...(generatedByTable.get(key) ?? []), row.column]);
   }
   validate(specs, columnsByTable);
+  assertUniqueEventTriggerNames(specs);
   assertTenantForeignKeys(intro);
 
   // FKs into enum tables get no relationships: Hasura exposes the column as a GraphQL enum instead.

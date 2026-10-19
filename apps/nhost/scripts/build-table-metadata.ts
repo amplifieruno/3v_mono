@@ -8,6 +8,7 @@ import type {
   TableMetadata,
   TableSpec,
 } from '../metadata-src/types.js';
+import { buildEventTriggers } from './build-trigger-metadata.js';
 
 const ORG_COLUMN = 'organization_id';
 const TENANT_ROLE = 'org_admin';
@@ -270,6 +271,7 @@ export function buildTableMetadata(
     ),
     update_permissions: nonEmpty(mergeRoles(generated.update_permissions, extra.update_permissions)),
     delete_permissions: nonEmpty(mergeRoles(generated.delete_permissions, extra.delete_permissions)),
+    event_triggers: buildEventTriggers(spec, sortedColumns),
   };
   for (const [key, value] of Object.entries(optional)) {
     if (value !== undefined) Object.assign(metadata, { [key]: value });

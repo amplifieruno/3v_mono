@@ -5,9 +5,10 @@ import compression from 'compression';
 import morgan from 'morgan';
 import type { Env } from './config/env.js';
 import { actionsRouter } from './actions/router.js';
+import { eventsRouter } from './events/router.js';
 
 /**
- * Base Express app: shared middleware, health check and the Hasura Actions webhook.
+ * Base Express app: shared middleware, health check and the Hasura Actions / event and cron trigger webhooks.
  */
 export function createApp(env: Env): Express {
   const app = express();
@@ -15,8 +16,9 @@ export function createApp(env: Env): Express {
 
   app.use(helmet());
   app.use(compression());
-  // Mounted before the global body parser: the router checks x-action-secret before parsing.
+  // Mounted before the global body parser: the routers check x-action-secret before parsing.
   app.use('/hasura/actions', actionsRouter(env));
+  app.use('/hasura/events', eventsRouter(env));
   app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));

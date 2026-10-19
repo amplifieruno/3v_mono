@@ -8,14 +8,17 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { crons } from '../metadata-src/crons.js';
 import { functions, tables } from '../metadata-src/index.js';
 import { isGeneratedFunctionFile, planFunctionMetadata, rewriteFunctionsYaml } from './build-function-metadata.js';
+import { buildCronTriggersYaml } from './build-trigger-metadata.js';
 import { introspect, introspectFunctions } from './introspect.js';
 import { isGeneratedFile, planMetadata, rewriteTablesYaml } from './plan-metadata.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const TABLES_DIR = resolve(here, '../nhost/metadata/databases/default/tables');
 const FUNCTIONS_DIR = resolve(here, '../nhost/metadata/databases/default/functions');
+const CRON_TRIGGERS_YAML = resolve(here, '../nhost/metadata/cron_triggers.yaml');
 const ROOT_ENV = resolve(here, '../../../.env.dev');
 
 async function main(): Promise<void> {
@@ -40,8 +43,13 @@ async function main(): Promise<void> {
     rewriteFunctionsYaml(await readFile(functionsYamlPath, 'utf8'), [...functionFiles.keys()]),
   );
 
+  const cronYaml = buildCronTriggersYaml(crons);
+  const cronChanged = (existsSync(CRON_TRIGGERS_YAML) ? await readFile(CRON_TRIGGERS_YAML, 'utf8') : '') !== cronYaml;
+  if (cronChanged) await writeFile(CRON_TRIGGERS_YAML, cronYaml);
+
   process.stdout.write(
-    `metadata: ${tableFiles.size} table(s), ${functionFiles.size} function(s), ${t.written + f.written} file(s) ` +
+    `metadata: ${tableFiles.size} table(s), ${functionFiles.size} function(s), ${crons.length} cron(s), ` +
+      `${t.written + f.written + (cronChanged ? 1 : 0)} file(s) ` +
       `written, ${t.stale + f.stale} stale file(s) removed\n`,
   );
 }

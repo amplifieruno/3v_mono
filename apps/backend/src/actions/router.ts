@@ -1,8 +1,8 @@
-import { timingSafeEqual } from 'node:crypto';
 import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import type { Env } from '../config/env.js';
 import { createHasuraClient, type HasuraSession } from '../hasura/client.js';
+import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { addIdentityPhotos, createIdentityFromPhotos, enrollFace } from './enrollment.js';
 import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
@@ -34,13 +34,6 @@ function sendError(res: Response, status: number, code: string, message: string)
   res.status(status).json({ message, extensions: { code } });
 }
 
-function secretMatches(provided: string | undefined, expected: string): boolean {
-  if (!provided) return false;
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 function sessionFrom(vars: Record<string, string>): HasuraSession | undefined {
   const lower = Object.fromEntries(Object.entries(vars).map(([k, v]) => [k.toLowerCase(), v]));
   const role = lower['x-hasura-role'];
@@ -59,13 +52,7 @@ export function actionsRouter(
   const router = Router();
 
   // Authenticate before the body is parsed.
-  router.use((req: Request, res: Response, next) => {
-    if (!secretMatches(req.header('x-action-secret'), env.ACTION_SECRET)) {
-      sendError(res, 401, 'unauthorized', 'Unauthorized');
-      return;
-    }
-    next();
-  });
+  router.use(requireWebhookSecret(env.ACTION_SECRET));
   // upload_profile_document carries up to 10 MB of base64 (~13.4 MB) in the payload.
   router.use(express.json({ limit: '16mb' }));
 
