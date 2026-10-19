@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_bulk_jobs
+configuration:
+  custom_name: due_bulk_jobs
+  exposed_as: query

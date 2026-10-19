@@ -143,4 +143,13 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Run due scheduled saved searches and alert on new matches',
   },
+  {
+    // Every minute: bulk jobs the run_bulk_job trigger left queued for over a minute, and running jobs whose lease
+    // expired (a worker died): claimed again and resumed after `processed`.
+    name: 'resume_bulk_jobs',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Resume stalled bulk jobs (expired leases, missed triggers)',
+  },
 ];

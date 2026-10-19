@@ -2,6 +2,7 @@ import express, { Router, type NextFunction, type Request, type Response } from 
 import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
+import { resumeBulkJobs, runBulkJobTrigger } from '../bulk/handlers.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { runSavedSearches } from '../search/savedSearches.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
@@ -52,6 +53,8 @@ export const defaultEventHandlers: EventHandlers = {
   render_report: renderReport,
   run_report_schedules: runReportSchedules,
   run_saved_searches: runSavedSearches,
+  run_bulk_job: runBulkJobTrigger,
+  resume_bulk_jobs: resumeBulkJobs,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

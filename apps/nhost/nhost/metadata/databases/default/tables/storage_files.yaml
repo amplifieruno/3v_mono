@@ -151,12 +151,27 @@ select_permissions:
                           metadata:
                             _contains:
                               kind: search
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: bulk_input
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: bulk_search_result
           - _and:
               - bucket_id:
                   _eq: X-Hasura-Organization-Id
-              - metadata:
-                  _contains:
-                    kind: search
+              - _or:
+                  - metadata:
+                      _contains:
+                        kind: search
+                  - metadata:
+                      _contains:
+                        kind: bulk_input
+                  - metadata:
+                      _contains:
+                        kind: bulk_search_result
               - uploaded_by_user_id:
                   _eq: X-Hasura-User-Id
           - bucket_id:

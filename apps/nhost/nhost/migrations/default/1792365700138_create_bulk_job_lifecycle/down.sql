@@ -1,0 +1,15 @@
+DROP FUNCTION itap.cancel_bulk_job(json, uuid);
+DROP FUNCTION itap.retry_bulk_job(json, uuid);
+DROP FUNCTION itap.bulk_job_of_session(json, uuid);
+DROP FUNCTION itap.due_bulk_jobs(timestamptz, integer);
+DROP FUNCTION itap.fail_bulk_job(uuid, integer, text);
+DROP FUNCTION itap.complete_bulk_job(uuid, integer, uuid);
+DROP FUNCTION itap.record_bulk_job_row(uuid, integer, integer, text, text, text, uuid);
+DROP FUNCTION itap.bulk_job_put_row(itap.bulk_job_rows);
+DROP FUNCTION itap.bulk_job_for_row(uuid, uuid, integer, integer);
+DROP FUNCTION itap.bulk_job_progress(uuid, integer, integer, integer);
+DROP FUNCTION itap.claim_bulk_job(uuid);
+DROP FUNCTION itap.bulk_job_max_attempts();
+DROP FUNCTION itap.bulk_job_finish(uuid, text, text);
+DROP FUNCTION itap.bulk_job_refresh_counts(uuid, uuid);
+DROP FUNCTION itap.bulk_owner_active(uuid, uuid);

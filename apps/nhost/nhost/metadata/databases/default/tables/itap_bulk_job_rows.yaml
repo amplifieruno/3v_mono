@@ -1,0 +1,88 @@
+table:
+  schema: itap
+  name: bulk_job_rows
+configuration:
+  custom_name: bulk_job_rows
+object_relationships:
+  - name: bulk_job
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_jobs
+        column_mapping:
+          organization_id: organization_id
+          bulk_job_id: id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: private_owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          private_owner_id: user_id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: search_request
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          search_request_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - bulk_job_id
+        - confidence
+        - created_at
+        - entity_code
+        - error
+        - id
+        - identity_id
+        - label
+        - organization_id
+        - outcome
+        - private_owner_id
+        - profile_id
+        - row_no
+        - search_request_id
+        - updated_at
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - private_owner_id:
+                  _is_null: true
+              - private_owner_id:
+                  _eq: X-Hasura-User-Id
+      allow_aggregations: true

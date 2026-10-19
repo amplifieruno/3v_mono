@@ -138,6 +138,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: "Daily: delete delivered/failed event trigger and cron logs older than 3 days"
+- name: resume_bulk_jobs
+  webhook: "{{BACKEND_URL}}/hasura/events/resume_bulk_jobs"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Resume stalled bulk jobs (expired leases, missed triggers)
 - name: retry_deliveries
   webhook: "{{BACKEND_URL}}/hasura/events/retry_deliveries"
   schedule: "* * * * *"

@@ -4,6 +4,15 @@ table:
 configuration:
   custom_name: search_requests
 object_relationships:
+  - name: bulk_job
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_jobs
+        column_mapping:
+          organization_id: organization_id
+          bulk_job_id: id
   - name: image_file
     using:
       manual_configuration:
@@ -39,6 +48,15 @@ object_relationships:
           organization_id: organization_id
           user_id: user_id
 array_relationships:
+  - name: bulk_job_rows
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_job_rows
+        column_mapping:
+          organization_id: organization_id
+          id: search_request_id
   - name: saved_searches
     using:
       manual_configuration:
@@ -61,6 +79,8 @@ select_permissions:
   - role: org_admin
     permission:
       columns:
+        - bulk_job_id
+        - bulk_job_row_no
         - completed_at
         - created_at
         - duration_ms

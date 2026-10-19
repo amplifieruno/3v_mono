@@ -7,7 +7,7 @@ import { OWNER_ONLY_FILE_KINDS, SENSITIVE_FILE_KINDS, type StorageClient } from 
 import { largestFace, resolveSearchOptions, SearchError, type SearchInput, type SearchOptions } from './options.js';
 
 /**
- * Search core (spec §8.5 search_faces), shared by the action, the run_saved_searches cron and bulk_search:
+ * Search core (spec §8.5 search_faces), shared by the action, the run_saved_searches cron and bulk_search jobs:
  * image file (organization bucket; a `search` kind file only of the searching user) -> InsightFace (largest face,
  * quality check) -> itap.search_identities -> search_requests + search_results written through `actor` (admin rights
  * with the searching user's session, so audit rows record them). Request states: queued -> running -> completed |
@@ -28,6 +28,8 @@ export type SearchRun = {
   /** The member the request belongs to (owner-only history). */
   userId: string;
   savedSearchId?: string;
+  /** The bulk_search job and input record that ran this search. */
+  bulkJob?: { id: string; rowNo: number };
   input: SearchInput;
 };
 
@@ -158,6 +160,8 @@ export async function runSearch(deps: SearchDeps, run: SearchRun): Promise<Searc
         organization_id: organizationId,
         user_id: run.userId,
         saved_search_id: run.savedSearchId ?? null,
+        bulk_job_id: run.bulkJob?.id ?? null,
+        bulk_job_row_no: run.bulkJob?.rowNo ?? null,
         search_type: options.searchType,
         image_file_id: options.imageFileId,
         filters: options.filters,

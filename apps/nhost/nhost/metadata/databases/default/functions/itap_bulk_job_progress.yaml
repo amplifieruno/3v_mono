@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: bulk_job_progress
+configuration:
+  custom_name: bulk_job_progress
+  exposed_as: mutation

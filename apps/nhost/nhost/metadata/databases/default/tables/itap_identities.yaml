@@ -57,6 +57,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: identity_id
+  - name: bulk_job_rows
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_job_rows
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: detections
     using:
       manual_configuration:

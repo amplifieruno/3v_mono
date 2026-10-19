@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: complete_bulk_job
+configuration:
+  custom_name: complete_bulk_job
+  exposed_as: mutation

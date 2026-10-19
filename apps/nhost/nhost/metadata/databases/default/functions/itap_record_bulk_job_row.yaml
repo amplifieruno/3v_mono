@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_bulk_job_row
+configuration:
+  custom_name: record_bulk_job_row
+  exposed_as: mutation

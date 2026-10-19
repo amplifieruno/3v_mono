@@ -1,0 +1,126 @@
+table:
+  schema: itap
+  name: bulk_jobs
+configuration:
+  custom_name: bulk_jobs
+object_relationships:
+  - name: input_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          input_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          owner_id: user_id
+  - name: result_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          result_file_id: id
+array_relationships:
+  - name: bulk_job_rows
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_job_rows
+        column_mapping:
+          organization_id: organization_id
+          id: bulk_job_id
+  - name: search_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: search_requests
+        column_mapping:
+          organization_id: organization_id
+          id: bulk_job_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - input_file_id
+        - kind
+        - options
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        owner_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attempts
+        - attempts_at_retry
+        - code
+        - completed_at
+        - created_at
+        - error
+        - errors
+        - failed
+        - id
+        - input_file_id
+        - kind
+        - lease_expires_at
+        - number
+        - options
+        - organization_id
+        - owner_id
+        - processed
+        - result_file_id
+        - skipped
+        - started_at
+        - status
+        - succeeded
+        - total
+        - updated_at
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - _or:
+              - kind:
+                  _neq: bulk_search
+              - owner_id:
+                  _eq: X-Hasura-User-Id
+      allow_aggregations: true
+event_triggers:
+  - name: run_bulk_job
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+      update:
+        columns:
+          - status
+    retry_conf:
+      num_retries: 3
+      interval_sec: 30
+      timeout_sec: 60
+    webhook: "{{BACKEND_URL}}/hasura/events/run_bulk_job"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

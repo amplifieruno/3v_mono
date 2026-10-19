@@ -9,6 +9,7 @@ import { incidentFunctions, incidentTables } from './incidents.js';
 import { maintenanceFunctions, maintenanceTables } from './maintenance.js';
 import { notificationFunctions, notificationTables } from './notifications.js';
 import { profileFunctions, profileTables } from './profiles.js';
+import { bulkFunctions, bulkTables } from './bulk.js';
 import { reportFunctions, reportTables } from './reports.js';
 import { searchFunctions, searchTables } from './search.js';
 import { segmentFunctions, segmentTables } from './segments.js';
@@ -41,6 +42,7 @@ export const tables: TableSpec[] = [
   ...analyticsTables,
   ...reportTables,
   ...searchTables,
+  ...bulkTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -62,4 +64,5 @@ export const functions: FunctionSpec[] = [
   ...analyticsFunctions,
   ...reportFunctions,
   ...searchFunctions,
+  ...bulkFunctions,
 ];

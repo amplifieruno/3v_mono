@@ -12,7 +12,7 @@ const visibleSavedSearch: BoolExp = {
 };
 
 const REQUEST_COLUMNS = [
-  'completed_at', 'created_at', 'duration_ms', 'error', 'face_count', 'filters', 'fuzzy', 'id', 'image_file_id',
+  'bulk_job_id', 'bulk_job_row_no', 'completed_at', 'created_at', 'duration_ms', 'error', 'face_count', 'filters', 'fuzzy', 'id', 'image_file_id',
   'max_results', 'organization_id', 'results_count', 'saved_search_id', 'search_type', 'started_at', 'status',
   'threshold', 'top_confidence', 'updated_at', 'user_id',
 ];

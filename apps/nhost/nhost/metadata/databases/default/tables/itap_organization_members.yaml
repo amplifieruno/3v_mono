@@ -39,6 +39,24 @@ object_relationships:
           organization_id: organization_id
           vacation_delegate_user_id: user_id
 array_relationships:
+  - name: bulk_job_rows
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_job_rows
+        column_mapping:
+          organization_id: organization_id
+          user_id: private_owner_id
+  - name: bulk_jobs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_jobs
+        column_mapping:
+          organization_id: organization_id
+          user_id: owner_id
   - name: event_rule_versions
     using:
       manual_configuration:

@@ -48,6 +48,15 @@ object_relationships:
           organization_id: organization_id
           work_schedule_id: id
 array_relationships:
+  - name: bulk_job_rows
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: bulk_job_rows
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: consent_records
     using:
       manual_configuration:

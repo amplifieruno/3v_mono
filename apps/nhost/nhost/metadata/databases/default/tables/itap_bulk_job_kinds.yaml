@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: bulk_job_kinds
+is_enum: true
+configuration:
+  custom_name: bulk_job_kinds
