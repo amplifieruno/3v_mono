@@ -26,6 +26,11 @@ select_permissions:
         - detection_counter_throttle_seconds
         - abnormal_movement_max_count
         - abnormal_movement_min_total
+        - policy_revocation_bound_seconds
+        - policy_epoch
+        - policy_epoch_at
+        - policy_urgent_epoch
+        - policy_urgent_at
         - created_at
         - updated_at
       filter:
@@ -45,6 +50,7 @@ update_permissions:
         - detection_counter_throttle_seconds
         - abnormal_movement_max_count
         - abnormal_movement_min_total
+        - policy_revocation_bound_seconds
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

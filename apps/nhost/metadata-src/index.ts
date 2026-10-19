@@ -1,3 +1,4 @@
+import { accessFunctions, accessTables } from './access.js';
 import { analyticsFunctions, analyticsTables } from './analytics.js';
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
@@ -43,6 +44,7 @@ export const tables: TableSpec[] = [
   ...reportTables,
   ...searchTables,
   ...bulkTables,
+  ...accessTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -65,4 +67,5 @@ export const functions: FunctionSpec[] = [
   ...reportFunctions,
   ...searchFunctions,
   ...bulkFunctions,
+  ...accessFunctions,
 ];

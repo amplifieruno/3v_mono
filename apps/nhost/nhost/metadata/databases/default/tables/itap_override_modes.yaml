@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: override_modes
+is_enum: true
+configuration:
+  custom_name: override_modes

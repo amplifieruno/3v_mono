@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: revoke_access_grant
+configuration:
+  custom_name: revoke_access_grant
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

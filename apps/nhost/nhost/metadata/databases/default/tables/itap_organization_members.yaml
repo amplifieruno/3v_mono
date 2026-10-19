@@ -39,6 +39,69 @@ object_relationships:
           organization_id: organization_id
           vacation_delegate_user_id: user_id
 array_relationships:
+  - name: access_grants_by_granted_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_grants
+        column_mapping:
+          organization_id: organization_id
+          user_id: granted_by
+  - name: access_grants_by_revoked_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_grants
+        column_mapping:
+          organization_id: organization_id
+          user_id: revoked_by
+  - name: access_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policies
+        column_mapping:
+          organization_id: organization_id
+          user_id: archived_by
+  - name: access_policy_versions_by_approved_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          user_id: approved_by
+  - name: access_policy_versions_by_published_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          user_id: published_by
+  - name: access_policy_versions_by_rejected_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          user_id: rejected_by
+  - name: access_policy_versions_by_submitted_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          user_id: submitted_by
   - name: bulk_job_rows
     using:
       manual_configuration:
@@ -66,6 +129,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: owner_id
+  - name: emergency_overrides_by_ended_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
+        column_mapping:
+          organization_id: organization_id
+          user_id: ended_by
+  - name: emergency_overrides_by_started_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
+        column_mapping:
+          organization_id: organization_id
+          user_id: started_by
   - name: event_rule_versions
     using:
       manual_configuration:

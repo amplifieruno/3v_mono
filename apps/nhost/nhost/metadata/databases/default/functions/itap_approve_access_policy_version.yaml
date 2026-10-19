@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: approve_access_policy_version
+configuration:
+  custom_name: approve_access_policy_version
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

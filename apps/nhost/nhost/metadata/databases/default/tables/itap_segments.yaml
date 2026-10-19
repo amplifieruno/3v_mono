@@ -23,6 +23,15 @@ object_relationships:
           template_id: id
           target: target
 array_relationships:
+  - name: access_policy_version_subjects
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_subjects
+        column_mapping:
+          organization_id: organization_id
+          id: segment_id
   - name: event_rule_version_scopes
     using:
       manual_configuration:

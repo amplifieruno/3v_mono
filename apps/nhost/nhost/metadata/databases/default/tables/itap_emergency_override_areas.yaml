@@ -1,0 +1,48 @@
+table:
+  schema: itap
+  name: emergency_override_areas
+configuration:
+  custom_name: emergency_override_areas
+object_relationships:
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: override
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          override_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - created_at
+        - facility_id
+        - id
+        - organization_id
+        - override_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

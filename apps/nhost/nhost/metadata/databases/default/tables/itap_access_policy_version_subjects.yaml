@@ -1,0 +1,89 @@
+table:
+  schema: itap
+  name: access_policy_version_subjects
+configuration:
+  custom_name: access_policy_version_subjects
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: segment
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segments
+        column_mapping:
+          organization_id: organization_id
+          segment_id: id
+  - name: version
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          version_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - profile_id
+        - profile_type
+        - segment_id
+        - version_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - created_at
+        - id
+        - organization_id
+        - profile_id
+        - profile_type
+        - segment_id
+        - updated_at
+        - version_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - profile_id
+        - profile_type
+        - segment_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

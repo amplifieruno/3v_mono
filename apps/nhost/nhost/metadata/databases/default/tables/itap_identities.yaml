@@ -48,6 +48,15 @@ object_relationships:
           organization_id: organization_id
           profile_id: id
 array_relationships:
+  - name: access_decisions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_decisions
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: area_occupancy
     using:
       manual_configuration:

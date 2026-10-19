@@ -1,0 +1,164 @@
+table:
+  schema: itap
+  name: access_policy_versions
+configuration:
+  custom_name: access_policy_versions
+object_relationships:
+  - name: approved_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          approved_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policies
+        column_mapping:
+          organization_id: organization_id
+          policy_id: id
+  - name: published_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          published_by: user_id
+  - name: rejected_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          rejected_by: user_id
+  - name: submitted_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          submitted_by: user_id
+array_relationships:
+  - name: access_decisions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_decisions
+        column_mapping:
+          organization_id: organization_id
+          id: policy_version_id
+  - name: access_policy_version_subjects
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_subjects
+        column_mapping:
+          organization_id: organization_id
+          id: version_id
+  - name: access_policy_version_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_targets
+        column_mapping:
+          organization_id: organization_id
+          id: version_id
+  - name: current_of_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policies
+        column_mapping:
+          organization_id: organization_id
+          id: current_version_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - effect
+        - max_risk
+        - policy_id
+        - priority
+        - schedule
+        - valid_from
+        - valid_until
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - approved_at
+        - approved_by
+        - created_at
+        - effect
+        - id
+        - max_risk
+        - organization_id
+        - policy_id
+        - priority
+        - published_at
+        - published_by
+        - rejected_at
+        - rejected_by
+        - rejection_reason
+        - schedule
+        - status
+        - submitted_at
+        - submitted_by
+        - updated_at
+        - valid_from
+        - valid_until
+        - version
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - effect
+        - max_risk
+        - priority
+        - schedule
+        - valid_from
+        - valid_until
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _eq: draft

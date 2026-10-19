@@ -1,0 +1,113 @@
+table:
+  schema: itap
+  name: access_decisions
+configuration:
+  custom_name: access_decisions
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          access_point_id: id
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: grant
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_grants
+        column_mapping:
+          organization_id: organization_id
+          grant_id: id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: override
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
+        column_mapping:
+          organization_id: organization_id
+          override_id: id
+  - name: policy_version
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          policy_version_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - created_at
+        - decided_at
+        - device_id
+        - epoch
+        - facility_id
+        - grant_id
+        - id
+        - identity_id
+        - latency_ms
+        - organization_id
+        - override_id
+        - policy_version_id
+        - profile_id
+        - reason
+        - result
+        - risk_score
+        - signals
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

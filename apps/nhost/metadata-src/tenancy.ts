@@ -30,7 +30,10 @@ const SETTINGS_WRITABLE = [
   'detection_counter_throttle_seconds',
   'abnormal_movement_max_count',
   'abnormal_movement_min_total',
+  'policy_revocation_bound_seconds',
 ];
+// Policy distribution state (bump_policy_epoch): readable, never writable.
+const SETTINGS_READ_ONLY = ['policy_epoch', 'policy_epoch_at', 'policy_urgent_epoch', 'policy_urgent_at'];
 
 const MEMBER_COLUMNS = [
   'id',
@@ -125,7 +128,7 @@ export const tenancyTables: TableSpec[] = [
         {
           role: ORG_ADMIN,
           permission: {
-            columns: ['organization_id', ...SETTINGS_WRITABLE, 'created_at', 'updated_at'],
+            columns: ['organization_id', ...SETTINGS_WRITABLE, ...SETTINGS_READ_ONLY, 'created_at', 'updated_at'],
             filter: ownOrganizationRow,
           },
         },

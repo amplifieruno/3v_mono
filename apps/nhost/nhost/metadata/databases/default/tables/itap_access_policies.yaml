@@ -1,0 +1,91 @@
+table:
+  schema: itap
+  name: access_policies
+configuration:
+  custom_name: access_policies
+object_relationships:
+  - name: archived_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          archived_by: user_id
+  - name: current_version
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          current_version_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: access_policy_versions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          id: policy_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - archived_at
+        - archived_by
+        - code
+        - created_at
+        - current_version_id
+        - description
+        - id
+        - is_archived
+        - name
+        - number
+        - organization_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - current_version_id:
+              _is_null: true

@@ -1,0 +1,81 @@
+table:
+  schema: itap
+  name: emergency_overrides
+configuration:
+  custom_name: emergency_overrides
+object_relationships:
+  - name: ended_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          ended_by: user_id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: started_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          started_by: user_id
+array_relationships:
+  - name: access_decisions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_decisions
+        column_mapping:
+          organization_id: organization_id
+          id: override_id
+  - name: emergency_override_areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_override_areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: override_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - ended_at
+        - ended_by
+        - ends_at
+        - facility_id
+        - id
+        - justification
+        - mode
+        - organization_id
+        - started_at
+        - started_by
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

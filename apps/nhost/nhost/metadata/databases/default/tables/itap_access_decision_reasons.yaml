@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: access_decision_reasons
+is_enum: true
+configuration:
+  custom_name: access_decision_reasons

@@ -29,6 +29,22 @@ object_relationships:
         column_mapping:
           id: organization_id
 array_relationships:
+  - name: access_decisions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_decisions
+        column_mapping:
+          id: organization_id
+  - name: access_grants
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_grants
+        column_mapping:
+          id: organization_id
   - name: access_point_devices
     using:
       manual_configuration:
@@ -43,6 +59,38 @@ array_relationships:
         remote_table:
           schema: itap
           name: access_points
+        column_mapping:
+          id: organization_id
+  - name: access_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policies
+        column_mapping:
+          id: organization_id
+  - name: access_policy_version_subjects
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_subjects
+        column_mapping:
+          id: organization_id
+  - name: access_policy_version_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_targets
+        column_mapping:
+          id: organization_id
+  - name: access_policy_versions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
         column_mapping:
           id: organization_id
   - name: area_hourly_stats
@@ -163,6 +211,22 @@ array_relationships:
         remote_table:
           schema: itap
           name: devices
+        column_mapping:
+          id: organization_id
+  - name: emergency_override_areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_override_areas
+        column_mapping:
+          id: organization_id
+  - name: emergency_overrides
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
         column_mapping:
           id: organization_id
   - name: escalation_policies

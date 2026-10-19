@@ -1,0 +1,95 @@
+table:
+  schema: itap
+  name: access_policy_version_targets
+configuration:
+  custom_name: access_policy_version_targets
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          access_point_id: id
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          area_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: version
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_versions
+        column_mapping:
+          organization_id: organization_id
+          version_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - area_id
+        - facility_id
+        - version_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - area_id
+        - created_at
+        - facility_id
+        - id
+        - organization_id
+        - updated_at
+        - version_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - area_id
+        - facility_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

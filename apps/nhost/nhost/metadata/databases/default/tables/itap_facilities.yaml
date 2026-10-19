@@ -13,12 +13,30 @@ object_relationships:
         column_mapping:
           organization_id: id
 array_relationships:
+  - name: access_decisions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_decisions
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: access_points
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: access_points
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: access_policy_version_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_policy_version_targets
         column_mapping:
           organization_id: organization_id
           id: facility_id
@@ -73,6 +91,15 @@ array_relationships:
         remote_table:
           schema: itap
           name: devices
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: emergency_overrides
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: emergency_overrides
         column_mapping:
           organization_id: organization_id
           id: facility_id

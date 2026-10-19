@@ -21,7 +21,14 @@ export const deviceTables: TableSpec[] = [
     // backend (health check cron, terminal sync).
     name: 'devices',
     profile: 'tenant_crud',
-    readOnlyColumns: ['number', 'health_status', 'last_seen_at', 'policy_version_synced', 'policy_synced_at'],
+    readOnlyColumns: [
+      'number',
+      'health_status',
+      'last_seen_at',
+      'policy_version_synced',
+      'policy_synced_at',
+      'policy_sync_error',
+    ],
     insertOnlyColumns: ['facility_id'],
     secretColumns: ['password'],
   },
