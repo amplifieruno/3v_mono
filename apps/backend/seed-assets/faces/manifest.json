@@ -70,7 +70,7 @@
       "folder": "person-04",
       "role": "employee",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -83,7 +83,7 @@
       "folder": "person-05",
       "role": "employee",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -96,7 +96,7 @@
       "folder": "person-06",
       "role": "employee",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -109,7 +109,7 @@
       "folder": "person-07",
       "role": "employee",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -122,7 +122,7 @@
       "folder": "person-08",
       "role": "employee",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -135,7 +135,7 @@
       "folder": "person-09",
       "role": "unknown",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",
@@ -148,7 +148,7 @@
       "folder": "person-10",
       "role": "unknown",
       "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
-      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "licence": "Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE",
       "files": [
         {
           "file": "1.jpg",

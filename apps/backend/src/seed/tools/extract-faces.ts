@@ -2,7 +2,8 @@
  * Builds `seed-assets/faces/` from the stream-server sample videos (Pexels licence): samples frames with ffmpeg,
  * runs InsightFace on them, clusters the faces by embedding, keeps people seen at least twice with good quality and
  * saves 2–4 face crops per person plus `manifest.json` (folder → role, source, licence). More employees (one photo
- * each) are cut from the crowd photo `libs/InsightFace-REST/misc/test_images/lumia.jpg` (Apache-2.0).
+ * each) are cut from the crowd photo `libs/InsightFace-REST/misc/test_images/lumia.jpg` (an InsightFace-REST test
+ * asset whose photo rights are uncertain; see `seed-assets/faces/NOTICE`).
  *
  * Reproducible: same videos + same InsightFace models → same output. Requires `ffmpeg` on PATH (or FFMPEG=<path>)
  * and a reachable InsightFace-REST (INSIGHTFACE_API_URL). Usage:
@@ -51,10 +52,11 @@ const RECOGNITION_THRESHOLD = 0.5;
 /** Greedy clusters closer than this are one person seen from another angle. */
 const SAME_PERSON_JOIN = 0.3;
 const PEXELS = 'Pexels License (https://www.pexels.com/license/): free to use, no attribution required';
-/** Crowd photo from the InsightFace-REST submodule (Apache-2.0): one crop per clearly visible face. */
+/** Crowd photo from the InsightFace-REST submodule (photo rights uncertain, see NOTICE): one crop per visible face. */
 const CROWD = join(REPO, 'libs/InsightFace-REST/misc/test_images/lumia.jpg');
 const CROWD_SOURCE = 'libs/InsightFace-REST/misc/test_images/lumia.jpg';
-const APACHE = 'Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)';
+const CROWD_LICENCE =
+  'Rights uncertain: InsightFace-REST test image (its Apache-2.0 licence covers the code, not the photograph); demo use only, see NOTICE';
 const CROWD_MIN_SIDE = 48;
 
 function log(message: string): void {
@@ -140,7 +142,7 @@ async function crowdPeople(client: InsightFaceClient, known: number[][], offset:
     await mkdir(join(OUTPUT, folder), { recursive: true });
     await writeFile(join(OUTPUT, folder, '1.jpg'), crop);
     const detectorScore = Math.round(face.score * 100) / 100;
-    people.push({ folder, role: '', source: CROWD_SOURCE, licence: APACHE, files: [{ file: '1.jpg', origin: `bbox ${face.bbox.map(Math.round).join(',')}`, detectorScore }] });
+    people.push({ folder, role: '', source: CROWD_SOURCE, licence: CROWD_LICENCE, files: [{ file: '1.jpg', origin: `bbox ${face.bbox.map(Math.round).join(',')}`, detectorScore }] });
   }
   return people;
 }

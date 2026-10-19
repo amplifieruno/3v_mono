@@ -212,7 +212,7 @@ export function buildPeople(org: OrgKey, now: Date): PersonSpec[] {
       start_date: dateFrom(now, -90),
       schedule: null,
       email: null,
-      notes: 'Banned from the premises after a security incident (watch-list entry pending).',
+      notes: 'Watch-list demo persona (fictional).',
     });
   }
   addEmployees(plan, org, mix);

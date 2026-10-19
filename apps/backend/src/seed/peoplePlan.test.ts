@@ -16,6 +16,15 @@ describe('buildPeople', () => {
     expect(roles.visitor).toBeGreaterThan(0);
   });
 
+  it('should describe the watch-list persona neutrally as fictional, without an incident narrative', () => {
+    for (const org of ['nova', 'riverside'] as const) {
+      for (const p of buildPeople(org, NOW).filter((x) => x.role === 'blacklisted')) {
+        expect(p.profile.notes).toMatch(/fictional/i);
+        expect(p.profile.notes).not.toMatch(/incident|banned|security/i);
+      }
+    }
+  });
+
   it('should be deterministic with unique keys, names and emails', () => {
     const a = buildPeople('nova', NOW);
     expect(buildPeople('nova', NOW)).toEqual(a);
