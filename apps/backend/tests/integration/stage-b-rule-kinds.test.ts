@@ -77,4 +77,16 @@ describe('Stage B: incident time', () => {
     expect(Date.parse(incident.created_at)).toBe(Date.parse(d.detected_at));
     expect(incident.incident_activities.map((a) => Date.parse(a.occurred_at))).toEqual([Date.parse(d.detected_at)]);
   });
+
+  it('should not repeat the rule name when the event title already starts with it', async () => {
+    const w = await createTrackingWorld();
+    const list = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
+    const banned = await knownPerson(w.a);
+    await insertOne(w.a, 'watch_list_entries', { watch_list_id: list.id, profile_id: banned.profile });
+    await publishedRule(w.a, 'watchlist', { creates_incident: true }, [], 'Blacklist match');
+    await publishedRule(w.a, 'watchlist', { creates_incident: true }, [], 'Front desk alert');
+    await evaluate((await detect(w.orgA.id, w.entranceCam, banned.identity, 0)).id);
+    const titles = (await orgIncidents(w.orgA.id)).map((i) => i.title).sort();
+    expect(titles).toEqual(['Blacklist match: Blacklist', 'Front desk alert: Blacklist match: Blacklist']);
+  });
 });

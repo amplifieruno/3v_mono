@@ -63,8 +63,12 @@ export async function publishedRule(
   ruleType: string,
   version: Record<string, unknown> = {},
   scopes: Record<string, unknown>[] = [],
+  name?: string,
 ): Promise<{ rule: string; version: string }> {
-  const rule = await insertOne(a, 'event_rules', { name: `Rule ${Math.random().toString(36).slice(2, 10)}`, rule_type: ruleType });
+  const rule = await insertOne(a, 'event_rules', {
+    name: name ?? `Rule ${Math.random().toString(36).slice(2, 10)}`,
+    rule_type: ruleType,
+  });
   const v = await insertOne(a, 'event_rule_versions', {
     rule_id: rule.id,
     severity: 'high',

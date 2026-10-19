@@ -14,9 +14,11 @@ import type { SeedContext } from './tenancy.js';
  * rules / stale sessions at simulated times and the daily lifecycle job (no-show visits).
  *
  * Idempotency: the replay is skipped when the organization already has a detection older than the marker age (the
- * first replayed day always has one; live recognition never writes the past). Without the marker but with any
- * detection or session from the replay period on (live recognition, a replay that failed part-way), it is skipped
- * too and the seed says the history needs `pnpm seed --reset`: no partial history is produced.
+ * first replayed day always has one; live recognition never writes the past). Each day is one transaction, so a
+ * replay that fails part-way keeps the days already committed (including that first day, which carries the marker):
+ * the next run then reports the history as seeded and does NOT resume, leaving a truncated history. Recover with
+ * `pnpm seed --reset`. Without the marker but with any detection or session from the replay period on (live
+ * recognition), the replay is skipped and the seed says the history needs `pnpm seed --reset`: no interleaving.
  */
 export type ReplayResult = {
   skipped: false | 'seeded' | 'needs_reset';

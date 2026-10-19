@@ -168,10 +168,10 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     );
     expect(unprobed).toMatchObject({ health_status: 'unknown', last_seen_at: 'NULL', metrics: '0' });
 
-    // Seeded samples sit on whole hours; the plan geometry lies inside its floor plan.
+    // Seeded samples sit on whole hours (the live health cron may probe a just-recreated camera, hence the hour of slack); the plan geometry lies inside its floor plan.
     const [offHour] = await runSqlRows(
       `select count(*) as n from itap.device_health_metrics m join itap.devices d on d.id = m.device_id
-        where m.recorded_at < d.created_at and date_trunc('hour', m.recorded_at) <> m.recorded_at`,
+        where m.recorded_at < d.created_at - interval '1 hour' and date_trunc('hour', m.recorded_at) <> m.recorded_at`,
     );
     expect(Number(offHour.n)).toBe(0);
   });
