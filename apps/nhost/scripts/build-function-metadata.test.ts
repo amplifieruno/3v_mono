@@ -10,6 +10,19 @@ const tables: TableSpec[] = [
     name: 'rows_for_user',
     schema: 'itap_results',
     profile: 'none',
+    extraPermissions: {
+      select_permissions: [
+        {
+          role: 'user',
+          permission: { columns: ['id'], filter: { _and: [{ organization_id: { _eq: 'X-Hasura-Organization-Id' } }] } },
+        },
+      ],
+    },
+  },
+  {
+    name: 'unscoped_rows',
+    schema: 'itap_results',
+    profile: 'none',
     extraPermissions: { select_permissions: [{ role: 'user', permission: { columns: ['id'], filter: {} } }] },
   },
 ];
@@ -54,9 +67,30 @@ describe('planFunctionMetadata', () => {
   });
 
   it('should accept a role granted select through extraPermissions', () => {
-    const row: FunctionRow = { ...matchRow, name: 'mine', argNames: ['p_x'], argTypes: ['text'], returnTable: 'rows_for_user' };
-    const files = planFunctionMetadata([{ name: 'mine', exposedAs: 'query', roles: ['user'] }], tables, [row]);
+    const row: FunctionRow = { ...matchRow, name: 'mine', returnTable: 'rows_for_user' };
+    const spec: FunctionSpec = { name: 'mine', exposedAs: 'query', sessionArgument: 'hasura_session', roles: ['user'] };
+    const files = planFunctionMetadata([spec], tables, [row]);
     expect(parse(files.get('itap_mine.yaml') ?? '').permissions).toEqual([{ role: 'user' }]);
+  });
+
+  it('should require a session argument for a function exposed to a role', () => {
+    const row: FunctionRow = { ...matchRow, name: 'mine', argNames: ['p_x'], argTypes: ['text'] };
+    expect(() => planFunctionMetadata([{ name: 'mine', exposedAs: 'query', roles: ['org_admin'] }], tables, [row])).toThrow(
+      /itap\.mine: exposed to roles \(org_admin\) but has no sessionArgument/,
+    );
+    // Admin-only functions (roles []) need none.
+    expect(() => planFunctionMetadata([accept], tables, [acceptRow])).not.toThrow();
+  });
+
+  it('should require an organization_id filter on the return table for every exposed role', () => {
+    const row: FunctionRow = { ...matchRow, name: 'mine', returnTable: 'unscoped_rows' };
+    const spec: FunctionSpec = { name: 'mine', exposedAs: 'query', sessionArgument: 'hasura_session', roles: ['user'] };
+    expect(() => planFunctionMetadata([spec], tables, [row])).toThrow(
+      /itap\.mine: select filter of role "user" on itap_results\.unscoped_rows does not restrict organization_id/,
+    );
+    const optedOut: FunctionSpec = { ...spec, unscopedReturnReason: 'rows are global reference data' };
+    expect(() => planFunctionMetadata([optedOut], tables, [row])).not.toThrow();
+    expect(() => planFunctionMetadata([{ ...spec, unscopedReturnReason: '  ' }], tables, [row])).toThrow(/organization_id/);
   });
 
   it('should throw when the function does not exist or is overloaded', () => {
@@ -78,7 +112,7 @@ describe('planFunctionMetadata', () => {
     );
     // A non-json argument that happens to share the name is not a session argument.
     const plain: FunctionRow = { ...matchRow, argTypes: ['text', 'text'] };
-    expect(() => planFunctionMetadata([withoutSession], tables, [plain])).not.toThrow();
+    expect(() => planFunctionMetadata([{ ...withoutSession, roles: [] }], tables, [plain])).not.toThrow();
   });
 
   it('should throw when a volatile function is exposed as a query', () => {

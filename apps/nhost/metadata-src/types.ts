@@ -135,8 +135,14 @@ export interface FunctionSpec {
   sessionArgument?: 'hasura_session';
   /** GraphQL root field name; defaults to the function name. */
   customName?: string;
-  /** Roles allowed to call the function; `[]` = admin secret only (e.g. called by an action handler). */
+  /**
+   * Roles allowed to call the function; `[]` = admin secret only (e.g. called by an action handler). A function
+   * exposed to a role must take the session argument, and each role's select filter on the return table must
+   * restrict `organization_id` (double guard, design §8.0) unless `unscopedReturnReason` explains why not.
+   */
   roles: string[];
+  /** Opt-out of the return-table `organization_id` filter check, with the reason (non-empty). */
+  unscopedReturnReason?: string;
 }
 
 export interface FunctionMetadata {

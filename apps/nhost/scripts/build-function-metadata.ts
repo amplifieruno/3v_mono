@@ -1,5 +1,5 @@
 import { stringify } from 'yaml';
-import type { FunctionMetadata, FunctionSpec, TableSpec } from '../metadata-src/types.js';
+import type { BoolExp, FunctionMetadata, FunctionSpec, TableSpec } from '../metadata-src/types.js';
 
 const GENERATED_PREFIX = 'itap_';
 const TENANT_ROLE = 'org_admin';
@@ -26,10 +26,24 @@ export function functionFileName(spec: FunctionSpec): string {
   return `${spec.schema ?? 'itap'}_${spec.name}.yaml`;
 }
 
-/** True when the table's metadata grants `role` a select permission (generated tenant profile or extra entry). */
-function canSelect(table: TableSpec, role: string): boolean {
-  if (table.profile !== 'none' && role === TENANT_ROLE) return true;
-  return (table.extraPermissions?.select_permissions ?? []).some((p) => p.role === role);
+const ORG_COLUMN = 'organization_id';
+
+/**
+ * The role's select filter on the table (an extra entry replaces the generated one), or undefined when the role
+ * cannot select it. The generated tenant profile filters on organization_id.
+ */
+function selectFilter(table: TableSpec, role: string): BoolExp | undefined {
+  const extra = (table.extraPermissions?.select_permissions ?? []).find((p) => p.role === role);
+  if (extra) return extra.permission.filter;
+  if (table.profile !== 'none' && role === TENANT_ROLE) return { [ORG_COLUMN]: { _eq: 'X-Hasura-Organization-Id' } };
+  return undefined;
+}
+
+/** True when the boolean expression references organization_id anywhere (as a column key). */
+function mentionsOrganization(exp: unknown): boolean {
+  if (Array.isArray(exp)) return exp.some(mentionsOrganization);
+  if (typeof exp !== 'object' || exp === null) return false;
+  return Object.entries(exp).some(([key, value]) => key === ORG_COLUMN || mentionsOrganization(value));
 }
 
 function validate(spec: FunctionSpec, rows: FunctionRow[], tables: TableSpec[]): void {
@@ -44,6 +58,12 @@ function validate(spec: FunctionSpec, rows: FunctionRow[], tables: TableSpec[]):
     throw new Error(
       `Function ${id}: has a json "${SESSION_ARGUMENT}" argument but the spec omits sessionArgument ` +
         `(Hasura would expose it as a client-supplied argument)`,
+    );
+  }
+  if (spec.roles.length > 0 && !spec.sessionArgument) {
+    throw new Error(
+      `Function ${id}: exposed to roles (${spec.roles.join(', ')}) but has no sessionArgument ` +
+        `(organization scoping must come from the session)`,
     );
   }
   if (spec.sessionArgument) {
@@ -61,9 +81,17 @@ function validate(spec: FunctionSpec, rows: FunctionRow[], tables: TableSpec[]):
   const returnId = qualified(row.returnSchema, row.returnTable);
   const table = tables.find((t) => qualified(t.schema, t.name) === returnId);
   if (!table) throw new Error(`Function ${id}: return table ${returnId} has no spec in metadata-src`);
+  const optedOut = (spec.unscopedReturnReason ?? '').trim().length > 0;
   for (const role of spec.roles) {
-    if (!canSelect(table, role)) {
+    const filter = selectFilter(table, role);
+    if (!filter) {
       throw new Error(`Function ${id}: role "${role}" has no select permission on ${returnId} (the return table)`);
+    }
+    if (!optedOut && !mentionsOrganization(filter)) {
+      throw new Error(
+        `Function ${id}: select filter of role "${role}" on ${returnId} does not restrict ${ORG_COLUMN} ` +
+          `(add the filter or set unscopedReturnReason)`,
+      );
     }
   }
 }
