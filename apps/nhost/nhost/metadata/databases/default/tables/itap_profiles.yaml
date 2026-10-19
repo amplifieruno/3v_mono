@@ -39,6 +39,15 @@ object_relationships:
           organization_id: organization_id
           work_schedule_id: id
 array_relationships:
+  - name: consent_records
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: consent_records
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: identities
     using:
       manual_configuration:
@@ -66,6 +75,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: inherited_profile_id
+  - name: profile_documents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_documents
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
+  - name: profile_duplicate_candidates_by_profile_a
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_duplicate_candidates
+        column_mapping:
+          organization_id: organization_id
+          id: profile_a_id
+  - name: profile_duplicate_candidates_by_profile_b
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_duplicate_candidates
+        column_mapping:
+          organization_id: organization_id
+          id: profile_b_id
 computed_fields:
   - name: has_face
     definition:

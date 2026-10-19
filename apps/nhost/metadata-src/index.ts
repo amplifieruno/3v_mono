@@ -1,7 +1,7 @@
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
 import { identityFunctions, identityTables } from './identities.js';
-import { profileTables } from './profiles.js';
+import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
 import type { FunctionSpec, TableSpec } from './types.js';
 
@@ -18,4 +18,4 @@ export const tables: TableSpec[] = [
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
-export const functions: FunctionSpec[] = [...tenancyFunctions, ...identityFunctions];
+export const functions: FunctionSpec[] = [...tenancyFunctions, ...identityFunctions, ...profileFunctions];

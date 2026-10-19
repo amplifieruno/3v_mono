@@ -31,6 +31,22 @@ describe('shared org-logos bucket', () => {
     });
   });
 
+  it.each(['image/svg+xml', 'image/gif', 'image/svg'])(
+    'should reject a %s upload to org-logos (raster png/jpeg/webp only)',
+    async (mimeType) => {
+      const { orgA, user } = await createTwoOrgs();
+      expect(await uploadFile(orgAdminToken(user.id, orgA.id), 'org-logos', undefined, mimeType)).toEqual({
+        status: 403,
+      });
+    },
+  );
+
+  it.each(['image/png', 'image/jpeg', 'image/webp'])('should accept a %s upload to org-logos', async (mimeType) => {
+    const { orgA, user } = await createTwoOrgs();
+    const id = await upload(orgAdminToken(user.id, orgA.id), 'org-logos', mimeType);
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
   it.each(['profile_document', 'dsr_export', 'auth_capture'])(
     'should reject a direct %s insert into org-logos by an org admin',
     async (kind) => {

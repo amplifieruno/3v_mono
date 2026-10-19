@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: consent_methods
+is_enum: true
+configuration:
+  custom_name: consent_methods

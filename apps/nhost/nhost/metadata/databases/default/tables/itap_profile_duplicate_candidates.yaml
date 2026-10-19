@@ -1,0 +1,69 @@
+table:
+  schema: itap
+  name: profile_duplicate_candidates
+configuration:
+  custom_name: profile_duplicate_candidates
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile_a
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_a_id: id
+  - name: profile_b
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_b_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - detected_at
+        - id
+        - organization_id
+        - profile_a_id
+        - profile_b_id
+        - reasons
+        - similarity
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - status
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _neq: merged
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _in:
+                - open
+                - dismissed

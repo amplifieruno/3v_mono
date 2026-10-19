@@ -80,7 +80,10 @@ insert_permissions:
               - bucket_id:
                   _eq: org-logos
               - mime_type:
-                  _like: image/%
+                  _in:
+                    - image/png
+                    - image/jpeg
+                    - image/webp
               - _or:
                   - metadata:
                       _is_null: true

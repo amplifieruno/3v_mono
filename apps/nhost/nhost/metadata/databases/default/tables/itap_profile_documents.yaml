@@ -1,0 +1,66 @@
+table:
+  schema: itap
+  name: profile_documents
+configuration:
+  custom_name: profile_documents
+object_relationships:
+  - name: file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - file_id
+        - id
+        - kind
+        - organization_id
+        - profile_id
+        - title
+        - updated_at
+        - valid_until
+        - version
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - kind
+        - title
+        - valid_until
+        - version
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

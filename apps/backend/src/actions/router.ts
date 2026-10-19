@@ -5,6 +5,7 @@ import type { Env } from '../config/env.js';
 import { createHasuraClient, type HasuraSession } from '../hasura/client.js';
 import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
+import { uploadProfileDocument } from './profileDocuments.js';
 import { switchOrganization } from './switchOrganization.js';
 import { ActionError, type ActionHandler } from './types.js';
 
@@ -16,6 +17,7 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   accept_invitation: acceptInvitation,
   open_file: openFile,
   delete_file: deleteFile,
+  upload_profile_document: uploadProfileDocument,
 };
 
 const payloadSchema = z.object({
@@ -60,7 +62,8 @@ export function actionsRouter(
     }
     next();
   });
-  router.use(express.json({ limit: '1mb' }));
+  // upload_profile_document carries up to 10 MB of base64 (~13.4 MB) in the payload.
+  router.use(express.json({ limit: '16mb' }));
 
   router.post('/:name', async (req: Request, res: Response) => {
     const name = req.params.name;

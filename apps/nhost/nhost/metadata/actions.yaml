@@ -59,6 +59,18 @@ actions:
     permissions:
       - role: org_admin
     comment: Deletes a file from the session organization bucket
+  - name: upload_profile_document
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/upload_profile_document'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 60
+    permissions:
+      - role: org_admin
+    comment: Stores a profile document (max 10 MB) in the organization bucket as a sensitive file and records it
 custom_types:
   enums: []
   input_objects: []
@@ -68,4 +80,5 @@ custom_types:
     - name: AcceptedInvitation
     - name: FileUrl
     - name: DeletedFile
+    - name: ProfileDocument
   scalars: []

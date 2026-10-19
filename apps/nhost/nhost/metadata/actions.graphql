@@ -4,6 +4,14 @@ type Mutation {
   accept_invitation(token: String!): AcceptedInvitation!
   open_file(file_id: uuid!): FileUrl!
   delete_file(file_id: uuid!): DeletedFile!
+  upload_profile_document(
+    profile_id: uuid!
+    kind: String!
+    title: String!
+    file_name: String!
+    mime_type: String!
+    content_base64: String!
+  ): ProfileDocument!
 }
 
 type OrgToken {
@@ -29,5 +37,10 @@ type FileUrl {
 }
 
 type DeletedFile {
+  file_id: uuid!
+}
+
+type ProfileDocument {
+  document_id: uuid!
   file_id: uuid!
 }

@@ -1,0 +1,88 @@
+table:
+  schema: itap
+  name: consent_records
+configuration:
+  custom_name: consent_records
+object_relationships:
+  - name: document_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          document_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - document_file_id
+        - granted_at
+        - method
+        - notes
+        - profile_id
+        - purpose
+        - status
+        - withdrawn_at
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - document_file_id
+        - granted_at
+        - id
+        - method
+        - notes
+        - organization_id
+        - profile_id
+        - purpose
+        - status
+        - updated_at
+        - withdrawn_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - document_file_id
+        - granted_at
+        - method
+        - notes
+        - purpose
+        - status
+        - withdrawn_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
