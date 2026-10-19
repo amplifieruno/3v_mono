@@ -65,8 +65,8 @@ Why: the demo will be clicked by the customer and recorded on video. Every scree
 ### 4.3 Two-token flow (owner decision)
 1. Login via Nhost → **base token**, role `user`: own `user_settings`, own memberships with organization name/logo, Action `switch_organization`.
 2. `switch_organization(organization_id)` → backend checks an active membership and signs an **organization token** with the key and issuer from Hasura's `JWT_SECRET` (`HS256`, `iss: "hasura-auth"`, claims under `https://hasura.io/jwt/claims`):
-   - `x-hasura-user-id`, `x-hasura-organization-id` (lowercase uuid text), `x-hasura-default-role` (`admin` → `org_admin`), `x-hasura-allowed-roles` = [`org_admin`, `user`].
-3. TTL 15 min, renewed by calling the action again with the base token. Revocation effective within TTL. The switch is recorded in `audit_log` (`switch_org`).
+   - `x-hasura-user-id`, `x-hasura-organization-id` (lowercase uuid text), `x-hasura-default-role` (`admin` → `org_admin`), `x-hasura-allowed-roles` = [`org_admin`] (slice-1 fix wave: an org token cannot act as `user`, so it cannot call `switch_organization` to renew itself).
+3. TTL 15 min, renewed by calling the action again with the base token (the action is granted to `user` only and rejects disabled accounts). Revocation effective within TTL. The switch is recorded in `audit_log` (`switch_org`).
 4. The same token works with hasura-storage (it forwards the Authorization header to Hasura, which evaluates `storage.files` permissions). Verified by one upload test early in delivery.
 5. Fix `apps/backend/.env` (malformed `HASURA_JWT_SECRET`, wrong `JWT_SECRET`); the signer parses `key` and `issuer` from the same JSON Hasura uses.
 

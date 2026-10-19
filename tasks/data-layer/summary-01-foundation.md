@@ -25,8 +25,9 @@ Branch `feat/data-layer-foundation`. Spec: `design.md`; plan: `plan-01-foundatio
 - Invitation acceptance is one SQL function (spec 8.0: multi-step atomic logic belongs in SQL); invitations are never deleted (history).
 - hasura-storage 0.7 writes file metadata as admin after insert, so org_admin cannot be blocked from self-labelling sensitive kinds at upload. Accepted: sensitive kinds are unselectable for org_admin; only `open_file` (audited) reads them.
 - Traefik bumped v3.3 -> v3.6 (incompatible with Docker 29).
+- Backend `index.ts` listens before the legacy TypeORM database initializes, so `/health` and Hasura Actions work without the legacy DB (a failed legacy init only disables the legacy `/api` routes).
 - Seed orgs: timezone Europe/Moscow, locale en. Plan said 3 memberships; correct count is 4.
-- Task 11: backend/shared ESLint flat configs added (legacy dirs relaxed: `no-explicit-any` off in backend legacy, warning in `packages/shared`; `*.d.ts` ignored); dead TypeORM entity imports and `run-migrations.ts` (+ `migration:run` script) removed; minimal type fixes in `routes/face.ts`/`insightFaceService.ts`/`Identity` entity (type-only); unused `apps/nhost/docker-compose.yaml` removed.
+- Task 11: backend/shared ESLint flat configs added (legacy dirs relaxed: `no-explicit-any` off in backend legacy, warning in `packages/shared`; `*.d.ts` ignored); dead TypeORM entity imports and `run-migrations.ts` (+ `migration:run` script) removed; minimal type-only fixes in `insightFaceService.ts` and the `Identity` entity; unused `apps/nhost/docker-compose.yaml` removed.
 
 ## Deviations from plan
 
@@ -37,11 +38,30 @@ Branch `feat/data-layer-foundation`. Spec: `design.md`; plan: `plan-01-foundatio
 
 - **Secret hygiene (owner action)**: the old Hasura JWT key exists in git history (6 commits of `apps/backend/.env`) and equals the current dev `JWT_SECRET` key; not rotated. Rotate before anything non-dev uses it.
 - Dev backend container uses host `node_modules` (a fresh clone needs a host `pnpm install`).
-- Hasura client: no `res.ok`/non-JSON handling; top-level `{code,error}` responses return undefined data silently. No test for signing without issuer.
-- Actions: secret compare leaks length; 413 not in action error format; storage 404 on delete not mapped to `file_not_found`; `delete_file` not audited; presigned URL response not validated; `email_mismatch` checked after status/expiry; invite check-expire-insert not atomic (unique index catches race); RAISE-to-error-code mapping relies on `HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS=true`.
+- No test for signing an org token without an issuer.
+- Actions: secret compare leaks length; 413 not in action error format; storage 404 on delete not mapped to `file_not_found`; presigned URL response not validated; `email_mismatch` checked after status/expiry; invite check-expire-insert not atomic (unique index catches race); RAISE-to-error-code mapping relies on `HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS=true`.
 - Hasura: deactivation by a session user who is not a member of that org hits an FK violation on `deactivated_by` (actions must forward a member id); `check_file_bucket` ignores `organization_id` changes; array-shaped metadata bypasses sensitive guard on direct insert (own bucket only); `uploaded_by_user_id`/`etag` insertable.
-- Tests: `expectDenied` accepts validation-failed (prefer asserting filtered rows); harness not typechecked (tsconfig excludes tests/); test users not cleaned up; seed `previous` typed `Partial<SeedResults>`; reset leaves bucket rows and does not assert file deletion.
+- Tests: seed `previous` typed `Partial<SeedResults>`; seed reset leaves bucket rows (removed by `test:cleanup` as orphans) and does not assert file deletion.
+- org-logos is shared (ruling): org_admin can select every org-logos row including `metadata` and `uploaded_by_user_id`, because Hasura column permissions are per role, not per row. Accepted. The org-logos `image/*` check holds on the upload path (hasura-storage inserts `mime_type` as the caller); the no-sensitive-kind check, like the org-bucket one, binds direct GraphQL inserts only (storage writes metadata as admin).
 - Legacy: TypeORM, face-api.js, TensorFlow and redis deps still in the backend `package.json`; removed in slice 2. admin-ui builds but is runtime-broken against the new schema. Legacy backend lint warnings remain (unused vars).
+
+## Owner actions (not done by the agents)
+
+- Rotate the Hasura JWT key (the old key is in git history and equals the current dev key).
+- Set `ACTION_SECRET`, `HASURA_JWT_SECRET` and `NHOST_STORAGE_URL` in the production env before deploying.
+- The host firewall (ufw) was deliberately left untouched.
+- Nothing is merged to `main`; production is untouched.
+
+## Final-review fix wave
+
+- Org token: allowed roles `[org_admin]` only (spec §4.3 updated), `switch_organization` granted to `user` only, disabled accounts rejected (`account_disabled`).
+- `organization_members`: no direct insert for org_admin; org_admin sees `id`, `displayName`, `email`, `avatarUrl` of its own members (`auth.users` relationship `organization_memberships`).
+- `active_member_check` rejects unknown column arguments and expired members; `accept_invitation`/`invite_member` renew an expired membership and clear `expires_at`.
+- Audit entities are table names (`organizations`, `files`); `delete_file` is audited.
+- org-logos inserts require `image/*` and no sensitive kind; `organizations.logo_file_id` must be an org-logos file.
+- Generator enforces composite tenant FKs and FK indexes (§4.1) and emits object relationships for one-to-one children; indexes added on invitations (`status`, `role`, `accepted_by`) and `audit_log (organization_id, action)`.
+- Tests: fixture registry cleans up every suite; `pnpm --filter backend test:cleanup` removes all leftovers; seed test opt-in (`RUN_SEED_TEST=1`); `expectDenied` asserts the denied field; tests typechecked (`tsconfig.test.json`); public-role test.
+- ESLint deps declared (`@eslint/js`, `typescript-eslint`) in backend and shared.
 
 ## How to run
 
@@ -56,4 +76,6 @@ pnpm lint && pnpm typecheck && pnpm build
 pnpm --filter backend exec vitest run src
 pnpm --filter nhost test
 pnpm --filter backend test:integration  # needs the dev stack running
+RUN_SEED_TEST=1 pnpm --filter backend test:integration -- seed   # opt-in; resets the demo orgs, then: pnpm seed
+pnpm --filter backend test:cleanup      # remove test leftovers (test-% orgs, @itap.test users, files, buckets)
 ```
