@@ -1,0 +1,161 @@
+table:
+  schema: itap
+  name: devices
+configuration:
+  custom_name: devices
+object_relationships:
+  - name: area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          area_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: access_point_devices
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_point_devices
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: device_id
+  - name: device_areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_areas
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          id: device_id
+  - name: identity_photos
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_photos
+        column_mapping:
+          organization_id: organization_id
+          id: device_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - configuration
+        - coverage
+        - custom_fields
+        - device_type
+        - facility_id
+        - firmware_version
+        - fps
+        - ip_address
+        - manufacturer
+        - model
+        - name
+        - password
+        - position
+        - recognition_enabled
+        - recognition_fps
+        - resolution
+        - status
+        - stream_url
+        - username
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - code
+        - configuration
+        - coverage
+        - created_at
+        - custom_fields
+        - device_type
+        - facility_id
+        - firmware_version
+        - fps
+        - health_status
+        - id
+        - ip_address
+        - last_seen_at
+        - manufacturer
+        - model
+        - name
+        - number
+        - organization_id
+        - policy_synced_at
+        - policy_version_synced
+        - position
+        - recognition_enabled
+        - recognition_fps
+        - resolution
+        - status
+        - stream_url
+        - updated_at
+        - username
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - area_id
+        - configuration
+        - coverage
+        - custom_fields
+        - device_type
+        - firmware_version
+        - fps
+        - ip_address
+        - manufacturer
+        - model
+        - name
+        - password
+        - position
+        - recognition_enabled
+        - recognition_fps
+        - resolution
+        - status
+        - stream_url
+        - username
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

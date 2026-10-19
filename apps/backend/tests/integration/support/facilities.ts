@@ -81,3 +81,78 @@ export async function createTree(client: HasuraClient, facilityId: string): Prom
   const room = await createArea(client, facilityId, 'Room 101', zone.id, { area_type: 'room' });
   return { building, floor1, floor2, zone, room };
 }
+
+export const INSERT_DEVICE = `
+  mutation InsertDevice($object: devices_insert_input!) {
+    insert_devices_one(object: $object) {
+      id number code name device_type facility_id area_id status health_status recognition_enabled recognition_fps
+      username organization_id
+    }
+  }
+`;
+export const INSERT_ACCESS_POINT = `
+  mutation InsertAccessPoint($object: access_points_insert_input!) {
+    insert_access_points_one(object: $object) { id facility_id area_id from_area_id name kind direction is_entry_exit status }
+  }
+`;
+
+export type Device = {
+  id: string;
+  number: number;
+  code: string;
+  name: string;
+  device_type: string;
+  facility_id: string;
+  area_id: string | null;
+  status: string;
+  health_status: string;
+  recognition_enabled: boolean;
+  recognition_fps: number;
+  username: string | null;
+  organization_id: string;
+};
+export type AccessPoint = {
+  id: string;
+  facility_id: string;
+  area_id: string;
+  from_area_id: string | null;
+  name: string;
+  kind: string;
+  direction: string;
+  is_entry_exit: boolean;
+  status: string;
+};
+
+export async function createDevice(
+  client: HasuraClient,
+  facilityId: string,
+  extra: Record<string, unknown> = {},
+): Promise<Device> {
+  const data = await client.request<{ insert_devices_one: Device }>(INSERT_DEVICE, {
+    object: {
+      facility_id: facilityId,
+      name: `Device ${Math.random().toString(36).slice(2, 10)}`,
+      device_type: 'static_video_camera',
+      ...extra,
+    },
+  });
+  return data.insert_devices_one;
+}
+
+export async function createAccessPoint(
+  client: HasuraClient,
+  facilityId: string,
+  areaId: string,
+  extra: Record<string, unknown> = {},
+): Promise<AccessPoint> {
+  const data = await client.request<{ insert_access_points_one: AccessPoint }>(INSERT_ACCESS_POINT, {
+    object: {
+      facility_id: facilityId,
+      area_id: areaId,
+      name: `Door ${Math.random().toString(36).slice(2, 10)}`,
+      kind: 'door',
+      ...extra,
+    },
+  });
+  return data.insert_access_points_one;
+}

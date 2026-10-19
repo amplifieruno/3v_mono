@@ -13,12 +13,30 @@ object_relationships:
         column_mapping:
           organization_id: id
 array_relationships:
+  - name: access_points
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: areas
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: areas
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: devices
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
         column_mapping:
           organization_id: organization_id
           id: facility_id

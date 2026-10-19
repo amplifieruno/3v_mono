@@ -38,7 +38,7 @@ export const identityTables: TableSpec[] = [
   {
     name: 'identity_photos',
     profile: 'tenant_crud',
-    // device_id stays read-only until devices (and its FK) arrive in slice 3.
+    // device_id is set by the backend (enrollment / recognition); clients never write it.
     readOnlyColumns: ['device_id'],
     insertOnlyColumns: ['identity_id', 'file_id'],
   },

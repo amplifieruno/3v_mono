@@ -1,0 +1,77 @@
+table:
+  schema: itap
+  name: access_point_devices
+configuration:
+  custom_name: access_point_devices
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          access_point_id: id
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          device_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - device_id
+        - facility_id
+        - role
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - created_at
+        - device_id
+        - facility_id
+        - id
+        - organization_id
+        - role
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - role
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

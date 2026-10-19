@@ -1,0 +1,2 @@
+DROP INDEX itap.identity_photos_organization_id_device_id_idx;
+ALTER TABLE itap.identity_photos DROP CONSTRAINT identity_photos_device_fkey;

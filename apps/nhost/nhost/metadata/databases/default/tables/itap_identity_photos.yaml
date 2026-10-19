@@ -4,6 +4,15 @@ table:
 configuration:
   custom_name: identity_photos
 object_relationships:
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
   - name: file
     using:
       manual_configuration:

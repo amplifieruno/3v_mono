@@ -21,6 +21,22 @@ object_relationships:
         column_mapping:
           id: organization_id
 array_relationships:
+  - name: access_point_devices
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_point_devices
+        column_mapping:
+          id: organization_id
+  - name: access_points
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          id: organization_id
   - name: areas
     using:
       manual_configuration:
@@ -53,12 +69,36 @@ array_relationships:
           name: custom_attribute_definitions
         column_mapping:
           id: organization_id
+  - name: device_areas
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_areas
+        column_mapping:
+          id: organization_id
+  - name: devices
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          id: organization_id
   - name: facilities
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: facilities
+        column_mapping:
+          id: organization_id
+  - name: facility_templates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facility_templates
         column_mapping:
           id: organization_id
   - name: floor_plans
