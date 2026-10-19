@@ -77,6 +77,22 @@ array_relationships:
           name: device_areas
         column_mapping:
           id: organization_id
+  - name: device_events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_events
+        column_mapping:
+          id: organization_id
+  - name: device_health_metrics
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_health_metrics
+        column_mapping:
+          id: organization_id
   - name: devices
     using:
       manual_configuration:

@@ -15,6 +15,7 @@ const envSchema = z.object({
   ACTION_SECRET: z.string().min(1),
   NHOST_STORAGE_URL: z.string().url(),
   INSIGHTFACE_API_URL: z.string().url(),
+  STREAM_SERVER_URL: z.string().url().default('http://stream-server:8888'),
   SEED_PASSWORD: z.string().min(1).optional(),
   ORG_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 });

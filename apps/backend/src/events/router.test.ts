@@ -22,6 +22,7 @@ const env: Env = {
   ACTION_SECRET: 'action-secret',
   NHOST_STORAGE_URL: 'http://storage.test',
   INSIGHTFACE_API_URL: 'http://insightface.test',
+  STREAM_SERVER_URL: 'http://stream-server.test:8888',
   ORG_TOKEN_TTL_SECONDS: 900,
 };
 

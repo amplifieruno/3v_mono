@@ -15,7 +15,7 @@ const CRON_FIELD = /^[0-9*,/-]+$/;
 const OPERATIONS: TriggerOperation[] = ['insert', 'update', 'delete'];
 const DEFAULT_RETRY: Required<RetrySpec> = { num_retries: 3, retry_interval_seconds: 10, timeout_seconds: 60 };
 /** Hasura default: a missed cron run older than this is dropped instead of delivered late (6 h). */
-const CRON_TOLERANCE_SECONDS = 21600;
+const DEFAULT_CRON_TOLERANCE_SECONDS = 21600;
 
 const webhook = (name: string): string => `{{BACKEND_URL}}/hasura/events/${name}`;
 const headers = (): WebhookHeader[] => [{ name: 'x-action-secret', value_from_env: 'ACTION_SECRET' }];
@@ -100,6 +100,9 @@ export function buildCronTriggersYaml(crons: CronSpec[]): string {
     if (names.has(cron.name)) throw new Error(`Duplicate cron trigger name "${cron.name}"`);
     names.add(cron.name);
     assertSchedule(cron);
+    if (cron.toleranceSeconds !== undefined && (!Number.isInteger(cron.toleranceSeconds) || cron.toleranceSeconds < 0)) {
+      throw new Error(`Cron ${cron.name}: invalid toleranceSeconds ${cron.toleranceSeconds} (integer >= 0)`);
+    }
   }
   if (crons.length === 0) return '[]\n';
   const entries = [...crons]
@@ -110,7 +113,10 @@ export function buildCronTriggersYaml(crons: CronSpec[]): string {
       schedule: cron.schedule.trim(),
       include_in_metadata: cron.includeInMetadata,
       payload: cron.payload ?? {},
-      retry_conf: { ...retryOf(`Cron ${cron.name}`, cron.retry), tolerance_seconds: CRON_TOLERANCE_SECONDS },
+      retry_conf: {
+        ...retryOf(`Cron ${cron.name}`, cron.retry),
+        tolerance_seconds: cron.toleranceSeconds ?? DEFAULT_CRON_TOLERANCE_SECONDS,
+      },
       headers: headers(),
       ...(cron.comment ? { comment: cron.comment } : {}),
     }));

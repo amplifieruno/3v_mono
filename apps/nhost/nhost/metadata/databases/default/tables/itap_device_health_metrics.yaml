@@ -1,0 +1,42 @@
+table:
+  schema: itap
+  name: device_health_metrics
+configuration:
+  custom_name: device_health_metrics
+object_relationships:
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - cpu_usage
+        - created_at
+        - device_id
+        - disk_usage
+        - error_count
+        - frame_rate
+        - id
+        - memory_usage
+        - network_latency_ms
+        - organization_id
+        - recorded_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

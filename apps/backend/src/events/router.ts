@@ -2,6 +2,7 @@ import express, { Router, type NextFunction, type Request, type Response } from 
 import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
+import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
 import {
   cronTriggerPayloadSchema,
@@ -24,6 +25,7 @@ export {
 /** Handler registry: the key is the Hasura trigger name (`/hasura/events/<name>`). */
 export const defaultEventHandlers: EventHandlers = {
   heartbeat,
+  device_health_check: deviceHealthCheck,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

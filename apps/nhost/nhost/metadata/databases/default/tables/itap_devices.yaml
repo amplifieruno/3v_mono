@@ -52,6 +52,24 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: device_id
+  - name: device_events
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_events
+        column_mapping:
+          organization_id: organization_id
+          id: device_id
+  - name: device_health_metrics
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: device_health_metrics
+        column_mapping:
+          organization_id: organization_id
+          id: device_id
   - name: identity_photos
     using:
       manual_configuration:

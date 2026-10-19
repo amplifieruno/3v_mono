@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: device_event_kinds
+is_enum: true
+configuration:
+  custom_name: device_event_kinds

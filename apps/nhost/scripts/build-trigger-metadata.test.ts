@@ -116,7 +116,20 @@ describe('buildCronTriggersYaml', () => {
     ]);
   });
 
+  it('should use a per-cron toleranceSeconds and keep the 6 h default otherwise', () => {
+    const [fast, slow] = parse(
+      buildCronTriggersYaml([
+        { name: 'fast', schedule: '* * * * *', toleranceSeconds: 120, includeInMetadata: true },
+        { name: 'slow', schedule: '0 * * * *', toleranceSeconds: 0, includeInMetadata: true },
+      ]),
+    ) as { retry_conf: { tolerance_seconds: number } }[];
+    expect(fast.retry_conf.tolerance_seconds).toBe(120);
+    expect(slow.retry_conf.tolerance_seconds).toBe(0);
+  });
+
   it.each([
+    [[{ ...heartbeat, toleranceSeconds: -1 }], /toleranceSeconds/],
+    [[{ ...heartbeat, toleranceSeconds: 1.5 }], /toleranceSeconds/],
     [[heartbeat, heartbeat], /Duplicate cron trigger name "heartbeat"/],
     [[{ ...heartbeat, name: 'Heart Beat' }], /invalid cron trigger name/],
     [[{ ...heartbeat, schedule: 'every minute' }], /invalid schedule/],

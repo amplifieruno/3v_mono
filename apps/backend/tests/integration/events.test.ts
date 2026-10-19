@@ -17,7 +17,7 @@ type CronTrigger = {
   schedule: string;
   include_in_metadata: boolean;
   headers: { name: string; value_from_env?: string }[];
-  retry_conf: { num_retries: number; retry_interval_seconds: number; timeout_seconds: number };
+  retry_conf: { num_retries: number; retry_interval_seconds: number; timeout_seconds: number; tolerance_seconds?: number };
 };
 
 async function exportedCronTriggers(): Promise<CronTrigger[]> {
@@ -55,6 +55,15 @@ describe('Hasura event/cron trigger wiring', () => {
       include_in_metadata: true,
       headers: [{ name: 'x-action-secret', value_from_env: 'ACTION_SECRET' }],
       retry_conf: { num_retries: 3, retry_interval_seconds: 10, timeout_seconds: 60 },
+    });
+  });
+
+  it('should have the device_health_check cron every minute with a 120 s tolerance', async () => {
+    const cron = (await exportedCronTriggers()).find((c) => c.name === 'device_health_check');
+    expect(cron).toMatchObject({
+      webhook: '{{BACKEND_URL}}/hasura/events/device_health_check',
+      schedule: '* * * * *',
+      retry_conf: { num_retries: 3, retry_interval_seconds: 10, timeout_seconds: 60, tolerance_seconds: 120 },
     });
   });
 });

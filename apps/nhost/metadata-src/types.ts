@@ -116,6 +116,8 @@ export interface CronSpec {
   payload?: Record<string, unknown>;
   comment?: string;
   retry?: RetrySpec;
+  /** How late (seconds) a missed run may still be delivered; integer >= 0, default 21600 (6 h). */
+  toleranceSeconds?: number;
   /** Always true: the cron lives in exported metadata (git), not only in the database. */
   includeInMetadata: true;
 }

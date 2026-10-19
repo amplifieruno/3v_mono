@@ -1,0 +1,39 @@
+table:
+  schema: itap
+  name: device_events
+configuration:
+  custom_name: device_events
+object_relationships:
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          device_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - device_id
+        - id
+        - kind
+        - message
+        - occurred_at
+        - organization_id
+        - payload
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

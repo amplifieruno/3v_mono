@@ -1,4 +1,4 @@
-import type { TableSpec } from './types.js';
+import type { FunctionSpec, TableSpec } from './types.js';
 
 export const deviceTables: TableSpec[] = [
   { name: 'access_point_kinds', isEnum: true, profile: 'none' },
@@ -7,6 +7,7 @@ export const deviceTables: TableSpec[] = [
   { name: 'device_statuses', isEnum: true, profile: 'none' },
   { name: 'device_health_statuses', isEnum: true, profile: 'none' },
   { name: 'access_point_device_roles', isEnum: true, profile: 'none' },
+  { name: 'device_event_kinds', isEnum: true, profile: 'none' },
   {
     // Lifecycle by status: deleting an access point drops its device bindings; an area it references blocks the area.
     name: 'access_points',
@@ -30,4 +31,17 @@ export const deviceTables: TableSpec[] = [
     insertOnlyColumns: ['facility_id', 'access_point_id', 'device_id'],
   },
   { name: 'facility_templates', profile: 'tenant_crud' },
+  // Append-only telemetry, written only by record_device_health (health check cron); not audited (high volume).
+  { name: 'device_health_metrics', profile: 'tenant_read' },
+  { name: 'device_events', profile: 'tenant_read' },
+];
+
+export const deviceFunctions: FunctionSpec[] = [
+  // Internal: applies one probe result of the device_health_check cron. Admin secret only (no roles).
+  {
+    name: 'record_device_health',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: called by the health check cron across all organizations',
+  },
 ];

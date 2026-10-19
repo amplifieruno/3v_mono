@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_device_health
+configuration:
+  custom_name: record_device_health
+  exposed_as: mutation
