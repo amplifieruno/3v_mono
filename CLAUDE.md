@@ -113,10 +113,11 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 ### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
 - **Data access**: Hasura GraphQL client with the admin secret (`src/hasura/`)
-- **Role**: Hasura Actions handlers (`src/actions/`), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
+- **Role**: Hasura Actions handlers (`src/actions/`: tenancy, files, `upload_profile_document`, `enroll_face`, `create_identity_from_photos`, `add_identity_photos`), org-token signing (`src/auth/`), storage client (`src/storage/`), seed (`src/seed/`)
+- **Legacy removed**: TypeORM, REST routes, recognition manager, face-api.js/TensorFlow, Redis are gone; all data goes through Hasura
 - **Runs in Docker** (dev compose service `backend`, port 3001) so Hasura can reach it; no Redis
 - **Real-time**: Socket.io
-- **Face Recognition**: InsightFace REST client (`src/face/`)
+- **Face Recognition**: InsightFace REST client, quality checks, crops and the enrollment service shared by actions and seed (`src/face/`); matching runs in SQL (`match_face`, pgvector)
 
 ### Data Layer (`apps/nhost/`)
 - **GraphQL Engine**: Hasura (via Nhost)
@@ -237,7 +238,7 @@ pnpm --filter nhost metadata:generate  # Regenerate itap.* Hasura metadata (neve
 pnpm --filter nhost test            # Metadata generator unit tests
 pnpm --filter backend exec vitest run src   # Backend unit tests
 pnpm --filter backend test:integration      # Integration tests against the running dev stack
-pnpm seed                           # Seed demo organizations/users (add --reset to wipe seed data)
+pnpm seed                           # Seed demo orgs/users, companies, profiles, enrolled faces (needs insightface; --reset wipes seed data)
 cd apps/admin-ui && pnpm gql        # Generate GraphQL types
 cd apps/admin-ui && pnpm gql-w      # Watch mode for GraphQL codegen
 ```
@@ -384,6 +385,6 @@ Using proven open-source solutions for DEMO:
 
 1. **Human Library** (`@vladmandic/human`): Primary client-side face detection/recognition
 2. **InsightFace REST**: Docker-based face recognition service for server-side processing
-3. **face-api.js**: Legacy backend fallback, scheduled for removal in slice 2
+3. ~~face-api.js~~: removed in slice 2 (backend uses InsightFace REST only)
 
 Focus on real functionality with lightweight solutions, not fake demos.
