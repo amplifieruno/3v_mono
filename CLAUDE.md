@@ -257,6 +257,8 @@ make prod-down                      # Stop production
 make prod-rebuild                   # Rebuild production
 ```
 
+**Security:** dev services bind to `127.0.0.1` only (Docker-published ports bypass ufw). Use an SSH tunnel (`ssh -L 8080:127.0.0.1:8080 host`) for remote access. Never publish Hasura on a public interface with the default admin secret.
+
 ### Agent Teams
 
 ```bash

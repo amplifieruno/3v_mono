@@ -73,6 +73,7 @@ services:
       - ${STORAGE_URL}:host-gateway
     ports:
       - mode: ingress
+        host_ip: 127.0.0.1
         target: 4000
         published: '4100'
         protocol: tcp
@@ -289,6 +290,7 @@ services:
       - ${STORAGE_URL}:host-gateway
     ports:
       - mode: ingress
+        host_ip: 127.0.0.1
         target: 8080
         published: '8080'
         protocol: tcp
@@ -432,7 +434,7 @@ services:
       - ../libs/InsightFace-REST/if_rest:/app/if_rest
       - ../libs/InsightFace-REST/entrypoint.sh:/app/entrypoint.sh
     ports:
-      - '${INSIGHTFACE_PORT}:18080'
+      - '127.0.0.1:${INSIGHTFACE_PORT}:18080'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:18080/info']
       interval: 45s
@@ -448,7 +450,7 @@ services:
       dockerfile: Dockerfile
     container_name: 3v_stream_server
     ports:
-      - "8888:8888"
+      - "127.0.0.1:8888:8888"
     restart: unless-stopped
 
   traefik:
@@ -472,6 +474,7 @@ services:
       - ${STORAGE_URL}:host-gateway
     ports:
       - mode: ingress
+        host_ip: 127.0.0.1
         target: 80
         published: '80'
         protocol: tcp
