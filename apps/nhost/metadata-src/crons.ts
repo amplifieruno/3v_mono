@@ -39,4 +39,13 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Loitering / unusual dwell events from occupancy durations',
   },
+  {
+    // Daily housekeeping per organization at scheduled_time (itap.run_lifecycle_jobs): no-show visits, expired
+    // visitor/contractor profiles, expired invitations. Runs 03:00 UTC; a run up to an hour late is still delivered.
+    name: 'lifecycle_jobs',
+    schedule: '0 3 * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    comment: 'Daily: no-show visits, expire visitor/contractor profiles past end_date, expire invitations',
+  },
 ];

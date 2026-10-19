@@ -48,3 +48,13 @@ export const trackingFunctions: FunctionSpec[] = [
     unscopedReturnReason: 'admin-only: called per organization by the close_stale_sessions cron handler',
   },
 ];
+
+/** Visit lifecycle cron (design §8.3 lifecycle_jobs): admin secret only, called per organization by the cron handler. */
+export const lifecycleFunctions: FunctionSpec[] = [
+  {
+    name: 'run_lifecycle_jobs',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: called per organization by the lifecycle_jobs cron handler',
+  },
+];

@@ -7,7 +7,8 @@ import { identityFunctions, identityTables } from './identities.js';
 import { incidentFunctions, incidentTables } from './incidents.js';
 import { profileFunctions, profileTables } from './profiles.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
-import { trackingFunctions, trackingTables } from './tracking.js';
+import { lifecycleFunctions, trackingFunctions, trackingTables } from './tracking.js';
+import { visitFunctions, visitTables } from './visits.js';
 import type { FunctionSpec, TableSpec } from './types.js';
 
 /**
@@ -25,6 +26,7 @@ export const tables: TableSpec[] = [
   ...trackingTables,
   ...eventTables,
   ...incidentTables,
+  ...visitTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -37,4 +39,6 @@ export const functions: FunctionSpec[] = [
   ...trackingFunctions,
   ...eventFunctions,
   ...incidentFunctions,
+  ...visitFunctions,
+  ...lifecycleFunctions,
 ];

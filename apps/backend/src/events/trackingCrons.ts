@@ -12,6 +12,11 @@ const EVALUATE_DWELL = `
     evaluate_dwell_rules(args: { p_organization: $organization, p_at: $at }) { id }
   }
 `;
+const LIFECYCLE_JOBS = `
+  mutation RunLifecycleJobs($organization: uuid!, $at: timestamptz!) {
+    run_lifecycle_jobs(args: { p_organization: $organization, p_at: $at }) { id }
+  }
+`;
 
 /**
  * A cron that calls one SQL function per organization with the run's scheduled_time (design §8.0, §8.3), so a retry
@@ -43,3 +48,6 @@ export const closeStaleSessions = perOrganizationCron('close_stale_sessions', CL
 
 /** Cron `evaluate_dwell_rules` (every minute): loitering / unusual_dwell events via itap.evaluate_dwell_rules. */
 export const evaluateDwellRules = perOrganizationCron('evaluate_dwell_rules', EVALUATE_DWELL);
+
+/** Cron `lifecycle_jobs` (daily): no-show visits, expired profiles and invitations via itap.run_lifecycle_jobs. */
+export const lifecycleJobs = perOrganizationCron('run_lifecycle_jobs', LIFECYCLE_JOBS);

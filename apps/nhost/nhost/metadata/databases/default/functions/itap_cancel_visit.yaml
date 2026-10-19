@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: cancel_visit
+configuration:
+  custom_name: cancel_visit
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

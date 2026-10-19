@@ -54,3 +54,17 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Cron pipeline health check; the backend handler writes nothing
+- name: lifecycle_jobs
+  webhook: "{{BACKEND_URL}}/hasura/events/lifecycle_jobs"
+  schedule: 0 3 * * *
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 3600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: "Daily: no-show visits, expire visitor/contractor profiles past end_date, expire invitations"

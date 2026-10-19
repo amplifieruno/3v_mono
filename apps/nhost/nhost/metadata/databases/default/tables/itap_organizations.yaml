@@ -389,6 +389,14 @@ array_relationships:
           name: verification_requests
         column_mapping:
           id: organization_id
+  - name: visits
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          id: organization_id
   - name: watch_list_entries
     using:
       manual_configuration:

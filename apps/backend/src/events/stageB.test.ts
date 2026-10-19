@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Env } from '../config/env.js';
 import type { HasuraClient } from '../hasura/client.js';
 import { detectionCreated } from './detectionCreated.js';
-import { closeStaleSessions, evaluateDwellRules } from './trackingCrons.js';
+import { closeStaleSessions, evaluateDwellRules, lifecycleJobs } from './trackingCrons.js';
 import type { CronTriggerPayload, EventTriggerPayload } from './types.js';
 
 const env = {} as Env;
@@ -29,6 +29,7 @@ function fakeAdmin(orgs: string[], failFor: string[] = []) {
     if (typeof org === 'string' && failFor.includes(org)) throw new Error('hasura down');
     if (query.includes('evaluate_detection')) return { evaluate_detection: [{ id: 'e1' }, { id: 'e2' }] };
     if (query.includes('close_stale_sessions')) return { close_stale_sessions: [{ id: 's1' }] };
+    if (query.includes('run_lifecycle_jobs')) return { run_lifecycle_jobs: [] };
     return { evaluate_dwell_rules: [] };
   });
   return { admin: { request } as unknown as HasuraClient, calls };
@@ -81,5 +82,19 @@ describe('tracking crons', () => {
     await expect(
       evaluateDwellRules.handle(cronPayload('evaluate_dwell_rules', 'not-a-date'), { env, admin, idempotencyKey: 'k' }),
     ).rejects.toThrow(/Invalid scheduled_time/);
+  });
+});
+
+describe('lifecycle_jobs cron', () => {
+  it('should run the lifecycle jobs per organization at the scheduled time', async () => {
+    const { admin, calls } = fakeAdmin(['org-1']);
+    const result = await lifecycleJobs.handle(cronPayload('lifecycle_jobs', '2026-01-02T03:00:00+00:00'), {
+      env,
+      admin,
+      idempotencyKey: 'k',
+    });
+    const call = calls.find((c) => c.query.includes('run_lifecycle_jobs'));
+    expect(call?.variables).toEqual({ organization: 'org-1', at: '2026-01-02T03:00:00.000Z' });
+    expect(result).toEqual({ organizations: 1, rows: 0 });
   });
 });

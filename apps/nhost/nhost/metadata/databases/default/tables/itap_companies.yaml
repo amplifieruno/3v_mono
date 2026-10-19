@@ -22,6 +22,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: company_id
+  - name: visits
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          organization_id: organization_id
+          id: company_id
 insert_permissions:
   - role: org_admin
     permission:

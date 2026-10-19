@@ -105,6 +105,8 @@
 - "!include itap_verification_requests.yaml"
 - "!include itap_verification_statuses.yaml"
 - "!include itap_version_statuses.yaml"
+- "!include itap_visit_statuses.yaml"
+- "!include itap_visits.yaml"
 - "!include itap_watch_list_entries.yaml"
 - "!include itap_watch_list_kinds.yaml"
 - "!include itap_watch_lists.yaml"

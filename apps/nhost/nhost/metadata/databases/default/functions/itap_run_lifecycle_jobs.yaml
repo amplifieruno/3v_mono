@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: run_lifecycle_jobs
+configuration:
+  custom_name: run_lifecycle_jobs
+  exposed_as: mutation

@@ -69,6 +69,15 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           profile_id: id
+  - name: visit
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          organization_id: organization_id
+          visit_id: id
 array_relationships:
   - name: area_occupancy
     using:

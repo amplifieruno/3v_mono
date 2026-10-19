@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: visit_statuses
+is_enum: true
+configuration:
+  custom_name: visit_statuses

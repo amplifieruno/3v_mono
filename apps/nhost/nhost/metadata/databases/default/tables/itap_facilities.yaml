@@ -112,6 +112,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: visits
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
 computed_fields:
   - name: areas_count
     definition:

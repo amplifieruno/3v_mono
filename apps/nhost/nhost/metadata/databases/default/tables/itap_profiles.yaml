@@ -120,6 +120,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: visits_by_host_profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          organization_id: organization_id
+          id: host_profile_id
+  - name: visits_by_visitor_profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: visits
+        column_mapping:
+          organization_id: organization_id
+          id: visitor_profile_id
   - name: watch_list_entries
     using:
       manual_configuration:
