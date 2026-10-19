@@ -114,7 +114,7 @@ export type CommitDeps = {
 export async function commitPhotos(
   deps: CommitDeps,
   target: CommitTarget,
-  kind: 'enrollment' | 'manual',
+  kind: 'enrollment' | 'manual' | 'capture',
   photos: AcceptedPhoto[],
 ): Promise<void> {
   if (photos.length === 0 && !target.newIdentity) return;

@@ -1,0 +1,161 @@
+{
+  "generatedBy": "apps/backend/src/seed/tools/extract-faces.ts",
+  "note": "Role \"blacklisted\" is applied by the watch-list seed (slice 4); until then the person is a normal profile.",
+  "people": [
+    {
+      "folder": "person-01",
+      "role": "vip",
+      "source": "docker/stream-server/videos/warehouse.mp4",
+      "licence": "Pexels License (https://www.pexels.com/license/): free to use, no attribution required",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "warehouse.mp4 @ 18.67s",
+          "detectorScore": 0.92
+        },
+        {
+          "file": "2.jpg",
+          "origin": "warehouse.mp4 @ 3.00s",
+          "detectorScore": 0.86
+        }
+      ]
+    },
+    {
+      "folder": "person-02",
+      "role": "blacklisted",
+      "source": "docker/stream-server/videos/warehouse.mp4",
+      "licence": "Pexels License (https://www.pexels.com/license/): free to use, no attribution required",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "warehouse.mp4 @ 2.00s",
+          "detectorScore": 0.84
+        },
+        {
+          "file": "2.jpg",
+          "origin": "warehouse.mp4 @ 19.00s",
+          "detectorScore": 0.8
+        }
+      ]
+    },
+    {
+      "folder": "person-03",
+      "role": "employee",
+      "source": "docker/stream-server/videos/serverroom.mp4",
+      "licence": "Pexels License (https://www.pexels.com/license/): free to use, no attribution required",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "serverroom.mp4 @ 15.00s",
+          "detectorScore": 0.86
+        },
+        {
+          "file": "2.jpg",
+          "origin": "serverroom.mp4 @ 27.67s",
+          "detectorScore": 0.84
+        },
+        {
+          "file": "3.jpg",
+          "origin": "serverroom.mp4 @ 16.33s",
+          "detectorScore": 0.84
+        },
+        {
+          "file": "4.jpg",
+          "origin": "serverroom.mp4 @ 15.67s",
+          "detectorScore": 0.83
+        }
+      ]
+    },
+    {
+      "folder": "person-04",
+      "role": "employee",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 41,678,106,749",
+          "detectorScore": 0.81
+        }
+      ]
+    },
+    {
+      "folder": "person-05",
+      "role": "employee",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 282,697,336,765",
+          "detectorScore": 0.8
+        }
+      ]
+    },
+    {
+      "folder": "person-06",
+      "role": "employee",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 351,737,408,806",
+          "detectorScore": 0.77
+        }
+      ]
+    },
+    {
+      "folder": "person-07",
+      "role": "employee",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 432,712,493,787",
+          "detectorScore": 0.76
+        }
+      ]
+    },
+    {
+      "folder": "person-08",
+      "role": "employee",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 674,628,756,711",
+          "detectorScore": 0.74
+        }
+      ]
+    },
+    {
+      "folder": "person-09",
+      "role": "unknown",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 1355,612,1403,669",
+          "detectorScore": 0.77
+        }
+      ]
+    },
+    {
+      "folder": "person-10",
+      "role": "unknown",
+      "source": "libs/InsightFace-REST/misc/test_images/lumia.jpg",
+      "licence": "Apache-2.0 (InsightFace-REST, libs/InsightFace-REST/LICENSE)",
+      "files": [
+        {
+          "file": "1.jpg",
+          "origin": "bbox 1494,614,1543,671",
+          "detectorScore": 0.77
+        }
+      ]
+    }
+  ]
+}
