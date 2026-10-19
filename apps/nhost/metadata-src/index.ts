@@ -8,6 +8,7 @@ import { incidentFunctions, incidentTables } from './incidents.js';
 import { maintenanceFunctions, maintenanceTables } from './maintenance.js';
 import { notificationFunctions, notificationTables } from './notifications.js';
 import { profileFunctions, profileTables } from './profiles.js';
+import { segmentFunctions, segmentTables } from './segments.js';
 import { tenancyFunctions, tenancyTables } from './tenancy.js';
 import { lifecycleFunctions, trackingFunctions, trackingTables } from './tracking.js';
 import { visitFunctions, visitTables } from './visits.js';
@@ -33,6 +34,7 @@ export const tables: TableSpec[] = [
   ...maintenanceTables,
   ...notificationTables,
   ...webhookTables,
+  ...segmentTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -50,4 +52,5 @@ export const functions: FunctionSpec[] = [
   ...maintenanceFunctions,
   ...notificationFunctions,
   ...sendingFunctions,
+  ...segmentFunctions,
 ];

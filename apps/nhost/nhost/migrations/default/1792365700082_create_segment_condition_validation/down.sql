@@ -1,0 +1,12 @@
+DROP TRIGGER segments_guard_referenced ON itap.segments;
+DROP FUNCTION itap.segments_guard_referenced();
+DROP FUNCTION itap.segment_condition_segment_ids(jsonb);
+DROP TRIGGER segment_templates_validate_conditions ON itap.segment_templates;
+DROP FUNCTION itap.segment_templates_validate_conditions();
+DROP TRIGGER segments_validate_conditions ON itap.segments;
+DROP FUNCTION itap.segments_validate_conditions();
+DROP FUNCTION itap.validate_segment_conditions(uuid, text, jsonb, uuid);
+DROP FUNCTION itap.validate_segment_node(uuid, text, uuid, jsonb, jsonb, text, integer);
+DROP FUNCTION itap.segment_reference_valid(uuid, text, uuid, text, jsonb);
+DROP FUNCTION itap.segment_value_key(text, jsonb);
+DROP FUNCTION itap.segment_value_valid(text, jsonb, text[]);

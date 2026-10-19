@@ -1,0 +1,51 @@
+table:
+  schema: itap
+  name: identity_activity_stats
+configuration:
+  custom_name: identity_activity_stats
+object_relationships:
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: top_area
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: areas
+        column_mapping:
+          organization_id: organization_id
+          top_area_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - after_hours_visits_30d
+        - as_of
+        - avg_dwell_minutes
+        - created_at
+        - id
+        - identity_id
+        - last_seen_at
+        - organization_id
+        - top_area_id
+        - updated_at
+        - visits_last_30d
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

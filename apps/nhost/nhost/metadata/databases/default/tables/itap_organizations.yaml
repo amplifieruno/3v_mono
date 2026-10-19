@@ -197,6 +197,14 @@ array_relationships:
           name: identities
         column_mapping:
           id: organization_id
+  - name: identity_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_activity_stats
+        column_mapping:
+          id: organization_id
   - name: identity_duplicate_candidates
     using:
       manual_configuration:
@@ -405,6 +413,14 @@ array_relationships:
           name: organization_invitations
         column_mapping:
           id: organization_id
+  - name: profile_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_activity_stats
+        column_mapping:
+          id: organization_id
   - name: profile_documents
     using:
       manual_configuration:
@@ -443,6 +459,38 @@ array_relationships:
         remote_table:
           schema: itap
           name: recipient_groups
+        column_mapping:
+          id: organization_id
+  - name: segment_daily_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_daily_stats
+        column_mapping:
+          id: organization_id
+  - name: segment_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
+        column_mapping:
+          id: organization_id
+  - name: segment_templates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_templates
+        column_mapping:
+          id: organization_id
+  - name: segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segments
         column_mapping:
           id: organization_id
   - name: shift_handover_incidents

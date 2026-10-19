@@ -1,0 +1,22 @@
+table:
+  schema: itap_results
+  name: segment_field_rows
+configuration:
+  custom_name: segment_field_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - enum_values
+        - field
+        - label
+        - operators
+        - organization_id
+        - target
+        - value_type
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: segment_kinds
+is_enum: true
+configuration:
+  custom_name: segment_kinds

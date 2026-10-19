@@ -30,6 +30,15 @@ object_relationships:
           name: organizations
         column_mapping:
           organization_id: id
+  - name: segment
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segments
+        column_mapping:
+          organization_id: organization_id
+          segment_id: id
   - name: version
     using:
       manual_configuration:

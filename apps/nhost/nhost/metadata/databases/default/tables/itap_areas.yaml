@@ -131,6 +131,15 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: area_id
+  - name: identity_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_activity_stats
+        column_mapping:
+          organization_id: organization_id
+          id: top_area_id
   - name: identity_locations
     using:
       manual_configuration:
@@ -161,6 +170,15 @@ array_relationships:
           organization_id: organization_id
           facility_id: facility_id
           id: last_area_id
+  - name: profile_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_activity_stats
+        column_mapping:
+          organization_id: organization_id
+          id: top_area_id
 computed_fields:
   - name: current_occupancy
     definition:

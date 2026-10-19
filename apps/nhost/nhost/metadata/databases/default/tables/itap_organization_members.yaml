@@ -201,6 +201,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: user_id
+  - name: segment_members_by_added_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: added_by
+  - name: segment_members_by_removed_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: removed_by
   - name: shift_handovers_by_from_user
     using:
       manual_configuration:

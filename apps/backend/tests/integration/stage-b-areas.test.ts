@@ -67,8 +67,9 @@ describe('Stage B: event rules in scope', () => {
     await updateByPk(w.a, 'areas', w.zone.id, { access_level: 'classified' });
     const elsewhere = await createFacility(w.a);
     await publishedRule(w.a, 'restricted_area', { severity: 'low' }, [{ facility_id: elsewhere.id }]);
-    // Segment scopes cannot be evaluated before slice 6: such a version never matches.
-    await publishedRule(w.a, 'restricted_area', { severity: 'low' }, [{ segment_id: '00000000-0000-4000-8000-000000000001' }]);
+    // A version scoped to a segment the identity is not a member of never matches.
+    const segment = await insertOne(w.a, 'segments', { name: 'Nobody', kind: 'manual', target: 'identities' });
+    await publishedRule(w.a, 'restricted_area', { severity: 'low' }, [{ segment_id: segment.id }]);
     const disabled = await publishedRule(w.a, 'restricted_area', { severity: 'critical' });
     await updateByPk(w.a, 'event_rules', disabled.rule, { is_enabled: false });
     // Area scope on an ancestor of the entered area matches; it sets severity and opens an incident.

@@ -29,6 +29,15 @@ object_relationships:
           name: organizations
         column_mapping:
           organization_id: id
+  - name: profile_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profile_activity_stats
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: work_schedule
     using:
       manual_configuration:
@@ -120,6 +129,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_b_id
+  - name: segment_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: tracking_sessions
     using:
       manual_configuration:

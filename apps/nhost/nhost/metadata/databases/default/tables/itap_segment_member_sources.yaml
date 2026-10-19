@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: segment_member_sources
+is_enum: true
+configuration:
+  custom_name: segment_member_sources

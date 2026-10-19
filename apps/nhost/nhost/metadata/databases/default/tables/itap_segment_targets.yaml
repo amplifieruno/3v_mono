@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: segment_targets
+is_enum: true
+configuration:
+  custom_name: segment_targets

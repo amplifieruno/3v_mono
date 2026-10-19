@@ -1,0 +1,124 @@
+table:
+  schema: itap
+  name: segments
+configuration:
+  custom_name: segments
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: template
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_templates
+        column_mapping:
+          organization_id: organization_id
+          template_id: id
+array_relationships:
+  - name: event_rule_version_scopes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_version_scopes
+        column_mapping:
+          organization_id: organization_id
+          id: segment_id
+  - name: segment_daily_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_daily_stats
+        column_mapping:
+          organization_id: organization_id
+          id: segment_id
+  - name: segment_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
+        column_mapping:
+          organization_id: organization_id
+          id: segment_id
+          target: target
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - active_from
+        - active_until
+        - color
+        - conditions
+        - description
+        - icon
+        - kind
+        - name
+        - schedule
+        - status
+        - target
+        - template_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - active_from
+        - active_until
+        - code
+        - color
+        - conditions
+        - created_at
+        - description
+        - icon
+        - id
+        - kind
+        - last_evaluated_at
+        - member_count
+        - name
+        - number
+        - organization_id
+        - schedule
+        - status
+        - target
+        - template_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - active_from
+        - active_until
+        - color
+        - conditions
+        - description
+        - icon
+        - name
+        - schedule
+        - status
+        - template_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

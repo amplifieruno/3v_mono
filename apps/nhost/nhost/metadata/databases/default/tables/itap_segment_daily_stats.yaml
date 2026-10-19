@@ -1,0 +1,40 @@
+table:
+  schema: itap
+  name: segment_daily_stats
+configuration:
+  custom_name: segment_daily_stats
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: segment
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segments
+        column_mapping:
+          organization_id: organization_id
+          segment_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - added
+        - created_at
+        - day
+        - id
+        - member_count
+        - organization_id
+        - removed
+        - segment_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

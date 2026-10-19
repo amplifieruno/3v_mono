@@ -4,6 +4,15 @@ table:
 configuration:
   custom_name: identities
 object_relationships:
+  - name: identity_activity_stats
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_activity_stats
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: linked_by_member
     using:
       manual_configuration:
@@ -171,6 +180,15 @@ array_relationships:
         remote_table:
           schema: itap
           name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
+  - name: segment_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: segment_members
         column_mapping:
           organization_id: organization_id
           id: identity_id

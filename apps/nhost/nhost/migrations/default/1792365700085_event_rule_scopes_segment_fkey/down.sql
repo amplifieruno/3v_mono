@@ -1,0 +1,1 @@
+ALTER TABLE itap.event_rule_version_scopes DROP CONSTRAINT event_rule_version_scopes_segment_fkey;

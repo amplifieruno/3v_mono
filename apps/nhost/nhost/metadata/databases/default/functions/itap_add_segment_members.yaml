@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: add_segment_members
+configuration:
+  custom_name: add_segment_members
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin
