@@ -12,6 +12,16 @@ object_relationships:
           name: organizations
         column_mapping:
           organization_id: id
+array_relationships:
+  - name: profiles
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          id: company_id
 insert_permissions:
   - role: org_admin
     permission:

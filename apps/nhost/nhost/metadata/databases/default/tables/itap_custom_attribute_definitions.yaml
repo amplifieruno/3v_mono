@@ -1,0 +1,78 @@
+table:
+  schema: itap
+  name: custom_attribute_definitions
+configuration:
+  custom_name: custom_attribute_definitions
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - data_type
+        - entity
+        - is_active
+        - key
+        - label
+        - options
+        - required
+        - sort_order
+        - validation
+        - visible_when
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - data_type
+        - entity
+        - id
+        - is_active
+        - key
+        - label
+        - options
+        - organization_id
+        - required
+        - sort_order
+        - updated_at
+        - validation
+        - visible_when
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - data_type
+        - entity
+        - is_active
+        - key
+        - label
+        - options
+        - required
+        - sort_order
+        - validation
+        - visible_when
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

@@ -29,6 +29,14 @@ array_relationships:
           name: companies
         column_mapping:
           id: organization_id
+  - name: custom_attribute_definitions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: custom_attribute_definitions
+        column_mapping:
+          id: organization_id
   - name: members
     using:
       manual_configuration:
@@ -51,6 +59,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: organization_invitations
+        column_mapping:
+          id: organization_id
+  - name: profiles
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
         column_mapping:
           id: organization_id
   - name: user_settings

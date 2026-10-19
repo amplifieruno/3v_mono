@@ -10,6 +10,7 @@ export type BoolExp = { [key: string]: unknown };
 
 export interface SelectPermission {
   columns: string[];
+  computed_fields?: string[];
   filter: BoolExp;
   allow_aggregations?: boolean;
   limit?: number;
@@ -44,6 +45,14 @@ export interface HasuraPermissions {
   delete_permissions?: RolePermission<DeletePermission>[];
 }
 
+/** Hasura computed field backed by a STABLE SQL function taking the table's row type as its first argument. */
+export interface ComputedFieldSpec {
+  name: string;
+  function: string;
+  /** Schema of the function; defaults to `itap`. */
+  schema?: string;
+}
+
 export interface TableSpec {
   name: string;
   schema?: ManagedSchema;
@@ -56,6 +65,8 @@ export interface TableSpec {
   insertOnlyColumns?: string[];
   /** Writable, never selectable (e.g. hashes). */
   secretColumns?: string[];
+  /** Exposed to every role that can select the table (listed in its select permissions). */
+  computedFields?: ComputedFieldSpec[];
   noDelete?: boolean;
   /** No insert permission for the tenant role (rows are created by a backend action). */
   noInsert?: boolean;
@@ -105,4 +116,5 @@ export interface TableMetadata extends HasuraPermissions {
   configuration: { custom_name: string };
   object_relationships?: ManualRelationship[];
   array_relationships?: ManualRelationship[];
+  computed_fields?: { name: string; definition: { function: QualifiedTable } }[];
 }

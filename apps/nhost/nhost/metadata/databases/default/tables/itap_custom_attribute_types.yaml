@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: custom_attribute_types
+is_enum: true
+configuration:
+  custom_name: custom_attribute_types

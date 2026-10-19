@@ -131,7 +131,18 @@ function assertKnownColumns(spec: TableSpec, columns: string[]): void {
   }
 }
 
+function assertComputedFields(spec: TableSpec, columns: string[]): void {
+  const seen = new Set<string>();
+  for (const field of spec.computedFields ?? []) {
+    if (columns.includes(field.name) || seen.has(field.name)) {
+      throw new Error(`Table ${spec.name}: computed field "${field.name}" collides with a column or another computed field`);
+    }
+    seen.add(field.name);
+  }
+}
+
 function tenantPermissions(spec: TableSpec, columns: string[], generatedColumns: Set<string>): HasuraPermissions {
+  const computed = (spec.computedFields ?? []).map((f) => f.name).sort();
   if (spec.profile === 'none') return {};
   if (!columns.includes(ORG_COLUMN)) {
     throw new Error(`Table ${spec.name}: profile ${spec.profile} requires an ${ORG_COLUMN} column`);
@@ -141,7 +152,17 @@ function tenantPermissions(spec: TableSpec, columns: string[], generatedColumns:
   const readOnly = new Set(spec.readOnlyColumns ?? []);
   const selectable = columns.filter((c) => !secret.has(c));
   const select: HasuraPermissions = {
-    select_permissions: [{ role: TENANT_ROLE, permission: { columns: selectable, filter, allow_aggregations: true } }],
+    select_permissions: [
+      {
+        role: TENANT_ROLE,
+        permission: {
+          columns: selectable,
+          ...(computed.length > 0 ? { computed_fields: computed } : {}),
+          filter,
+          allow_aggregations: true,
+        },
+      },
+    ],
   };
   if (spec.profile === 'tenant_read') return select;
 
@@ -193,6 +214,7 @@ export function buildTableMetadata(
   const sortedColumns = [...columns].sort();
   assertKnownColumns(spec, sortedColumns);
   assertKnownOverrides(spec, outgoing, incoming);
+  assertComputedFields(spec, sortedColumns);
 
   const reverseRels = reverseRelationships(spec, incoming);
   const objectRels = [...objectRelationships(spec, outgoing), ...reverseRels.filter((r) => r.oneToOne)];
@@ -211,6 +233,11 @@ export function buildTableMetadata(
   const optional: Partial<TableMetadata> = {
     object_relationships: nonEmpty(sorted(objectRels)),
     array_relationships: nonEmpty(sorted(arrayRels)),
+    computed_fields: nonEmpty(
+      [...(spec.computedFields ?? [])]
+        .sort(byName)
+        .map((f) => ({ name: f.name, definition: { function: { schema: f.schema ?? 'itap', name: f.function } } })),
+    ),
     insert_permissions: nonEmpty(mergeRoles(generated.insert_permissions, extra.insert_permissions)),
     select_permissions: nonEmpty(mergeRoles(generated.select_permissions, withAggregations(extra.select_permissions))),
     update_permissions: nonEmpty(mergeRoles(generated.update_permissions, extra.update_permissions)),

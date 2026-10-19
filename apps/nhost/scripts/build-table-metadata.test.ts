@@ -168,3 +168,46 @@ describe('buildTableMetadata: permission profiles', () => {
     ).toThrow(/unknown column "nope"/);
   });
 });
+
+describe('buildTableMetadata: computed fields', () => {
+  const columns = ['id', 'organization_id', 'name', 'created_at', 'updated_at'];
+  const spec: TableSpec = {
+    name: 'things',
+    profile: 'tenant_crud',
+    computedFields: [{ name: 'has_thing', function: 'thing_has_thing' }],
+  };
+
+  it('should emit the computed field and list it in the org_admin select permission only', () => {
+    const md = buildTableMetadata(spec, columns, [], []);
+    expect(md.computed_fields).toEqual([
+      { name: 'has_thing', definition: { function: { schema: 'itap', name: 'thing_has_thing' } } },
+    ]);
+    expect(md.select_permissions?.[0].permission.computed_fields).toEqual(['has_thing']);
+    expect(md.insert_permissions?.[0].permission.columns).not.toContain('has_thing');
+    expect(md.update_permissions?.[0].permission.columns).not.toContain('has_thing');
+  });
+
+  it('should honour an explicit function schema and omit computed_fields when none are declared', () => {
+    const custom = buildTableMetadata(
+      { ...spec, computedFields: [{ name: 'x', function: 'f', schema: 'other' }] },
+      columns,
+      [],
+      [],
+    );
+    expect(custom.computed_fields?.[0].definition.function).toEqual({ schema: 'other', name: 'f' });
+    const none = buildTableMetadata({ name: 'things', profile: 'tenant_crud' }, columns, [], []);
+    expect(none.computed_fields).toBeUndefined();
+    expect(none.select_permissions?.[0].permission.computed_fields).toBeUndefined();
+  });
+
+  it('should not expose computed fields on tables without a select permission', () => {
+    const md = buildTableMetadata({ ...spec, profile: 'none' }, columns, [], []);
+    expect(md.select_permissions).toBeUndefined();
+  });
+
+  it('should throw when a computed field collides with a column', () => {
+    expect(() =>
+      buildTableMetadata({ ...spec, computedFields: [{ name: 'name', function: 'f' }] }, columns, [], []),
+    ).toThrow(/computed field "name" collides/);
+  });
+});

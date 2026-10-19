@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: profile_statuses
+is_enum: true
+configuration:
+  custom_name: profile_statuses

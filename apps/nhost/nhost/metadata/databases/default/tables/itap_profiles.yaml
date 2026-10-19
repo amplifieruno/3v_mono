@@ -1,0 +1,142 @@
+table:
+  schema: itap
+  name: profiles
+configuration:
+  custom_name: profiles
+object_relationships:
+  - name: avatar_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          avatar_file_id: id
+  - name: company
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: companies
+        column_mapping:
+          organization_id: organization_id
+          company_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: work_schedule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: work_schedules
+        column_mapping:
+          organization_id: organization_id
+          work_schedule_id: id
+computed_fields:
+  - name: has_face
+    definition:
+      function:
+        schema: itap
+        name: profile_has_face
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - avatar_file_id
+        - company_id
+        - custom_fields
+        - department
+        - email
+        - employee_id
+        - end_date
+        - external_id
+        - first_name
+        - job_title
+        - last_name
+        - notes
+        - phone
+        - profile_type
+        - source_integration_id
+        - start_date
+        - status
+        - work_schedule_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - avatar_file_id
+        - code
+        - company_id
+        - created_at
+        - custom_fields
+        - department
+        - email
+        - employee_id
+        - end_date
+        - external_id
+        - first_name
+        - id
+        - identities_count
+        - job_title
+        - last_name
+        - notes
+        - number
+        - organization_id
+        - phone
+        - profile_type
+        - source_integration_id
+        - start_date
+        - status
+        - updated_at
+        - work_schedule_id
+      computed_fields:
+        - has_face
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_level
+        - avatar_file_id
+        - company_id
+        - custom_fields
+        - department
+        - email
+        - employee_id
+        - end_date
+        - external_id
+        - first_name
+        - job_title
+        - last_name
+        - notes
+        - phone
+        - profile_type
+        - source_integration_id
+        - start_date
+        - status
+        - work_schedule_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
