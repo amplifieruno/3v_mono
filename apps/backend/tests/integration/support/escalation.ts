@@ -14,13 +14,20 @@ export const minutes = (m: number, from = T0): string => new Date(Date.parse(fro
 
 export type Step = { after_minutes: number; channel: string; recipient_group_id?: string; on_call_schedule_id?: string };
 
-export async function escalationPolicy(a: HasuraClient, steps: Step[], repeat = false): Promise<{ id: string; steps: string[] }> {
+/** A repeating policy needs a bound (escalation_policies_repeat_bounded): `maxCycles` defaults to 10 with `repeat`. */
+export async function escalationPolicy(
+  a: HasuraClient,
+  steps: Step[],
+  repeat = false,
+  maxCycles: number | null = repeat ? 10 : null,
+): Promise<{ id: string; steps: string[] }> {
   const policy = await insertOne<{ id: string; escalation_policy_steps: { id: string; step_no: number }[] }>(
     a,
     'escalation_policies',
     {
       name: `Policy ${Math.random().toString(36).slice(2, 10)}`,
       repeat,
+      max_cycles: maxCycles,
       // step_no 10, 20, ... (gaps allowed: order is what counts)
       escalation_policy_steps: { data: steps.map((s, i) => ({ step_no: (i + 1) * 10, ...s })) },
     },

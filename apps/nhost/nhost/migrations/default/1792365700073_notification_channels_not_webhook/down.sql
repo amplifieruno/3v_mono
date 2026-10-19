@@ -1,0 +1,2 @@
+ALTER TABLE itap.notification_rule_channels DROP CONSTRAINT notification_rule_channels_channel_not_webhook;
+ALTER TABLE itap.escalation_policy_steps DROP CONSTRAINT escalation_policy_steps_channel_not_webhook;

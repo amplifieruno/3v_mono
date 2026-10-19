@@ -1,0 +1,1 @@
+ALTER TABLE itap.escalation_policies DROP CONSTRAINT escalation_policies_repeat_bounded;
