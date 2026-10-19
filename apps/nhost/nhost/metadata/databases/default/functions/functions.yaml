@@ -1,6 +1,2 @@
-- function:
-    schema: itap
-    name: accept_invitation
-  configuration:
-    custom_name: claim_invitation
-    exposed_as: mutation
+- "!include itap_accept_invitation.yaml"
+- "!include itap_match_face.yaml"

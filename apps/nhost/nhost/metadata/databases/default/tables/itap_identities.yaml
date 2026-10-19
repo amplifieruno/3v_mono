@@ -1,0 +1,129 @@
+table:
+  schema: itap
+  name: identities
+configuration:
+  custom_name: identities
+object_relationships:
+  - name: linked_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          linked_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: primary_photo_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          primary_photo_file_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+array_relationships:
+  - name: identity_embeddings
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_embeddings
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
+  - name: identity_photos
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_photos
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attributes
+        - custom_fields
+        - is_primary_for_profile
+        - is_synthetic
+        - link_strength
+        - primary_photo_file_id
+        - profile_id
+        - source
+        - status
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attributes
+        - code
+        - confidence
+        - created_at
+        - custom_fields
+        - detection_count
+        - first_seen_at
+        - id
+        - is_primary_for_profile
+        - is_synthetic
+        - last_seen_at
+        - link_strength
+        - linked_at
+        - linked_by
+        - matching_enabled
+        - number
+        - organization_id
+        - primary_photo_file_id
+        - profile_id
+        - source
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attributes
+        - custom_fields
+        - is_primary_for_profile
+        - is_synthetic
+        - link_strength
+        - primary_photo_file_id
+        - profile_id
+        - source
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

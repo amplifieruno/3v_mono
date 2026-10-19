@@ -1,4 +1,4 @@
-import type { BoolExp, TableSpec } from './types.js';
+import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 
 const ORG_ADMIN = 'org_admin';
 const USER = 'user';
@@ -143,6 +143,7 @@ export const tenancyTables: TableSpec[] = [
     noDelete: true,
     readOnlyColumns: ['deactivated_at', 'deactivated_by', 'joined_at'],
     insertOnlyColumns: ['user_id'],
+    relationshipNames: { identities_linked_by_fkey: 'linked_identities' },
     extraPermissions: {
       select_permissions: [{ role: USER, permission: { columns: MEMBER_COLUMNS, filter: ownUserRow } }],
     },
@@ -173,4 +174,9 @@ export const tenancyTables: TableSpec[] = [
     profile: 'none',
     extraPermissions: mergePermissions(userSettingsPermissions(USER), userSettingsPermissions(ORG_ADMIN)),
   },
+];
+
+/** `claim_invitation`: exposed to no role, called with the admin secret by the `accept_invitation` action. */
+export const tenancyFunctions: FunctionSpec[] = [
+  { name: 'accept_invitation', customName: 'claim_invitation', exposedAs: 'mutation', roles: [] },
 ];

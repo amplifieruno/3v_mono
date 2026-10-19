@@ -1,0 +1,20 @@
+table:
+  schema: itap_results
+  name: face_matches
+configuration:
+  custom_name: face_matches
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - distance
+        - identity_id
+        - organization_id
+        - profile_id
+        - similarity
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

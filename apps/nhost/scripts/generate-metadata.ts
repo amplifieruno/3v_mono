@@ -1,5 +1,5 @@
 /**
- * Generates Hasura table metadata for schemas `itap` / `itap_results` from metadata-src specs
+ * Generates Hasura table and tracked-function metadata for schemas `itap` / `itap_results` from metadata-src specs
  * and live DB introspection (Hasura run_sql, admin secret).
  *
  * Env: HASURA_ENDPOINT (default http://localhost:8080), GRAPHQL_ADMIN_SECRET (read from root .env.dev if unset).
@@ -8,12 +8,14 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tables } from '../metadata-src/index.js';
-import { introspect } from './introspect.js';
+import { functions, tables } from '../metadata-src/index.js';
+import { isGeneratedFunctionFile, planFunctionMetadata, rewriteFunctionsYaml } from './build-function-metadata.js';
+import { introspect, introspectFunctions } from './introspect.js';
 import { isGeneratedFile, planMetadata, rewriteTablesYaml } from './plan-metadata.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const TABLES_DIR = resolve(here, '../nhost/metadata/databases/default/tables');
+const FUNCTIONS_DIR = resolve(here, '../nhost/metadata/databases/default/functions');
 const ROOT_ENV = resolve(here, '../../../.env.dev');
 
 async function main(): Promise<void> {
@@ -22,30 +24,46 @@ async function main(): Promise<void> {
   if (!adminSecret) throw new Error('GRAPHQL_ADMIN_SECRET is not set (and not found in .env.dev)');
   const endpoint = process.env.HASURA_ENDPOINT ?? 'http://localhost:8080';
 
-  const intro = await introspect({ endpoint, adminSecret });
-  const files = planMetadata(tables, intro);
+  const admin = { endpoint, adminSecret };
+  const [intro, functionRows] = await Promise.all([introspect(admin), introspectFunctions(admin)]);
+  const tableFiles = planMetadata(tables, intro);
+  const functionFiles = planFunctionMetadata(functions, tables, functionRows);
 
-  const existing = (await readdir(TABLES_DIR)).filter(isGeneratedFile);
-  const stale = existing.filter((f) => !files.has(f));
-  for (const file of stale) await unlink(join(TABLES_DIR, file));
+  const t = await syncDir(TABLES_DIR, tableFiles, isGeneratedFile);
+  const tablesYamlPath = join(TABLES_DIR, 'tables.yaml');
+  await writeFile(tablesYamlPath, rewriteTablesYaml(await readFile(tablesYamlPath, 'utf8'), [...tableFiles.keys()]));
 
+  const f = await syncDir(FUNCTIONS_DIR, functionFiles, isGeneratedFunctionFile);
+  const functionsYamlPath = join(FUNCTIONS_DIR, 'functions.yaml');
+  await writeFile(
+    functionsYamlPath,
+    rewriteFunctionsYaml(await readFile(functionsYamlPath, 'utf8'), [...functionFiles.keys()]),
+  );
+
+  process.stdout.write(
+    `metadata: ${tableFiles.size} table(s), ${functionFiles.size} function(s), ${t.written + f.written} file(s) ` +
+      `written, ${t.stale + f.stale} stale file(s) removed\n`,
+  );
+}
+
+/** Writes changed files, removes generated files no longer planned. */
+async function syncDir(
+  dir: string,
+  files: Map<string, string>,
+  isGenerated: (fileName: string) => boolean,
+): Promise<{ written: number; stale: number }> {
+  const stale = (await readdir(dir)).filter((f) => isGenerated(f) && !files.has(f));
+  for (const file of stale) await unlink(join(dir, file));
   let written = 0;
   for (const [file, content] of files) {
-    const path = join(TABLES_DIR, file);
+    const path = join(dir, file);
     const previous = existsSync(path) ? await readFile(path, 'utf8') : undefined;
     if (previous !== content) {
       await writeFile(path, content);
       written += 1;
     }
   }
-
-  const tablesYamlPath = join(TABLES_DIR, 'tables.yaml');
-  const tablesYaml = rewriteTablesYaml(await readFile(tablesYamlPath, 'utf8'), [...files.keys()]);
-  await writeFile(tablesYamlPath, tablesYaml);
-
-  process.stdout.write(
-    `metadata: ${files.size} table(s), ${written} file(s) written, ${stale.length} stale file(s) removed\n`,
-  );
+  return { written, stale: stale.length };
 }
 
 main().catch((err: unknown) => {

@@ -14,6 +14,9 @@ export interface SelectPermission {
   filter: BoolExp;
   allow_aggregations?: boolean;
   limit?: number;
+  /** Root fields exposed for the role; `[]` hides the table's root fields (rows reachable via functions only). */
+  query_root_fields?: string[];
+  subscription_root_fields?: string[];
 }
 
 export interface InsertPermission {
@@ -117,4 +120,27 @@ export interface TableMetadata extends HasuraPermissions {
   object_relationships?: ManualRelationship[];
   array_relationships?: ManualRelationship[];
   computed_fields?: { name: string; definition: { function: QualifiedTable } }[];
+}
+
+/**
+ * A tracked SQL function (design §8.0). Permissions are explicit (INFER_FUNCTION_PERMISSIONS is off); a role needs
+ * select permission on the function's return table.
+ */
+export interface FunctionSpec {
+  name: string;
+  /** Schema of the function; defaults to `itap`. */
+  schema?: 'itap';
+  exposedAs: 'query' | 'mutation';
+  /** The `json` argument Hasura fills with the session variables (org scoping happens inside the function). */
+  sessionArgument?: 'hasura_session';
+  /** GraphQL root field name; defaults to the function name. */
+  customName?: string;
+  /** Roles allowed to call the function; `[]` = admin secret only (e.g. called by an action handler). */
+  roles: string[];
+}
+
+export interface FunctionMetadata {
+  function: QualifiedTable;
+  configuration: { custom_name: string; exposed_as: 'query' | 'mutation'; session_argument?: string };
+  permissions?: { role: string }[];
 }

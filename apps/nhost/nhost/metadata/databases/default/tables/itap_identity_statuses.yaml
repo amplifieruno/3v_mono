@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: identity_statuses
+is_enum: true
+configuration:
+  custom_name: identity_statuses

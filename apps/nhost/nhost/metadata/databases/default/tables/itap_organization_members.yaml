@@ -39,6 +39,15 @@ object_relationships:
           organization_id: organization_id
           vacation_delegate_user_id: user_id
 array_relationships:
+  - name: linked_identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          user_id: linked_by
   - name: organization_invitations
     using:
       manual_configuration:

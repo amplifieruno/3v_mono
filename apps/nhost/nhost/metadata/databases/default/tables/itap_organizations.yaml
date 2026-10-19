@@ -37,6 +37,30 @@ array_relationships:
           name: custom_attribute_definitions
         column_mapping:
           id: organization_id
+  - name: identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          id: organization_id
+  - name: identity_embeddings
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_embeddings
+        column_mapping:
+          id: organization_id
+  - name: identity_photos
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_photos
+        column_mapping:
+          id: organization_id
   - name: members
     using:
       manual_configuration:

@@ -1,4 +1,5 @@
 import type { ExternalSchema, ForeignKey, ManagedSchema } from '../metadata-src/types.js';
+import type { FunctionRow } from './build-function-metadata.js';
 import type { ColumnRow, IndexRow, Introspection } from './plan-metadata.js';
 
 export const MANAGED_SCHEMAS: ManagedSchema[] = ['itap', 'itap_results'];
@@ -56,6 +57,22 @@ join pg_namespace n on n.oid = c.relnamespace
 join pg_class ic on ic.oid = i.indexrelid
 where n.nspname in (${SCHEMA_LIST}) and not c.relispartition
   and i.indpred is null and 0 <> all (i.indkey::int2[])`;
+
+// Non-trigger functions in managed schemas with argument names/types and the returned table (if any).
+const FUNCTIONS_SQL = `
+select coalesce(json_agg(json_build_object(
+  'schema', n.nspname, 'name', p.proname, 'volatility', p.provolatile,
+  'argNames', coalesce(to_json(p.proargnames), '[]'::json),
+  'argTypes', (select coalesce(json_agg(format_type(t.oid, null) order by k.ord), '[]'::json)
+               from unnest(p.proargtypes::oid[]) with ordinality k(oid, ord) join pg_type t on t.oid = k.oid),
+  'returnsSet', p.proretset, 'returnSchema', rn.nspname, 'returnTable', rc.relname
+) order by n.nspname, p.proname), '[]'::json)
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+join pg_type rt on rt.oid = p.prorettype
+left join pg_class rc on rc.oid = rt.typrelid and rc.relkind in ('r', 'p', 'v', 'm')
+left join pg_namespace rn on rn.oid = rc.relnamespace
+where n.nspname in (${SCHEMA_LIST}) and p.prokind = 'f' and p.prorettype <> 'trigger'::regtype`;
 
 type RunSqlResponse = { result_type?: string; result?: string[][]; error?: string; code?: string };
 
@@ -143,6 +160,27 @@ function toIndex(row: Record<string, unknown>): IndexRow {
     throw new Error(`Introspection: bad index row ${JSON.stringify(row)}`);
   }
   return { schema, table, name, columns, unique };
+}
+
+function toFunction(row: Record<string, unknown>): FunctionRow {
+  const { schema, name, volatility, argNames, argTypes, returnsSet, returnSchema, returnTable } = row;
+  if (
+    typeof schema !== 'string' ||
+    typeof name !== 'string' ||
+    (volatility !== 'i' && volatility !== 's' && volatility !== 'v') ||
+    !isStringArray(argNames) ||
+    !isStringArray(argTypes) ||
+    typeof returnsSet !== 'boolean' ||
+    (returnSchema !== null && typeof returnSchema !== 'string') ||
+    (returnTable !== null && typeof returnTable !== 'string')
+  ) {
+    throw new Error(`Introspection: bad function row ${JSON.stringify(row)}`);
+  }
+  return { schema, name, volatility, argNames, argTypes, returnsSet, returnSchema, returnTable };
+}
+
+export async function introspectFunctions(admin: HasuraAdmin): Promise<FunctionRow[]> {
+  return asRecords(await runJsonSql(admin, FUNCTIONS_SQL), 'functions').map(toFunction);
 }
 
 export async function introspect(admin: HasuraAdmin): Promise<Introspection> {

@@ -38,6 +38,16 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           work_schedule_id: id
+array_relationships:
+  - name: identities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
 computed_fields:
   - name: has_face
     definition:
