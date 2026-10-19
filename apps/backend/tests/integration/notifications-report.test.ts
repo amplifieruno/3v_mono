@@ -67,6 +67,16 @@ async function insertRows(orgId: string, rows: Row[]): Promise<void> {
     values ${values.join(',\n')}`);
 }
 
+/** Webhook deliveries of a subscription, no triggers (nothing gets sent). */
+async function insertWebhooks(orgId: string, subscription: string, rows: { status: string; createdAt?: string }[]): Promise<void> {
+  const values = rows.map(
+    (r) => `('${orgId}', '${subscription}', '${randomUUID()}', 'blacklist_match', '{}'::jsonb, '${r.status}', '${r.createdAt ?? IN}')`,
+  );
+  await runSql(`SET LOCAL session_replication_role = replica;
+    insert into itap.webhook_deliveries (organization_id, subscription_id, event_id, event_type, body, status, created_at)
+    values ${values.join(',\n')}`);
+}
+
 const zero = { total: 0, pending: 0, sent: 0, delivered: 0, failed: 0, dead_letter: 0, digested: 0, acknowledged: 0, escalations: 0 };
 
 describe('delivery_report', () => {
@@ -100,6 +110,15 @@ describe('delivery_report', () => {
       // The colleague's private subscription: counted for the colleague only.
       { channel: 'in_app', status: 'delivered', origin: { subscription: subscription.id }, user: colleague, ackAfterSeconds: 30 },
     ]);
+    const hook = await insertOne(a, 'webhook_subscriptions', { url: 'https://siem.example.com/hook', secret: 'report-test-secret-0123456789' });
+    await insertWebhooks(orgA.id, hook.id, [
+      { status: 'sent' },
+      { status: 'retrying' },
+      { status: 'pending' },
+      { status: 'dead_letter' },
+      { status: 'failed' },
+      { status: 'sent', createdAt: '2026-02-20T00:00:00Z' },
+    ]);
     const ruleB = await notificationRule(asOrgAdmin(other.id, orgB.id), ['blacklist_match'], ['email']);
     await insertRows(orgB.id, [{ channel: 'email', status: 'sent', origin: { rule: ruleB } }]);
 
@@ -117,11 +136,12 @@ describe('delivery_report', () => {
       ack_rate: 0.6667,
       avg_response_seconds: 120,
     });
+    // Digest items are not counted in total (their combined delivery is); the digested column shows them.
     expect(by.email).toEqual({
       ...zero,
       organization_id: orgA.id,
       channel: 'email',
-      total: 7,
+      total: 6,
       pending: 2,
       sent: 2,
       failed: 1,
@@ -131,6 +151,19 @@ describe('delivery_report', () => {
       avg_response_seconds: null,
     });
     expect(by.sms).toMatchObject({ total: 1, delivered: 1, escalations: 1, ack_rate: null });
+    // The webhook channel counts the webhook deliveries of the period.
+    expect(by.webhook).toEqual({
+      ...zero,
+      organization_id: orgA.id,
+      channel: 'webhook',
+      total: 5,
+      pending: 2,
+      sent: 1,
+      failed: 1,
+      dead_letter: 1,
+      ack_rate: null,
+      avg_response_seconds: null,
+    });
     expect(by.push).toEqual({ ...zero, organization_id: orgA.id, channel: 'push', ack_rate: null, avg_response_seconds: null });
 
     const mine = Object.fromEntries((await report(asOrgAdmin(colleague, orgA.id))).map((r) => [r.channel, r]));
@@ -139,6 +172,7 @@ describe('delivery_report', () => {
     const otherOrg = Object.fromEntries((await report(asOrgAdmin(other.id, orgB.id))).map((r) => [r.channel, r]));
     expect(otherOrg.email).toMatchObject({ organization_id: orgB.id, total: 1, sent: 1 });
     expect(otherOrg.in_app.total).toBe(0);
+    expect(otherOrg.webhook.total).toBe(0);
   });
 
   it('should reject an empty or reversed period', async () => {

@@ -185,6 +185,45 @@ describe('seed history notifications', () => {
     expect(inbox.read_at).toBe('NULL');
   });
 
+  it('should read but not acknowledge old inbox rows of an incident still open and unacknowledged', async () => {
+    const w = await notificationWorld();
+    const group = await recipientGroup(w.a, [{ user_id: w.user.id, channel: 'in_app' }]);
+    // One step, no repeat: after it the policy has ended, so the live cron never escalates these incidents again.
+    const policy = await escalationPolicy(w.a, [{ after_minutes: 0, channel: 'in_app', recipient_group_id: group }]);
+    const open = await createIncident(w.a, { severity: 'critical', escalation_policy_id: null });
+    const acked = await createIncident(w.a, { severity: 'critical', escalation_policy_id: null });
+    await callFn(w.a, 'acknowledge_incident', { p_incident: acked.id }, 'id');
+    const old = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    await asAdmin().request(
+      `mutation($open: uuid!, $acked: uuid!, $p: uuid!, $t: timestamptz!, $o: uuid!, $until: timestamptz!) {
+        e1: seed_escalate_incident(args: {p_incident: $open, p_policy: $p, p_at: $t}) { id }
+        e2: seed_escalate_incident(args: {p_incident: $acked, p_policy: $p, p_at: $t}) { id }
+        f: ${FINALIZE}
+      }`,
+      { open: open.id, acked: acked.id, p: policy.id, t: old, o: w.orgA.id, until: new Date().toISOString() },
+    );
+    const rows = await runSqlRows(
+      `select incident_id, read_at, acknowledged_at from itap.user_notifications where organization_id = '${w.orgA.id}'`,
+    );
+    const of = (id: string) => rows.find((r) => r.incident_id === id);
+    expect(of(open.id)?.read_at).not.toBe('NULL');
+    expect(of(open.id)?.acknowledged_at).toBe('NULL');
+    expect(of(acked.id)?.acknowledged_at).not.toBe('NULL');
+  });
+
+  it('should keep read and acknowledgement times set once while the seed flag is on', async () => {
+    const w = await notificationWorld();
+    const group = await recipientGroup(w.a, [{ user_id: w.user.id, channel: 'in_app' }]);
+    await notificationRule(w.a, ['detection_unknown'], ['in_app'], { recipient_group_id: group, priority: 'critical' });
+    await replayDetection(w);
+    const [before] = await runSqlRows(`select id, read_at, acknowledged_at from itap.user_notifications where organization_id = '${w.orgA.id}'`);
+    expect(before.acknowledged_at).not.toBe('NULL');
+    const [after] = await runSqlRows(`select set_config('itap.seed_context', 'on', true);
+      update itap.user_notifications set read_at = '2020-01-01', acknowledged_at = '2020-01-01' where id = '${before.id}';
+      select read_at, acknowledged_at from itap.user_notifications where id = '${before.id}'`);
+    expect(after).toEqual({ read_at: before.read_at, acknowledged_at: before.acknowledged_at });
+  });
+
   it('should be callable with the admin secret only', async () => {
     const w = await notificationWorld();
     await expectDenied(

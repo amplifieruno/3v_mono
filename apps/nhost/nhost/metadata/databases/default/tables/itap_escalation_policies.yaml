@@ -54,6 +54,7 @@ insert_permissions:
     permission:
       columns:
         - description
+        - max_cycles
         - name
         - repeat
       check:
@@ -68,6 +69,7 @@ select_permissions:
         - created_at
         - description
         - id
+        - max_cycles
         - name
         - organization_id
         - repeat
@@ -81,6 +83,7 @@ update_permissions:
     permission:
       columns:
         - description
+        - max_cycles
         - name
         - repeat
       filter:

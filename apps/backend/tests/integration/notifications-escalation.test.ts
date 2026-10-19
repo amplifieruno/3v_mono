@@ -12,7 +12,7 @@ import {
   trail,
 } from './support/escalation.js';
 import { member, orgInbox, recipientGroup, setMember } from './support/notifications.js';
-import { activities, callFn, INCIDENT_FIELDS } from './support/operations.js';
+import { activities, callFn, INCIDENT_FIELDS, updateByPk } from './support/operations.js';
 import { cronPayload, postTrigger, waitFor } from './support/sending.js';
 import { createTrackingWorld } from './support/tracking.js';
 
@@ -95,6 +95,28 @@ describe('escalate: step by step (Review Focus 3)', () => {
     expect((await incidentState(b)).escalation_step).toBe(7);
     // Every cycle notifies again: one inbox row per delivery.
     expect((await orgInbox(w.orgA.id)).filter((n) => n.incident_id === b)).toHaveLength(7);
+  });
+
+  it('should stop a repeating policy after max_cycles cycles', async () => {
+    const w = await world();
+    const g1 = await recipientGroup(w.a, [{ user_id: w.bob, channel: 'in_app' }]);
+    const g2 = await recipientGroup(w.a, [{ user_id: w.carol, channel: 'in_app' }]);
+    const policy = await escalationPolicy(w.a, [
+      { after_minutes: 1, channel: 'in_app', recipient_group_id: g1 },
+      { after_minutes: 2, channel: 'in_app', recipient_group_id: g2 },
+    ], true);
+    // Writable by org_admin; NULL (the default) = unbounded, checked >= 1.
+    await updateByPk(w.a, 'escalation_policies', policy.id, { max_cycles: 2 });
+    await expect(updateByPk(w.a, 'escalation_policies', policy.id, { max_cycles: 0 })).rejects.toThrow(/max_cycles/);
+    const id = await escalationIncident(w.a, w.orgA.id, policy.id);
+    for (const m of [1, 3, 4, 6, 7, 60, 120]) await escalate(w.orgA.id, minutes(m));
+
+    // Cycles 0 and 1 only: cycle 2 is never taken.
+    expect(trail(await escalationDeliveries(w.orgA.id, id))).toEqual([
+      [policy.steps[0], 0, w.bob], [policy.steps[1], 0, w.carol],
+      [policy.steps[0], 1, w.bob], [policy.steps[1], 1, w.carol],
+    ]);
+    expect((await incidentState(id)).escalation_step).toBe(4);
   });
 
   it('should skip resolved, investigating and policy-less incidents and other organizations', async () => {
