@@ -31,8 +31,6 @@
     },
     
     /* Additional options */
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false
   },
   "include": [

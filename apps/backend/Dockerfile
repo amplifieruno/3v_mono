@@ -2,7 +2,7 @@
 FROM node:20-alpine AS base
 
 # Install pnpm and required system dependencies
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate && \
     apk add --no-cache python3 make g++
 
 # Dependencies stage
@@ -26,15 +26,15 @@ COPY apps/backend ./apps/backend/
 
 WORKDIR /app/apps/backend
 
-# Build the application (skip type errors for production)
-RUN pnpm build; exit 0
+# Build the application (a failing build fails the image)
+RUN pnpm build
 
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 # Copy workspace files and dependencies from builder
 COPY --from=builder /app ./
@@ -61,8 +61,6 @@ EXPOSE 3001
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
-
-# RUN echo "Содержимое /app:" && ls -lah /app
 
 CMD node dist/index.js
 

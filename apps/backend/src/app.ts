@@ -8,7 +8,6 @@ import { actionsRouter } from './actions/router.js';
 
 /**
  * Base Express app: shared middleware, health check and the Hasura Actions webhook.
- * Has no TypeORM/DB dependency, so tests (and Hasura) can reach actions without the legacy stack.
  */
 export function createApp(env: Env): Express {
   const app = express();
