@@ -8,6 +8,7 @@ const env: Env = {
   HASURA_JWT_SECRET: { type: 'HS256', key: 'k'.repeat(32), issuer: 'hasura-auth' },
   ACTION_SECRET: 'action',
   NHOST_STORAGE_URL: 'http://storage.test',
+  INSIGHTFACE_API_URL: 'http://insightface.test',
   ORG_TOKEN_TTL_SECONDS: 900,
 };
 

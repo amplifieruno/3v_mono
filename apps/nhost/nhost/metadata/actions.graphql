@@ -12,6 +12,9 @@ type Mutation {
     mime_type: String!
     content_base64: String!
   ): ProfileDocument!
+  enroll_face(profile_id: uuid!, file_ids: [uuid!]!): EnrollmentResult!
+  create_identity_from_photos(file_ids: [uuid!]!, attributes: jsonb): EnrollmentResult!
+  add_identity_photos(identity_id: uuid!, file_ids: [uuid!]!): EnrollmentResult!
 }
 
 type OrgToken {
@@ -43,4 +46,17 @@ type DeletedFile {
 type ProfileDocument {
   document_id: uuid!
   file_id: uuid!
+}
+
+type EnrollmentResult {
+  identity_id: uuid!
+  identity_code: String!
+  photos_added: Int!
+  templates: Int!
+  rejected: [RejectedPhoto!]!
+}
+
+type RejectedPhoto {
+  file_id: uuid!
+  reason: String!
 }

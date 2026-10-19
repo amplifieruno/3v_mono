@@ -3,6 +3,8 @@ import type { Env } from '../config/env.js';
 export type StorageClient = {
   presignedUrl(fileId: string): Promise<{ url: string; expiresAt: Date }>;
   deleteFile(fileId: string): Promise<void>;
+  /** Downloads a file's content. */
+  download(fileId: string): Promise<Buffer>;
   upload(input: {
     bucketId: string;
     name: string;
@@ -44,6 +46,12 @@ export function createStorageClient(env: Env): StorageClient {
     async deleteFile(fileId) {
       const res = await fetch(`${base}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers });
       if (!res.ok) return fail(res, 'File delete');
+    },
+
+    async download(fileId) {
+      const res = await fetch(`${base}/files/${encodeURIComponent(fileId)}`, { headers });
+      if (!res.ok) return fail(res, 'File download');
+      return Buffer.from(await res.arrayBuffer());
     },
 
     async upload({ bucketId, name, mimeType, data, metadata }) {

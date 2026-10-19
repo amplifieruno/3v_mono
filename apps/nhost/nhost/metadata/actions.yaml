@@ -71,6 +71,42 @@ actions:
     permissions:
       - role: org_admin
     comment: Stores a profile document (max 10 MB) in the organization bucket as a sensitive file and records it
+  - name: enroll_face
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/enroll_face'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 120
+    permissions:
+      - role: org_admin
+    comment: Adds face photos to the profile's identity (reuses or links a matching one, never duplicates); duplicate_identity when the face belongs to another profile
+  - name: create_identity_from_photos
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/create_identity_from_photos'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 120
+    permissions:
+      - role: org_admin
+    comment: Creates an unlinked identity from face photos; duplicate_identity when the face is already known
+  - name: add_identity_photos
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/add_identity_photos'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 120
+    permissions:
+      - role: org_admin
+    comment: Adds face photos to an identity; photos matching a different identity are rejected as conflicting_identity
 custom_types:
   enums: []
   input_objects: []
@@ -81,4 +117,6 @@ custom_types:
     - name: FileUrl
     - name: DeletedFile
     - name: ProfileDocument
+    - name: EnrollmentResult
+    - name: RejectedPhoto
   scalars: []
