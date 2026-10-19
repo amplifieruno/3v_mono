@@ -6,10 +6,12 @@ import { evaluateSegment, mapSegmentError, SegmentError, type EvaluateResult } f
 /**
  * Segment evaluation crons (spec §8.3; slice 6 task 3), both through the one evaluator (evaluateSegment):
  * - `evaluate_segments_pending` (every minute): organizations whose segment inputs changed at least 30 s ago
- *   (itap.due_segment_evaluations, debounce) get their dynamic segments evaluated; the request is then finished with
- *   the requested_at it was read with, so a write committed meanwhile keeps it pending for the next run;
+ *   (itap.due_segment_evaluations at scheduled_time, debounce) get their dynamic segments evaluated at
+ *   max(scheduled_time, now); the request is then finished with the requested_at it was read with (a write committed
+ *   meanwhile keeps it pending), unless a sync came back stale or a segment failed transiently: then it stays pending
+ *   for the next run, so no input change is dropped;
  * - `evaluate_segments` (hourly): per organization refresh_activity_stats, every dynamic segment, segment_daily_stats.
- * Evaluation time = the run's scheduled_time (a retry of one run is a no-op). A segment whose evaluation fails is
+ * The hourly evaluation time is the run's scheduled_time (a retry of one run is a no-op). A segment whose evaluation fails is
  * recorded on the segment (last_evaluation_error / last_evaluation_failed_at) and the others continue; a failure of
  * an organization-level step fails the run (500, Hasura retries) after every organization was attempted.
  */
@@ -79,7 +81,13 @@ export function failureText(error: unknown): string {
   return (text || 'evaluation_failed').slice(0, MAX_ERROR_LENGTH);
 }
 
-export type OrganizationEvaluation = { segments: number; failed: number };
+/**
+ * `incomplete`: some segment does not reflect the inputs as of `at`: its sync was stale (a later evaluation, e.g. the
+ * evaluate_segment action, is already recorded) or it failed for a transient reason (network, Hasura, unknown). A
+ * failure with a segment code (e.g. segment_condition_invalid: the stored condition no longer translates) is
+ * deterministic: recorded, not incomplete (retrying cannot help).
+ */
+export type OrganizationEvaluation = { segments: number; failed: number; incomplete: boolean };
 
 /** Evaluates the organization's dynamic segments at `at`; per-segment failures are recorded, never thrown. */
 export async function evaluateOrganizationSegments(
@@ -90,18 +98,21 @@ export async function evaluateOrganizationSegments(
   const evaluate = deps.evaluate ?? evaluateSegment;
   const { segments } = await deps.admin.request<{ segments: { id: string }[] }>(DYNAMIC_SEGMENTS, { organization: organizationId });
   let failed = 0;
+  let incomplete = false;
   for (const { id } of segments) {
     try {
-      await evaluate(deps.clients, id, at);
+      const result = await evaluate(deps.clients, id, at);
+      if (result.stale) incomplete = true;
     } catch (error: unknown) {
       const mapped = mapSegmentError(error);
       // Deleted since it was listed: nothing to evaluate.
       if (mapped instanceof SegmentError && mapped.code === 'segment_not_found') continue;
+      if (!(mapped instanceof SegmentError)) incomplete = true;
       failed += 1;
       await deps.admin.request(RECORD_FAILURE, { id, error: failureText(error), at });
     }
   }
-  return { segments: segments.length, failed };
+  return { segments: segments.length, failed, incomplete };
 }
 
 function scheduledAt(payload: CronTriggerPayload): string {
@@ -119,17 +130,22 @@ function finish(name: string, totals: Totals): Record<string, number> {
   return { organizations: totals.organizations, segments: totals.segments, failed: totals.failed };
 }
 
-export type SegmentCronOptions = { clientsFor?: ClientsFor; evaluate?: Evaluate };
+export type SegmentCronOptions = { clientsFor?: ClientsFor; evaluate?: Evaluate; now?: () => number };
 
 /** Cron `evaluate_segments_pending`: debounced evaluation of organizations whose inputs changed. */
 export function createEvaluateSegmentsPending(options: SegmentCronOptions = {}): CronHandler {
   const clientsFor = options.clientsFor ?? organizationClients;
+  const now = options.now ?? Date.now;
   return defineCronHandler(async (payload, ctx) => {
-    const at = scheduledAt(payload);
+    const scheduled = scheduledAt(payload);
     const { due_segment_evaluations: due } = await ctx.admin.request<{
       due_segment_evaluations: { organization_id: string; requested_at: string }[];
-    }>(DUE, { at });
+    }>(DUE, { at: scheduled });
+    // Evaluate as of now when the run is late: the inputs read are current, and an evaluation stamped earlier than an
+    // evaluate_segment action already recorded would be stale (ignored by sync_segment_members).
+    const at = new Date(Math.max(Date.parse(scheduled), now())).toISOString();
     const totals: Totals = { organizations: due.length, segments: 0, failed: 0, failedOrganizations: 0 };
+    let pending = 0;
     for (const request of due) {
       try {
         const clients = clientsFor(ctx.env, request.organization_id);
@@ -138,14 +154,16 @@ export function createEvaluateSegmentsPending(options: SegmentCronOptions = {}):
           request.organization_id,
           at,
         );
-        await ctx.admin.request(FINISH, { organization: request.organization_id, requested: request.requested_at });
         totals.segments += result.segments;
         totals.failed += result.failed;
+        // Incomplete (stale sync, transient failure): the request stays pending for the next run.
+        if (result.incomplete) pending += 1;
+        else await ctx.admin.request(FINISH, { organization: request.organization_id, requested: request.requested_at });
       } catch {
         totals.failedOrganizations += 1;
       }
     }
-    return finish('evaluate_segments_pending', totals);
+    return { ...finish('evaluate_segments_pending', totals), pending };
   });
 }
 

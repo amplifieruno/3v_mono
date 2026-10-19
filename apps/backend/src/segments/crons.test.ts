@@ -108,12 +108,47 @@ describe('segment evaluation crons', () => {
       }),
     });
     const evaluate = vi.fn<Evaluate>(async (_c, id) => ok(id));
-    const result = await run(createEvaluateSegmentsPending({ clientsFor, evaluate }), 'evaluate_segments_pending', admin);
-    expect(result).toEqual({ organizations: 2, segments: 1, failed: 0 });
+    const now = () => Date.parse(AT) - 5000;
+    const result = await run(createEvaluateSegmentsPending({ clientsFor, evaluate, now }), 'evaluate_segments_pending', admin);
+    expect(result).toEqual({ organizations: 2, segments: 1, failed: 0, pending: 0 });
+    expect(evaluate.mock.calls.map(([, , at]) => at)).toEqual([AT]);
     expect(calls[0]).toEqual({ op: 'DueSegmentEvaluations', vars: { at: AT } });
     expect(calls.filter((c) => c.op === 'FinishSegmentEvaluationRequest').map((c) => c.vars)).toEqual([
       { organization: 'org-1', requested: '2026-10-19T09:59:00.123456+00:00' },
       { organization: 'org-2', requested: '2026-10-19T09:59:10+00:00' },
+    ]);
+  });
+
+  it('should evaluate a late run at the current time, not at its scheduled time', async () => {
+    const { admin, calls } = fakeAdmin({
+      DueSegmentEvaluations: { due_segment_evaluations: [{ organization_id: 'org-1', requested_at: AT }] },
+      SegmentsToEvaluate: { segments: [{ id: 's-1' }] },
+    });
+    const evaluate = vi.fn<Evaluate>(async (_c, id) => ok(id));
+    const later = Date.parse(AT) + 90_000;
+    await run(createEvaluateSegmentsPending({ clientsFor, evaluate, now: () => later }), 'evaluate_segments_pending', admin);
+    expect(calls[0].vars).toEqual({ at: AT });
+    expect(evaluate.mock.calls[0][2]).toBe(new Date(later).toISOString());
+  });
+
+  it('should not finish a request after a stale sync or a transient failure, but after a condition failure', async () => {
+    const due = (org: string) => ({ organization_id: org, requested_at: AT });
+    const { admin, calls } = fakeAdmin({
+      DueSegmentEvaluations: { due_segment_evaluations: [due('org-stale'), due('org-down'), due('org-bad')] },
+      SegmentsToEvaluate: (vars?: Record<string, unknown>) => ({ segments: [{ id: `s-${String(vars?.organization)}` }] }),
+    });
+    const evaluate = vi.fn<Evaluate>(async (_c, id) => {
+      if (id === 's-org-stale') return { ...ok(id), stale: true };
+      if (id === 's-org-down') throw new HasuraError('timeout', 'Hasura request timed out');
+      throw new HasuraError('constraint-violation', 'segment_condition_invalid:$.field');
+    });
+    const handler = createEvaluateSegmentsPending({ clientsFor, evaluate, now: () => Date.parse(AT) });
+    const result = await run(handler, 'evaluate_segments_pending', admin);
+    expect(result).toEqual({ organizations: 3, segments: 3, failed: 2, pending: 2 });
+    expect(calls.filter((c) => c.op === 'FinishSegmentEvaluationRequest').map((c) => c.vars?.organization)).toEqual(['org-bad']);
+    expect(calls.filter((c) => c.op === 'RecordSegmentEvaluationFailure').map((c) => c.vars?.id)).toEqual([
+      's-org-down',
+      's-org-bad',
     ]);
   });
 

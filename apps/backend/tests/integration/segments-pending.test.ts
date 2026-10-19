@@ -100,10 +100,36 @@ describe('evaluate_segments_pending', () => {
     expect(await isPending(w.orgA.id)).toBe(true);
     await settle();
 
+    // Watch lists: the kind decides is_blacklisted (request); a rename does not. Entry expiry is hourly.
+    const list = await insertOne(w.a, 'watch_lists', { name: `List ${Date.now()}`, kind: 'watch', severity: 'low' });
+    await updateByPk(w.a, 'watch_lists', list.id, { name: `Renamed ${Date.now()}` });
+    expect(await isPending(w.orgA.id)).toBe(false);
+    await updateByPk(w.a, 'watch_lists', list.id, { kind: 'blacklist' });
+    expect(await isPending(w.orgA.id)).toBe(true);
+    await settle();
+
     // A write in another organization requests only that organization.
     await createProfile(w.b, { department: dept });
     expect(await isPending(w.orgA.id)).toBe(false);
     expect(await isPending(w.orgB.id)).toBe(true);
+  });
+
+  it('should keep the organization pending when a sync was stale and apply the change on the next run', async () => {
+    const w = await segmentWorld();
+    const dept = `Stale-${Date.now()}`;
+    const segment = await dynamicSegment(w.a, 'profiles', ops(dept));
+    const first = await createProfile(w.a, { department: dept });
+    // A manual evaluation stamped after the run's evaluation time (e.g. evaluate_segment while the run was late).
+    await syncMembers(asActor(w.orgA.id), segment.id, [first], fromNow(120));
+    const second = await createProfile(w.a, { department: dept });
+
+    expect(await runPending([w.orgA.id], fromNow(31))).toMatchObject({ organizations: 1, pending: 1 });
+    expect(await isPending(w.orgA.id)).toBe(true);
+    expect(await openRows(segment.id)).toEqual([[first, 'rule']]);
+
+    expect(await runPending([w.orgA.id], fromNow(130))).toMatchObject({ organizations: 1, pending: 0 });
+    expect(await isPending(w.orgA.id)).toBe(false);
+    expect(await openRows(segment.id)).toEqual([first, second].sort().map((id) => [id, 'rule']));
   });
 
   it('should keep a request pending when it was renewed after the run read it', async () => {

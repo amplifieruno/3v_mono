@@ -6,8 +6,8 @@ import { notificationRule, notificationWorld, orgDeliveries, recipientGroup, unk
 import { deleteByPk, updateByPk } from './support/operations.js';
 import { asActor, dynamicSegment, manualSegment, segmentWorld, syncMembers } from './support/segments.js';
 import { runSql } from './support/sql.js';
-import { evaluate, knownPerson, orgEvents, publishedRule } from './support/stageB.js';
-import { createIdentity, detect } from './support/tracking.js';
+import { evaluate, evaluateDwell, knownPerson, orgEvents, publishedRule } from './support/stageB.js';
+import { at, createIdentity, detect } from './support/tracking.js';
 
 /**
  * Segment scopes (slice 6, task 3): an event rule version scoped to a segment applies to an event only when the
@@ -71,6 +71,43 @@ describe('event rule segment scopes', () => {
     const events = restricted(await orgEvents(w.orgA.id));
     expect(events.find((e) => e.profile_id === member.profile)).toMatchObject({ rule_version_id: here.version, severity: 'high' });
     expect(events.find((e) => e.profile_id === other.profile)?.rule_version_id).toBeNull();
+  });
+  it('should OR segment scopes of one version and AND them with OR-ed facility scopes', async () => {
+    const w = await segmentWorld();
+    await updateByPk(w.a, 'areas', w.zone.id, { access_level: 'classified' });
+    const [second, neither] = [await createIdentity(w.a), await createIdentity(w.a)];
+    const s1 = await segmentOf(w, 'identities', [w.identity]);
+    const s2 = await segmentOf(w, 'identities', [second]);
+    const elsewhere = await createFacility(w.a);
+    const either = await publishedRule(w.a, 'restricted_area', { severity: 'high' }, [{ segment_id: s1.id }, { segment_id: s2.id }]);
+    const located = await publishedRule(w.a, 'restricted_area', { severity: 'low' }, [
+      { facility_id: elsewhere.id },
+      { facility_id: w.facility.id },
+      { segment_id: s1.id },
+    ]);
+    for (const [i, id] of [w.identity, second, neither].entries()) {
+      await evaluate((await detect(w.orgA.id, w.floorCam, id, i * 10)).id);
+    }
+    const versions = Object.fromEntries(
+      restricted(await orgEvents(w.orgA.id)).map((e) => [e.identity_id, e.payload.rule_version_ids ?? []]),
+    );
+    expect(versions[w.identity]).toEqual([either.version, located.version]);
+    expect(versions[second]).toEqual([either.version]);
+    expect(versions[neither]).toEqual([]);
+  });
+
+  it('should check unusual_dwell segment scopes at the event time (entered_at + dwell_seconds)', async () => {
+    const w = await segmentWorld();
+    const segment = await segmentOf(w, 'identities', [w.identity]);
+    const rule = await publishedRule(w.a, 'unusual_dwell', { parameters: { dwell_seconds: 100 } }, [{ segment_id: segment.id }]);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 200);
+    // A member at the event time (100 s), no longer when last seen (200 s).
+    await syncMembers(asActor(w.orgA.id), segment.id, [], at(150));
+    const events = await evaluateDwell(w.orgA.id, 250);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ event_type: 'unusual_dwell', rule_version_id: rule.version });
+    expect(Date.parse(events[0].occurred_at)).toBe(Date.parse(at(100)));
   });
 });
 
