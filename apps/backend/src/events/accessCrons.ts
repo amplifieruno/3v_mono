@@ -17,6 +17,7 @@ function summary(reports: TerminalSyncReport[]) {
     synced: reports.filter((r) => r.result === 'synced').length,
     unreachable: reports.filter((r) => r.result === 'unreachable').length,
     failed: reports.filter((r) => r.result === 'failed').length,
+    skipped: reports.filter((r) => r.result === 'skipped').length,
   };
 }
 
@@ -40,7 +41,8 @@ export const syncTerminalPolicies = defineCronHandler(async (payload, ctx) => {
 export const policyUrgentEpochBumped = defineEventHandler(async (payload, ctx) => {
   const organizationId = payload.event.data.new?.organization_id;
   if (typeof organizationId !== 'string' || organizationId.length === 0) return { skipped: 'no_organization' };
-  const result = summary(await syncTerminals(ctx.admin, { at: new Date(), organizationId }));
+  // Fast path: only reachable due terminals (one query when none); unreachable ones are the cron's (logged on change).
+  const result = summary(await syncTerminals(ctx.admin, { at: new Date(), organizationId, reachableOnly: true }));
   if (result.failed > 0) throw new Error(`policy_urgent_epoch_bumped: ${result.failed} of ${result.terminals} pushes failed`);
   return { organization_id: organizationId, ...result };
 });

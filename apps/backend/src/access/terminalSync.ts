@@ -20,14 +20,21 @@ export type SyncTarget = {
 
 export type TerminalPayload = { epoch: number; checksum: string; size_bytes: number; payload: unknown };
 
-export type SyncResult = 'synced' | 'unreachable' | 'failed';
+/** `skipped` is not recorded: the terminal was unbound meanwhile, or the payload is older than its synced epoch. */
+export type SyncResult = 'synced' | 'unreachable' | 'failed' | 'skipped';
 export type DeliveryOutcome = { result: SyncResult; error?: string };
 
-/** The transport to a terminal. The demo stub delivers to every reachable terminal and nothing to the others. */
+/**
+ * The transport to a terminal. The demo stub delivers to every reachable terminal and nothing to the others, and
+ * never sends a payload older than the epoch the terminal already has (real terminals must likewise reject a payload
+ * whose epoch is below their current one, since concurrent pushes can arrive out of order).
+ */
 export type TerminalTransport = (target: SyncTarget, payload: TerminalPayload) => Promise<DeliveryOutcome>;
 
-export const stubTransport: TerminalTransport = async (target) =>
-  target.reachable ? { result: 'synced' } : { result: 'unreachable', error: 'unreachable' };
+export const stubTransport: TerminalTransport = async (target, payload) => {
+  if (target.synced_epoch !== null && payload.epoch < target.synced_epoch) return { result: 'skipped' };
+  return target.reachable ? { result: 'synced' } : { result: 'unreachable', error: 'unreachable' };
+};
 
 export type TerminalSyncReport = { device_id: string; organization_id: string; result: SyncResult; epoch: number };
 
@@ -39,6 +46,8 @@ export type SyncOptions = {
   organizationId?: string;
   facilityId?: string;
   transport?: TerminalTransport;
+  /** Only reachable terminals (urgent-bump fast path; unreachable ones are left to the cron). */
+  reachableOnly?: boolean;
 };
 
 const DUE = `
@@ -76,12 +85,13 @@ function message(error: unknown): string {
 export async function syncTerminals(admin: HasuraClient, options: SyncOptions): Promise<TerminalSyncReport[]> {
   const transport = options.transport ?? stubTransport;
   const force = options.force ?? false;
-  const { terminals_due_for_sync: targets } = await admin.request<{ terminals_due_for_sync: SyncTarget[] }>(DUE, {
+  const { terminals_due_for_sync: due } = await admin.request<{ terminals_due_for_sync: SyncTarget[] }>(DUE, {
     at: options.at.toISOString(),
     force,
     org: options.organizationId ?? null,
     facility: options.facilityId ?? null,
   });
+  const targets = options.reachableOnly ? due.filter((t) => t.reachable) : due;
   const reports: TerminalSyncReport[] = [];
   for (const target of targets) {
     const started = performance.now();
@@ -91,11 +101,18 @@ export async function syncTerminals(admin: HasuraClient, options: SyncOptions): 
     try {
       const data = await admin.request<{ terminal_policy_payload: TerminalPayload[] }>(PAYLOAD, { device: target.device_id });
       payload = data.terminal_policy_payload[0];
-      if (!payload) throw new Error('terminal_not_found');
-      epoch = payload.epoch;
-      outcome = await transport(target, payload);
+      if (payload) {
+        epoch = payload.epoch;
+        outcome = await transport(target, payload);
+      } else {
+        outcome = { result: 'skipped' };
+      }
     } catch (error) {
       outcome = { result: 'failed', error: message(error) };
+    }
+    if (outcome.result === 'skipped') {
+      reports.push({ device_id: target.device_id, organization_id: target.organization_id, result: 'skipped', epoch });
+      continue;
     }
     const duration = Math.round((performance.now() - started) * 1000) / 1000;
     try {

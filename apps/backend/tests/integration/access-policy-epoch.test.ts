@@ -118,14 +118,14 @@ describe('policy epoch (distribution)', () => {
     });
   });
 
-  it('should bump on overrides: every start urgent, unlock end urgent, lock end lazy', async () => {
+  it('should bump on overrides: every start urgent, every end urgent', async () => {
     const w = await accessWorld();
     let lock = '';
     expect(await bump(w, async () => (lock = await insertOverride(w.orgA.id, w.facility.id, 'lock_all')))).toEqual({
       delta: 1,
       urgent: true,
     });
-    expect(await bump(w, () => endOverride(lock))).toEqual({ delta: 1, urgent: false });
+    expect(await bump(w, () => endOverride(lock))).toEqual({ delta: 1, urgent: true });
     // Unlock / evacuation starts are urgent too (life-safety: terminals must open promptly).
     let unlock = '';
     expect(await bump(w, async () => (unlock = await insertOverride(w.orgA.id, w.facility.id, 'evacuation')))).toEqual({

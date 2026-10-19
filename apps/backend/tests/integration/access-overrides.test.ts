@@ -138,6 +138,24 @@ describe('Review Focus 5: a lock override denies a valid grant; manual end and e
     expect(Date.parse(events[1].occurred_at)).toBe(Date.parse(ov.ends_at));
   });
 
+  it('should end two overlapping expired overrides in one run (two-phase), each with its event', async () => {
+    const w = await accessWorld();
+    const soon = new Date(Date.now() + 1500).toISOString();
+    const a = await startOverride(w.a, w.facility.id, 'lock_all', { ends_at: soon });
+    const b = await startOverride(w.a, w.facility.id, 'unlock_all', { ends_at: soon, area_ids: [w.area.id] });
+    await new Promise((resolve) => setTimeout(resolve, 1800));
+    const before = await policyEpoch(w.orgA.id);
+    const ended = await endExpired(w.orgA.id);
+    expect(ended.sort()).toEqual([a.id, b.id].sort());
+    expect(await endExpired(w.orgA.id)).toEqual([]);
+    const events = await eventsOf(w.orgA.id, ['emergency_override_ended']);
+    expect(events.map((e) => e.dedup_key).sort()).toEqual([`override:${a.id}:ended`, `override:${b.id}:ended`].sort());
+    // Every end is urgent (2 bumps), unless the real cron got there first.
+    const after = await policyEpoch(w.orgA.id);
+    expect(after.urgent).toBe(after.epoch);
+    expect(after.epoch - before.epoch).toBeLessThanOrEqual(2);
+  });
+
   it('should not let the cron end overrides of another organization or before their ends_at', async () => {
     const w = await accessWorld();
     const ov = await startOverride(w.a, w.facility.id, 'evacuation');

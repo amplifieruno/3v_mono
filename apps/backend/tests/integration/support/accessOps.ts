@@ -177,10 +177,15 @@ export async function publishToTerminals(
   return data.publish_policy_to_terminals;
 }
 
-/** Moves the organization's urgent epoch timestamp into the past (simulates elapsed time). */
+/**
+ * Simulates elapsed time for convergence checks: moves the organization's urgent epochs (policy_urgent_epochs rows and
+ * policy_urgent_at) and its terminal bindings `seconds` into the past.
+ */
 export async function ageUrgentEpoch(org: string, seconds: number): Promise<void> {
-  await runSql(`update itap.organization_settings set policy_urgent_at = now() - interval '${seconds} seconds'
-    where organization_id = '${org}'`);
+  await runSql(`update itap.organization_settings set policy_urgent_at = policy_urgent_at - interval '${seconds} seconds'
+      where organization_id = '${org}';
+    update itap.policy_urgent_epochs set created_at = created_at - interval '${seconds} seconds' where organization_id = '${org}';
+    update itap.access_point_devices set created_at = created_at - interval '${seconds} seconds' where organization_id = '${org}'`);
 }
 
 export { accessWorld };

@@ -125,6 +125,7 @@
 - "!include itap_organization_statuses.yaml"
 - "!include itap_organizations.yaml"
 - "!include itap_override_modes.yaml"
+- "!include itap_policy_urgent_epochs.yaml"
 - "!include itap_profile_activity_stats.yaml"
 - "!include itap_profile_document_kinds.yaml"
 - "!include itap_profile_documents.yaml"

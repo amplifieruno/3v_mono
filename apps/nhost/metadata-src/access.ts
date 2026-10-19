@@ -76,6 +76,8 @@ export const accessTables: TableSpec[] = [
   // Terminal policy distribution (task 4): push log written by record_terminal_sync (ro, not audited).
   { name: 'terminal_sync_results', isEnum: true, profile: 'none' },
   { name: 'terminal_policy_syncs', profile: 'tenant_read' },
+  // One row per urgent policy epoch (bump_policy_epoch); convergence is measured from the earliest unapplied one.
+  { name: 'policy_urgent_epochs', profile: 'tenant_read' },
   // Row types of the admin-only distribution functions (backend sync); store nothing.
   { name: 'terminal_policy_payloads', schema: 'itap_results', profile: 'none' },
   { name: 'terminal_sync_targets', schema: 'itap_results', profile: 'none' },
@@ -86,7 +88,7 @@ export const accessTables: TableSpec[] = [
     'urgent_at', 'urgent_epoch', 'urgent_pending', 'within_bound',
   ]),
   resultTable('access_policy_simulations', [
-    'decisions_in_period', 'denied_to_granted', 'evaluated', 'granted_to_denied', 'period_from', 'period_to',
+    'decisions_in_period', 'denied_to_granted', 'drifted', 'evaluated', 'granted_to_denied', 'period_from', 'period_to',
     'policy_id', 'reason_changed', 'sampled', 'samples', 'skipped', 'unchanged', 'version_id',
   ]),
   resultTable('policy_analytics_rows', [

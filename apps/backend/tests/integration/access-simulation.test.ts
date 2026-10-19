@@ -18,13 +18,23 @@ type Simulation = {
   denied_to_granted: number;
   reason_changed: number;
   skipped: number;
-  samples: { decision_id: string; old_result: string; old_reason: string; new_result: string; new_reason: string }[];
+  drifted: number;
+  samples: {
+    decision_id: string;
+    old_result: string;
+    old_reason: string;
+    new_result: string;
+    new_reason: string;
+    recorded_result: string;
+    recorded_reason: string;
+    drift: boolean;
+  }[];
 };
 
 async function simulate(client: HasuraClient, version: string, from: string, to: string, limit?: number): Promise<Simulation> {
   const data = await client.request<{ simulate_access_policy: Simulation[] }>(
     `query($a: simulate_access_policy_args!) { simulate_access_policy(args: $a) { version_id decisions_in_period evaluated
-      sampled unchanged granted_to_denied denied_to_granted reason_changed skipped samples } }`,
+      sampled unchanged granted_to_denied denied_to_granted reason_changed skipped drifted samples } }`,
     { a: { p_version: version, p_from: from, p_to: to, ...(limit ? { p_limit: limit } : {}) } },
   );
   return data.simulate_access_policy[0];
@@ -58,9 +68,17 @@ describe('simulate_access_policy', () => {
       denied_to_granted: 0,
       reason_changed: 0,
       skipped: 0,
+      drifted: 0,
     });
     expect(sim.samples).toHaveLength(3);
-    expect(sim.samples[0]).toMatchObject({ old_result: 'granted', old_reason: 'policy_allow', new_result: 'denied', new_reason: 'policy_deny' });
+    expect(sim.samples[0]).toMatchObject({
+      old_result: 'granted',
+      old_reason: 'policy_allow',
+      new_result: 'denied',
+      new_reason: 'policy_deny',
+      recorded_result: 'granted',
+      drift: false,
+    });
     expect((await simulate(w.a, draft.id, ago(180), ago(0), 1)).samples).toHaveLength(1);
     // Only the period: the two visitor decisions.
     expect(await simulate(w.a, draft.id, ago(85), ago(0))).toMatchObject({ evaluated: 2, unchanged: 2, granted_to_denied: 0 });
@@ -72,6 +90,21 @@ describe('simulate_access_policy', () => {
     const sim = await simulate(w.a, draft.id, ago(180), ago(0));
     expect(sim).toMatchObject({ evaluated: 5, unchanged: 3, granted_to_denied: 0, denied_to_granted: 2 });
     expect(sim.samples.map((s) => `${s.old_reason}->${s.new_reason}`)).toEqual(['no_rule->policy_allow', 'no_rule->policy_allow']);
+  });
+
+  it('should not attribute a policy published after the decisions to the draft (baseline vs candidate, drift kept)', async () => {
+    const { w, visitor, allow } = await history();
+    // Published after the recorded decisions: the visitor is allowed now.
+    await publishPolicy(w, { profile_id: visitor }, { access_point_id: w.door.id });
+    const unchanged = await createDraft(w.a, allow.policy);
+    const sim = await simulate(w.a, unchanged.id, ago(180), ago(0));
+    expect(sim).toMatchObject({ evaluated: 5, unchanged: 5, denied_to_granted: 0, granted_to_denied: 0, drifted: 2 });
+    expect(sim.samples).toEqual([]);
+    // A deny draft: the employee transitions; the visitor's drift is reported on its own.
+    await updateByPk(w.a, 'access_policy_versions', unchanged.id, { effect: 'deny' });
+    const deny = await simulate(w.a, unchanged.id, ago(180), ago(0));
+    expect(deny).toMatchObject({ granted_to_denied: 3, denied_to_granted: 0, drifted: 2 });
+    expect(deny.samples.every((x) => x.recorded_result === 'granted' && !x.drift)).toBe(true);
   });
 
   it('should write nothing (no transaction id assigned, no rows)', async () => {

@@ -9,6 +9,7 @@ select_permissions:
       columns:
         - decisions_in_period
         - denied_to_granted
+        - drifted
         - evaluated
         - granted_to_denied
         - organization_id

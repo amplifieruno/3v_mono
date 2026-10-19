@@ -533,6 +533,14 @@ array_relationships:
           name: organization_invitations
         column_mapping:
           id: organization_id
+  - name: policy_urgent_epochs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: policy_urgent_epochs
+        column_mapping:
+          id: organization_id
   - name: profile_activity_stats
     using:
       manual_configuration:

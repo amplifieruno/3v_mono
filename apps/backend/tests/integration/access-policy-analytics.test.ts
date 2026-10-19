@@ -82,6 +82,12 @@ describe('policy_analytics', () => {
     expect(a.complexity).toMatchObject({ enforced_policies: 5, subjects: 5, targets: 5 });
     expect(used).toBeTruthy();
 
+    // A period ending before the revocation: that grant is not revoked yet (unused); the buckets sum to the total.
+    const early = await analytics(w.a, ago(120), ago(20));
+    expect(early.grants).toMatchObject({ total: 4, revoked: 0 });
+    const g = early.grants;
+    expect(g.used + g.unused + g.expired + g.revoked).toBe(g.total);
+
     // Another organization sees none of it; a bad period is refused.
     expect(await analytics(w.b, ago(120), ago(-1))).toMatchObject({ decisions: 0, versions: [], grants: { total: 0 } });
     expect((await expectError(analytics(w.a, ago(0), ago(10)))).message).toContain('report_period_invalid');

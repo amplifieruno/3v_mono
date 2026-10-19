@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Env } from '../config/env.js';
-import { syncTerminalPolicies } from '../events/accessCrons.js';
+import { policyUrgentEpochBumped, syncTerminalPolicies } from '../events/accessCrons.js';
 import { defaultEventHandlers } from '../events/router.js';
 import type { HasuraClient } from '../hasura/client.js';
 import { stubTransport, syncTerminals, type SyncTarget } from './terminalSync.js';
@@ -17,13 +17,17 @@ const target = (device: string, reachable: boolean): SyncTarget => ({
 });
 
 /** A fake Hasura client answering the three sync operations by name; records the record_terminal_sync variables. */
-function fakeAdmin(targets: SyncTarget[], options: { failPayloadFor?: string; failRecord?: boolean } = {}) {
+function fakeAdmin(
+  targets: SyncTarget[],
+  options: { failPayloadFor?: string; failRecord?: boolean; missingPayloadFor?: string; payloadEpoch?: number } = {},
+) {
   const recorded: Record<string, unknown>[] = [];
   const request = vi.fn(async (query: string, variables: Record<string, unknown> = {}) => {
     if (query.includes('TerminalsDueForSync')) return { terminals_due_for_sync: targets };
     if (query.includes('TerminalPolicyPayload')) {
       if (variables.device === options.failPayloadFor) throw new Error('payload boom');
-      return { terminal_policy_payload: [{ epoch: 4, checksum: 'abc', size_bytes: 120, payload: {} }] };
+      if (variables.device === options.missingPayloadFor) return { terminal_policy_payload: [] };
+      return { terminal_policy_payload: [{ epoch: options.payloadEpoch ?? 4, checksum: 'abc', size_bytes: 120, payload: {} }] };
     }
     if (options.failRecord) throw new Error('record boom');
     recorded.push(variables);
@@ -60,10 +64,34 @@ describe('syncTerminals', () => {
     );
   });
 
+  it('should skip (not record) a terminal unbound meanwhile and a payload older than the synced epoch', async () => {
+    const missing = fakeAdmin([target('t1', true), target('t2', true)], { missingPayloadFor: 't1' });
+    expect((await syncTerminals(missing.admin, { at: new Date() })).map((r) => r.result)).toEqual(['skipped', 'synced']);
+    expect(missing.recorded.map((r) => r.device)).toEqual(['t2']);
+    const older = fakeAdmin([{ ...target('t1', true), synced_epoch: 7 }], { payloadEpoch: 5 });
+    expect((await syncTerminals(older.admin, { at: new Date() }))[0].result).toBe('skipped');
+    expect(older.recorded).toEqual([]);
+  });
+
+  it('should let the urgent-bump handler return early when nothing reachable is due', async () => {
+    const { admin, recorded } = fakeAdmin([target('t1', false)]);
+    const event = {
+      id: 'e',
+      trigger: { name: 'policy_urgent_epoch_bumped' },
+      table: { schema: 'itap', name: 'organization_settings' },
+      event: { op: 'UPDATE' as const, session_variables: null, data: { old: null, new: { organization_id: 'org' } } },
+    };
+    const result = await policyUrgentEpochBumped.handle(event, { env: {} as Env, admin, idempotencyKey: 'k' });
+    expect(result).toMatchObject({ terminals: 0 });
+    expect(recorded).toEqual([]);
+    expect((admin.request as unknown as { mock: { calls: unknown[] } }).mock.calls).toHaveLength(1);
+  });
+
   it('should treat only reachable terminals as delivered by the stub', async () => {
     const payload = { epoch: 1, checksum: 'x', size_bytes: 1, payload: {} };
     expect(await stubTransport(target('a', true), payload)).toEqual({ result: 'synced' });
     expect(await stubTransport(target('b', false), payload)).toEqual({ result: 'unreachable', error: 'unreachable' });
+    expect(await stubTransport({ ...target('c', true), synced_epoch: 2 }, payload)).toEqual({ result: 'skipped' });
   });
 
   it('should register the crons and the urgent-bump trigger', () => {

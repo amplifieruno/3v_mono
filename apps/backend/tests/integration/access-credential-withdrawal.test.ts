@@ -74,7 +74,8 @@ describe('credential withdrawal bumps the policy epoch (deferred, urgent)', () =
     expect(await bump(w, () => removeMembers(w.a, unreferenced.id, [w.profile]))).toEqual(NONE);
     const segment = await manualSegment(w.a);
     await enforce(w, { segment_id: segment.id });
-    expect(await bump(w, () => addMembers(w.a, segment.id, [w.profile]))).toEqual(NONE);
+    // Joining a referenced segment bumps lazily (fix round: allow lists converge); leaving it bumps urgently.
+    expect(await bump(w, () => addMembers(w.a, segment.id, [w.profile]))).toEqual({ delta: 1, urgent: false });
     expect(await bump(w, () => removeMembers(w.a, segment.id, [w.profile]))).toEqual(URGENT_ONCE);
     const deleteRows = (id: string) => `select set_config('itap.merge_context', 'on', true);
       delete from itap.segment_members where segment_id = '${id}'`;

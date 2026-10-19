@@ -1,0 +1,25 @@
+table:
+  schema: itap
+  name: policy_urgent_epochs
+configuration:
+  custom_name: policy_urgent_epochs
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - epoch
+        - organization_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
