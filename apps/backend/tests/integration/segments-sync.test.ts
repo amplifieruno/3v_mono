@@ -14,9 +14,11 @@ import {
   openRows,
   preview,
   removeMembers,
+  rollbackMerge,
   segmentWorld,
   syncMembers,
 } from './support/segments.js';
+import { expectSegmentInvariants } from './support/seedSegments.js';
 import { runSql, runSqlRows } from './support/sql.js';
 import { at, createIdentity, detect } from './support/tracking.js';
 
@@ -188,14 +190,17 @@ describe('membership locks and merges (task 1 carry-overs)', () => {
     const w = await segmentWorld();
     const actor = asActor(w.orgA.id, w.user.id);
     const segment = await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'gte', value: 0 });
+    // Evaluation instants in the future (deterministic): whichever of merge and evaluation runs first, no row may
+    // close before it opened and the target's intervals may not overlap.
+    const base = Date.now() + 3600_000;
     for (let round = 0; round < 5; round += 1) {
       const target = await createIdentity(w.a);
       const source = await createIdentity(w.a);
-      await syncMembers(actor, segment.id, [target], new Date(Date.now() + round * 2000).toISOString());
+      await syncMembers(actor, segment.id, [target], new Date(base + round * 2000).toISOString());
       await addMembers(w.a, segment.id, [source]);
       const [merge] = await Promise.all([
         mergeInto(w.a, target, [source]),
-        syncMembers(actor, segment.id, [], new Date(Date.now() + round * 2000 + 1000).toISOString()),
+        syncMembers(actor, segment.id, [], new Date(base + round * 2000 + 1000).toISOString()),
       ]);
       expect((await openRows(segment.id)).filter(([s]) => s === target || s === source)).toEqual([[target, 'manual']]);
       const moves = await runSqlRows(
@@ -203,6 +208,36 @@ describe('membership locks and merges (task 1 carry-overs)', () => {
       );
       expect(moves[0].missing).toBe('0');
     }
+    await expectSegmentInvariants(w.orgA.slug);
+  });
+
+  it('should clamp manual adds, removes and merges to future-stamped rows (no closing before opening, no overlaps)', async () => {
+    const w = await segmentWorld();
+    const actor = asActor(w.orgA.id, w.user.id);
+    const segment = await dynamicSegment(w.a, 'identities', { field: 'detection_count', operator: 'gte', value: 0 });
+    const [pinned, reopened, source, target] = [w.identity, await createIdentity(w.a), await createIdentity(w.a), await createIdentity(w.a)];
+    const f = Date.now() + 3600_000;
+    const F = new Date(f).toISOString();
+    const F1 = new Date(f + 1000).toISOString();
+    await syncMembers(actor, segment.id, [pinned, reopened, source, target], F);
+    // Pinning over a rule row that opens at F: the rule row closes and the manual row opens at F.
+    await addMembers(w.a, segment.id, [pinned, source]);
+    await syncMembers(actor, segment.id, [target], F1);
+    // reopened's rule row closed at F + 1 s: the manual row opens no earlier.
+    await addMembers(w.a, segment.id, [reopened]);
+    await removeMembers(w.a, segment.id, [pinned]);
+    const merge = await mergeInto(w.a, target, [source]);
+    const rows = await exactRows(segment.id);
+    const ms = (v: string | null) => (v === null || v === 'NULL' ? null : Date.parse(v));
+    const times = (subject: string) =>
+      rows.filter((r) => r.subject === subject).map((r) => [r.source, ms(r.added_at), ms(r.removed_at)]);
+    expect(times(pinned)).toEqual(expect.arrayContaining([['rule', f, f], ['manual', f, f]]));
+    expect(times(reopened)).toEqual(expect.arrayContaining([['rule', f, f + 1000], ['manual', f + 1000, null]]));
+    expect(times(source)).toEqual(expect.arrayContaining([['rule', f, f], ['manual', f, f]]));
+    expect(times(target)).toEqual(expect.arrayContaining([['rule', f, f], ['manual', f, null]]));
+    await expectSegmentInvariants(w.orgA.slug);
+    await rollbackMerge(w.a, merge);
+    await expectSegmentInvariants(w.orgA.slug);
   });
 
   it('should not deadlock or add merged identities when manual adds race with merges', async () => {
