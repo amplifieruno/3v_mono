@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: seed_finalize_notifications
+configuration:
+  custom_name: seed_finalize_notifications
+  exposed_as: mutation

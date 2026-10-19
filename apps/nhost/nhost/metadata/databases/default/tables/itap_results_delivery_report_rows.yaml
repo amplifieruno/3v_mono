@@ -1,0 +1,28 @@
+table:
+  schema: itap_results
+  name: delivery_report_rows
+configuration:
+  custom_name: delivery_report_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - ack_rate
+        - acknowledged
+        - avg_response_seconds
+        - channel
+        - dead_letter
+        - delivered
+        - digested
+        - escalations
+        - failed
+        - organization_id
+        - pending
+        - sent
+        - total
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

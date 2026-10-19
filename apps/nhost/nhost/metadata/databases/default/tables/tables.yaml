@@ -112,6 +112,7 @@
 - "!include itap_recipient_group_members.yaml"
 - "!include itap_recipient_groups.yaml"
 - "!include itap_results_area_refs.yaml"
+- "!include itap_results_delivery_report_rows.yaml"
 - "!include itap_results_face_matches.yaml"
 - "!include itap_results_trigger_log_purges.yaml"
 - "!include itap_shift_handover_incidents.yaml"

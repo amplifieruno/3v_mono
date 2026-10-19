@@ -44,4 +44,7 @@ export const sendingFunctions: FunctionSpec[] = [
   adminOnly('due_webhook_deliveries', 'query', 'retry_webhooks cron across all organizations'),
   adminOnly('escalate_incidents', 'mutation', 'called per organization by the escalate cron handler'),
   adminOnly('send_digests', 'mutation', 'called per organization by the send_digests cron handler'),
+  // Seed only (design §9): history rows dated at their simulated time; see migration *_seed_history_notifications.
+  adminOnly('seed_finalize_notifications', 'mutation', 'seed history replay (pnpm seed)'),
+  adminOnly('seed_escalate_incident', 'mutation', 'seed history replay (pnpm seed)'),
 ];

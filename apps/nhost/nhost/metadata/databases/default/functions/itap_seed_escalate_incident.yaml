@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: seed_escalate_incident
+configuration:
+  custom_name: seed_escalate_incident
+  exposed_as: mutation
