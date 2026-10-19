@@ -12,9 +12,11 @@ describe('close_stale_sessions', () => {
     await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
     await detect(w.orgA.id, w.entranceCam, door, 0);
     await detect(w.orgA.id, w.lobbyCam, w.identity, 100);
-    expect(await closeStale(w.orgA.id, 350)).toEqual([{ id: (await sessions(door))[0].id, status: 'completed' }]);
-    expect(await closeStale(w.orgA.id, 399)).toEqual([]);
-    const closed = await closeStale(w.orgA.id, 401);
+    // Cutoff = at - timeout (300 s) - 60 s grace: idle 350 s is past the timeout but inside the grace.
+    expect(await closeStale(w.orgA.id, 350)).toEqual([]);
+    expect(await closeStale(w.orgA.id, 361)).toEqual([{ id: (await sessions(door))[0].id, status: 'completed' }]);
+    expect(await closeStale(w.orgA.id, 459)).toEqual([]);
+    const closed = await closeStale(w.orgA.id, 461);
     expect(closed).toEqual([{ id: (await sessions(w.identity))[0].id, status: 'lost' }]);
     const [session] = await sessions(w.identity);
     expect(Date.parse(session.ended_at ?? '')).toBe(Date.parse(at(100)));
@@ -29,10 +31,10 @@ describe('close_stale_sessions', () => {
     const w = await createTrackingWorld();
     const people = [w.identity, ...(await Promise.all([1, 2, 3, 4, 5].map(() => createIdentity(w.a))))];
     for (const id of people) await detect(w.orgA.id, w.lobbyCam, id, 0);
-    // Cutoff 100: the sessions (last seen at 0) are stale; the racing detection at 250 extends one within the
-    // timeout or, if the cron closed it first, opens a new session.
+    // Cutoff 100 (460 - 300 s timeout - 60 s grace): the sessions (last seen at 0) are stale; the racing detection at
+    // 250 extends one within the timeout or, if the cron closed it first, opens a new session.
     await Promise.all([
-      closeStale(w.orgA.id, 400),
+      closeStale(w.orgA.id, 460),
       ...people.map((id) => detect(w.orgA.id, w.lobbyCam, id, 250)),
     ]);
     for (const id of people) {
