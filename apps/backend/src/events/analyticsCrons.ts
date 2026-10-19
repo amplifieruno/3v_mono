@@ -7,8 +7,9 @@ const AGGREGATE_STATS = `
 `;
 
 /**
- * Cron `aggregate_stats` (hourly at minute 5): itap.aggregate_stats per organization with the scheduled time, i.e. the
- * previous complete UTC hour plus the facility-local day(s) it touches. Idempotent per hour bucket, so a retry or a
- * late run re-aggregates the same buckets. Activity stats are refreshed by `evaluate_segments`, not here.
+ * Cron `aggregate_stats` (hourly at minute 5): itap.aggregate_stats per organization with the scheduled time, i.e. a
+ * trailing window [hour_floor(at - max tracking timeout - 180 s) - 1 h, hour_floor(at)) plus the facility-local day(s)
+ * it touches, so late session closes and a missed run heal on the next run. Idempotent (upserts only changed rows), so
+ * a retry re-aggregates the same buckets. Activity stats are refreshed by `evaluate_segments`, not here.
  */
 export const aggregateStatsCron = perOrganizationCron('aggregate_stats', AGGREGATE_STATS);

@@ -24,6 +24,7 @@ const dataset: ReportDataset = {
     ['Annex, "B"', '2026-10-18', 0, null],
     ['=cmd|calc', 'Zürich – ü', -3, true],
     ['-', '-1+1', '@x', 'a-b'],
+    ['-(1+1)', '-1.5', '--x', '-12'],
   ],
   truncated: false,
 };
@@ -41,8 +42,9 @@ describe('renderCsv', () => {
   it('should neutralise spreadsheet formulas in text cells but keep negative numbers', () => {
     const lines = renderCsv(dataset).toString('utf8').split('\r\n');
     expect(lines[3]).toBe("'=cmd|calc,Zürich – ü,-3,true");
-    // A lone dash placeholder stays; a dash followed by a digit or letter could start a formula.
-    expect(lines[4]).toBe("-,'-1+1,'@x,a-b");
+    // Any text starting with a dash is prefixed unless it is a plain number (-1.5, -12).
+    expect(lines[4]).toBe("'-,'-1+1,'@x,a-b");
+    expect(lines[5]).toBe("'-(1+1),-1.5,'--x,-12");
   });
 });
 

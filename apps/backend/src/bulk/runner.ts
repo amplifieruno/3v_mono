@@ -23,6 +23,7 @@ const CUSTOM_KEYS = `
 const ROWS = `
   query BulkJobRows($job: uuid!) { bulk_job_rows(where: { bulk_job_id: { _eq: $job } }, order_by: { row_no: asc }) { ${JOB_ROW_FIELDS} } }
 `;
+const JOB_STATE = `query BulkJobState($id: uuid!) { bulk_jobs_by_pk(id: $id) { id organization_id status error result_file_id } }`;
 const LEFTOVER_FILES = `
   query BulkLeftoverFiles($bucket: String!, $meta: jsonb!) { files(where: { bucketId: { _eq: $bucket }, metadata: { _contains: $meta } }) { id } }
 `;
@@ -48,6 +49,7 @@ async function loadInput(job: Job, kind: BulkKind, deps: BulkDeps): Promise<{ co
   }
   const [header, ...rows] = records;
   if (!header || header.every((c) => c.trim() === '')) throw new JobFailure('header_missing');
+  if (header.some((c) => c.includes('\u0000'))) throw new JobFailure('csv_invalid: NUL character');
   if (rows.length > MAX_ROWS) throw new JobFailure('too_many_rows');
   const { custom_attribute_definitions: defs } =
     kind === 'bulk_search'
@@ -66,7 +68,7 @@ async function jobRows(job: Job, deps: BulkDeps): Promise<JobRow[]> {
 }
 
 /** Files an earlier attempt uploaded but never attached (metadata.bulk_job_id), except the job's result. Best effort. */
-async function sweepLeftovers(job: Job, deps: BulkDeps): Promise<void> {
+async function sweepLeftovers(job: Pick<Job, 'id' | 'organization_id' | 'result_file_id'>, deps: BulkDeps): Promise<void> {
   try {
     const { files } = await deps.admin.request<{ files: { id: string }[] }>(LEFTOVER_FILES, {
       bucket: job.organization_id.toLowerCase(),
@@ -75,6 +77,21 @@ async function sweepLeftovers(job: Job, deps: BulkDeps): Promise<void> {
     for (const f of files) if (f.id !== job.result_file_id) await deps.storage.deleteFile(f.id).catch(() => undefined);
   } catch {
     // The next claim sweeps again.
+  }
+}
+
+/**
+ * A refused claim that failed the job (max_attempts, owner_inactive) leaves no attempt to sweep the files earlier
+ * attempts uploaded: sweep them here. Best effort.
+ */
+async function sweepAfterRefusedClaim(id: string, deps: BulkDeps): Promise<void> {
+  type State = Pick<Job, 'id' | 'organization_id' | 'status' | 'result_file_id'> & { error: string | null };
+  const state = await deps.admin
+    .request<{ bulk_jobs_by_pk: State | null }>(JOB_STATE, { id })
+    .then((r) => r.bulk_jobs_by_pk)
+    .catch(() => null);
+  if (state?.status === 'failed' && (state.error === 'max_attempts' || state.error === 'owner_inactive')) {
+    await sweepLeftovers(state, deps);
   }
 }
 
@@ -113,7 +130,10 @@ async function finish(job: Job, attempt: number, kind: BulkKind, deps: BulkDeps)
 export async function runBulkJob(id: string, deps: BulkDeps): Promise<BulkResult> {
   const { claim_bulk_job: claimed } = await deps.admin.request<{ claim_bulk_job: Job[] }>(CLAIM, { id });
   const job = claimed[0];
-  if (!job) return { job_id: id, skipped: 'not_claimed' };
+  if (!job) {
+    await sweepAfterRefusedClaim(id, deps);
+    return { job_id: id, skipped: 'not_claimed' };
+  }
   const attempt = job.attempts;
   const now = deps.now ?? Date.now;
   const progress = async (total: number | null, processed: number | null): Promise<void> => {

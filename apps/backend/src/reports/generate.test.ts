@@ -28,6 +28,7 @@ function fakeAdmin(overrides: {
   fail?: unknown[];
   fileId?: string | null;
   leftovers?: string[];
+  state?: { status: string; error: string | null; file_id: string | null } | null;
 }) {
   const calls: Calls = [];
   const request = vi.fn(async (query: string, variables: Record<string, unknown> = {}) => {
@@ -40,6 +41,10 @@ function fakeAdmin(overrides: {
       return overrides.complete ? overrides.complete() : { complete_report: [{ id: REPORT, status: 'completed' }] };
     }
     if (query.includes('fail_report')) return { fail_report: overrides.fail ?? [{ id: REPORT, status: 'failed' }] };
+    if (query.includes('ReportState')) {
+      const state = overrides.state === undefined ? { status: 'generating', error: null, file_id: null } : overrides.state;
+      return { reports_by_pk: state && { id: REPORT, organization_id: ORG, ...state } };
+    }
     if (query.includes('reports_by_pk')) return { reports_by_pk: { file_id: overrides.fileId ?? null } };
     if (query.includes('ReportLeftoverFiles')) return { files: (overrides.leftovers ?? []).map((id) => ({ id })) };
     throw new Error(`unexpected query ${query}`);
@@ -62,8 +67,24 @@ describe('generateReport', () => {
     const { admin, calls } = fakeAdmin({ claim: [] });
     const storage = fakeStorage();
     expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, skipped: 'not_claimed' });
-    expect(calls).toHaveLength(1);
+    expect(calls.some((c) => c.query.includes('ReportLeftoverFiles'))).toBe(false);
     expect(storage.upload).not.toHaveBeenCalled();
+    expect(storage.deleteFile).not.toHaveBeenCalled();
+  });
+
+  it('should sweep files of earlier attempts when the claim ran out of attempts', async () => {
+    const { admin, calls } = fakeAdmin({
+      claim: [],
+      state: { status: 'failed', error: 'max_attempts', file_id: null },
+      leftovers: ['stale-1', 'stale-2'],
+    });
+    const storage = fakeStorage();
+    expect(await generateReport(REPORT, { admin, storage })).toEqual({ report_id: REPORT, skipped: 'not_claimed' });
+    expect(calls.find((c) => c.query.includes('ReportLeftoverFiles'))?.variables).toEqual({
+      bucket: ORG.toLowerCase(),
+      meta: { report_id: REPORT },
+    });
+    expect(storage.deleteFile.mock.calls.map((c) => (c as unknown[])[0])).toEqual(['stale-1', 'stale-2']);
   });
 
   it('should compute, render, upload into the org bucket and complete with the claimed attempt', async () => {

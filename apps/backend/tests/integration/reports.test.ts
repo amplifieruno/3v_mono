@@ -152,6 +152,16 @@ describe('reports', () => {
     await expectError(callReportFn(asOrgAdmin(w.other.id, w.orgB.id), 'generate_incident_report', { p_incident: incident.id }));
   });
 
+  it('should name only members of the report organization in incident reports', async () => {
+    const name = async (org: string, user: string) =>
+      (await runSqlRows(`SELECT coalesce(itap.report_user_name('${org}', '${user}'), 'NULL') AS n`))[0].n;
+    expect(await name(w.orgA.id, w.user.id)).toBe(w.user.email);
+    // A user of another organization stays anonymous (no names / emails across tenants).
+    expect(await name(w.orgA.id, w.other.id)).toBe('NULL');
+    const [details] = await runSqlRows(`SELECT itap.report_details_text('${w.orgA.id}', '{"by": "${w.other.id}", "to": "${w.user.id}"}') AS t`);
+    expect(details.t).toBe(`to: ${w.user.email}`);
+  });
+
   it('should emit report_generated through Stage C to webhook subscriptions', async () => {
     const sub = await insertOne(w.a, 'webhook_subscriptions', {
       url: 'http://backend:3001/hasura/events/webhook-sink',

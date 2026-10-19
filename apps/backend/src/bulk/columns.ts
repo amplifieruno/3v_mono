@@ -66,12 +66,21 @@ export function validateHeader(
   return { ok: true, columns };
 }
 
-export type RowValues = { kind: 'values'; values: Record<string, string> } | { kind: 'blank' } | { kind: 'mismatch' };
+export type RowValues =
+  | { kind: 'values'; values: Record<string, string> }
+  | { kind: 'blank' }
+  | { kind: 'mismatch' }
+  | { kind: 'invalid'; error: string };
 
-/** Trimmed non-empty cells by column; a record of only empty cells is blank; another field count is a mismatch. */
+/**
+ * Trimmed non-empty cells by column; a record of only empty cells is blank; another field count is a mismatch; a cell
+ * holding a NUL character (PostgreSQL text cannot store it) is `invalid_value:<column>`.
+ */
 export function rowValues(columns: string[], cells: string[]): RowValues {
   if (cells.every((c) => c.trim() === '')) return { kind: 'blank' };
   if (cells.length !== columns.length) return { kind: 'mismatch' };
+  const nul = cells.findIndex((c) => c.includes('\u0000'));
+  if (nul >= 0) return { kind: 'invalid', error: `invalid_value:${columns[nul]}` };
   const values: Record<string, string> = {};
   columns.forEach((column, i) => {
     const value = cells[i].trim();

@@ -54,7 +54,7 @@ describe('bulk job resume', () => {
     expect((await bulkJob(id)).attempts).toBe(1);
 
     await runSql(`UPDATE itap.bulk_jobs SET lease_expires_at = now() - interval '1 second' WHERE id = '${id}'`);
-    expect(await runResumeCron([w.orgA.id])).toEqual({ jobs_started: 1 });
+    expect(await runResumeCron([w.orgA.id])).toMatchObject({ jobs_started: 1 });
     const done = await settledJob(id);
     expect(done).toMatchObject({ status: 'completed', attempts: 2, total: 5, processed: 5, succeeded: 5, failed: 0 });
     const counts = await countProfiles(w.orgA.id, tag);
@@ -88,6 +88,59 @@ describe('bulk job resume', () => {
     await runResumeCron([w.orgA.id]);
     const done = await settledJob(id);
     expect(done).toMatchObject({ status: 'failed', error: 'owner_inactive', succeeded: 3 });
+  });
+});
+
+describe('bulk job reclaim of a bulk_search job', () => {
+  it('should close the search requests a dead attempt left queued or running as failed interrupted', async () => {
+    const w = await world();
+    const file = await uploadCsv(w.user.id, w.orgA.id, `image_file_id\n${randomUUID()}`);
+    const [row] = await runSqlRows(`INSERT INTO itap.bulk_jobs (organization_id, kind, owner_id, input_file_id, status, attempts, total, lease_expires_at, started_at)
+      VALUES ('${w.orgA.id}', 'bulk_search', '${w.user.id}', '${file}', 'running', 1, 3, now() - interval '1 second', now()) RETURNING id`);
+    const id = row.id ?? '';
+    const requests = await runSqlRows(`INSERT INTO itap.search_requests (organization_id, user_id, search_type, status, bulk_job_id, bulk_job_row_no)
+      SELECT '${w.orgA.id}', '${w.user.id}', 'attribute', s, '${id}', n FROM (VALUES ('queued', 1), ('running', 2)) v (s, n);
+      INSERT INTO itap.search_requests (organization_id, user_id, search_type, status, bulk_job_id, bulk_job_row_no)
+      VALUES ('${w.orgA.id}', '${w.user.id}', 'attribute', 'queued', NULL, NULL) RETURNING id`);
+    const unrelated = requests[0].id ?? '';
+    await runSql(`UPDATE itap.search_requests SET status = 'running' WHERE bulk_job_id = '${id}' AND bulk_job_row_no = 2`);
+
+    const [claimed] = await callJobFn(asAdmin(), 'claim_bulk_job', id);
+    expect(claimed).toMatchObject({ status: 'running', attempts: 2 });
+    const after = await runSqlRows(`SELECT bulk_job_row_no::text AS row_no, status, error, (completed_at IS NOT NULL)::text AS closed
+      FROM itap.search_requests WHERE bulk_job_id = '${id}' ORDER BY bulk_job_row_no`);
+    expect(after).toEqual([
+      { row_no: '1', status: 'failed', error: 'interrupted', closed: 'true' },
+      { row_no: '2', status: 'failed', error: 'interrupted', closed: 'true' },
+    ]);
+    // Only this job's requests are closed.
+    expect((await runSqlRows(`SELECT status FROM itap.search_requests WHERE id = '${unrelated}'`))[0].status).toBe('queued');
+    await asAdmin().request(`mutation ($id: uuid!) { fail_bulk_job(args: { p_job: $id, p_attempt: 2, p_error: "test" }) { id } }`, { id });
+    await runSql(`DELETE FROM itap.search_requests WHERE id = '${unrelated}'`);
+  });
+});
+
+describe('stale search requests', () => {
+  it('should close search requests left queued or running for over 10 minutes as failed interrupted', async () => {
+    const w = await world();
+    const rows = await runSqlRows(`INSERT INTO itap.search_requests (organization_id, user_id, search_type, status, started_at, created_at)
+      VALUES ('${w.orgA.id}', '${w.user.id}', 'attribute', 'queued', NULL, now() - interval '11 minutes'),
+             ('${w.orgA.id}', '${w.user.id}', 'attribute', 'running', now() - interval '11 minutes', now() - interval '11 minutes'),
+             ('${w.orgA.id}', '${w.user.id}', 'attribute', 'running', now() - interval '5 minutes', now() - interval '12 minutes'),
+             ('${w.orgA.id}', '${w.user.id}', 'attribute', 'queued', NULL, now() - interval '1 minute')
+      RETURNING id`);
+    const ids = rows.map((r) => r.id ?? '');
+    const result = await runResumeCron([w.orgA.id]);
+    expect(result.searches_interrupted).toBeGreaterThanOrEqual(2);
+    const after = await runSqlRows(`SELECT id, status, coalesce(error, '') AS error FROM itap.search_requests WHERE id IN ('${ids.join("','")}')`);
+    const byId = Object.fromEntries(after.map((r) => [r.id ?? '', [r.status, r.error]]));
+    expect(ids.map((id) => byId[id])).toEqual([
+      ['failed', 'interrupted'],
+      ['failed', 'interrupted'],
+      ['running', ''],
+      ['queued', ''],
+    ]);
+    await runSql(`DELETE FROM itap.search_requests WHERE id IN ('${ids.join("','")}')`);
   });
 });
 

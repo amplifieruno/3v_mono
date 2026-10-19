@@ -3,7 +3,7 @@ import { defineCronHandler, defineEventHandler } from '../events/types.js';
 import { createInsightFaceClient } from '../face/insightFaceClient.js';
 import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
 import { createStorageClient } from '../storage/storageClient.js';
-import { DUE, type BulkDeps } from './ops.js';
+import { CLOSE_STALE_SEARCHES, DUE, type BulkDeps } from './ops.js';
 import { runBulkJob } from './runner.js';
 
 const DUE_BATCH = 10;
@@ -47,15 +47,23 @@ export const runBulkJobTrigger = defineEventHandler(async (payload, ctx) => {
   return { job_id: id, started: true };
 });
 
-/** Cron `resume_bulk_jobs` (every minute): queued jobs the trigger left over a minute, running jobs with an expired lease. */
+/**
+ * Cron `resume_bulk_jobs` (every minute): first closes search requests left queued / running for over 10 minutes (a
+ * worker died mid-search, bulk or not) as failed `interrupted`; then starts queued jobs the trigger left over a minute
+ * and running jobs with an expired lease.
+ */
 export const resumeBulkJobs = defineCronHandler(async (payload, ctx) => {
   const at = new Date(payload.scheduled_time);
   if (Number.isNaN(at.getTime())) throw new Error(`Invalid scheduled_time: ${payload.scheduled_time}`);
+  const { close_stale_search_requests: closed } = await ctx.admin.request<{ close_stale_search_requests: { id: string }[] }>(
+    CLOSE_STALE_SEARCHES,
+    { at: new Date().toISOString() },
+  );
   const { due_bulk_jobs: due } = await ctx.admin.request<{ due_bulk_jobs: { id: string }[] }>(DUE, {
     at: at.toISOString(),
     limit: DUE_BATCH,
   });
   const deps = bulkDeps(ctx.env, ctx.admin);
   for (const job of due) start(job.id, deps);
-  return { jobs_started: due.length };
+  return { jobs_started: due.length, searches_interrupted: closed.length };
 });

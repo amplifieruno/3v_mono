@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: close_stale_search_requests
+configuration:
+  custom_name: close_stale_search_requests
+  exposed_as: mutation

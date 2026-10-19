@@ -91,7 +91,7 @@ export const searchTables: TableSpec[] = [
 
 export const searchFunctions: FunctionSpec[] = [
   { name: 'search_identities', exposedAs: 'query', roles: [] },
-  ...['init_saved_search', 'record_saved_search_run', 'finish_saved_search_run'].map(
+  ...['init_saved_search', 'record_saved_search_run', 'finish_saved_search_run', 'close_stale_search_requests'].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', roles: [] }),
   ),
 ];

@@ -19,6 +19,7 @@
 - "!include itap_claim_report.yaml"
 - "!include itap_claim_webhook_delivery.yaml"
 - "!include itap_close_incident.yaml"
+- "!include itap_close_stale_search_requests.yaml"
 - "!include itap_close_stale_sessions.yaml"
 - "!include itap_complete_bulk_job.yaml"
 - "!include itap_complete_report.yaml"

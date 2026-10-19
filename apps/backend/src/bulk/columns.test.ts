@@ -69,6 +69,11 @@ describe('rowValues', () => {
     expect(rowValues(header, [' ', '', ''])).toEqual({ kind: 'blank' });
     expect(rowValues(header, ['a', 'b'])).toEqual({ kind: 'mismatch' });
   });
+
+  it('should reject a cell holding a NUL character (PostgreSQL text cannot store it)', () => {
+    expect(rowValues(header, ['Ada', 'Love\u0000lace', ''])).toEqual({ kind: 'invalid', error: 'invalid_value:last_name' });
+    expect(rowValues(header, ['Ada', 'Lovelace', '\u0000'])).toEqual({ kind: 'invalid', error: 'invalid_value:custom.badge' });
+  });
 });
 
 describe('resolveBulkOptions', () => {

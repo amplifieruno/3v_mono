@@ -14,6 +14,8 @@ export type BulkDeps = {
   searchAs: (organizationId: string, userId: string) => SearchDeps;
   /** Clock for the progress cadence (tests). */
   now?: () => number;
+  /** Delay between retries of a row after a transient database error (tests). */
+  sleep?: (ms: number) => Promise<void>;
 };
 
 export const JOB_FIELDS = 'id code organization_id owner_id kind options input_file_id status attempts total processed result_file_id';
@@ -66,6 +68,10 @@ export const RECORD_ROW = `
 `;
 export const DUE = `
   query DueBulkJobs($at: timestamptz!, $limit: Int!) { due_bulk_jobs(args: { p_at: $at, p_limit: $limit }) { id organization_id } }
+`;
+
+export const CLOSE_STALE_SEARCHES = `
+  mutation CloseStaleSearchRequests($at: timestamptz!) { close_stale_search_requests(args: { p_at: $at }) { id } }
 `;
 
 /** The job stopped being this worker's (cancelled, reclaimed, owner inactive): stop without touching it. */

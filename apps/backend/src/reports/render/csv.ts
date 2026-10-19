@@ -2,11 +2,14 @@ import { cellText, type Cell, type ReportDataset } from '../dataset.js';
 
 /**
  * Text that a spreadsheet could read as a formula is prefixed with `'` (CSV injection): starting with = + @ tab CR,
- * or a dash followed by a digit or letter (a lone `-` placeholder stays). Numbers stay numbers.
+ * or with a dash unless the whole text is a plain decimal number (`-1.5` stays; `-(1+1)`, `--x` and a lone `-` are
+ * prefixed). Number cells stay numbers.
  */
 function csvCell(value: Cell): string {
   let text = cellText(value);
-  if (typeof value === 'string' && /^([=+@\t\r]|-[0-9A-Za-z])/.test(text)) text = `'${text}`;
+  if (typeof value === 'string' && (/^[=+@\t\r]/.test(text) || (text.startsWith('-') && !/^-?\d+(\.\d+)?$/.test(text)))) {
+    text = `'${text}`;
+  }
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

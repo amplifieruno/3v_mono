@@ -52,6 +52,14 @@ describe('createHasuraClient', () => {
     expect(err).toMatchObject({ code: 'permission-error', message: 'm', path: '$.x' });
   });
 
+  it('should keep the Postgres SQLSTATE of an internal error', async () => {
+    stubFetch({
+      errors: [{ message: 'database query error', extensions: { code: 'unexpected', internal: { error: { message: 'deadlock detected', status_code: '40P01' } } } }],
+    });
+    const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: 'unexpected', detail: 'deadlock detected', sqlState: '40P01' });
+  });
+
   it('should map a top-level Hasura error ({code,error}) to HasuraError', async () => {
     stubFetch({ code: 'access-denied', error: 'invalid x-hasura-admin-secret', path: '$' }, 401);
     const err = await createHasuraClient(env).request('query { x }').catch((e: unknown) => e);

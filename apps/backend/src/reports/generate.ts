@@ -39,6 +39,11 @@ const LEFTOVER_FILES = `
     files(where: { bucketId: { _eq: $bucket }, metadata: { _contains: $meta } }) { id }
   }
 `;
+const REPORT_STATE = `
+  query ReportState($id: uuid!) {
+    reports_by_pk(id: $id) { id organization_id status error file_id }
+  }
+`;
 const REPORT_FILE = `
   query ReportFile($id: uuid!) {
     reports_by_pk(id: $id) { file_id }
@@ -51,7 +56,7 @@ type Claimed = { id: string; organization_id: string; attempts: number; format: 
  * Files an earlier attempt uploaded but never attached (a handler that crashed between upload and completion, or a
  * failed cleanup): every file of the bucket tagged with this report, except the report's own file. Best effort.
  */
-async function sweepLeftovers(report: Claimed, deps: ReportDeps): Promise<void> {
+async function sweepLeftovers(report: Pick<Claimed, 'id' | 'organization_id' | 'file_id'>, deps: ReportDeps): Promise<void> {
   try {
     const { files } = await deps.admin.request<{ files: { id: string }[] }>(LEFTOVER_FILES, {
       bucket: report.organization_id.toLowerCase(),
@@ -67,12 +72,28 @@ async function sweepLeftovers(report: Claimed, deps: ReportDeps): Promise<void> 
 
 /** Error text for a report / schedule row: the database message when Hasura exposes it, at most 1000 characters. */
 export function errorText(error: unknown): string {
-  if (error instanceof HasuraError && error.detail) return error.detail.slice(0, 1000);
-  return (error instanceof Error ? error.message : String(error)).slice(0, 1000);
+  const text = error instanceof HasuraError && error.detail ? error.detail : error instanceof Error ? error.message : String(error);
+  // NUL cannot be stored in a PostgreSQL text column.
+  return text.replaceAll('\u0000', '').slice(0, 1000);
 }
 
 function isFormat(value: string): value is ReportFormat {
   return (REPORT_FORMATS as readonly string[]).includes(value);
+}
+
+/**
+ * A refused claim that failed the report with `max_attempts` leaves no attempt to sweep the files earlier attempts
+ * uploaded: sweep them here. Best effort.
+ */
+async function sweepAfterMaxAttempts(id: string, deps: ReportDeps): Promise<void> {
+  const state = await deps.admin
+    .request<{ reports_by_pk: { id: string; organization_id: string; status: string; error: string | null; file_id: string | null } | null }>(
+      REPORT_STATE,
+      { id },
+    )
+    .then((r) => r.reports_by_pk)
+    .catch(() => null);
+  if (state?.status === 'failed' && state.error === 'max_attempts') await sweepLeftovers(state, deps);
 }
 
 /**
@@ -87,7 +108,10 @@ function isFormat(value: string): value is ReportFormat {
 export async function generateReport(id: string, deps: ReportDeps): Promise<ReportResult> {
   const { claim_report: rows } = await deps.admin.request<{ claim_report: Claimed[] }>(CLAIM, { id });
   const report = rows[0];
-  if (!report) return { report_id: id, skipped: 'not_claimed' };
+  if (!report) {
+    await sweepAfterMaxAttempts(id, deps);
+    return { report_id: id, skipped: 'not_claimed' };
+  }
   const attempt = report.attempts;
   await sweepLeftovers(report, deps);
   let fileId: string | undefined;

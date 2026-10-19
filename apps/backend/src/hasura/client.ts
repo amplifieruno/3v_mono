@@ -12,19 +12,22 @@ export class HasuraError extends Error {
   readonly path?: string;
   /** Underlying Postgres error message (Hasura exposes it to admin requests as `extensions.internal.error.message`). */
   readonly detail?: string;
+  /** Postgres SQLSTATE of that error (`extensions.internal.error.status_code`), e.g. 40P01 for a deadlock. */
+  readonly sqlState?: string;
 
-  constructor(code: string, message: string, path?: string, detail?: string) {
+  constructor(code: string, message: string, path?: string, detail?: string, sqlState?: string) {
     super(message);
     this.name = 'HasuraError';
     this.code = code;
     this.path = path;
     this.detail = detail;
+    this.sqlState = sqlState;
   }
 }
 
 type GraphQLResponse<T> = {
   data?: T;
-  errors?: { message: string; extensions?: { code?: string; path?: string; internal?: { error?: { message?: string } } } }[];
+  errors?: { message: string; extensions?: { code?: string; path?: string; internal?: { error?: { message?: string; status_code?: string } } } }[];
   // Hasura top-level (non-GraphQL) error shape, e.g. a wrong admin secret
   code?: string;
   error?: string;
@@ -49,6 +52,7 @@ export async function parseHasuraResponse<T>(res: Response, readBody: () => Prom
       first.message,
       first.extensions?.path,
       first.extensions?.internal?.error?.message,
+      first.extensions?.internal?.error?.status_code,
     );
   }
   if (body.error || !res.ok || body.data === undefined) {

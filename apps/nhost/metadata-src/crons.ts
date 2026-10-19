@@ -114,8 +114,9 @@ export const crons: CronSpec[] = [
   },
   {
     // Hourly at minute 5 (the hour has closed): itap.aggregate_stats(org, scheduled_time) per organization re-aggregates
-    // the previous UTC hour and the facility-local day(s) it touches (idempotent upserts). Activity stats stay with
-    // evaluate_segments. Up to an hour late still runs; a missed hour is re-aggregated by the next seed / manual range.
+    // a trailing window [hour_floor(at - max tracking timeout - 180 s) - 1 h, hour_floor(at)) and the facility-local
+    // day(s) it touches (idempotent upserts), so late session closes and a missed run heal on the next run. Activity
+    // stats stay with evaluate_segments. Up to an hour late still runs.
     name: 'aggregate_stats',
     schedule: '5 * * * *',
     toleranceSeconds: 3600,
@@ -144,12 +145,13 @@ export const crons: CronSpec[] = [
     comment: 'Run due scheduled saved searches and alert on new matches',
   },
   {
-    // Every minute: bulk jobs the run_bulk_job trigger left queued for over a minute, and running jobs whose lease
-    // expired (a worker died): claimed again and resumed after `processed`.
+    // Every minute: search requests left queued / running for over 10 minutes (a worker died mid-search) are closed as
+    // failed 'interrupted'; then bulk jobs the run_bulk_job trigger left queued for over a minute, and running jobs
+    // whose lease expired (a worker died): claimed again and resumed after `processed`.
     name: 'resume_bulk_jobs',
     schedule: '* * * * *',
     toleranceSeconds: 120,
     includeInMetadata: true,
-    comment: 'Resume stalled bulk jobs (expired leases, missed triggers)',
+    comment: 'Resume stalled bulk jobs (expired leases, missed triggers); close search requests stuck over 10 min',
   },
 ];
