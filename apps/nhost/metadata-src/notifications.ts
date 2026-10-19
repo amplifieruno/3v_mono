@@ -129,7 +129,8 @@ export const notificationTables: TableSpec[] = [
     },
   },
   {
-    // In-app inbox: owner-only; the owner may set/clear read_at and set acknowledged_at (stamped with now() by trigger).
+    // In-app inbox: owner-only; the owner may set/clear read_at. Acknowledging goes through acknowledge_notification
+    // only (it also acknowledges the incident of an escalation page).
     name: 'user_notifications',
     profile: 'tenant_read',
     extraPermissions: {
@@ -137,7 +138,7 @@ export const notificationTables: TableSpec[] = [
         { role: ORG_ADMIN, permission: { columns: INBOX_COLUMNS, filter: ownNotification, allow_aggregations: true } },
       ],
       update_permissions: [
-        { role: ORG_ADMIN, permission: { columns: ['acknowledged_at', 'read_at'], filter: ownNotification, check: ownNotification } },
+        { role: ORG_ADMIN, permission: { columns: ['read_at'], filter: ownNotification, check: ownNotification } },
       ],
     },
   },

@@ -39,6 +39,8 @@ describe('in-app inbox', () => {
       /notification_not_found/,
     );
     await expectDenied(updateByPk(w.a, 'user_notifications', mine[0].id, { title: 'x' }), 'title');
+    // Acknowledging goes through acknowledge_notification only (it may acknowledge an escalated incident).
+    await expectDenied(updateByPk(w.a, 'user_notifications', mine[0].id, { acknowledged_at: 'now()' }), 'acknowledged_at');
     await expectDenied(insertOne(w.a, 'user_notifications', { title: 'x' }), 'insert_user_notifications_one');
     // The owner acknowledges: inbox row and delivery carry the time; read_at follows.
     const acked = await callFn<InboxRow>(w.a, 'acknowledge_notification', { p_notification: mine[0].id }, INBOX_FIELDS);

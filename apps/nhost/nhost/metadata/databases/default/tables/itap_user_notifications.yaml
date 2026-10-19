@@ -58,7 +58,6 @@ update_permissions:
   - role: org_admin
     permission:
       columns:
-        - acknowledged_at
         - read_at
       filter:
         _and:
