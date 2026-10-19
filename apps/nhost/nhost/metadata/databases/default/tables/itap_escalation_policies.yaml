@@ -1,0 +1,94 @@
+table:
+  schema: itap
+  name: escalation_policies
+configuration:
+  custom_name: escalation_policies
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: escalation_policy_steps
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policy_steps
+        column_mapping:
+          organization_id: organization_id
+          id: policy_id
+  - name: event_rule_versions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: event_rule_versions
+        column_mapping:
+          organization_id: organization_id
+          id: escalation_policy_id
+  - name: incidents
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: incidents
+        column_mapping:
+          organization_id: organization_id
+          id: escalation_policy_id
+  - name: notification_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          organization_id: organization_id
+          id: escalation_policy_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+        - repeat
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - description
+        - id
+        - name
+        - organization_id
+        - repeat
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+        - repeat
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

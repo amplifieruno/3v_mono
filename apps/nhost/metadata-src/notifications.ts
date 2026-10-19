@@ -1,0 +1,81 @@
+import type { BoolExp, TableSpec } from './types.js';
+
+const ORG_ADMIN = 'org_admin';
+const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
+const ownSubscription: BoolExp = {
+  _and: [ownOrganizationRow, { user_id: { _eq: 'X-Hasura-User-Id' } }],
+};
+const userEditableTemplate: BoolExp = { _and: [ownOrganizationRow, { is_system: { _eq: false } }] };
+
+const SUBSCRIPTION_INPUT = ['channel', 'event_type', 'facility_id', 'identity_id', 'min_severity', 'profile_id', 'watch_list_id'];
+
+/** Notification configuration (spec §6.12): templates, recipients, escalation, on-call, rules, subscriptions. */
+export const notificationTables: TableSpec[] = [
+  { name: 'notification_channels', isEnum: true, profile: 'none' },
+  { name: 'notification_priorities', isEnum: true, profile: 'none' },
+  { name: 'notification_digest_modes', isEnum: true, profile: 'none' },
+  {
+    // is_system templates are seeded: visible, never edited or deleted by org_admin.
+    name: 'notification_templates',
+    profile: 'tenant_crud',
+    readOnlyColumns: ['is_system'],
+    extraPermissions: {
+      update_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['body', 'channel', 'locale', 'name', 'subject'],
+            filter: userEditableTemplate,
+            check: userEditableTemplate,
+          },
+        },
+      ],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: userEditableTemplate } }],
+    },
+  },
+  { name: 'recipient_groups', profile: 'tenant_crud' },
+  { name: 'recipient_group_members', profile: 'tenant_crud', insertOnlyColumns: ['group_id'] },
+  { name: 'on_call_schedules', profile: 'tenant_crud' },
+  { name: 'on_call_schedule_members', profile: 'tenant_crud', insertOnlyColumns: ['schedule_id'] },
+  { name: 'escalation_policies', profile: 'tenant_crud' },
+  { name: 'escalation_policy_steps', profile: 'tenant_crud', insertOnlyColumns: ['policy_id'] },
+  {
+    // last_triggered_at is written by Stage C.
+    name: 'notification_rules',
+    profile: 'tenant_crud',
+    readOnlyColumns: ['number', 'last_triggered_at'],
+  },
+  { name: 'notification_rule_event_types', profile: 'tenant_crud', insertOnlyColumns: ['rule_id'] },
+  { name: 'notification_rule_channels', profile: 'tenant_crud', insertOnlyColumns: ['rule_id'] },
+  {
+    // User-owned: every operation is limited to the session user's rows; user_id is preset from the session.
+    name: 'notification_subscriptions',
+    profile: 'tenant_crud',
+    readOnlyColumns: ['user_id'],
+    extraPermissions: {
+      insert_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: SUBSCRIPTION_INPUT,
+            check: ownOrganizationRow,
+            set: { organization_id: 'x-hasura-organization-id', user_id: 'x-hasura-user-id' },
+          },
+        },
+      ],
+      select_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: [...SUBSCRIPTION_INPUT, 'created_at', 'id', 'organization_id', 'updated_at', 'user_id'].sort(),
+            filter: ownSubscription,
+          },
+        },
+      ],
+      update_permissions: [
+        { role: ORG_ADMIN, permission: { columns: SUBSCRIPTION_INPUT, filter: ownSubscription, check: ownSubscription } },
+      ],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: ownSubscription } }],
+    },
+  },
+];

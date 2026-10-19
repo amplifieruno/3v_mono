@@ -117,6 +117,22 @@ array_relationships:
           name: devices
         column_mapping:
           id: organization_id
+  - name: escalation_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policies
+        column_mapping:
+          id: organization_id
+  - name: escalation_policy_steps
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policy_steps
+        column_mapping:
+          id: organization_id
   - name: event_rule_version_scopes
     using:
       manual_configuration:
@@ -301,6 +317,62 @@ array_relationships:
           name: organization_members
         column_mapping:
           id: organization_id
+  - name: notification_rule_channels
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rule_channels
+        column_mapping:
+          id: organization_id
+  - name: notification_rule_event_types
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rule_event_types
+        column_mapping:
+          id: organization_id
+  - name: notification_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          id: organization_id
+  - name: notification_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          id: organization_id
+  - name: notification_templates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_templates
+        column_mapping:
+          id: organization_id
+  - name: on_call_schedule_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: on_call_schedule_members
+        column_mapping:
+          id: organization_id
+  - name: on_call_schedules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: on_call_schedules
+        column_mapping:
+          id: organization_id
   - name: operator_workspaces
     using:
       manual_configuration:
@@ -347,6 +419,22 @@ array_relationships:
         remote_table:
           schema: itap
           name: profiles
+        column_mapping:
+          id: organization_id
+  - name: recipient_group_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_group_members
+        column_mapping:
+          id: organization_id
+  - name: recipient_groups
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_groups
         column_mapping:
           id: organization_id
   - name: shift_handover_incidents

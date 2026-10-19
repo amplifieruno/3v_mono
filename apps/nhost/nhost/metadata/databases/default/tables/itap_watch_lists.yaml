@@ -13,6 +13,15 @@ object_relationships:
         column_mapping:
           organization_id: id
 array_relationships:
+  - name: notification_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          id: watch_list_id
   - name: watch_list_entries
     using:
       manual_configuration:

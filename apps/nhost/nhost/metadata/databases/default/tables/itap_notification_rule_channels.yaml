@@ -1,0 +1,61 @@
+table:
+  schema: itap
+  name: notification_rule_channels
+configuration:
+  custom_name: notification_rule_channels
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: rule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          organization_id: organization_id
+          rule_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - rule_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - created_at
+        - id
+        - organization_id
+        - rule_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

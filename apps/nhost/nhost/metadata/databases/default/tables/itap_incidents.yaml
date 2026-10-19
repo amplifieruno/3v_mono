@@ -41,6 +41,15 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           created_by: user_id
+  - name: escalation_policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policies
+        column_mapping:
+          organization_id: organization_id
+          escalation_policy_id: id
   - name: facility
     using:
       manual_configuration:

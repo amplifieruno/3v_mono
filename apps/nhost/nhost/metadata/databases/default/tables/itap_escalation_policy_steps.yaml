@@ -1,0 +1,92 @@
+table:
+  schema: itap
+  name: escalation_policy_steps
+configuration:
+  custom_name: escalation_policy_steps
+object_relationships:
+  - name: on_call_schedule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: on_call_schedules
+        column_mapping:
+          organization_id: organization_id
+          on_call_schedule_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policies
+        column_mapping:
+          organization_id: organization_id
+          policy_id: id
+  - name: recipient_group
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_groups
+        column_mapping:
+          organization_id: organization_id
+          recipient_group_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - after_minutes
+        - channel
+        - on_call_schedule_id
+        - policy_id
+        - recipient_group_id
+        - step_no
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - after_minutes
+        - channel
+        - created_at
+        - id
+        - on_call_schedule_id
+        - organization_id
+        - policy_id
+        - recipient_group_id
+        - step_no
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - after_minutes
+        - channel
+        - on_call_schedule_id
+        - recipient_group_id
+        - step_no
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

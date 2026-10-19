@@ -84,6 +84,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: inherited_profile_id
+  - name: notification_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: profile_documents
     using:
       manual_configuration:

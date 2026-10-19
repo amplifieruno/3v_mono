@@ -1,0 +1,82 @@
+table:
+  schema: itap
+  name: recipient_groups
+configuration:
+  custom_name: recipient_groups
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: escalation_policy_steps
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policy_steps
+        column_mapping:
+          organization_id: organization_id
+          id: recipient_group_id
+  - name: notification_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          organization_id: organization_id
+          id: recipient_group_id
+  - name: recipient_group_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_group_members
+        column_mapping:
+          organization_id: organization_id
+          id: group_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - description
+        - id
+        - name
+        - organization_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - name
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

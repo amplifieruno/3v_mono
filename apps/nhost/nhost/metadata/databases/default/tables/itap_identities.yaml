@@ -165,6 +165,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: target_identity_id
+  - name: notification_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: tracking_sessions
     using:
       manual_configuration:

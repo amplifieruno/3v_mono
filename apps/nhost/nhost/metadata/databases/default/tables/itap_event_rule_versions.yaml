@@ -4,6 +4,15 @@ table:
 configuration:
   custom_name: event_rule_versions
 object_relationships:
+  - name: escalation_policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: escalation_policies
+        column_mapping:
+          organization_id: organization_id
+          escalation_policy_id: id
   - name: organization
     using:
       manual_configuration:

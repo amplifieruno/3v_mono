@@ -1,0 +1,2 @@
+ALTER TABLE itap.event_rule_versions DROP CONSTRAINT event_rule_versions_escalation_policy_fkey;
+ALTER TABLE itap.incidents DROP CONSTRAINT incidents_escalation_policy_fkey;

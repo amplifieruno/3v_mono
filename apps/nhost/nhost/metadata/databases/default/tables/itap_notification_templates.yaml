@@ -1,0 +1,86 @@
+table:
+  schema: itap
+  name: notification_templates
+configuration:
+  custom_name: notification_templates
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: notification_rules
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_rules
+        column_mapping:
+          organization_id: organization_id
+          id: template_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - body
+        - channel
+        - locale
+        - name
+        - subject
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - body
+        - channel
+        - created_at
+        - id
+        - is_system
+        - locale
+        - name
+        - organization_id
+        - subject
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - body
+        - channel
+        - locale
+        - name
+        - subject
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - is_system:
+              _eq: false

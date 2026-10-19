@@ -1,0 +1,77 @@
+table:
+  schema: itap
+  name: recipient_group_members
+configuration:
+  custom_name: recipient_group_members
+object_relationships:
+  - name: group
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_groups
+        column_mapping:
+          organization_id: organization_id
+          group_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - external_address
+        - group_id
+        - user_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - created_at
+        - external_address
+        - group_id
+        - id
+        - organization_id
+        - updated_at
+        - user_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - external_address
+        - user_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

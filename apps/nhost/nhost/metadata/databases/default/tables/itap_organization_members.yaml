@@ -129,6 +129,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: linked_by
+  - name: notification_subscriptions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: notification_subscriptions
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+  - name: on_call_schedule_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: on_call_schedule_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
   - name: operator_workspaces
     using:
       manual_configuration:
@@ -165,6 +183,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: vacation_delegate_user_id
+  - name: recipient_group_members
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: recipient_group_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
   - name: shift_handovers_by_from_user
     using:
       manual_configuration:

@@ -1,0 +1,131 @@
+table:
+  schema: itap
+  name: notification_subscriptions
+configuration:
+  custom_name: notification_subscriptions
+object_relationships:
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+  - name: watch_list
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: watch_lists
+        column_mapping:
+          organization_id: organization_id
+          watch_list_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - event_type
+        - facility_id
+        - identity_id
+        - min_severity
+        - profile_id
+        - watch_list_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        user_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - created_at
+        - event_type
+        - facility_id
+        - id
+        - identity_id
+        - min_severity
+        - organization_id
+        - profile_id
+        - updated_at
+        - user_id
+        - watch_list_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - channel
+        - event_type
+        - facility_id
+        - identity_id
+        - min_severity
+        - profile_id
+        - watch_list_id
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - user_id:
+              _eq: X-Hasura-User-Id

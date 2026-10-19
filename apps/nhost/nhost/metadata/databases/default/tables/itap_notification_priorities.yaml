@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: notification_priorities
+is_enum: true
+configuration:
+  custom_name: notification_priorities

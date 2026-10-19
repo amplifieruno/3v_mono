@@ -1,0 +1,74 @@
+table:
+  schema: itap
+  name: on_call_schedule_members
+configuration:
+  custom_name: on_call_schedule_members
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: schedule
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: on_call_schedules
+        column_mapping:
+          organization_id: organization_id
+          schedule_id: id
+  - name: user
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          user_id: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - position
+        - schedule_id
+        - user_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - id
+        - organization_id
+        - position
+        - schedule_id
+        - updated_at
+        - user_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - position
+        - user_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

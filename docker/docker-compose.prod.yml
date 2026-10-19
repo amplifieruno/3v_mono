@@ -303,7 +303,7 @@ services:
       - ../libs/InsightFace-REST/if_rest:/app/if_rest
       - ../libs/InsightFace-REST/entrypoint.sh:/app/entrypoint.sh
     ports:
-      - '${INSIGHTFACE_PORT}:18080'
+      - '127.0.0.1:${INSIGHTFACE_PORT}:18080'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:18080/info']
       interval: 45s
