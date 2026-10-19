@@ -258,12 +258,12 @@ Event types (`event_types`): `detection_unknown, detection_known, watchlist_matc
 | `notification_templates` | name, channel, locale, subject, body, is_system | |
 | `recipient_groups` | name, description | |
 | `recipient_group_members` | group_id, user_id, external_address, channel | exactly-one of user/address |
-| `escalation_policies` | name, repeat | |
+| `escalation_policies` | name, repeat, max_cycles (NULL = unbounded, >= 1) | A repeating policy stops after `max_cycles` cycles |
 | `escalation_policy_steps` | policy_id, step_no, after_minutes, recipient_group_id, on_call_schedule_id, channel | exactly-one of group/schedule |
 | `on_call_schedules` | name, timezone, shift_length_hours, rotation_start_at | Resolved to the current member by escalation (§8.3) |
 | `on_call_schedule_members` | schedule_id, user_id (composite member FK), position | Ordered rotation |
 | `notification_subscriptions` | user_id, event_type, facility_id, identity_id, profile_id, watch_list_id, channel, min_severity | Self-service, facility-scoped, identity-specific (SA_5) |
-| `notification_deliveries` | rule_id, escalation_step_id, subscription_id, report_id, event_id, incident_id, recipient_user_id, recipient_address, channel, status (`pending/sent/delivered/failed/retrying/dead_letter`), attempts, content, sent_at, delivered_at, acknowledged_at, escalation_cycle, error | **ro**; exactly-one origin (rule / escalation step / subscription / report) and exactly-one recipient (CHECKs); one partial unique index per origin (`rule_id, event_id, recipient, channel` / `escalation_step_id, incident_id, escalation_cycle, recipient` / `subscription_id, event_id` / `report_id, recipient, channel`) — idempotent despite nullable columns |
+| `notification_deliveries` | rule_id, escalation_step_id, subscription_id, report_id, event_id, incident_id, recipient_user_id, recipient_address, channel, status (`pending/sent/delivered/failed/retrying/dead_letter/digested`), digested_into, attempts, content, sent_at, delivered_at, acknowledged_at, escalation_cycle, error | **ro**; exactly-one origin (rule / escalation step / subscription / report) and exactly-one recipient (CHECKs); one partial unique index per origin (`rule_id, event_id, recipient, channel` / `escalation_step_id, incident_id, escalation_cycle, recipient` / `subscription_id, event_id` / `report_id, recipient, channel`) — idempotent despite nullable columns |
 | `user_notifications` | user_id, delivery_id, event_id, incident_id, title, body, priority, read_at, acknowledged_at | In-app inbox; owner may set read/ack |
 | `webhook_subscriptions` | url, secret **secret**, is_active | |
 | `webhook_subscription_event_types` | subscription_id, event_type | |
