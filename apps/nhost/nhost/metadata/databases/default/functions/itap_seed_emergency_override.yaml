@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: seed_emergency_override
+configuration:
+  custom_name: seed_emergency_override
+  exposed_as: mutation

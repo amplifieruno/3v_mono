@@ -11,6 +11,7 @@ import {
   type HistoryPerson,
   type PlannedDetection,
 } from './historyScripts.js';
+import { accessScenarios } from './historyAccess.js';
 import { coverageScenarios } from './historyCoverage.js';
 import { unusualRoutes } from './historyRoutes.js';
 import { addDays, localDate, replayDays, weekday, weekdayOnOrBefore, type ReplayDay } from './historyTime.js';
@@ -27,8 +28,9 @@ export type { HistoryHost, HistoryVisitor, PlannedVisit } from './historyVisits.
  * reception, VIP mornings, visitors (historyVisits) and the scenarios that produce the alert events: the blacklisted
  * person twice at the loading dock (once at night, once loitering), unknown faces, a watched unknown face, a couple
  * of after-hours entries, one server-room entry without clearance, one contractor at the loading dock, the rarer
- * event types (historyCoverage) and a few unusual routes (historyRoutes: abnormal_movement). Deterministic for the
- * same input.
+ * event types (historyCoverage), a few unusual routes (historyRoutes: abnormal_movement) and the physical access
+ * scenarios (historyAccess: fire drill evacuation, tailgating, risk, a terminated contractor at a turnstile).
+ * Deterministic for the same input.
  */
 export type HistoryInput = {
   now: Date;
@@ -153,6 +155,9 @@ export function buildHistoryPlan(input: HistoryInput): HistoryPlan {
   regularDays(t, input, days);
   scenarios(t, input, today, days[0]?.date ?? today);
   const visits = planVisits(t, input.visitors, input.hosts, { today, end, first: days[0]?.date ?? today });
+  // Last, so the rest of the plan does not change with them (slice 8: decisions at the face-credential turnstiles).
+  const first = days[0]?.date ?? today;
+  accessScenarios(t, input, today, (date) => date >= first && date < today);
 
   const detections = t.out
     .filter((d) => d.at >= start && d.at < end)

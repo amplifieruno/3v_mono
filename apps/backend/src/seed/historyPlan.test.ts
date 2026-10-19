@@ -1,48 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildHistoryPlan, type HistoryInput, type HistoryPerson } from './historyPlan.js';
+import { buildHistoryPlan } from './historyPlan.js';
+import { FIXTURE_NIGHT, FIXTURE_NOW, FIXTURE_TZ, fixtureInput } from './historyFixture.js';
 import { localDate, localMinutes, weekday } from './historyTime.js';
 
-const TZ = 'Europe/Moscow';
-const NOW = new Date('2026-10-19T09:17:00Z');
+const TZ = FIXTURE_TZ;
+const NOW = FIXTURE_NOW;
 const END = NOW.getTime() - 3_600_000;
-const NIGHT = new Set(['id-110', 'id-111']);
-
-function person(n: number, extra: Partial<HistoryPerson> = {}): HistoryPerson {
-  return {
-    identityId: `id-${n}`,
-    profileId: `p-${n}`,
-    role: 'employee',
-    clearance: n % 5 === 0 ? 'basic' : 'standard',
-    car: n % 3 === 0,
-    dockDuty: n % 7 === 0 && n % 5 !== 0,
-    guard: null,
-    night: false,
-    activeFrom: null,
-    activeTo: null,
-    ...extra,
-  };
-}
-
-function input(): HistoryInput {
-  const people: HistoryPerson[] = Array.from({ length: 60 }, (_, i) => person(i + 1));
-  people.push(person(100, { guard: 'chief', clearance: 'elevated' }), person(101, { guard: 'guard' }));
-  people.push(person(102, { role: 'contractor', clearance: 'basic', activeFrom: '2026-09-01', activeTo: '2027-01-01' }));
-  people.push(person(103, { role: 'vip', clearance: 'elevated', car: true }), person(104, { role: 'vip', clearance: 'elevated' }));
-  people.push(person(105, { role: 'contractor', clearance: 'basic', activeFrom: '2026-01-10', activeTo: '2026-09-09' }));
-  people.push(person(110, { night: true }), person(111, { night: true, guard: 'guard' }));
-  const visitDates = ['2026-10-01', '2026-10-05', '2026-10-08', '2026-10-11', '2026-10-14', '2026-10-16', '2026-10-19'];
-  return {
-    now: NOW,
-    timezone: TZ,
-    people,
-    visitors: visitDates.map((visitDate, i) => ({ profileId: `v-${i}`, identityId: i % 2 === 0 ? `vid-${i}` : null, visitDate })),
-    hosts: [{ profileId: 'p-1', companyId: 'c-1' }, { profileId: 'p-2', companyId: 'c-2' }],
-    blacklistedIdentity: 'bl',
-    unknownIdentities: ['u-1', 'u-2', 'u-3'],
-    watchedIdentity: 'u-1',
-    terminatedIdentity: 'id-105',
-  };
-}
+const NIGHT = FIXTURE_NIGHT;
+const input = fixtureInput;
 
 describe('buildHistoryPlan', () => {
   const plan = buildHistoryPlan(input());
@@ -159,11 +124,12 @@ describe('buildHistoryPlan', () => {
     for (let i = 1; i < stay.length; i += 1) expect(stay[i] - stay[i - 1]).toBeLessThanOrEqual(3 * 60_000 + 6_000);
   });
 
-  it('should bring the terminated contractor once (entrance, reception) and never on regular days', () => {
+  it('should bring the terminated contractor once (entrance, reception, one turnstile attempt) and never on regular days', () => {
     const seen = plan.detections.filter((d) => d.identityId === 'id-105');
-    expect([...new Set(seen.map((d) => d.point))]).toEqual(['entrance', 'reception']);
+    expect([...new Set(seen.map((d) => (d.point.startsWith('turnstile') ? 'turnstile' : d.point)))]).toEqual(['entrance', 'reception', 'turnstile']);
     expect(new Set(seen.map((d) => local(d.at).date)).size).toBe(1);
-    expect(seen[seen.length - 1].at - seen[0].at).toBeLessThan(3 * 60_000);
+    // One session (tracking timeout 5 minutes): the attempt follows reception within a few minutes.
+    expect(seen[seen.length - 1].at - seen[0].at).toBeLessThan(6 * 60_000);
   });
 
   it('should only produce detections at the planned camera points with plausible face values', () => {

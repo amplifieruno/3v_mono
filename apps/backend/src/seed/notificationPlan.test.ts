@@ -44,6 +44,13 @@ describe('notification seed plan', () => {
     for (const step of ESCALATION_STEPS) if ('group' in step) expect(groups.has(step.group)).toBe(true);
   });
 
+  it('should send emergency override starts and ends to the security team at once (slice 8)', () => {
+    const rule = NOTIFICATION_RULES.find((r) => r.name === 'Emergency overrides');
+    expect(rule).toMatchObject({ group: 'Security team', digest: 'none', escalate: false });
+    expect(rule?.eventTypes).toEqual(['emergency_override_started', 'emergency_override_ended']);
+    expect(rule?.channels).toEqual(['in_app', 'email']);
+  });
+
   it('should escalate only blacklist matches: watch-list matches have their own rule without a policy', () => {
     const escalating = NOTIFICATION_RULES.filter((r) => r.escalate);
     expect(escalating.map((r) => [r.name, r.eventTypes])).toEqual([['Blacklist matches', ['blacklist_match']]]);

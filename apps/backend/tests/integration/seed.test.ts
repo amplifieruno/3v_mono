@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { asAdmin, asBearer, testEnv } from './support/clients.js';
 import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
+import { expectSeededAccess } from './support/seedAccess.js';
 import { expectSeededAnalytics } from './support/seedAnalytics.js';
 import { expectSeededHistory } from './support/seedHistory.js';
 import { expectSeededNotifications } from './support/seedNotifications.js';
@@ -198,6 +199,10 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
 
   it('should seed stats, reports, searches, bulk jobs and dashboards (slice 7)', async () => {
     await expectSeededAnalytics(SLUGS[0], SLUGS[1]);
+  });
+
+  it('should seed physical access: policies, grants, 30 days of engine decisions, the fire drill and terminals (slice 8)', async () => {
+    await expectSeededAccess(SLUGS[0], SLUGS[1]);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {

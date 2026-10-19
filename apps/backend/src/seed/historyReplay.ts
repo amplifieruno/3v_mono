@@ -126,6 +126,8 @@ export async function replayHistory(
     /** Marker age (default 29 days: the Nova replay covers 30). */
     markerAgeMs?: number;
     label?: string;
+    /** Runs once the replay is decided, after the visits and before the first day (slice 8: grants, fire drill). */
+    beforeDays?: () => Promise<void>;
   },
 ): Promise<ReplayResult> {
   const started = Date.now();
@@ -148,6 +150,7 @@ export async function replayHistory(
     await ctx.admin.request(INSERT_VISITS, { objects: plan.visits.map((v) => visitRow(org, facility, ctx.now.getTime(), v)) });
     visits = plan.visits.length;
   }
+  if (args.beforeDays) await args.beforeDays();
   let detections = 0;
   for (const day of plan.days) {
     const inDay = plan.detections.filter((d) => d.at >= day.start && d.at < day.end);

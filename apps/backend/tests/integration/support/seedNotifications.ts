@@ -31,8 +31,8 @@ export async function expectSeededNotifications(slug: string): Promise<void> {
     templates: '22',
     ru_templates: '11',
     groups: 'Facility managers,On-call,Security team',
-    // + NRULE-00006 (Executive access holders, segment condition; slice 6).
-    rules: 'NRULE-00001,NRULE-00002,NRULE-00003,NRULE-00004,NRULE-00005,NRULE-00006',
+    // + Emergency overrides (slice 8, NRULE-00006) and Executive access holders (segment condition; slice 6).
+    rules: 'NRULE-00001,NRULE-00002,NRULE-00003,NRULE-00004,NRULE-00005,NRULE-00006,NRULE-00007',
     on_call: '3',
     steps: 'in_app:0,email:0,sms:10',
     subscriptions: '2',

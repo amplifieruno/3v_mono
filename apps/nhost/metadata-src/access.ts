@@ -149,4 +149,6 @@ export const accessOperationFunctions: FunctionSpec[] = [
   adminOnly('terminal_policy_payload', 'query', 'terminal sync (cron, urgent-bump trigger, publish_policy_to_terminals)'),
   adminOnly('terminals_due_for_sync', 'query', 'terminal sync across all organizations'),
   adminOnly('record_terminal_sync', 'mutation', 'terminal sync stub transport records each push'),
+  // Seed only (task 5): the fire drill of the replayed history, started and ended at past times.
+  adminOnly('seed_emergency_override', 'mutation', 'seed history replay (pnpm seed)'),
 ];

@@ -32,24 +32,27 @@ export async function expectSeededHistory(slug: string): Promise<void> {
     `select event_type, count(*) as n from itap.events where organization_id = ${org} group by event_type`,
   );
   const byType = Object.fromEntries(types.map((t) => [t.event_type, Number(t.n)]));
-  // Events of every type the pipeline produces today (design §9); tailgating / access and auth events have no
-  // producer before slice 8.
+  // Events of every type the pipeline produces today (design §9); auth events have no producer before slice 9.
   for (const type of ['detection_known', 'detection_unknown', 'vip_arrival', 'blacklist_match', 'watchlist_match',
     'after_hours', 'restricted_area_entry', 'loitering', 'unexpected_facility', 'occupancy_exceeded', 'unusual_dwell',
-    'inactive_profile_detected', 'device_offline', 'device_online', 'abnormal_movement', 'report_generated']) {
+    'inactive_profile_detected', 'device_offline', 'device_online', 'abnormal_movement', 'report_generated',
+    'access_granted', 'access_denied', 'tailgating', 'emergency_override_started', 'emergency_override_ended']) {
     expect(byType[type] ?? 0, type).toBeGreaterThanOrEqual(1);
   }
-  // Overfilled once (one 15-minute bucket of Meeting Room 12A); the terminated contractor seen once; one outage.
+  // Overfilled once (one 15-minute bucket of Meeting Room 12A); the terminated contractor seen once; one outage in
+  // the history, plus the turnstile terminal the seed takes offline (slice 8: the stale terminal).
   expect(byType.occupancy_exceeded).toBe(1);
   expect(byType.inactive_profile_detected).toBe(1);
-  expect([byType.device_offline, byType.device_online]).toEqual([1, 1]);
+  expect([byType.device_offline, byType.device_online]).toEqual([2, 1]);
   const [coverage] = await runSqlRows(
     `select (select a.name from itap.events e join itap.areas a on a.id = e.area_id
               where e.organization_id = ${org} and e.event_type = 'occupancy_exceeded') as overfilled,
             (select p.status from itap.events e join itap.profiles p on p.id = e.profile_id
               where e.organization_id = ${org} and e.event_type = 'inactive_profile_detected') as inactive_status,
             (select d.name from itap.events e join itap.devices d on d.id = e.device_id
-              where e.organization_id = ${org} and e.event_type = 'device_offline') as offline_device,
+              where e.organization_id = ${org} and e.event_type = 'device_offline' and e.occurred_at < now() - interval '1 day') as offline_device,
+            (select d.name from itap.events e join itap.devices d on d.id = e.device_id
+              where e.organization_id = ${org} and e.event_type = 'device_offline' and e.occurred_at > now() - interval '1 day') as offline_terminal,
             (select (d.last_seen_at > now() - interval '2 hours')::text from itap.devices d
               where d.organization_id = ${org} and d.name = 'Parking Gate Terminal') as gate_seen_recently,
             (select count(*) from itap.events e join itap.event_rule_versions v on v.id = e.rule_version_id
@@ -62,6 +65,7 @@ export async function expectSeededHistory(slug: string): Promise<void> {
     overfilled: 'Meeting Room 12A',
     inactive_status: 'terminated',
     offline_device: 'Parking Gate Terminal',
+    offline_terminal: 'Turnstile Terminal 4',
     gate_seen_recently: 'true',
     match_rules: 'Blacklist match,Watch-list match',
   });

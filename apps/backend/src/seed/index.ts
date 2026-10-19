@@ -3,6 +3,8 @@ import { pathToFileURL } from 'node:url';
 import { loadEnv } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { createStorageClient } from '../storage/storageClient.js';
+import { seedAccessConfig, type SeedAccessConfigResult } from './access.js';
+import { seedAccess, type SeedAccessResult } from './accessLive.js';
 import { seedAnalytics, type SeedAnalyticsResult } from './analytics.js';
 import { seedCompanies, type SeedCompaniesResult } from './companies.js';
 import { seedDeviceHealth, type SeedDeviceHealthResult } from './deviceHealth.js';
@@ -25,8 +27,10 @@ export type SeedResults = {
   devices: SeedDevicesResult;
   notifications: SeedNotificationsResult;
   deviceHealth: SeedDeviceHealthResult;
+  accessConfig: SeedAccessConfigResult;
   history: SeedHistoryResult;
   segments: SeedSegmentsResult;
+  access: SeedAccessResult;
   analytics: SeedAnalyticsResult;
 };
 
@@ -67,13 +71,19 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   // Before the device health history and the replay: Stage C fans their events out through this configuration.
   notifications: step(['tenancy', 'facilities'], (ctx, { tenancy, facilities }) => seedNotifications(ctx, tenancy, facilities)),
   deviceHealth: step(['tenancy', 'devices', 'notifications'], (ctx, { tenancy, devices }) => seedDeviceHealth(ctx, tenancy, devices)),
-  history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities', 'notifications'], (ctx, r) =>
+  // Before the replay (slice 8): the policies, face-credential doors and the offline terminal the history runs against.
+  accessConfig: step(['tenancy', 'facilities', 'devices', 'profiles', 'deviceHealth'], (ctx, r) =>
+    seedAccessConfig(ctx, r.tenancy, r.facilities, r.devices),
+  ),
+  history: step(['tenancy', 'facilities', 'devices', 'profiles', 'identities', 'notifications', 'accessConfig'], (ctx, r) =>
     seedHistory(ctx, r.tenancy, r.facilities, r.devices, r.profiles, r.identities, r.notifications),
   ),
   // After the replay: segment history is matched from the replayed sessions and events (behavioral metrics).
   segments: step(['tenancy', 'companies', 'profiles', 'facilities', 'history'], (ctx, r) =>
     seedSegments(ctx, r.tenancy, r.companies, r.profiles, r.facilities),
   ),
+  // After the segments (the executive floor policy uses one): live-only policies, Riverside, terminal sync (slice 8).
+  access: step(['tenancy', 'facilities', 'segments', 'accessConfig'], (ctx, r) => seedAccess(ctx, r.tenancy, r.facilities)),
   // Last: stats over the whole history, reports computed from them, searches, bulk jobs and dashboards.
   analytics: step(['tenancy', 'facilities', 'history', 'segments'], (ctx, r) => seedAnalytics(ctx, r.tenancy, r.facilities)),
 };
@@ -120,6 +130,13 @@ async function main(): Promise<void> {
   const segments = results.segments;
   if (segments && segments.segmentsCreated > 0) {
     log(`Segments: ${segments.segmentsCreated} created, ${segments.evaluations} evaluation times, ${segments.syncs} syncs in ${Math.round(segments.durationMs / 1000)} s.`);
+  }
+  const accessConfig = results.accessConfig;
+  const access = results.access;
+  if (accessConfig && access) {
+    const grants = history?.access.grants ?? 0;
+    log(`Access: ${accessConfig.policiesCreated + access.policiesCreated} policies created, ${grants} visitor grants` +
+      `${history?.access.drill ? ', fire drill' : ''}; terminals ${access.terminals.synced} synced, ${access.terminals.unreachable} unreachable.`);
   }
   const analytics = results.analytics;
   if (analytics) {

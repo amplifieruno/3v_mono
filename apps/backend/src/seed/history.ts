@@ -1,3 +1,4 @@
+import { seedAccessHistory, type SeedAccessHistoryResult } from './accessHistory.js';
 import type { SeedDevicesResult } from './devices.js';
 import type { SeedFacilitiesResult } from './facilities.js';
 import { floorName, SEED_FACILITIES } from './facilityPlan.js';
@@ -23,6 +24,9 @@ import type { SeedContext, SeedTenancyResult } from './tenancy.js';
  * deliveries, inbox rows and webhook deliveries; incidents of the blacklist rule escalate at simulated times; afterwards
  * the blacklist event rule and the escalating notification rule (Blacklist matches) get the escalation policy for
  * live incidents and the replayed webhook deliveries are signed.
+ * Physical access (slice 8): the policies exist before this step (access.ts); the visitors' grants and the fire drill
+ * are written once the replay is decided (accessHistory.ts), so the turnstiles' face decisions of the history come
+ * from the real engine.
  */
 export type SeedHistoryResult = {
   replay: ReplayResult;
@@ -31,6 +35,7 @@ export type SeedHistoryResult = {
   notifications: { subscriptionsCreated: number; webhooksSigned: number };
   operators: { handovers: number; workspaces: number; estimatedLocations: number };
   riverside: RiversideHistoryResult;
+  access: SeedAccessHistoryResult;
 };
 
 export async function seedHistory(
@@ -74,7 +79,24 @@ export async function seedHistory(
 
   const plan = buildHistoryPlan({ ...tracked, now: ctx.now, timezone });
   const points = await resolveNovaPoints(ctx, facility, facilities, devices);
-  const replay = await replayHistory(ctx, { org, facility, plan, points });
+  let access: SeedAccessHistoryResult = { grants: 0, drill: false };
+  const replay = await replayHistory(ctx, {
+    org,
+    facility,
+    plan,
+    points,
+    // Slice 8: the visitors' grants and the fire drill exist before the first simulated day decides anything.
+    beforeDays: async () => {
+      access = await seedAccessHistory(ctx, {
+        org, facility, timezone, visits: plan.visits, users: { admin: users.admin, operator: tenancy.users.operator },
+        area: (path) => {
+          const id = facilities.areas[`nova/${path}`];
+          if (!id) throw new Error(`seed: area ${path} missing`);
+          return id;
+        },
+      });
+    },
+  });
   const blacklistRule = await ruleId(ctx, org, BLACKLIST_RULE);
   const incidents = await seedIncidentHistory(ctx, {
     org,
@@ -94,5 +116,5 @@ export async function seedHistory(
     companyByIdentity: tracked.companyByIdentity,
   });
   const riverside = await seedRiversideHistory(ctx, tenancy, facilities, devices);
-  return { replay, rulesCreated, incidents, operators, riverside, notifications: { subscriptionsCreated, webhooksSigned } };
+  return { replay, rulesCreated, incidents, operators, riverside, access, notifications: { subscriptionsCreated, webhooksSigned } };
 }

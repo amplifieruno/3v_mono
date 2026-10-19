@@ -81,6 +81,7 @@
 - "!include itap_run_lifecycle_jobs.yaml"
 - "!include itap_run_report_schedule.yaml"
 - "!include itap_search_identities.yaml"
+- "!include itap_seed_emergency_override.yaml"
 - "!include itap_seed_escalate_incident.yaml"
 - "!include itap_seed_finalize_notifications.yaml"
 - "!include itap_segment_evaluation_context.yaml"

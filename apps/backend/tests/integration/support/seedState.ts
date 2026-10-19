@@ -65,6 +65,16 @@ const TABLES = [
   'bulk_jobs',
   'bulk_job_rows',
   'dashboards',
+  // Physical access (slice 8): policies keyed by name, grants and the drill only with a fresh replay, decisions only
+  // from the replay (no live producer while recognition is off).
+  'access_policies',
+  'access_policy_versions',
+  'access_policy_version_subjects',
+  'access_policy_version_targets',
+  'access_grants',
+  'access_decisions',
+  'emergency_overrides',
+  'emergency_override_areas',
 ];
 
 /** Counts every seeded table of the organization with the given slug, plus storage files and derived counts. */

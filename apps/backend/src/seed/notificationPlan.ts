@@ -286,6 +286,14 @@ export const NOTIFICATION_RULES: RuleSpec[] = [
     digest: 'none',
     escalate: false,
   },
+  {
+    // Slice 8: supervisor notification of emergency overrides (start and end, incl. the automatic end).
+    name: 'Emergency overrides',
+    description: 'Security team, in-app and email, when an emergency override starts or ends',
+    eventTypes: ['emergency_override_started', 'emergency_override_ended'],
+    channels: ['in_app', 'email'],
+    group: SECURITY_TEAM, template: 'generic', priority: 'high', digest: 'none', escalate: false,
+  },
 ];
 
 /** Event types the seeded webhook subscription (dev sink) receives. */

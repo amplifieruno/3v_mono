@@ -56,6 +56,11 @@ BEGIN
   SELECT s.id INTO seg FROM itap.segments s WHERE s.organization_id = org AND s.target = 'profiles'
   ORDER BY s.member_count DESC, s.id LIMIT 1;
 
+  -- The seed's own policies (slice 8 task 5) cover the turnstiles and the server room door and would decide before
+  -- the benchmark's grants: archived here (the whole block is rolled back), so the benchmark's paths stay as designed.
+  PERFORM itap.archive_access_policy(s1, p.id) FROM itap.access_policies p
+  WHERE p.organization_id = org AND p.current_version_id IS NOT NULL AND NOT p.is_archived;
+
   -- Targets are arrays (a version may cover several access points); paths: allow, deny, grant, no_rule, others.
   FOR spec IN SELECT * FROM (VALUES
     (1, 'allow', 100, NULL::jsonb, NULL::numeric, jsonb_build_object('profile_type', 'employee'),
@@ -88,9 +93,11 @@ BEGIN
     PERFORM itap.approve_access_policy_version(s2, ver);
   END LOOP;
 
-  -- Grants at the access points no employee policy covers (8..10): reusable and single-use (odd).
+  -- Grants at the access points no employee policy covers (8..10): reusable and single-use. The profile-path calls
+  -- (odd i) present profiles[1 + 7i mod 80], always an even index: single-use on g = 2 (mod 4), so they reach both
+  -- kinds whatever the seeded ids (the identity-path calls reach linked profiles at random).
   INSERT INTO itap.access_grants (organization_id, profile_id, access_point_id, valid_from, valid_until, single_use, reason)
-  SELECT org, profiles[g], aps[1 + (7 + k) % cardinality(aps)], now() - interval '1 hour', now() + interval '1 hour', g % 2 = 1,
+  SELECT org, profiles[g], aps[1 + (7 + k) % cardinality(aps)], now() - interval '1 hour', now() + interval '1 hour', g % 4 = 2,
          'Benchmark'
   FROM generate_series(1, 60) AS g CROSS JOIN generate_series(0, 2) AS k;
 
