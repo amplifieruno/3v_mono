@@ -40,6 +40,24 @@ export const crons: CronSpec[] = [
     comment: 'Loitering / unusual dwell events from occupancy durations',
   },
   {
+    // Emergency overrides past ends_at: ended at their ends_at (ended_by NULL, end_reason 'expired') with the
+    // emergency_override_ended event, per organization (itap.end_emergency_overrides; apps/backend/src/events/accessCrons.ts).
+    name: 'end_emergency_overrides',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'End emergency overrides past ends_at (automatic policy restoration) with the ended event',
+  },
+  {
+    // Policy distribution: access terminals behind the urgent epoch now, behind the epoch lazily (last sync older than
+    // 15 min); stub transport, real state (apps/backend/src/access/terminalSync.ts). Revocation bound: SA_5 §2.1.4.
+    name: 'sync_terminal_policies',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Push policy payloads to access terminals: urgent epochs at once, other changes within 15 minutes',
+  },
+  {
     // Daily housekeeping per organization at scheduled_time (itap.run_lifecycle_jobs): no-show visits, expired
     // visitor/contractor profiles, expired invitations. Runs 03:00 UTC; a run up to an hour late is still delivered.
     name: 'lifecycle_jobs',

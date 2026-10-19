@@ -175,6 +175,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: terminal_policy_syncs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: terminal_policy_syncs
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: tracking_sessions
     using:
       manual_configuration:

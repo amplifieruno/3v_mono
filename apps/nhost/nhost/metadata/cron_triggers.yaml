@@ -40,6 +40,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: "Probe the stream-server per camera: metrics, health_status, last_seen_at, device_events"
+- name: end_emergency_overrides
+  webhook: "{{BACKEND_URL}}/hasura/events/end_emergency_overrides"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: End emergency overrides past ends_at (automatic policy restoration) with the ended event
 - name: escalate
   webhook: "{{BACKEND_URL}}/hasura/events/escalate"
   schedule: "* * * * *"
@@ -222,3 +236,17 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Combine due digest items of digest-mode notification rules into one delivery per recipient
+- name: sync_terminal_policies
+  webhook: "{{BACKEND_URL}}/hasura/events/sync_terminal_policies"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: "Push policy payloads to access terminals: urgent epochs at once, other changes within 15 minutes"

@@ -6,6 +6,7 @@ import { resumeBulkJobs, runBulkJobTrigger } from '../bulk/handlers.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { runSavedSearches } from '../search/savedSearches.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
+import { endEmergencyOverrides, policyUrgentEpochBumped, syncTerminalPolicies } from './accessCrons.js';
 import { aggregateStatsCron } from './analyticsCrons.js';
 import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
@@ -55,6 +56,9 @@ export const defaultEventHandlers: EventHandlers = {
   run_saved_searches: runSavedSearches,
   run_bulk_job: runBulkJobTrigger,
   resume_bulk_jobs: resumeBulkJobs,
+  end_emergency_overrides: endEmergencyOverrides,
+  sync_terminal_policies: syncTerminalPolicies,
+  policy_urgent_epoch_bumped: policyUrgentEpochBumped,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

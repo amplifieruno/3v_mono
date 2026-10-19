@@ -1,0 +1,54 @@
+table:
+  schema: itap
+  name: terminal_policy_syncs
+configuration:
+  custom_name: terminal_policy_syncs
+object_relationships:
+  - name: device
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: devices
+        column_mapping:
+          organization_id: organization_id
+          facility_id: facility_id
+          device_id: id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - checksum
+        - created_at
+        - device_id
+        - duration_ms
+        - epoch
+        - error
+        - facility_id
+        - forced
+        - id
+        - organization_id
+        - result
+        - size_bytes
+        - urgent
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

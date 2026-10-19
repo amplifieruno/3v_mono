@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_terminal_sync
+configuration:
+  custom_name: record_terminal_sync
+  exposed_as: mutation

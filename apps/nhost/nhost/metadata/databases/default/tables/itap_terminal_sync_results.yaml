@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: terminal_sync_results
+is_enum: true
+configuration:
+  custom_name: terminal_sync_results

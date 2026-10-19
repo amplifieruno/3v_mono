@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: terminal_policy_payload
+configuration:
+  custom_name: terminal_policy_payload
+  exposed_as: query

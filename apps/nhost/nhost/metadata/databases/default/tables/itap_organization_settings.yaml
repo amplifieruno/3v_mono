@@ -59,3 +59,18 @@ update_permissions:
       check:
         organization_id:
           _eq: X-Hasura-Organization-Id
+event_triggers:
+  - name: policy_urgent_epoch_bumped
+    definition:
+      enable_manual: false
+      update:
+        columns:
+          - policy_urgent_epoch
+    retry_conf:
+      num_retries: 3
+      interval_sec: 10
+      timeout_sec: 60
+    webhook: "{{BACKEND_URL}}/hasura/events/policy_urgent_epoch_bumped"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

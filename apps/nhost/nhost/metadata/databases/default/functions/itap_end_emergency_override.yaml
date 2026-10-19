@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: end_emergency_override
+configuration:
+  custom_name: end_emergency_override
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

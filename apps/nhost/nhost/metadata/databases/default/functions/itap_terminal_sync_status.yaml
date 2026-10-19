@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: terminal_sync_status
+configuration:
+  custom_name: terminal_sync_status
+  exposed_as: query
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

@@ -1,0 +1,28 @@
+table:
+  schema: itap_results
+  name: policy_analytics_rows
+configuration:
+  custom_name: policy_analytics_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - complexity
+        - decisions
+        - denial_reasons
+        - denied
+        - granted
+        - grants
+        - organization_id
+        - overlap_hints
+        - period_from
+        - period_to
+        - top_denied
+        - unused_versions
+        - versions
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

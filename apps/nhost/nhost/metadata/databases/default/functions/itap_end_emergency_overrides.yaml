@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: end_emergency_overrides
+configuration:
+  custom_name: end_emergency_overrides
+  exposed_as: mutation

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: terminals_due_for_sync
+configuration:
+  custom_name: terminals_due_for_sync
+  exposed_as: query

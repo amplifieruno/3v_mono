@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: policy_analytics
+configuration:
+  custom_name: policy_analytics
+  exposed_as: query
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

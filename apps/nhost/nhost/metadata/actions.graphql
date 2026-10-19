@@ -26,6 +26,7 @@ type Mutation {
     max_results: Int
     fuzzy: Boolean
   ): SearchResult!
+  publish_policy_to_terminals(facility_id: uuid): [TerminalPublishResult!]!
 }
 
 type Query {
@@ -113,4 +114,10 @@ type SearchResult {
   duration_ms: Int!
   face_count: Int
   error: String
+}
+
+type TerminalPublishResult {
+  device_id: uuid!
+  result: String!
+  epoch: bigint!
 }

@@ -64,6 +64,7 @@ select_permissions:
     permission:
       columns:
         - created_at
+        - end_reason
         - ended_at
         - ended_by
         - ends_at

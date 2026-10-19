@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: terminal_sync_targets
+configuration:
+  custom_name: terminal_sync_targets

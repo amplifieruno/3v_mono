@@ -124,6 +124,16 @@ export const tenancyTables: TableSpec[] = [
   {
     name: 'organization_settings',
     profile: 'none',
+    eventTriggers: [
+      {
+        // Revocation convergence (slice 8): an urgent policy epoch is pushed to the organization's due access terminals
+        // at once (apps/backend/src/access); the sync_terminal_policies cron is the per-minute safety net.
+        name: 'policy_urgent_epoch_bumped',
+        operations: ['update'],
+        columns: ['policy_urgent_epoch'],
+        retry: { num_retries: 3, retry_interval_seconds: 10, timeout_seconds: 60 },
+      },
+    ],
     extraPermissions: {
       select_permissions: [
         {

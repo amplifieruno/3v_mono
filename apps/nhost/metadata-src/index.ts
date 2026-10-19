@@ -1,4 +1,4 @@
-import { accessFunctions, accessTables } from './access.js';
+import { accessFunctions, accessOperationFunctions, accessTables } from './access.js';
 import { analyticsFunctions, analyticsTables } from './analytics.js';
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
@@ -68,4 +68,5 @@ export const functions: FunctionSpec[] = [
   ...searchFunctions,
   ...bulkFunctions,
   ...accessFunctions,
+  ...accessOperationFunctions,
 ];

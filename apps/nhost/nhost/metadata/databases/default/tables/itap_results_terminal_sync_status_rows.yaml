@@ -1,0 +1,34 @@
+table:
+  schema: itap_results
+  name: terminal_sync_status_rows
+configuration:
+  custom_name: terminal_sync_status_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_ids
+        - bound_seconds
+        - device_id
+        - device_name
+        - epoch
+        - epoch_lag
+        - facility_id
+        - health_status
+        - organization_id
+        - reachable
+        - seconds_since_urgent
+        - status
+        - sync_error
+        - synced_at
+        - synced_epoch
+        - urgent_at
+        - urgent_epoch
+        - urgent_pending
+        - within_bound
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

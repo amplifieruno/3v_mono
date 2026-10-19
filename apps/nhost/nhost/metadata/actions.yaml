@@ -181,6 +181,18 @@ actions:
     permissions:
       - role: org_admin
     comment: Face / attribute search (facial, attribute, combined); writes the caller's search_requests and search_results
+  - name: publish_policy_to_terminals
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/publish_policy_to_terminals'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 60
+    permissions:
+      - role: org_admin
+    comment: Pushes the current policy payload to every access terminal of the organization (optionally one facility) now; per-terminal result and epoch (stub transport, real sync state)
 custom_types:
   enums: []
   input_objects: []
@@ -197,4 +209,5 @@ custom_types:
     - name: SegmentPreview
     - name: SegmentEvaluation
     - name: SearchResult
+    - name: TerminalPublishResult
   scalars: []
