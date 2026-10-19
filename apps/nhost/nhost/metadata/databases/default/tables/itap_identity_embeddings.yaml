@@ -34,7 +34,6 @@ select_permissions:
     permission:
       columns:
         - created_at
-        - embedding
         - id
         - identity_id
         - is_template

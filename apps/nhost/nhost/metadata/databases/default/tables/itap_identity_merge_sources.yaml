@@ -1,0 +1,57 @@
+table:
+  schema: itap
+  name: identity_merge_sources
+configuration:
+  custom_name: identity_merge_sources
+object_relationships:
+  - name: merge
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          merge_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: previous_profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          previous_profile_id: id
+  - name: source_identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          source_identity_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - id
+        - merge_id
+        - organization_id
+        - previous_is_primary
+        - previous_profile_id
+        - previous_status
+        - source_identity_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

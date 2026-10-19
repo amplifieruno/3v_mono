@@ -39,6 +39,24 @@ object_relationships:
           organization_id: organization_id
           vacation_delegate_user_id: user_id
 array_relationships:
+  - name: identity_merges_by_merged_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          user_id: merged_by
+  - name: identity_merges_by_rolled_back_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          user_id: rolled_back_by
   - name: linked_identities
     using:
       manual_configuration:
@@ -75,6 +93,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: vacation_delegate_user_id
+  - name: verification_requests_by_assigned_to
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: verification_requests
+        column_mapping:
+          organization_id: organization_id
+          user_id: assigned_to
+  - name: verification_requests_by_decided_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: verification_requests
+        column_mapping:
+          organization_id: organization_id
+          user_id: decided_by
+  - name: verification_requests_by_requested_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: verification_requests
+        column_mapping:
+          organization_id: organization_id
+          user_id: requested_by
 select_permissions:
   - role: org_admin
     permission:

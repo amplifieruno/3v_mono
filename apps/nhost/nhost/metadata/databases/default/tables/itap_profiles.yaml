@@ -48,6 +48,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: identity_merge_sources
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merge_sources
+        column_mapping:
+          organization_id: organization_id
+          id: previous_profile_id
+  - name: identity_merges
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          id: inherited_profile_id
 computed_fields:
   - name: has_face
     definition:

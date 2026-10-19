@@ -1,2 +1,7 @@
 - "!include itap_accept_invitation.yaml"
+- "!include itap_approve_verification.yaml"
 - "!include itap_match_face.yaml"
+- "!include itap_merge_identities.yaml"
+- "!include itap_reject_verification.yaml"
+- "!include itap_rollback_merge.yaml"
+- "!include itap_split_identity.yaml"

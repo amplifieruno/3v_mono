@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: verification_statuses
+is_enum: true
+configuration:
+  custom_name: verification_statuses

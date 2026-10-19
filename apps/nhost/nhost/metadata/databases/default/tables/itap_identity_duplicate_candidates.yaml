@@ -1,0 +1,57 @@
+table:
+  schema: itap
+  name: identity_duplicate_candidates
+configuration:
+  custom_name: identity_duplicate_candidates
+object_relationships:
+  - name: identity_a
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_a_id: id
+  - name: identity_b
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_b_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - detected_at
+        - id
+        - identity_a_id
+        - identity_b_id
+        - organization_id
+        - similarity
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - status
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

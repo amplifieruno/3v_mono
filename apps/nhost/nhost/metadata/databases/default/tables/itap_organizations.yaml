@@ -45,6 +45,14 @@ array_relationships:
           name: identities
         column_mapping:
           id: organization_id
+  - name: identity_duplicate_candidates
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_duplicate_candidates
+        column_mapping:
+          id: organization_id
   - name: identity_embeddings
     using:
       manual_configuration:
@@ -53,12 +61,44 @@ array_relationships:
           name: identity_embeddings
         column_mapping:
           id: organization_id
+  - name: identity_merge_moves
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merge_moves
+        column_mapping:
+          id: organization_id
+  - name: identity_merge_sources
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merge_sources
+        column_mapping:
+          id: organization_id
+  - name: identity_merges
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          id: organization_id
   - name: identity_photos
     using:
       manual_configuration:
         remote_table:
           schema: itap
           name: identity_photos
+        column_mapping:
+          id: organization_id
+  - name: identity_relationships
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_relationships
         column_mapping:
           id: organization_id
   - name: members
@@ -101,6 +141,14 @@ array_relationships:
           name: user_settings
         column_mapping:
           id: last_organization_id
+  - name: verification_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: verification_requests
+        column_mapping:
+          id: organization_id
   - name: work_schedules
     using:
       manual_configuration:

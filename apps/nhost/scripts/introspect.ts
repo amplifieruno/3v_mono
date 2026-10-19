@@ -58,13 +58,16 @@ join pg_class ic on ic.oid = i.indexrelid
 where n.nspname in (${SCHEMA_LIST}) and not c.relispartition
   and i.indpred is null and 0 <> all (i.indkey::int2[])`;
 
-// Non-trigger functions in managed schemas with argument names/types and the returned table (if any).
+// Non-trigger functions in managed schemas with all argument names/modes/types (OUT and TABLE columns included;
+// toFunction keeps the input arguments) and the returned table (if any).
 const FUNCTIONS_SQL = `
 select coalesce(json_agg(json_build_object(
   'schema', n.nspname, 'name', p.proname, 'volatility', p.provolatile,
   'argNames', coalesce(to_json(p.proargnames), '[]'::json),
+  'argModes', to_json(p.proargmodes),
   'argTypes', (select coalesce(json_agg(format_type(t.oid, null) order by k.ord), '[]'::json)
-               from unnest(p.proargtypes::oid[]) with ordinality k(oid, ord) join pg_type t on t.oid = k.oid),
+               from unnest(coalesce(p.proallargtypes, p.proargtypes::oid[])) with ordinality k(oid, ord)
+               join pg_type t on t.oid = k.oid),
   'returnsSet', p.proretset, 'returnSchema', rn.nspname, 'returnTable', rc.relname
 ) order by n.nspname, p.proname), '[]'::json)
 from pg_proc p
@@ -162,21 +165,42 @@ function toIndex(row: Record<string, unknown>): IndexRow {
   return { schema, table, name, columns, unique };
 }
 
-function toFunction(row: Record<string, unknown>): FunctionRow {
-  const { schema, name, volatility, argNames, argTypes, returnsSet, returnSchema, returnTable } = row;
+const INPUT_MODES = new Set(['i', 'b', 'v']);
+
+/**
+ * Normalizes an introspected pg_proc row. `argTypes` covers all arguments (proallargtypes) and `argModes` is
+ * proargmodes (null when every argument is IN); only input arguments (IN, INOUT, VARIADIC) are kept, so OUT and
+ * TABLE columns cannot shift names against types.
+ */
+export function toFunction(row: Record<string, unknown>): FunctionRow {
+  const { schema, name, volatility, argNames, argModes, argTypes, returnsSet, returnSchema, returnTable } = row;
   if (
     typeof schema !== 'string' ||
     typeof name !== 'string' ||
     (volatility !== 'i' && volatility !== 's' && volatility !== 'v') ||
     !isStringArray(argNames) ||
     !isStringArray(argTypes) ||
+    (argModes !== null && argModes !== undefined && !(isStringArray(argModes) && argModes.length === argTypes.length)) ||
+    argNames.length > argTypes.length ||
     typeof returnsSet !== 'boolean' ||
     (returnSchema !== null && typeof returnSchema !== 'string') ||
     (returnTable !== null && typeof returnTable !== 'string')
   ) {
     throw new Error(`Introspection: bad function row ${JSON.stringify(row)}`);
   }
-  return { schema, name, volatility, argNames, argTypes, returnsSet, returnSchema, returnTable };
+  const inputs = argTypes.flatMap((type, i) =>
+    !isStringArray(argModes) || INPUT_MODES.has(argModes[i]) ? [{ name: argNames[i] ?? '', type }] : [],
+  );
+  return {
+    schema,
+    name,
+    volatility,
+    argNames: inputs.map((a) => a.name),
+    argTypes: inputs.map((a) => a.type),
+    returnsSet,
+    returnSchema,
+    returnTable,
+  };
 }
 
 export async function introspectFunctions(admin: HasuraAdmin): Promise<FunctionRow[]> {

@@ -70,9 +70,14 @@ describe('match_face', () => {
     const a = asOrgAdmin(user.id, orgA.id);
     await runSql(`update itap.identities set matching_enabled = false where id = '${identity.id}'`);
     expect(await match(a, axis(0))).toEqual([]);
-    await runSql(`update itap.identities set matching_enabled = true, status = 'merged' where id = '${identity.id}'`);
+    // merged is reserved for the merge functions; set the transaction-local merge context like they do.
+    await runSql(
+      `select set_config('itap.merge_context', 'on', true); update itap.identities set matching_enabled = true, status = 'merged' where id = '${identity.id}'`,
+    );
     expect(await match(a, axis(0))).toEqual([]);
-    await runSql(`update itap.identities set status = 'archived' where id = '${identity.id}'`);
+    await runSql(
+      `select set_config('itap.merge_context', 'on', true); update itap.identities set status = 'archived' where id = '${identity.id}'`,
+    );
     expect(await match(a, axis(0))).toEqual([]);
     await runSql(`update itap.identities set status = 'verified' where id = '${identity.id}'`);
     expect(await match(a, axis(0))).toHaveLength(1);

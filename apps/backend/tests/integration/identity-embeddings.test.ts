@@ -52,7 +52,7 @@ describe('identity embeddings and template upkeep', () => {
     ).rejects.toThrow(/embedding_immutable/);
   });
 
-  it('should let org_admin read and delete embeddings but not create them or write templates', async () => {
+  it('should let org_admin read (without raw vectors) and delete embeddings but not create them or write templates', async () => {
     const { orgA, orgB, user, other } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const identity = await createIdentity(user.id, orgA.id);
@@ -62,6 +62,8 @@ describe('identity embeddings and template upkeep', () => {
       `query { identity_embeddings { id is_template quality_score } }`,
     );
     expect(listed.identity_embeddings).toMatchObject([{ id, is_template: true }]);
+    // Raw biometric vectors are never exposed to org_admin (the UI never needs them).
+    await expectDenied(a.request(`query { identity_embeddings { id embedding } }`), 'embedding');
     await expectDenied(
       a.request(`mutation($o: identity_embeddings_insert_input!) { insert_identity_embeddings_one(object: $o) { id } }`, {
         o: { identity_id: identity.id, embedding: vectorLiteral(axis(1)) },

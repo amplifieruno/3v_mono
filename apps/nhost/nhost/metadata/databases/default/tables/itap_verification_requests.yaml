@@ -1,0 +1,99 @@
+table:
+  schema: itap
+  name: verification_requests
+configuration:
+  custom_name: verification_requests
+object_relationships:
+  - name: assigned_to_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          assigned_to: user_id
+  - name: decided_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          decided_by: user_id
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: requested_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          requested_by: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - assigned_to
+        - evidence
+        - identity_id
+        - reason
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - assigned_to
+        - created_at
+        - decided_at
+        - decided_by
+        - evidence
+        - id
+        - identity_id
+        - organization_id
+        - reason
+        - requested_by
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - assigned_to
+        - evidence
+        - reason
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

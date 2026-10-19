@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: candidate_statuses
+is_enum: true
+configuration:
+  custom_name: candidate_statuses

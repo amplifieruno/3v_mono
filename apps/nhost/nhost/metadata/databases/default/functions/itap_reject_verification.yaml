@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: reject_verification
+configuration:
+  custom_name: reject_verification
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

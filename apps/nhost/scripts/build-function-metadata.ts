@@ -3,6 +3,7 @@ import type { FunctionMetadata, FunctionSpec, TableSpec } from '../metadata-src/
 
 const GENERATED_PREFIX = 'itap_';
 const TENANT_ROLE = 'org_admin';
+const SESSION_ARGUMENT = 'hasura_session';
 
 /** One non-trigger function in a managed schema, as introspected from pg_proc. */
 export interface FunctionRow {
@@ -10,6 +11,7 @@ export interface FunctionRow {
   name: string;
   /** pg_proc.provolatile: immutable / stable / volatile. */
   volatility: 'i' | 's' | 'v';
+  /** Input arguments only (IN / INOUT / VARIADIC), aligned with argTypes; unnamed arguments are ''. */
   argNames: string[];
   argTypes: string[];
   returnsSet: boolean;
@@ -37,6 +39,13 @@ function validate(spec: FunctionSpec, rows: FunctionRow[], tables: TableSpec[]):
   if (matches.length > 1) throw new Error(`Function ${id}: overloaded (Hasura cannot track overloaded functions)`);
   const [row] = matches;
 
+  const sessionIndex = row.argNames.indexOf(SESSION_ARGUMENT);
+  if (!spec.sessionArgument && sessionIndex >= 0 && row.argTypes[sessionIndex] === 'json') {
+    throw new Error(
+      `Function ${id}: has a json "${SESSION_ARGUMENT}" argument but the spec omits sessionArgument ` +
+        `(Hasura would expose it as a client-supplied argument)`,
+    );
+  }
   if (spec.sessionArgument) {
     const index = row.argNames.indexOf(spec.sessionArgument);
     if (index < 0) throw new Error(`Function ${id}: session argument "${spec.sessionArgument}" not found`);

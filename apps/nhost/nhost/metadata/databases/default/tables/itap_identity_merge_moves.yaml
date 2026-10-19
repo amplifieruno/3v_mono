@@ -1,0 +1,32 @@
+table:
+  schema: itap
+  name: identity_merge_moves
+configuration:
+  custom_name: identity_merge_moves
+object_relationships:
+  - name: from_identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          from_identity_id: id
+  - name: merge
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_merges
+        column_mapping:
+          organization_id: organization_id
+          merge_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id

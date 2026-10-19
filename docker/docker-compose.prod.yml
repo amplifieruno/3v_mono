@@ -231,11 +231,8 @@ services:
       timeout: 60s
       interval: 5s
       start_period: 60s
-    ports:
-      - mode: ingress
-        target: 5432
-        published: '5432'
-        protocol: tcp
+    # No published port: services reach postgres over the internal compose network. For admin access use an SSH
+    # tunnel or `docker compose exec postgres psql`.
     restart: always
     networks:
       - internal

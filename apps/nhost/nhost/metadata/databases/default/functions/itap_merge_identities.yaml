@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: merge_identities
+configuration:
+  custom_name: merge_identities
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

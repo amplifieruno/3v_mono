@@ -54,7 +54,7 @@ describe('planFunctionMetadata', () => {
   });
 
   it('should accept a role granted select through extraPermissions', () => {
-    const row: FunctionRow = { ...matchRow, name: 'mine', returnTable: 'rows_for_user' };
+    const row: FunctionRow = { ...matchRow, name: 'mine', argNames: ['p_x'], argTypes: ['text'], returnTable: 'rows_for_user' };
     const files = planFunctionMetadata([{ name: 'mine', exposedAs: 'query', roles: ['user'] }], tables, [row]);
     expect(parse(files.get('itap_mine.yaml') ?? '').permissions).toEqual([{ role: 'user' }]);
   });
@@ -69,6 +69,16 @@ describe('planFunctionMetadata', () => {
       /session argument "hasura_session"/,
     );
     expect(() => planFunctionMetadata([match], tables, [{ ...matchRow, argTypes: ['jsonb', 'text'] }])).toThrow(/must be json/);
+  });
+
+  it('should throw when the function has a json hasura_session argument but the spec omits sessionArgument', () => {
+    const { sessionArgument: _omitted, ...withoutSession } = match;
+    expect(() => planFunctionMetadata([withoutSession], tables, [matchRow])).toThrow(
+      /itap\.match_face.*hasura_session.*sessionArgument/,
+    );
+    // A non-json argument that happens to share the name is not a session argument.
+    const plain: FunctionRow = { ...matchRow, argTypes: ['text', 'text'] };
+    expect(() => planFunctionMetadata([withoutSession], tables, [plain])).not.toThrow();
   });
 
   it('should throw when a volatile function is exposed as a query', () => {
