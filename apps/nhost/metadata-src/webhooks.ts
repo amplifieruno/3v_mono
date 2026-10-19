@@ -34,7 +34,7 @@ const adminOnly = (name: string, exposedAs: 'query' | 'mutation', reason: string
   unscopedReturnReason: `admin-only: ${reason}`,
 });
 
-/** Sending state machine (claim / finish / due): admin secret only, called by the sending handlers. */
+/** Sending state machine (claim / finish / due), escalation and digests: admin secret only, called by the handlers. */
 export const sendingFunctions: FunctionSpec[] = [
   adminOnly('claim_notification_delivery', 'mutation', 'send_delivery trigger and retry_deliveries cron'),
   adminOnly('finish_notification_delivery', 'mutation', 'send_delivery trigger and retry_deliveries cron'),
@@ -42,4 +42,6 @@ export const sendingFunctions: FunctionSpec[] = [
   adminOnly('claim_webhook_delivery', 'mutation', 'send_webhook trigger and retry_webhooks cron'),
   adminOnly('finish_webhook_delivery', 'mutation', 'send_webhook trigger and retry_webhooks cron'),
   adminOnly('due_webhook_deliveries', 'query', 'retry_webhooks cron across all organizations'),
+  adminOnly('escalate_incidents', 'mutation', 'called per organization by the escalate cron handler'),
+  adminOnly('send_digests', 'mutation', 'called per organization by the send_digests cron handler'),
 ];

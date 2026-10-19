@@ -26,6 +26,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: "Probe the stream-server per camera: metrics, health_status, last_seen_at, device_events"
+- name: escalate
+  webhook: "{{BACKEND_URL}}/hasura/events/escalate"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Escalate unacknowledged open incidents to the next step of their escalation policy
 - name: evaluate_dwell_rules
   webhook: "{{BACKEND_URL}}/hasura/events/evaluate_dwell_rules"
   schedule: "* * * * *"
@@ -110,3 +124,17 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Retry webhook deliveries whose next_attempt_at passed; dead_letter after 5 attempts
+- name: send_digests
+  webhook: "{{BACKEND_URL}}/hasura/events/send_digests"
+  schedule: 0 * * * *
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 3600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Combine due digest items of digest-mode notification rules into one delivery per recipient

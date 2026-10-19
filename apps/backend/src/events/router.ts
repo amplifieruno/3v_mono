@@ -5,6 +5,7 @@ import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
+import { escalate, sendDigests } from './notificationCrons.js';
 import { purgeTriggerLogs } from './purgeTriggerLogs.js';
 import { retryDeliveries, retryWebhooks, sendDelivery, sendWebhook } from './sending.js';
 import { closeStaleSessions, evaluateDwellRules, lifecycleJobs } from './trackingCrons.js';
@@ -39,6 +40,8 @@ export const defaultEventHandlers: EventHandlers = {
   send_webhook: sendWebhook,
   retry_deliveries: retryDeliveries,
   retry_webhooks: retryWebhooks,
+  escalate,
+  send_digests: sendDigests,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

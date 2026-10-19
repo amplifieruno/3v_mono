@@ -22,7 +22,7 @@ const LIFECYCLE_JOBS = `
  * A cron that calls one SQL function per organization with the run's scheduled_time (design §8.0, §8.3), so a retry
  * of the same run is a no-op. Every organization is attempted; the run fails (500, Hasura retries) when any failed.
  */
-function perOrganizationCron(field: string, mutation: string): CronHandler {
+export function perOrganizationCron(field: string, mutation: string): CronHandler {
   return defineCronHandler(async (payload, ctx) => {
     const scheduled = new Date(payload.scheduled_time);
     if (Number.isNaN(scheduled.getTime())) throw new Error(`Invalid scheduled_time: ${payload.scheduled_time}`);

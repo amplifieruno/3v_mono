@@ -74,4 +74,22 @@ export const crons: CronSpec[] = [
     includeInMetadata: true,
     comment: 'Retry webhook deliveries whose next_attempt_at passed; dead_letter after 5 attempts',
   },
+  {
+    // Unacknowledged open incidents: the next escalation step of their policy once its after_minutes passed, one step
+    // per incident per run (itap.escalate_incidents per organization; apps/backend/src/events/notificationCrons.ts).
+    name: 'escalate',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Escalate unacknowledged open incidents to the next step of their escalation policy',
+  },
+  {
+    // Digest-mode notification rules: due digest items combined per rule, recipient, channel and window into one
+    // delivery (itap.send_digests per organization). Hourly; a run up to an hour late is still delivered.
+    name: 'send_digests',
+    schedule: '0 * * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    comment: 'Combine due digest items of digest-mode notification rules into one delivery per recipient',
+  },
 ];

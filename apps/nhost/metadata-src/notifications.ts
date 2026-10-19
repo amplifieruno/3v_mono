@@ -14,7 +14,7 @@ const visibleDelivery: BoolExp = {
   ],
 };
 const DELIVERY_COLUMNS = [
-  'acknowledged_at', 'attempts', 'channel', 'content', 'created_at', 'deliver_after', 'delivered_at', 'error',
+  'acknowledged_at', 'attempts', 'channel', 'content', 'created_at', 'deliver_after', 'delivered_at', 'digested_into', 'error',
   'escalation_cycle', 'escalation_step_id', 'event_id', 'id', 'incident_id', 'organization_id', 'priority',
   'recipient_address', 'recipient_key', 'recipient_user_id', 'report_id', 'rule_id', 'sent_at', 'status',
   'subscription_id',
@@ -104,6 +104,11 @@ export const notificationTables: TableSpec[] = [
     // Subscriptions are private (like their audit rows): a subscription delivery is visible to its recipient only.
     name: 'notification_deliveries',
     profile: 'tenant_read',
+    // Digest items -> their combined delivery (digest), and the combined delivery's items.
+    relationshipNames: {
+      notification_deliveries_digested_into_fkey: 'digest',
+      'notification_deliveries_digested_into_fkey#array': 'digest_items',
+    },
     eventTriggers: [
       {
         // Non in_app channels: stubbed providers (email log, sms/push delivered). The handler claims the row, so

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: send_digests
+configuration:
+  custom_name: send_digests
+  exposed_as: mutation

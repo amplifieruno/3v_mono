@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: escalate_incidents
+configuration:
+  custom_name: escalate_incidents
+  exposed_as: mutation

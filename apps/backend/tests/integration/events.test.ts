@@ -66,4 +66,18 @@ describe('Hasura event/cron trigger wiring', () => {
       retry_conf: { num_retries: 3, retry_interval_seconds: 10, timeout_seconds: 60, tolerance_seconds: 120 },
     });
   });
+
+  it('should have the escalate (every minute) and send_digests (hourly) crons with their tolerances', async () => {
+    const crons = await exportedCronTriggers();
+    expect(crons.find((c) => c.name === 'escalate')).toMatchObject({
+      webhook: '{{BACKEND_URL}}/hasura/events/escalate',
+      schedule: '* * * * *',
+      retry_conf: { tolerance_seconds: 120 },
+    });
+    expect(crons.find((c) => c.name === 'send_digests')).toMatchObject({
+      webhook: '{{BACKEND_URL}}/hasura/events/send_digests',
+      schedule: '0 * * * *',
+      retry_conf: { tolerance_seconds: 3600 },
+    });
+  });
 });
