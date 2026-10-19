@@ -1,3 +1,4 @@
+DROP FUNCTION itap.finish_events(uuid, uuid[]);
 DROP FUNCTION itap.bump_rule_counters(uuid, uuid[]);
 DROP FUNCTION itap.emit_event(itap.events, uuid);
 DROP FUNCTION itap.link_rule_incident(itap.events, uuid, text, uuid);

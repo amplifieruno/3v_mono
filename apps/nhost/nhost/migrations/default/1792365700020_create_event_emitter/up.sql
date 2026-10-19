@@ -56,7 +56,9 @@ AS $$
 $$;
 
 -- Opens (or finds) the incident of a rule version for an event and links the event and its identity to it.
--- One incident per session and rule (incidents.dedup_key); a closed incident is terminal and gets no new links.
+-- One incident per session and rule (incidents.dedup_key `session:<id>:rule:<rule>`); occupancy_exceeded is about
+-- the area, not a person: one incident per area, rule and 15-minute bucket (`occupancy:<area>:rule:<rule>:<bucket>`).
+-- A closed incident is terminal and gets no new links.
 -- Severity, facility and area come from the event, the escalation policy from the version (spec §6.9).
 CREATE FUNCTION itap.link_rule_incident(p_event itap.events, p_rule_id uuid, p_rule_name text, p_escalation_policy uuid)
 RETURNS uuid
@@ -64,8 +66,12 @@ LANGUAGE plpgsql
 SET search_path = pg_catalog, itap
 AS $$
 DECLARE
-  v_key text := CASE WHEN p_event.session_id IS NOT NULL THEN 'session:' || p_event.session_id ELSE 'event:' || p_event.id END
-    || ':rule:' || p_rule_id;
+  v_key text := CASE
+    WHEN p_event.event_type = 'occupancy_exceeded' AND p_event.payload ? 'bucket'
+      THEN 'occupancy:' || p_event.area_id || ':rule:' || p_rule_id || ':' || (p_event.payload ->> 'bucket')
+    WHEN p_event.session_id IS NOT NULL THEN 'session:' || p_event.session_id || ':rule:' || p_rule_id
+    ELSE 'event:' || p_event.id || ':rule:' || p_rule_id
+  END;
   v_incident uuid;
   v_status text;
 BEGIN
@@ -103,16 +109,16 @@ $$;
 -- unusual_dwell rule that produced the event) set rule_version_id (the first = highest severity) and the severity:
 -- the highest matching rule severity replaces the base severity, except for watch list events, which keep the
 -- severity of their list (spec §6.9: the list is the more specific configuration). All matched version ids are kept
--- in payload.rule_version_ids (rule counters). Idempotent: ON CONFLICT (organization_id, dedup_key) DO NOTHING; a
--- conflicting (already written) event returns NULL and creates no incident. Concurrent writers of one key serialize
--- on the unique index. Rule header counters are not touched here (see itap.bump_rule_counters).
+-- in payload.rule_version_ids (incidents, rule counters). Idempotent: ON CONFLICT (organization_id, dedup_key) DO
+-- NOTHING; a conflicting (already written) event returns NULL. Concurrent writers of one key serialize on the unique
+-- index. Incidents and rule counters are NOT written here: the writer collects the ids of its new events and calls
+-- itap.finish_events once after its last emit_event (lock order, see finish_events).
 CREATE FUNCTION itap.emit_event(p_event itap.events, p_version uuid DEFAULT NULL) RETURNS uuid
 LANGUAGE plpgsql
 SET search_path = pg_catalog, itap
 AS $$
 DECLARE
   ev itap.events := p_event;
-  matched record;
   version_ids uuid[] := '{}';
   inserted uuid;
 BEGIN
@@ -144,15 +150,6 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  FOR matched IN
-    SELECT r.id AS rule_id, r.name, v.escalation_policy_id
-    FROM itap.event_rule_versions v
-    JOIN itap.event_rules r ON r.organization_id = v.organization_id AND r.id = v.rule_id
-    WHERE v.organization_id = ev.organization_id AND v.id = ANY (version_ids) AND v.creates_incident
-    ORDER BY r.id
-  LOOP
-    PERFORM itap.link_rule_incident(ev, matched.rule_id, matched.name, matched.escalation_policy_id);
-  END LOOP;
   RETURN inserted;
 END;
 $$;
@@ -184,5 +181,41 @@ BEGIN
         last_triggered_at = greatest(er.last_triggered_at, r.last_at)
     WHERE er.organization_id = p_organization AND er.id = r.rule_id;
   END LOOP;
+END;
+$$;
+
+-- Second phase of an event writer (Stage B, dwell cron), called once after all its emit_event calls with the ids of
+-- the events it wrote: incidents for every matched version with creates_incident (itap.link_rule_incident, per
+-- event, rule id order), then the rule counters (itap.bump_rule_counters).
+-- Lock order of a writer transaction: (1) event dedup keys (unique index entries, possibly waiting for another
+-- writer of the same key), (2) the organization's incident counter row (assign_number) and incident keys, (3) rule
+-- header rows in rule id order. Because no writer waits for an event key after it took the counter or a rule row,
+-- two writers cannot wait for each other in a cycle (e.g. an occupancy_exceeded key shared by two detections while
+-- either already holds the incident counter).
+CREATE FUNCTION itap.finish_events(p_organization uuid, p_events uuid[]) RETURNS void
+LANGUAGE plpgsql
+SET search_path = pg_catalog, itap
+AS $$
+DECLARE
+  ev itap.events;
+  matched record;
+BEGIN
+  FOR ev IN
+    SELECT e.* FROM unnest(p_events) WITH ORDINALITY AS x (id, n)
+    JOIN itap.events e ON e.organization_id = p_organization AND e.id = x.id
+    ORDER BY x.n
+  LOOP
+    FOR matched IN
+      SELECT r.id AS rule_id, r.name, v.escalation_policy_id
+      FROM jsonb_array_elements_text(coalesce(ev.payload -> 'rule_version_ids', '[]')) AS y (version_id)
+      JOIN itap.event_rule_versions v ON v.organization_id = p_organization AND v.id = y.version_id::uuid
+      JOIN itap.event_rules r ON r.organization_id = v.organization_id AND r.id = v.rule_id
+      WHERE v.creates_incident
+      ORDER BY r.id
+    LOOP
+      PERFORM itap.link_rule_incident(ev, matched.rule_id, matched.name, matched.escalation_policy_id);
+    END LOOP;
+  END LOOP;
+  PERFORM itap.bump_rule_counters(p_organization, p_events);
 END;
 $$;

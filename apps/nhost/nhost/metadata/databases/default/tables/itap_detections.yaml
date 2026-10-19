@@ -99,8 +99,8 @@ event_triggers:
       insert:
         columns: "*"
     retry_conf:
-      num_retries: 5
-      interval_sec: 5
+      num_retries: 10
+      interval_sec: 15
       timeout_sec: 30
     webhook: "{{BACKEND_URL}}/hasura/events/detection_created"
     headers:

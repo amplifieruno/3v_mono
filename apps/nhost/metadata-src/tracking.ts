@@ -13,8 +13,13 @@ export const trackingTables: TableSpec[] = [
     // so Hasura's at-least-once redelivery writes nothing twice).
     name: 'detections',
     profile: 'tenant_read',
+    // Retries span 2.5 minutes, so a short backend restart does not drop Stage B of a detection.
     eventTriggers: [
-      { name: 'detection_created', operations: ['insert'], retry: { num_retries: 5, retry_interval_seconds: 5, timeout_seconds: 30 } },
+      {
+        name: 'detection_created',
+        operations: ['insert'],
+        retry: { num_retries: 10, retry_interval_seconds: 15, timeout_seconds: 30 },
+      },
     ],
   },
   { name: 'tracking_sessions', profile: 'tenant_read' },

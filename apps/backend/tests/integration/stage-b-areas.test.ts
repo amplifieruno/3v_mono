@@ -106,4 +106,27 @@ describe('Stage B: event rules in scope', () => {
     expect(event).toMatchObject({ event_type: 'detection_unknown', rule_version_id: null, severity: 'info' });
     expect(await orgIncidents(w.orgA.id)).toEqual([]);
   });
+
+  it('should open one occupancy incident per area bucket and survive concurrent evaluation of many detections', async () => {
+    const w = await createTrackingWorld();
+    await updateByPk(w.a, 'areas', w.lobby.id, { capacity: 1, access_level: 'restricted' });
+    await updateByPk(w.a, 'areas', w.building.id, { capacity: 1 });
+    await publishedRule(w.a, 'occupancy', { creates_incident: true });
+    await publishedRule(w.a, 'restricted_area', { creates_incident: true });
+    const people = [w.identity, ...(await Promise.all([1, 2, 3].map(() => createIdentity(w.a))))];
+    const detections = [];
+    for (const [i, id] of people.entries()) detections.push(await detect(w.orgA.id, w.lobbyCam, id, i));
+    // Every detection evaluated twice, all at once (redelivery racing the first delivery).
+    await Promise.all([...detections, ...detections].map((d) => evaluate(d.id)));
+    const events = await orgEvents(w.orgA.id);
+    expect(events.filter(of('occupancy_exceeded')).map((e) => e.area_id).sort()).toEqual([w.building.id, w.lobby.id].sort());
+    expect(events.filter(of('restricted_area_entry'))).toHaveLength(4);
+    const incidents = await orgIncidents(w.orgA.id);
+    // One per person session for restricted_area; occupancy is about the area: one per area and bucket, even
+    // though one person's session crossed both capacities.
+    expect(incidents).toHaveLength(6);
+    const occupancyIncidents = incidents.filter((i) => i.title.includes('Occupancy above capacity'));
+    expect(occupancyIncidents.map((i) => i.area_id).sort()).toEqual([w.building.id, w.lobby.id].sort());
+  });
 });
+

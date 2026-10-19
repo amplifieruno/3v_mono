@@ -24,6 +24,8 @@
 --   abnormal_movement: itap.evaluate_abnormal_movement (no-op until area_transitions_daily, slice 7).
 -- * access point passed: itap.evaluate_tailgating (no-op until access decisions, slice 8).
 -- Late detections (Review Focus 2) open no session and write no location, so they emit nothing.
+-- Lock order: all events are written first (keys in a fixed order: session events, area events, occupancy areas by
+-- depth then id), incidents and rule counters afterwards in itap.finish_events (see there).
 
 -- Carry-over (slice 7): transitions not seen in area_transitions_daily for 30 days. Returns the ids of new events.
 CREATE FUNCTION itap.evaluate_abnormal_movement(p_location itap.identity_locations, p_base itap.events)
@@ -177,7 +179,7 @@ BEGIN
       SELECT p.* FROM itap.areas a
       JOIN itap.areas p ON p.organization_id = a.organization_id AND p.id = ANY (a.path)
       WHERE a.organization_id = d.organization_id AND a.id = loc.area_id AND p.capacity IS NOT NULL
-      ORDER BY p.depth DESC
+      ORDER BY p.depth DESC, p.id
     LOOP
       occupied := itap.area_current_occupancy(area_row);
       IF occupied > area_row.capacity THEN
@@ -186,9 +188,9 @@ BEGIN
         ev.event_type := 'occupancy_exceeded';
         ev.severity := 'medium';
         ev.title := 'Occupancy above capacity: ' || area_row.name;
-        ev.payload := jsonb_build_object('capacity', area_row.capacity, 'occupancy', occupied);
-        ev.dedup_key := 'occupancy:' || area_row.id || ':occupancy_exceeded:'
-          || floor(extract(epoch FROM d.detected_at) / 900)::bigint;
+        ev.payload := jsonb_build_object('capacity', area_row.capacity, 'occupancy', occupied,
+                                         'bucket', floor(extract(epoch FROM d.detected_at) / 900)::bigint);
+        ev.dedup_key := 'occupancy:' || area_row.id || ':occupancy_exceeded:' || (ev.payload ->> 'bucket');
         new_ids := new_ids || itap.emit_event(ev);
       END IF;
     END LOOP;
@@ -201,7 +203,7 @@ BEGIN
     new_ids := new_ids || ARRAY(SELECT itap.evaluate_tailgating(d, base));
   END IF;
 
-  PERFORM itap.bump_rule_counters(d.organization_id, array_remove(new_ids, NULL));
+  PERFORM itap.finish_events(d.organization_id, array_remove(new_ids, NULL));
   RETURN QUERY
     SELECT * FROM itap.events e WHERE e.organization_id = d.organization_id AND e.detection_id = d.id
     ORDER BY e.occurred_at, e.event_type;

@@ -44,9 +44,11 @@ $$;
 REVOKE ALL ON FUNCTION itap.close_stale_sessions(uuid, timestamptz) FROM PUBLIC;
 
 -- evaluate_dwell_rules (every minute): time-based events from area_occupancy durations at p_at (spec §8.2).
+-- The stay counts only as far as it was observed: the threshold must be reached by least(last_seen_at, p_at)
+-- (occupancy rows live until the session times out, so a person who left keeps a row with an old last_seen_at).
 -- * loitering: the occupant has been in an area with loitering_threshold_seconds for at least that long
---   (entered_at + threshold <= p_at); occurred_at = entered_at + threshold (the crossing, independent of when the
---   cron runs); base severity low, rules of type loitering in scope apply.
+--   (entered_at + threshold <= least(last_seen_at, p_at)); occurred_at = entered_at + threshold (the crossing,
+--   independent of when the cron runs); base severity low, rules of type loitering in scope apply.
 -- * unusual_dwell: per published unusual_dwell rule version in scope with parameters.dwell_seconds (a positive
 --   number); occurred_at = entered_at + dwell_seconds; the version itself sets severity / incident.
 -- Dedup per occupancy stint: occupancy:<occupancy id>:<type>:<area_id>:<entered_at epoch ms>[:<rule id>]. The
@@ -68,7 +70,7 @@ BEGIN
     JOIN itap.areas a ON a.organization_id = oc.organization_id AND a.id = oc.area_id
     LEFT JOIN itap.tracking_sessions s ON s.organization_id = oc.organization_id AND s.id = oc.session_id
     WHERE oc.organization_id = p_organization AND a.loitering_threshold_seconds IS NOT NULL
-      AND oc.entered_at + make_interval(secs => a.loitering_threshold_seconds) <= p_at
+      AND oc.entered_at + make_interval(secs => a.loitering_threshold_seconds) <= least(oc.last_seen_at, p_at)
     ORDER BY oc.id
   LOOP
     stint := o.area_id || ':' || (extract(epoch FROM o.entered_at) * 1000)::bigint;
@@ -99,7 +101,7 @@ BEGIN
       CROSS JOIN LATERAL itap.matching_rule_versions(oc.organization_id, 'unusual_dwell', oc.facility_id, oc.area_id) m
       WHERE oc.organization_id = p_organization
     ) x
-    WHERE x.dwell_seconds > 0 AND x.entered_at + make_interval(secs => x.dwell_seconds) <= p_at
+    WHERE x.dwell_seconds > 0 AND x.entered_at + make_interval(secs => x.dwell_seconds) <= least(x.last_seen_at, p_at)
     ORDER BY x.id, x.rule_id
   LOOP
     stint := o.area_id || ':' || (extract(epoch FROM o.entered_at) * 1000)::bigint;
@@ -120,7 +122,7 @@ BEGIN
   END LOOP;
 
   new_ids := array_remove(new_ids, NULL);
-  PERFORM itap.bump_rule_counters(p_organization, new_ids);
+  PERFORM itap.finish_events(p_organization, new_ids);
   RETURN QUERY
     SELECT * FROM itap.events e WHERE e.organization_id = p_organization AND e.id = ANY (new_ids)
     ORDER BY e.occurred_at, e.event_type;

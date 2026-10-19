@@ -68,6 +68,14 @@ describe('Stage B: session-opened events', () => {
     const list = await insertOne(w.a, 'watch_lists', { name: 'Blacklist', kind: 'blacklist', severity: 'critical' });
     await insertOne(w.a, 'watch_list_entries', { watch_list_id: list.id, profile_id: person.profile });
     const rule = await publishedRule(w.a, 'watchlist', { severity: 'medium', creates_incident: true }, [{ facility_id: w.facility.id }]);
+    const ruleState = async () =>
+      (
+        await asAdmin().request<{ event_rules_by_pk: { trigger_count: number; last_triggered_at: string; updated_at: string } }>(
+          `query($id: uuid!) { event_rules_by_pk(id: $id) { trigger_count last_triggered_at updated_at } }`,
+          { id: rule.rule },
+        )
+      ).event_rules_by_pk;
+    const before = await ruleState();
     const d = await detect(w.orgA.id, w.entranceCam, person.identity, 0);
     await evaluate(d.id);
     const match = (await orgEvents(w.orgA.id)).find((e) => e.event_type === 'blacklist_match');
@@ -82,12 +90,11 @@ describe('Stage B: session-opened events', () => {
       { id: person.profile },
     );
     expect(profile.profiles_by_pk.is_blacklisted).toBe(true);
-    const header = await asAdmin().request<{ event_rules_by_pk: { trigger_count: number; last_triggered_at: string } }>(
-      `query($id: uuid!) { event_rules_by_pk(id: $id) { trigger_count last_triggered_at } }`,
-      { id: rule.rule },
-    );
-    expect(header.event_rules_by_pk.trigger_count).toBe(1);
-    expect(Date.parse(header.event_rules_by_pk.last_triggered_at)).toBe(Date.parse(d.detected_at));
+    const header = await ruleState();
+    expect(header.trigger_count).toBe(1);
+    expect(Date.parse(header.last_triggered_at)).toBe(Date.parse(d.detected_at));
+    // Counters are not a configuration edit: updated_at stays.
+    expect(header.updated_at).toBe(before.updated_at);
     // A new session is a new arrival: a new event and a new incident.
     await evaluate((await detect(w.orgA.id, w.entranceCam, person.identity, 1000)).id);
     expect(await orgIncidents(w.orgA.id)).toHaveLength(2);

@@ -25,6 +25,30 @@ describe('close_stale_sessions', () => {
     expect((await sessions(w.identity)).map((s) => s.status)).toEqual(['lost', 'active']);
   });
 
+  it('should leave a consistent state when it races a detection of the same identity', async () => {
+    const w = await createTrackingWorld();
+    const people = [w.identity, ...(await Promise.all([1, 2, 3, 4, 5].map(() => createIdentity(w.a))))];
+    for (const id of people) await detect(w.orgA.id, w.lobbyCam, id, 0);
+    // Cutoff 100: the sessions (last seen at 0) are stale; the racing detection at 250 extends one within the
+    // timeout or, if the cron closed it first, opens a new session.
+    await Promise.all([
+      closeStale(w.orgA.id, 400),
+      ...people.map((id) => detect(w.orgA.id, w.lobbyCam, id, 250)),
+    ]);
+    for (const id of people) {
+      const rows = await sessions(id);
+      const active = rows.filter((r) => r.status === 'active');
+      expect(active).toHaveLength(1);
+      expect(Date.parse(active[0].last_detected_at)).toBe(Date.parse(at(250)));
+      for (const closed of rows.filter((r) => r.status !== 'active')) {
+        expect(closed.status).toBe('lost');
+        expect(Date.parse(closed.last_detected_at)).toBe(Date.parse(at(0)));
+        expect(Date.parse(closed.ended_at ?? '')).toBe(Date.parse(at(0)));
+      }
+      expect(await occupancy(id)).toEqual([expect.objectContaining({ session_id: active[0].id, area_id: w.lobby.id })]);
+    }
+  });
+
   it('should touch only the given organization and use its timeout', async () => {
     const w = await createTrackingWorld();
     await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
@@ -50,7 +74,8 @@ describe('evaluate_dwell_rules', () => {
     const w = await createTrackingWorld();
     await updateByPk(w.a, 'areas', w.lobby.id, { loitering_threshold_seconds: 60 });
     await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
-    await detect(w.orgA.id, w.lobbyCam, w.identity, 50);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 30);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 65);
     expect(await evaluateDwell(w.orgA.id, 59)).toEqual([]);
     const [loitering] = await evaluateDwell(w.orgA.id, 90);
     expect(loitering).toMatchObject({ event_type: 'loitering', severity: 'low', area_id: w.lobby.id, identity_id: w.identity });
@@ -61,7 +86,19 @@ describe('evaluate_dwell_rules', () => {
     await detect(w.orgA.id, w.floorCam, w.identity, 160);
     expect(await evaluateDwell(w.orgA.id, 600)).toEqual([]);
     await detect(w.orgA.id, w.lobbyCam, w.identity, 200);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 265);
     expect(types(await evaluateDwell(w.orgA.id, 270))).toEqual(['loitering']);
+  });
+
+  it('should not count dwell time after the person was last seen (left before the threshold)', async () => {
+    const w = await createTrackingWorld();
+    await updateByPk(w.a, 'areas', w.lobby.id, { loitering_threshold_seconds: 60 });
+    await publishedRule(w.a, 'unusual_dwell', { parameters: { dwell_seconds: 60 } }, [{ area_id: w.lobby.id }]);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 50);
+    // The occupancy row lives until the session times out, but the stay was observed for 50 s only.
+    expect(await evaluateDwell(w.orgA.id, 90)).toEqual([]);
+    expect(await evaluateDwell(w.orgA.id, 290)).toEqual([]);
   });
 
   it('should emit unusual_dwell per published rule threshold with its severity and incident', async () => {
@@ -74,6 +111,7 @@ describe('evaluate_dwell_rules', () => {
     await publishedRule(w.a, 'unusual_dwell', { parameters: { dwell_seconds: 60 } }, [{ area_id: w.zone.id }]);
     await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
     expect(await evaluateDwell(w.orgA.id, 100)).toEqual([]);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 125);
     const events = await evaluateDwell(w.orgA.id, 130);
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ event_type: 'unusual_dwell', severity: 'high', rule_version_id: rule.version });
