@@ -16,6 +16,14 @@ const TABLES = [
   'verification_requests',
   'identity_duplicate_candidates',
   'identity_merges',
+  'facilities',
+  'areas',
+  'floor_plans',
+  'access_points',
+  'devices',
+  'device_areas',
+  'access_point_devices',
+  'facility_templates',
   // A second run must write nothing at all, so no new audit rows either.
   'audit_log',
 ];
@@ -37,6 +45,25 @@ export async function seedCounts(slug: string): Promise<SeedCounts> {
   parts.push(
     `(select count(*) from itap.consent_records where organization_id = ${org} and status = 'withdrawn') as withdrawn_consents`,
   );
+  // Telemetry the seed wrote (before the device row existed); the live health cron keeps adding samples after that.
+  parts.push(
+    `(select count(*) from itap.device_health_metrics m join itap.devices d on d.id = m.device_id
+       where m.organization_id = ${org} and m.recorded_at < d.created_at) as seeded_health_metrics`,
+  );
+  parts.push(
+    `(select count(*) from itap.device_events e join itap.devices d on d.id = e.device_id
+       where e.organization_id = ${org} and e.occurred_at < d.created_at) as seeded_device_events`,
+  );
+  parts.push(
+    `(select count(*) from itap.devices where organization_id = ${org} and stream_url is not null) as streaming_cameras`,
+  );
+  parts.push(
+    `(select count(*) from itap.identity_photos where organization_id = ${org} and device_id is not null) as photos_with_device`,
+  );
+  parts.push(
+    `(select count(*) from itap.floor_plans where organization_id = ${org} and image_file_id is not null) as floor_plans_with_image`,
+  );
+  parts.push(`(select count(*) from itap.areas where organization_id = ${org} and shape is not null) as areas_with_shape`);
   const [row] = await runSqlRows(`select ${parts.join(', ')}`);
   return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, Number(v)]));
 }

@@ -106,6 +106,53 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     expect(data.match_face[0]?.identity_id).toBe(template.identityId);
   });
 
+  it('should seed the Nova Tower layout, devices and 30 days of device health', async () => {
+    const nova = await seedCounts(SLUGS[0]);
+    expect(nova.facilities).toBe(1);
+    expect(nova.areas).toBeGreaterThanOrEqual(55);
+    expect(nova.areas).toBeLessThanOrEqual(70);
+    expect(nova.areas_with_shape).toBeGreaterThan(10);
+    expect(nova.floor_plans).toBe(3);
+    expect(nova.floor_plans_with_image).toBe(3);
+    expect(nova.access_points).toBe(10);
+    expect(nova.devices).toBeGreaterThanOrEqual(14);
+    expect(nova.streaming_cameras).toBe(4);
+    expect(nova.access_point_devices).toBeGreaterThanOrEqual(11);
+    expect(nova.device_areas).toBeGreaterThan(0);
+    expect(nova.facility_templates).toBe(1);
+    // Hourly samples for 30 days per device, minus the offline gaps.
+    expect(nova.seeded_health_metrics).toBeGreaterThan(nova.devices * 700);
+    // 3 offline incidents: offline + online each.
+    expect(nova.seeded_device_events).toBe(6);
+    expect(nova.photos_with_device).toBeGreaterThanOrEqual(4);
+
+    const riverside = await seedCounts(SLUGS[1]);
+    expect(riverside.facilities).toBe(1);
+    expect(riverside.areas).toBe(5);
+    expect(riverside.devices).toBe(2);
+    expect(riverside.streaming_cameras).toBe(0);
+
+    const cameras = await runSqlRows(
+      `select d.name, d.stream_url, d.recognition_enabled, d.recognition_fps from itap.devices d
+         join itap.organizations o on o.id = d.organization_id
+        where o.slug = '${SLUGS[0]}' and d.stream_url is not null order by d.stream_url`,
+    );
+    expect(cameras.map((c) => [c.name, c.stream_url])).toEqual([
+      ['Main Entrance Camera', 'rtsp://mediamtx:8554/entrance'],
+      ['Lobby Camera', 'rtsp://mediamtx:8554/lobby'],
+      ['Server Room Camera', 'rtsp://mediamtx:8554/serverroom'],
+      ['Loading Dock Camera', 'rtsp://mediamtx:8554/warehouse'],
+    ]);
+    expect(cameras.every((c) => c.recognition_enabled === 't' && c.recognition_fps === '2')).toBe(true);
+
+    // Seeded samples sit on whole hours; the plan geometry lies inside its floor plan.
+    const [offHour] = await runSqlRows(
+      `select count(*) as n from itap.device_health_metrics m join itap.devices d on d.id = m.device_id
+        where m.recorded_at < d.created_at and date_trunc('hour', m.recorded_at) <> m.recorded_at`,
+    );
+    expect(Number(offHour.n)).toBe(0);
+  });
+
   it('should recreate the organizations with --reset', async () => {
     const before = await state();
     await seed('--reset');

@@ -4,6 +4,9 @@ import { loadEnv } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { createStorageClient } from '../storage/storageClient.js';
 import { seedCompanies, type SeedCompaniesResult } from './companies.js';
+import { seedDeviceHealth, type SeedDeviceHealthResult } from './deviceHealth.js';
+import { seedDevices, type SeedDevicesResult } from './devices.js';
+import { seedFacilities, type SeedFacilitiesResult } from './facilities.js';
 import { seedFaces, type SeedIdentitiesResult } from './faces.js';
 import { seedPeople, type SeedPeopleResult } from './people.js';
 import { resetTenancy, seedTenancy, type SeedContext, type SeedTenancyResult } from './tenancy.js';
@@ -14,6 +17,9 @@ export type SeedResults = {
   companies: SeedCompaniesResult;
   profiles: SeedPeopleResult;
   identities: SeedIdentitiesResult;
+  facilities: SeedFacilitiesResult;
+  devices: SeedDevicesResult;
+  deviceHealth: SeedDeviceHealthResult;
 };
 
 type StepName = keyof SeedResults;
@@ -45,6 +51,12 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   companies: step(['tenancy'], (ctx, { tenancy }) => seedCompanies(ctx, tenancy)),
   profiles: step(['tenancy', 'companies'], (ctx, { tenancy, companies }) => seedPeople(ctx, tenancy, companies)),
   identities: step(['tenancy', 'profiles'], (ctx, { tenancy, profiles }) => seedFaces(ctx, tenancy, profiles)),
+  facilities: step(['tenancy'], (ctx, { tenancy }) => seedFacilities(ctx, tenancy)),
+  // After identities: the seeded faces' camera photos are re-pointed to the camera that captured them.
+  devices: step(['tenancy', 'facilities', 'profiles', 'identities'], (ctx, { tenancy, facilities, profiles }) =>
+    seedDevices(ctx, tenancy, facilities, profiles),
+  ),
+  deviceHealth: step(['tenancy', 'devices'], (ctx, { tenancy, devices }) => seedDeviceHealth(ctx, tenancy, devices)),
 };
 
 function log(message: string): void {
