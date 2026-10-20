@@ -48,20 +48,25 @@ export function hashSecret(secret: string): string {
   return `scrypt$16384$8$1$${salt.toString('base64')}$${hash.toString('base64')}`;
 }
 
-/** `v1:<iv>:<tag>:<ciphertext>` (base64 parts). */
-export function encryptSecret(keys: ServerKeys, secret: string): string {
+/**
+ * `v2:<iv>:<tag>:<ciphertext>` (base64 parts); the key prefix is the AES-GCM additional data, so a ciphertext copied
+ * onto another key row does not decrypt. (v1, without additional data, is no longer accepted: rotate such keys.)
+ */
+export function encryptSecret(keys: ServerKeys, secret: string, prefix: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', keys.encryption, iv);
+  cipher.setAAD(Buffer.from(prefix, 'utf8'));
   const data = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
-  return `v1:${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${data.toString('base64')}`;
+  return `v2:${iv.toString('base64')}:${cipher.getAuthTag().toString('base64')}:${data.toString('base64')}`;
 }
 
-/** Decrypts a stored secret; undefined when it is malformed or does not authenticate under the server key. */
-export function decryptSecret(keys: ServerKeys, stored: string | null | undefined): string | undefined {
+/** Decrypts a stored secret of key `prefix`; undefined when malformed, v1, or not authentic under the server key. */
+export function decryptSecret(keys: ServerKeys, stored: string | null | undefined, prefix: string): string | undefined {
   const parts = stored?.split(':');
-  if (!parts || parts.length !== 4 || parts[0] !== 'v1') return undefined;
+  if (!parts || parts.length !== 4 || parts[0] !== 'v2') return undefined;
   try {
     const decipher = createDecipheriv('aes-256-gcm', keys.encryption, Buffer.from(parts[1], 'base64'));
+    decipher.setAAD(Buffer.from(prefix, 'utf8'));
     decipher.setAuthTag(Buffer.from(parts[2], 'base64'));
     return Buffer.concat([decipher.update(Buffer.from(parts[3], 'base64')), decipher.final()]).toString('utf8');
   } catch {

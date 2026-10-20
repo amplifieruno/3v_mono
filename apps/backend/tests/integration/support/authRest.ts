@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,13 +35,15 @@ export async function call(
   method: 'GET' | 'POST',
   path: string,
   body?: unknown,
-  tweak: { ts?: number; secret?: string; prefix?: string; headers?: Record<string, string> } = {},
+  tweak: { ts?: number; secret?: string; prefix?: string; headers?: Record<string, string>; unsignedRequestId?: boolean } = {},
 ): Promise<Reply> {
   const raw = Buffer.from(body === undefined ? '' : JSON.stringify(body));
-  const headers: Record<string, string> = { 'content-type': 'application/json', ...(tweak.headers ?? {}) };
+  // A fresh X-Request-Id per call (signed): identical requests in the same second stay distinct (replay guard).
+  const headers: Record<string, string> = { 'content-type': 'application/json', 'x-request-id': randomUUID(), ...(tweak.headers ?? {}) };
   if (key) {
     const ts = tweak.ts ?? Math.floor(Date.now() / 1000);
-    headers.authorization = authorizationHeader(tweak.prefix ?? key.prefix, tweak.secret ?? key.secret, method, path, raw, ts);
+    const id = tweak.unsignedRequestId ? undefined : headers['x-request-id'];
+    headers.authorization = authorizationHeader(tweak.prefix ?? key.prefix, tweak.secret ?? key.secret, method, path, raw, ts, id);
   }
   const res = await fetch(`${BASE}${path}`, { method, headers, body: method === 'GET' ? undefined : raw });
   return { status: res.status, body: (await res.json()) as Reply['body'] };
@@ -69,6 +71,7 @@ export async function capture(
   frames: Buffer[],
   extra: Record<string, unknown> = {},
   recapture = false,
+  headers: Record<string, string> = {},
 ): Promise<Reply> {
   const body = {
     frames: frames.map((f) => f.toString('base64')),
@@ -76,8 +79,8 @@ export async function capture(
     ...extra,
   };
   return recapture
-    ? call(key, 'POST', `/v1/auth/sessions/${session.session_id}/recapture`, body)
-    : call(key, 'POST', '/v1/auth/authenticate', { session_id: session.session_id, ...body });
+    ? call(key, 'POST', `/v1/auth/sessions/${session.session_id}/recapture`, body, { headers })
+    : call(key, 'POST', '/v1/auth/authenticate', { session_id: session.session_id, ...body }, { headers });
 }
 
 export const seedFace = (person: string, n: number): Buffer => readFileSync(resolve(SEED_FACES, person, `${n}.jpg`));

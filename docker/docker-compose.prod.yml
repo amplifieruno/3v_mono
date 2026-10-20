@@ -311,6 +311,8 @@ services:
       retries: 5
       start_period: 180s
     mem_limit: 4g
+    # At least 4 CPUs: the face authentication service (SA_6 §3.4, p95 <= 2 s) is bound by InsightFace inference.
+    cpus: 4.0
     networks:
       - internal
 

@@ -2,7 +2,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { requireBackend } from './support/backend.js';
 import { addSegmentRows, bind } from './support/authDecide.js';
 import { createStorageClient } from '../../src/storage/storageClient.js';
-import { BASE, call, capture, openSession, restWorld, rotateKey, sequence, type RestWorld } from './support/authRest.js';
+import { BASE, call, capture, fixtureFace, openSession, restWorld, rotateKey, sequence, triple, type RestWorld } from './support/authRest.js';
+import { FACES } from './support/enrollment.js';
 import { createApp } from './support/authService.js';
 import { testEnv } from './support/clients.js';
 import { manualSegment } from './support/segments.js';
@@ -18,6 +19,7 @@ beforeAll(async () => {
   w = await restWorld();
 }, 120_000);
 
+const tripleNoFace = () => triple(fixtureFace(FACES.noFace));
 const pct = (values: number[], p: number) => [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.ceil((p / 100) * values.length) - 1)];
 
 describe('face auth: sandbox (synthetic identities only)', () => {
@@ -69,6 +71,27 @@ describe('face auth: session expiry sweep', () => {
   });
 });
 
+describe('face auth: evidence sweep', () => {
+  it('should delete auth_capture files older than 10 minutes that no attempt references', async () => {
+    const storage = createStorageClient(testEnv());
+    const data = (await sequence('high'))[0];
+    const upload = (name: string) => storage.upload({ bucketId: w.org, name, mimeType: 'image/jpeg', data, metadata: { kind: 'auth_capture' } });
+    const stale = await upload('stale.jpg');
+    const fresh = await upload('fresh.jpg');
+    // A referenced evidence frame: a quality failure keeps its capture.
+    const session = await openSession(w.key);
+    await capture(w.key, session, await tripleNoFace());
+    const [kept] = await runSqlRows(`select evidence_file_id as id from itap.authentication_attempts where session_id = '${session.session_id}'`);
+    expect(kept.id).not.toBe('NULL');
+    await runSql(`update storage.files set created_at = now() - interval '11 minutes'
+      where id in ('${stale.id}', '${String(kept.id)}')`);
+    const run = await postTrigger('expire_auth_sessions', cronPayload('expire_auth_sessions'));
+    expect(run.status, JSON.stringify(run.body)).toBe(200);
+    const rows = await runSqlRows(`select id from storage.files where id in ('${stale.id}', '${fresh.id}', '${String(kept.id)}')`);
+    expect(rows.map((r) => r.id).sort()).toEqual([fresh.id, String(kept.id)].sort());
+  });
+});
+
 describe('face auth: authenticate_face console action', () => {
   it('should run the pipeline on stored files and record the attempt (binding not applicable)', async () => {
     const storage = createStorageClient(testEnv());
@@ -90,6 +113,16 @@ describe('face auth: authenticate_face console action', () => {
       { app: w.app.id, files: ids },
     ).catch((e: unknown) => e);
     expect(String(foreign)).toMatch(/File not found/);
+
+    // Sensitive kinds (evidence captures, profile documents) are never accepted as probes.
+    const sensitive = await storage.upload({
+      bucketId: w.org, name: 'evidence.jpg', mimeType: 'image/jpeg', data: (await sequence('high'))[0], metadata: { kind: 'auth_capture' },
+    });
+    const refused = await w.a.request(
+      `mutation($app: uuid!, $files: [uuid!]!) { authenticate_face(application_id: $app, file_ids: $files, mode: "identification") { outcome } }`,
+      { app: w.app.id, files: [sensitive.id, ids[1], ids[2]] },
+    ).catch((e: unknown) => e);
+    expect(String(refused)).toMatch(/File not found/);
   });
 });
 
@@ -99,6 +132,7 @@ describe('face auth: timeout, health, OpenAPI', () => {
     const reply = await capture(w.key, session, await sequence('high'), { timeout_ms: 100 });
     expect(reply.status).toBe(504);
     expect(reply.body.error).toMatchObject({ code: 'timeout', retryable: true });
+    expect(reply.body.session_id).toBe(session.session_id);
     const [n] = await runSqlRows(`select count(*) as n from itap.authentication_attempts where session_id = '${session.session_id}'`);
     expect(Number(n.n)).toBe(0);
   });

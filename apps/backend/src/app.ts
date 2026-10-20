@@ -18,6 +18,8 @@ export function createApp(env: Env): Express {
   const app = express();
   const nodeEnv = process.env.NODE_ENV || 'development';
 
+  // One reverse proxy (traefik) in front: req.ip is the client address recorded on auth sessions.
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(compression());
   // Mounted before the global body parser: the routers check x-action-secret before parsing.

@@ -19,17 +19,20 @@ export type AuthenticationResponse = {
   next_step: NextStep;
 };
 
+export type Mode = 'identification' | 'verification' | string;
+
 /**
- * The step the application should take next. Partial match: recapture first, a second factor after one recapture
- * (recapture still accepted), manual review once no recapture is left (the engine queued it). A failure is retryable
+ * The step the application should take next. Partial match: recapture first; in verification a second factor after
+ * one recapture (recapture still accepted); manual review once no recapture is left (the engine queued it).
+ * Identification never offers a second factor (the candidate was not named by the client). A failure is retryable
  * only while the session stays open (quality failures with recaptures left).
  */
-export function nextStep(d: Pick<PublicDecision, 'outcome' | 'session_status' | 'recapture_count'>): NextStep {
+export function nextStep(d: Pick<PublicDecision, 'outcome' | 'session_status' | 'recapture_count'>, mode: Mode): NextStep {
   if (d.outcome === 'success') return 'none';
   if (d.outcome === 'partial_match') {
     if (d.session_status === 'review') return 'review';
     if (d.session_status !== 'open') return 'none';
-    return d.recapture_count >= 1 ? 'second_factor' : 'recapture';
+    return mode === 'verification' && d.recapture_count >= 1 ? 'second_factor' : 'recapture';
   }
   return d.session_status === 'open' ? 'recapture' : 'none';
 }
@@ -66,8 +69,9 @@ export async function authenticationResponse(
   requestId: string,
   d: PublicDecision,
   storage: StorageClient,
+  mode: Mode,
 ): Promise<AuthenticationResponse> {
-  const step = nextStep(d);
+  const step = nextStep(d, mode);
   const body: AuthenticationResponse = {
     request_id: requestId,
     session_id: d.session_id,

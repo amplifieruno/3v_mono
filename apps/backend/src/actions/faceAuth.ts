@@ -7,7 +7,7 @@ import { runAuthentication } from '../auth-service/pipeline.js';
 import { authenticationResponse } from '../auth-service/response.js';
 import { createAuthServiceDeps } from '../auth-service/service.js';
 import { HasuraError } from '../hasura/client.js';
-import { OWNER_ONLY_FILE_KINDS } from '../storage/storageClient.js';
+import { OWNER_ONLY_FILE_KINDS, SENSITIVE_FILE_KINDS } from '../storage/storageClient.js';
 import { ActionError, defineAction, type ActionContext } from './types.js';
 
 const STORE_KEY = `
@@ -52,7 +52,7 @@ export const rotateClientKey = defineAction(
               p_application: ctx.input.application_id,
               p_key_prefix: prefix,
               p_secret_hash: hashSecret(secret),
-              p_secret: encryptSecret(keys, secret),
+              p_secret: encryptSecret(keys, secret, prefix),
               p_expires_at: ctx.input.expires_at ?? null,
             },
           },
@@ -91,6 +91,7 @@ export const authenticateFace = defineAction(authenticateInput, async (ctx) => {
   const org = organizationOf(ctx);
   const input = ctx.input;
   const startedAt = Date.now();
+  const requestId = randomUUID();
   const deps = createAuthServiceDeps(ctx.env);
   const { files } = await ctx.admin.request<{ files: FileRow[] }>(FILES, { ids: input.file_ids });
   const byId = new Map(files.map((f) => [f.id, f]));
@@ -99,7 +100,9 @@ export const authenticateFace = defineAction(authenticateInput, async (ctx) => {
       const file = byId.get(id);
       const kind = typeof file?.metadata?.kind === 'string' ? file.metadata.kind : undefined;
       const foreignPrivate = kind !== undefined && OWNER_ONLY_FILE_KINDS.has(kind) && file?.uploadedByUserId !== ctx.session.userId;
-      if (!file || file.bucketId !== org || foreignPrivate) throw new ActionError('file_not_found', 'File not found');
+      // Sensitive kinds (evidence captures, profile documents, DSR exports) are never probes.
+      const sensitive = kind !== undefined && SENSITIVE_FILE_KINDS.has(kind);
+      if (!file || file.bucketId !== org || foreignPrivate || sensitive) throw new ActionError('file_not_found', 'File not found');
       return deps.storage.download(id);
     }),
   );
@@ -132,8 +135,9 @@ export const authenticateFace = defineAction(authenticateInput, async (ctx) => {
       requestThreshold: input.threshold ?? null,
       deadline: startedAt + 10_000,
       startedAt,
+      requestId,
     });
-    const body = await authenticationResponse(randomUUID(), decision, deps.storage);
+    const body = await authenticationResponse(requestId, decision, deps.storage, input.mode);
     return {
       request_id: body.request_id,
       session_id: body.session_id,

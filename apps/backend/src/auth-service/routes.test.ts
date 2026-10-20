@@ -23,7 +23,7 @@ afterEach(async () => {
 
 function keyRecord(extra: Partial<KeyRecord> = {}): KeyRecord {
   return {
-    id: 'k1', organization_id: 'o1', application_id: 'a1', secret: encryptSecret(keys, 'top-secret'),
+    id: 'k1', organization_id: 'o1', application_id: 'a1', secret: encryptSecret(keys, 'top-secret', 'Abcd1234'),
     expires_at: null, revoked_at: null, last_used_at: null, application: { status: 'active', is_sandbox: false }, ...extra,
   };
 }
@@ -76,7 +76,7 @@ describe('key auth middleware', () => {
       [{ revoked_at: '2020-01-01T00:00:00Z' }, 401, 'key_revoked'],
       [{ expires_at: new Date(NOW - 1000).toISOString() }, 401, 'key_expired'],
       [{ application: { status: 'suspended', is_sandbox: false } }, 403, 'application_inactive'],
-      [{ secret: encryptSecret(serverKeys('e'.repeat(64)), 'top-secret') }, 401, 'unauthorized'],
+      [{ secret: encryptSecret(serverKeys('e'.repeat(64)), 'top-secret', 'Abcd1234') }, 401, 'unauthorized'],
       [{ secret: null }, 401, 'unauthorized'],
     ];
     for (const [extra, status, code] of cases) {
@@ -93,7 +93,7 @@ describe('key auth middleware', () => {
     const base = await start({ buckets: new TokenBuckets(1, 0.001, () => NOW) });
     const path = '/v1/auth/sessions/0f8fad5b-d9cb-469f-a165-70867728950e';
     expect((await get(base, path, signedGet(path))).status).toBe(404);
-    const limited = await get(base, path, signedGet(path));
+    const limited = await get(base, `${path}?n=2`, signedGet(`${path}?n=2`));
     expect(limited.status).toBe(429);
     expect(limited.headers.get('retry-after')).not.toBeNull();
     expect(((await limited.json()) as { error: { retryable: boolean } }).error.retryable).toBe(true);
@@ -103,6 +103,58 @@ describe('key auth middleware', () => {
     const base = await start({ keys: undefined });
     const res = await get(base, '/v1/auth/sessions/x', signedGet('/v1/auth/sessions/x'));
     expect(res.status).toBe(503);
+  });
+});
+
+describe('request hygiene', () => {
+  const path = '/v1/auth/sessions/0f8fad5b-d9cb-469f-a165-70867728950e';
+
+  it('should refuse a replayed signature with replayed_request', async () => {
+    const base = await start({});
+    const header = signedGet(path);
+    expect((await get(base, path, header)).status).toBe(404);
+    const again = await get(base, path, header);
+    expect(again.status).toBe(401);
+    expect(((await again.json()) as { error: { code: string } }).error.code).toBe('replayed_request');
+  });
+
+  it('should answer 401 to a missing or malformed header before reading the body', async () => {
+    let reads = 0;
+    const store = { ...fakeStore(keyRecord()), keyByPrefix: async () => { reads += 1; return keyRecord(); } } as unknown as AuthStore;
+    const base = await start({ store });
+    for (const authorization of [undefined, 'ITAP-HMAC nonsense']) {
+      const res = await fetch(`${base}/v1/auth/authenticate`, {
+        method: 'POST',
+        headers: authorization ? { authorization } : {},
+        body: Buffer.alloc(9 * 1024 * 1024, 0x61),
+      });
+      expect(res.status).toBe(401);
+    }
+    expect(reads).toBe(0);
+  });
+
+  it('should map body-parser client errors to 400 invalid_request', async () => {
+    const base = await start({});
+    const body = Buffer.from('{}');
+    const res = await fetch(`${base}/v1/auth/authenticate`, {
+      method: 'POST',
+      headers: {
+        'content-encoding': 'bogus',
+        authorization: authorizationHeader('Abcd1234', 'top-secret', 'POST', '/v1/auth/authenticate', body, ts),
+      },
+      body,
+    });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_request');
+  });
+
+  it('should echo a signed X-Request-Id when it is a uuid', async () => {
+    const base = await start({});
+    const id = '6a2f41a3-c54c-4fd2-a1c2-0c5c1b4f1e11';
+    const authorization = authorizationHeader('Abcd1234', 'top-secret', 'GET', path, Buffer.alloc(0), ts, id);
+    const res = await fetch(`${base}${path}`, { headers: { authorization, 'x-request-id': id } });
+    expect(res.status).toBe(404);
+    expect(((await res.json()) as { request_id: string }).request_id).toBe(id);
   });
 });
 
@@ -162,6 +214,17 @@ describe('OpenAPI document', () => {
       const op = paths[route.path][route.method];
       expect(Object.keys(op.responses).sort(), route.path).toEqual(expected[`${route.method} ${route.path}`].sort());
       expect(op.security === undefined, route.path).toBe(route.keyed);
+    }
+  });
+
+  it('should describe request ids, Retry-After, required guidance and the session id of errors', () => {
+    const schemas = doc.components.schemas as Record<string, { required?: string[]; properties?: Record<string, { required?: string[] }> }>;
+    expect(schemas.Error.properties?.error.required).toContain('guidance');
+    expect(Object.keys(schemas.Error.properties ?? {})).toContain('session_id');
+    for (const route of AUTH_ROUTES.filter((r) => r.keyed)) {
+      const op = paths[route.path][route.method] as Operation & { parameters?: { $ref?: string }[]; responses: Record<string, { headers?: Record<string, unknown> }> };
+      expect(op.parameters?.some((p) => p.$ref === '#/components/parameters/RequestId'), route.path).toBe(true);
+      expect(Object.keys(op.responses['429'].headers ?? {}), route.path).toContain('Retry-After');
     }
   });
 

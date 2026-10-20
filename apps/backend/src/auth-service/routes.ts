@@ -5,7 +5,7 @@ import type { StorageClient } from '../storage/storageClient.js';
 import { claimedRef, sequenceBinding, sessionNonce, sha256Hex, type ServerKeys } from './crypto.js';
 import { sendServiceError, ServiceError, serviceErrorFromSql } from './errors.js';
 import { decodeSequence } from './frames.js';
-import { requestIdOf, requireClientKey, type AuthClient } from './keyAuth.js';
+import { requestIdOf, requireAuthorizationHeader, requireClientKey, type AuthClient } from './keyAuth.js';
 import { hexEqual } from './signature.js';
 import { openApiDocument } from './openapi/document.js';
 import { runAuthentication } from './pipeline.js';
@@ -59,8 +59,6 @@ const body = (req: Request): Buffer => (Buffer.isBuffer(req.body) ? req.body : B
 export function authServiceRouter(deps: AuthServiceDeps): Router {
   const router = Router();
   const buckets = deps.buckets ?? new TokenBuckets();
-  // Raw body: the signature covers the exact bytes. 5 MB of frames is ~6.7 MB of base64.
-  router.use(express.raw({ type: () => true, limit: '8mb' }));
 
   router.get('/openapi.json', (_req, res) => {
     res.json(openApiDocument());
@@ -89,6 +87,10 @@ export function authServiceRouter(deps: AuthServiceDeps): Router {
     if (deps.keys) return next();
     sendServiceError(res, requestIdOf(req), new ServiceError(503, 'service_not_configured', 'The authentication service is not configured', true));
   });
+  // Header check before the body is read; then the raw body (the signature covers the exact bytes; 5 MB of frames is
+  // ~6.7 MB of base64) and the signature.
+  router.use(requireAuthorizationHeader);
+  router.use(express.raw({ type: () => true, limit: '8mb' }));
   if (deps.keys) router.use(requireClientKey({ store: deps.store, keys: deps.keys, buckets, now: deps.now }));
 
   router.post('/sessions', handle(async (req, res, client, requestId) => {
@@ -114,6 +116,7 @@ export function authServiceRouter(deps: AuthServiceDeps): Router {
       p_ip: req.ip ?? null,
       p_user_agent: req.header('user-agent') ?? null,
     });
+    res.locals.sessionId = session.id;
     res.status(201).json({
       request_id: requestId,
       session_id: session.id,
@@ -129,6 +132,7 @@ export function authServiceRouter(deps: AuthServiceDeps): Router {
     if (!isUuid(sessionId)) throw sessionNotFound();
     const session = await deps.store.session(client.organizationId, client.applicationId, sessionId.toLowerCase());
     if (!session) throw sessionNotFound();
+    res.locals.sessionId = session.id;
     if (recapture !== session.step_count > 0) {
       throw new ServiceError(409, 'session_step_invalid', recapture
         ? 'Nothing to recapture yet: authenticate first'
@@ -154,8 +158,9 @@ export function authServiceRouter(deps: AuthServiceDeps): Router {
       requestThreshold: input.threshold ?? null,
       deadline: startedAt + (input.timeout_ms ?? DEFAULT_TIMEOUT_MS),
       startedAt,
+      requestId,
     });
-    res.json(await authenticationResponse(requestId, decision, deps.storage));
+    res.json(await authenticationResponse(requestId, decision, deps.storage, session.mode));
   }
 
   router.post('/authenticate', handle(async (req, res, client, requestId) => {
@@ -170,28 +175,35 @@ export function authServiceRouter(deps: AuthServiceDeps): Router {
   router.post('/sessions/:id/second-factor', handle(async (req, res, client, requestId) => {
     const input = parseBody(secondFactorSchema, body(req));
     if (!isUuid(req.params.id)) throw sessionNotFound();
+    res.locals.sessionId = req.params.id.toLowerCase();
     const decision = await deps.store.secondFactor({
       p_org: client.organizationId,
       p_app: client.applicationId,
       p_session: req.params.id.toLowerCase(),
       p_passed: input.result === 'passed',
       p_method: input.method,
+      p_request_id: requestId,
     });
-    res.json(await authenticationResponse(requestId, decision, deps.storage));
+    res.json(await authenticationResponse(requestId, decision, deps.storage, 'verification'));
   }));
 
   router.get('/sessions/:id', handle(async (req, res, client, requestId) => {
     if (!isUuid(req.params.id)) throw sessionNotFound();
     const state = await deps.store.sessionState(client.organizationId, client.applicationId, req.params.id.toLowerCase());
     if (!state) throw sessionNotFound();
+    res.locals.sessionId = state.session_id;
     res.json(await sessionStatusResponse(requestId, state, deps.storage));
   }));
 
   router.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
     const requestId = String(res.locals.requestId ?? requestIdOf(req));
     const status = (error as { status?: number; type?: string }).status;
-    if (status === 413) return sendServiceError(res, requestId, new ServiceError(413, 'sequence_too_large', 'The request body is too large'));
     if (res.headersSent) return next(error);
+    if (status === 413) return sendServiceError(res, requestId, new ServiceError(413, 'sequence_too_large', 'The request body is too large'));
+    // Other body-parser client errors (unsupported encoding, aborted body, ...).
+    if (status !== undefined && status >= 400 && status < 500) {
+      return sendServiceError(res, requestId, new ServiceError(400, 'invalid_request', 'The request body could not be read'));
+    }
     console.error('Auth service error:', error);
     sendServiceError(res, requestId, new ServiceError(500, 'internal', 'Internal error', true, 'Retry in a moment.'));
   });

@@ -19,6 +19,8 @@ describe('ITAP-HMAC signatures', () => {
     expect(signRequest('s', 'POST', '/q', 5, body)).not.toBe(sig);
     expect(signRequest('s', 'POST', '/p', 6, body)).not.toBe(sig);
     expect(signRequest('s', 'POST', '/p', 5, Buffer.from('{"a":2}'))).not.toBe(sig);
+    expect(canonicalRequest('POST', '/p', 5, Buffer.alloc(0), 'r-1').endsWith('\nr-1')).toBe(true);
+    expect(signRequest('s', 'POST', '/p', 5, body, 'r-1')).not.toBe(signRequest('s', 'POST', '/p', 5, body, 'r-2'));
   });
 
   it('should compare in constant time and accept ±300 s of skew only', () => {

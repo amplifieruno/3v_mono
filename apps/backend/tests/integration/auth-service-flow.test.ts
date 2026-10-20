@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { requireBackend } from './support/backend.js';
@@ -48,9 +49,14 @@ beforeAll(async () => {
 describe('face auth REST: identification and verification', () => {
   it('should identify an enrolled person with exactly the permitted attributes and keep no evidence', async () => {
     const session = await openSession(w.key);
-    const reply = await capture(w.key, session, await sequence('high'));
+    const requestId = randomUUID();
+    const reply = await capture(w.key, session, await sequence('high'), {}, false, { 'x-request-id': requestId });
     expect(reply.status, JSON.stringify(reply.body)).toBe(200);
     expect(reply.body).toMatchObject({ outcome: 'success', authenticated: true, attack_outcome: 'passed', next_step: 'none' });
+    expect(reply.body.request_id).toBe(requestId);
+    const [stored] = await runSqlRows(`select attack_details->>'request_id' as r from itap.authentication_attempts
+      where session_id = '${session.session_id}'`);
+    expect(stored.r).toBe(requestId);
     const identity = reply.body.identity as { id: string; attributes: Record<string, unknown> };
     expect(identity.id).toBe(w.person);
     expect(Object.keys(identity.attributes).sort()).toEqual(['display_name', 'employee_id', 'photo']);
@@ -81,6 +87,7 @@ describe('face auth REST: identification and verification', () => {
     const other = await capture(w.key, session, await sequence('high'), { claimed_identity_id: w.other });
     expect(other.status).toBe(409);
     expect(other.body.error?.code).toBe('session_mismatch');
+    expect(other.body.session_id).toBe(session.session_id);
   });
 });
 
@@ -105,9 +112,17 @@ describe('face auth REST: partial match flow', () => {
     expect(attempts[1].evidence_file_id).toBe('NULL');
   });
 
-  it('should accept a passed second factor after a partial match (identity of the partial match)', async () => {
-    const session = await openSession(strict.key);
-    expect((await capture(strict.key, session, await sequence('low'))).body.outcome).toBe('partial_match');
+  /** A verification session of the strict app claiming the enrolled person, after a partial match. */
+  async function partialVerification() {
+    const session = await openSession(strict.key, { mode: 'verification', claimed_identity_id: w.person });
+    const first = await capture(strict.key, session, await sequence('low'), { claimed_identity_id: w.person });
+    expect(first.body).toMatchObject({ outcome: 'partial_match', next_step: 'recapture' });
+    expect(first.body.identity).toBeUndefined();
+    return session;
+  }
+
+  it('should accept a passed second factor after a partial match of a verification (identity of the claim)', async () => {
+    const session = await partialVerification();
     const reply = await call(strict.key, 'POST', `/v1/auth/sessions/${session.session_id}/second-factor`, { result: 'passed', method: 'pin' });
     expect(reply.status, JSON.stringify(reply.body)).toBe(200);
     expect(reply.body).toMatchObject({ outcome: 'success', identity: { id: w.person, attributes: { display_name: 'Ada Access' } } });
@@ -118,26 +133,43 @@ describe('face auth REST: partial match flow', () => {
   });
 
   it('should record a failed second factor and refuse one without a partial match', async () => {
-    const session = await openSession(strict.key);
-    await capture(strict.key, session, await sequence('low'));
+    const session = await partialVerification();
     const failed = await call(strict.key, 'POST', `/v1/auth/sessions/${session.session_id}/second-factor`, { result: 'failed', method: 'card' });
     expect(failed.body).toMatchObject({ outcome: 'failure', failure: { code: 'second_factor_failed' }, next_step: 'none' });
     expect(failed.body.identity).toBeUndefined();
-    const fresh = await openSession(strict.key);
+    const fresh = await openSession(strict.key, { mode: 'verification', claimed_identity_id: w.person });
     const early = await call(strict.key, 'POST', `/v1/auth/sessions/${fresh.session_id}/second-factor`, { result: 'passed', method: 'pin' });
     expect(early.status).toBe(409);
     expect(early.body.error?.code).toBe('second_factor_not_allowed');
   });
 
-  it('should refer a third partial match to manual review and report it on polling', async () => {
+  it('should refuse a second factor on an identification session without disclosing or recording anything', async () => {
+    const session = await openSession(strict.key);
+    const partial = await capture(strict.key, session, await sequence('low'));
+    expect(partial.body).toMatchObject({ outcome: 'partial_match', next_step: 'recapture' });
+    const refused = await call(strict.key, 'POST', `/v1/auth/sessions/${session.session_id}/second-factor`, { result: 'passed', method: 'pin' });
+    expect(refused.status).toBe(409);
+    expect(refused.body.error?.code).toBe('second_factor_not_allowed');
+    expect(Object.keys(refused.body).sort()).toEqual(['error', 'request_id', 'session_id']);
+    expect(JSON.stringify(refused.body)).not.toContain(w.person);
+    expect((await attemptsOf(session.session_id)).map((a) => a.step)).toEqual(['initial']);
+  });
+
+  it('should send identification partial matches to recapture, then to manual review', async () => {
     const session = await openSession(strict.key);
     await capture(strict.key, session, await sequence('low'));
     const second = await capture(strict.key, session, await sequence('low'), {}, true);
-    expect(second.body.next_step).toBe('second_factor');
+    expect(second.body.next_step).toBe('recapture');
     const third = await capture(strict.key, session, await sequence('low'), {}, true);
     expect(third.body).toMatchObject({ outcome: 'partial_match', next_step: 'review' });
     const status = await call(strict.key, 'GET', `/v1/auth/sessions/${session.session_id}`);
     expect(status.body).toMatchObject({ status: 'review', review_status: 'pending', authenticated: false, next_step: 'review' });
+  });
+
+  it('should offer the second factor to a verification after one recapture', async () => {
+    const session = await partialVerification();
+    const second = await capture(strict.key, session, await sequence('low'), { claimed_identity_id: w.person }, true);
+    expect(second.body).toMatchObject({ outcome: 'partial_match', next_step: 'second_factor' });
   });
 });
 

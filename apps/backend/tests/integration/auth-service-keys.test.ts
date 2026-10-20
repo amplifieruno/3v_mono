@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { requireBackend } from './support/backend.js';
 import { authorizationHeader } from '../../src/auth-service/signature.js';
@@ -29,7 +30,7 @@ describe('rotate_client_key', () => {
     expect(key.secret.length).toBeGreaterThanOrEqual(40);
     const [row] = await runSqlRows(`select secret_hash, secret from itap.client_application_keys where id = '${key.key_id}'`);
     expect(row.secret_hash).toMatch(/^scrypt\$/);
-    expect(row.secret).toMatch(/^v1:/);
+    expect(row.secret).toMatch(/^v2:/);
     expect(row.secret).not.toContain(key.secret);
     await expectDenied(w.a.request(`query { client_application_keys { secret } }`), 'secret');
     const [audit] = await runSqlRows(
@@ -78,6 +79,36 @@ describe('ITAP-HMAC key auth', () => {
     const ahead = await sessions(w.key, { ts: Math.floor(Date.now() / 1000) + 301 });
     expect(ahead.body.error?.code).toBe('timestamp_skew');
     expect((await sessions(w.key, { ts: Math.floor(Date.now() / 1000) - 250 })).status).toBe(201);
+  });
+
+  it('should refuse a replayed request (same key and signature) within 600 s', async () => {
+    const ts = Math.floor(Date.now() / 1000);
+    const headers = { 'x-request-id': randomUUID() };
+    const first = await sessions(w.key, { ts, headers });
+    const again = await sessions(w.key, { ts, headers });
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(401);
+    expect(again.body.error?.code).toBe('replayed_request');
+  });
+
+  it('should refuse a request without a valid Authorization header before reading its body', async () => {
+    // Small body: answered 401 (a body over the 8 MB parser limit would otherwise be 413).
+    const small = await fetch(`${BASE}/v1/auth/authenticate`, { method: 'POST', body: '{}' });
+    expect(small.status).toBe(401);
+    expect(((await small.json()) as { error: { code: string } }).error.code).toBe('unauthorized');
+    // 9 MB body: the server answers 401 and closes the connection without reading it — the client sees the 401 or,
+    // while still uploading, a reset / broken pipe; never a 413 (which would mean the body was parsed).
+    const big = await fetch(`${BASE}/v1/auth/authenticate`, { method: 'POST', body: Buffer.alloc(9 * 1024 * 1024, 0x61) }).then(
+      (res) => res.status,
+      (error: unknown) => String((error as { cause?: { code?: string } }).cause?.code ?? error),
+    );
+    expect(['401', 'EPIPE', 'ECONNRESET']).toContain(String(big));
+  });
+
+  it('should cover X-Request-Id by the signature', async () => {
+    const reply = await sessions(w.key, { unsignedRequestId: true });
+    expect(reply.status).toBe(401);
+    expect(reply.body.error?.code).toBe('unauthorized');
   });
 
   it('should refuse a tampered body (the signature covers the raw body)', async () => {

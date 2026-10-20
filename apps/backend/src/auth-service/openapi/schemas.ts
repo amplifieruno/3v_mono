@@ -3,7 +3,7 @@ import { FAILURE_TEXTS } from '../errors.js';
 /** Component schemas of the OpenAPI 3.1 document (JSON Schema 2020-12 dialect). */
 
 export const SERVICE_ERROR_CODES = [
-  'invalid_request', 'invalid_sequence', 'unauthorized', 'timestamp_skew', 'key_revoked', 'key_expired',
+  'invalid_request', 'invalid_sequence', 'unauthorized', 'timestamp_skew', 'replayed_request', 'key_revoked', 'key_expired',
   'application_inactive', 'mode_not_allowed', 'access_point_not_bound', 'session_not_found', 'session_closed',
   'session_expired', 'session_mismatch', 'session_step_invalid', 'recapture_limit', 'second_factor_not_allowed',
   'sequence_too_large', 'rate_limited', 'internal', 'face_service_unavailable', 'service_not_configured',
@@ -16,7 +16,8 @@ const nextStep = {
   type: 'string',
   enum: ['recapture', 'second_factor', 'review', 'none'],
   description: 'recapture: send a new sequence to /sessions/{id}/recapture (at most 2 per session); second_factor: '
-    + 'confirm with your own factor at /sessions/{id}/second-factor (recapture still accepted); review: the attempt '
+    + 'confirm with your own factor at /sessions/{id}/second-factor (verification sessions only, after one recapture; '
+    + 'recapture still accepted); review: the attempt '
     + 'was referred to manual review, poll GET /sessions/{id}; none: the session is finished.',
 };
 const attackOutcome = {
@@ -36,24 +37,42 @@ const attributes = {
 };
 
 export const components = {
+  parameters: {
+    RequestId: {
+      name: 'X-Request-Id',
+      in: 'header',
+      required: false,
+      schema: uuid,
+      description: 'Client request id (FS AuthenticationRequest.id); echoed as request_id and stored on the attempt. '
+        + 'Generated when absent or not a UUID.',
+    },
+  },
+  headers: {
+    RetryAfter: { description: 'Seconds until the key may send again.', schema: { type: 'integer', minimum: 1 } },
+  },
   securitySchemes: {
     itapHmac: {
       type: 'apiKey',
       in: 'header',
       name: 'Authorization',
       description: '`ITAP-HMAC key=<8-char key prefix>, ts=<unix seconds>, sig=<hex>` with sig = hex HMAC-SHA256(key '
-        + 'secret, METHOD + "\\n" + PATH (with query) + "\\n" + ts + "\\n" + hex sha256(raw body)); ts within ±300 s.',
+        + 'secret, METHOD + "\\n" + PATH (with query) + "\\n" + ts + "\\n" + hex sha256(raw body)); ts within ±300 s; '
+        + 'each signed request is accepted once (a repeated signature within 600 s is `replayed_request`). A request '
+        + 'without a well-formed header is refused before its body is read.',
     },
   },
   schemas: {
     Error: {
       type: 'object',
       required: ['request_id', 'error'],
+      description: 'Error envelope of every non-2xx answer. session_id is present once the session of the request is '
+        + 'known (e.g. 409, 413, 503, 504 on a capture), never for session_not_found.',
       properties: {
         request_id: uuid,
+        session_id: uuid,
         error: {
           type: 'object',
-          required: ['code', 'message', 'retryable'],
+          required: ['code', 'message', 'retryable', 'guidance'],
           properties: {
             code: { type: 'string', enum: [...SERVICE_ERROR_CODES] },
             message: { type: 'string' },

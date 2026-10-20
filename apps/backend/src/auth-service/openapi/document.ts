@@ -11,9 +11,14 @@ const ok = (description: string, schema: string) => ({ description, content: jso
 const error = (description: string) => ({ description, content: json('Error') });
 
 const keyed = {
-  '401': error('Missing / invalid signature (`unauthorized`), clock skew (`timestamp_skew`), revoked or expired key.'),
+  '401': error('Missing / invalid signature (`unauthorized`), clock skew (`timestamp_skew`), a repeated signature '
+    + '(`replayed_request`), revoked or expired key.'),
   '403': error('Application not active (`application_inactive`), mode not allowed, access point not bound.'),
-  '429': error('Per-key rate limit (`rate_limited`, retryable; Retry-After header).'),
+  '429': {
+    description: 'Per-key rate limit (`rate_limited`, retryable).',
+    headers: { 'Retry-After': { $ref: '#/components/headers/RetryAfter' } },
+    content: json('Error'),
+  },
   '500': error('Internal error (retryable).'),
   '503': error('Service not configured or a dependency is unavailable (retryable).'),
 };
@@ -29,6 +34,7 @@ const capture = {
 };
 
 const sessionPath = { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } };
+const requestId = { $ref: '#/components/parameters/RequestId' };
 
 export const AUTH_ROUTES: { method: 'get' | 'post'; path: string; keyed: boolean }[] = [
   { method: 'post', path: '/v1/auth/sessions', keyed: true },
@@ -50,7 +56,7 @@ export function openApiDocument() {
         + '/v1/auth/sessions with the mode (identification, or verification with claimed_identity_id) and device_ref '
         + '→ session_id + nonce (once); (2) capture 3–5 frames, compute binding = HMAC(secret, nonce ‖ sha256(frames) '
         + '‖ device_ref) and POST /v1/auth/authenticate; (3) follow next_step: recapture (≤ 2), second_factor, or '
-        + 'review (poll GET /v1/auth/sessions/{id}). Outcomes: success (identity id, confidence, permitted attributes), '
+        + 'review (poll GET /v1/auth/sessions/{id}); the second factor exists only in verification. Outcomes: success (identity id, confidence, permitted attributes), '
         + 'partial_match (no identity; additional verification), failure (code + human-readable reason + guidance). '
         + 'The population is fixed server-side per application; a verification of an identity outside it fails '
         + 'exactly like a non-match. Every response carries request_id and session_id.',
@@ -62,6 +68,7 @@ export function openApiDocument() {
         post: {
           operationId: 'openSession',
           summary: 'Open an authentication session (5 minutes)',
+          parameters: [requestId],
           requestBody: { required: true, content: json('OpenSessionRequest') },
           responses: { '201': ok('The session and its nonce (returned once).', 'Session'), '400': capture['400'], ...keyed },
         },
@@ -70,6 +77,7 @@ export function openApiDocument() {
         post: {
           operationId: 'authenticate',
           summary: 'Submit the first capture sequence of a session',
+          parameters: [requestId],
           requestBody: { required: true, content: json('AuthenticateRequest') },
           responses: capture,
         },
@@ -78,7 +86,7 @@ export function openApiDocument() {
         post: {
           operationId: 'recapture',
           summary: 'Submit a new sequence after a quality failure or partial match (at most 2 per session)',
-          parameters: [sessionPath],
+          parameters: [sessionPath, requestId],
           requestBody: { required: true, content: json('CaptureRequest') },
           responses: capture,
         },
@@ -86,15 +94,16 @@ export function openApiDocument() {
       '/v1/auth/sessions/{id}/second-factor': {
         post: {
           operationId: 'secondFactor',
-          summary: 'Assert the result of the application\'s own second factor after a partial match',
-          parameters: [sessionPath],
+          summary: 'Assert the result of the application\'s own second factor after a partial match (verification only)',
+          parameters: [sessionPath, requestId],
           requestBody: { required: true, content: json('SecondFactorRequest') },
           responses: {
             '200': ok('success with the partially matched identity, or failure second_factor_failed.', 'AuthenticationResult'),
             '400': capture['400'],
             ...keyed,
             '404': capture['404'],
-            '409': error('Session closed / expired, or the last attempt was not a partial match.'),
+            '409': error('Session closed / expired, an identification session (`second_factor_not_allowed`: never '
+              + 'offered in identification), or the last attempt was not a partial match.'),
           },
         },
       },
@@ -102,7 +111,7 @@ export function openApiDocument() {
         get: {
           operationId: 'getSession',
           summary: 'Session status (polling manual review)',
-          parameters: [sessionPath],
+          parameters: [sessionPath, requestId],
           responses: { '200': ok('The session state.', 'SessionStatus'), ...keyed, '404': capture['404'] },
         },
       },

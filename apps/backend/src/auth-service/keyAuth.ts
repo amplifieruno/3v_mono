@@ -29,8 +29,39 @@ export type KeyAuthDeps = {
   store: AuthStore;
   keys: ServerKeys;
   buckets: TokenBuckets;
+  replays?: ReplayCache;
   now?: () => number;
 };
+
+/** Signatures seen in the last REPLAY_WINDOW_MS (per process): a signed request is accepted once. */
+export const REPLAY_WINDOW_MS = 600_000;
+
+export class ReplayCache {
+  private readonly seen = new Map<string, number>();
+
+  /** True the first time `id` is seen within the window (and records it). */
+  firstUse(id: string, now: number): boolean {
+    const until = this.seen.get(id);
+    if (until !== undefined && until > now) return false;
+    this.seen.set(id, now + REPLAY_WINDOW_MS);
+    if (this.seen.size > 50_000) {
+      for (const [key, expiry] of this.seen) if (expiry <= now) this.seen.delete(key);
+    }
+    return true;
+  }
+}
+
+/**
+ * Cheap guard mounted before the body parser: a request without a well-formed ITAP-HMAC header is refused with the
+ * same 401 as a bad signature, without reading (or buffering) its body.
+ */
+export function requireAuthorizationHeader(req: Request, res: Response, next: NextFunction): void {
+  if (parseAuthorization(req.header('authorization'))) return next();
+  const requestId = requestIdOf(req);
+  res.locals.requestId = requestId;
+  res.setHeader('connection', 'close');
+  sendServiceError(res, requestId, unauthorized());
+}
 
 /**
  * Key auth of /v1/auth/* (raw body already read into req.body as a Buffer): ITAP-HMAC signature by key prefix, ±300 s
@@ -39,6 +70,7 @@ export type KeyAuthDeps = {
  */
 export function requireClientKey(deps: KeyAuthDeps) {
   const touched = new Map<string, number>();
+  const replays = deps.replays ?? new ReplayCache();
   const now = deps.now ?? Date.now;
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -52,10 +84,14 @@ export function requireClientKey(deps: KeyAuthDeps) {
         return fail(new ServiceError(401, 'timestamp_skew', 'The request timestamp is more than 300 s from the server clock'));
       }
       const key = await deps.store.keyByPrefix(header.prefix);
-      const secret = key ? decryptSecret(deps.keys, key.secret) : undefined;
+      const secret = key ? decryptSecret(deps.keys, key.secret, header.prefix) : undefined;
       const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
-      const expected = signRequest(secret ?? 'invalid', req.method, req.originalUrl, header.ts, body);
+      const expected = signRequest(secret ?? 'invalid', req.method, req.originalUrl, header.ts, body, req.header('x-request-id'));
       if (!key || !secret || !hexEqual(expected, header.sig)) return fail(unauthorized());
+      // Exact request replay (same key and signature) inside the skew window and beyond: refused.
+      if (!replays.firstUse(`${header.prefix}:${header.sig}`, now())) {
+        return fail(new ServiceError(401, 'replayed_request', 'This signed request was already received'));
+      }
       if (key.revoked_at) return fail(new ServiceError(401, 'key_revoked', 'The key was revoked'));
       if (key.expires_at && new Date(key.expires_at).getTime() <= now()) {
         return fail(new ServiceError(401, 'key_expired', 'The key expired'));

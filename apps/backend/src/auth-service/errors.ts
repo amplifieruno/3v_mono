@@ -15,10 +15,16 @@ export class ServiceError extends Error {
   }
 }
 
+/**
+ * Error envelope; `session_id` is added once the request's session is known (res.locals.sessionId, set by the routes
+ * after loading or creating it) — never for `session_not_found`.
+ */
 export function sendServiceError(res: Response, requestId: string, error: ServiceError, headers: Record<string, string> = {}): void {
   for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  const sessionId = typeof res.locals.sessionId === 'string' && error.code !== 'session_not_found' ? res.locals.sessionId : undefined;
   res.status(error.status).json({
     request_id: requestId,
+    ...(sessionId ? { session_id: sessionId } : {}),
     error: { code: error.code, message: error.message, retryable: error.retryable, guidance: error.guidance },
   });
 }
@@ -44,7 +50,7 @@ const SQL_ERRORS: Record<string, () => ServiceError> = {
     new ServiceError(409, 'session_mismatch', 'mode, claimed identity and access point must equal the session'),
   auth_recapture_limit: () => new ServiceError(409, 'recapture_limit', 'No recapture left in this session'),
   auth_second_factor_not_allowed: () =>
-    new ServiceError(409, 'second_factor_not_allowed', 'A second factor is accepted only after a partial match'),
+    new ServiceError(409, 'second_factor_not_allowed', 'A second factor is accepted only after a partial match in verification'),
   auth_second_factor_invalid: () => new ServiceError(400, 'invalid_request', 'result and method are required'),
   auth_threshold_invalid: () => new ServiceError(400, 'invalid_request', 'threshold must be between 0 and 1'),
 };

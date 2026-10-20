@@ -6,7 +6,9 @@ import type { SessionState } from './store.js';
 export async function sessionStatusResponse(requestId: string, state: SessionState, storage: StorageClient) {
   let next: NextStep = 'none';
   if (state.status === 'review') next = 'review';
-  else if (state.status === 'open' && state.last_outcome === 'partial_match') next = state.recapture_count >= 1 ? 'second_factor' : 'recapture';
+  else if (state.status === 'open' && state.last_outcome === 'partial_match') {
+    next = state.mode === 'verification' && state.recapture_count >= 1 ? 'second_factor' : 'recapture';
+  }
   else if (state.status === 'open' && state.step_count > 0) next = 'recapture';
   const succeeded = state.status === 'succeeded' && state.matched_identity_id !== null;
   return {

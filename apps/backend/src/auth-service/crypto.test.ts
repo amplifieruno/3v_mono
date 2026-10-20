@@ -26,18 +26,21 @@ describe('auth-service crypto', () => {
     expect(generateClientKey().secret).not.toBe(secret);
   });
 
-  it('should round-trip an encrypted secret and refuse tampering or another server key', () => {
-    const stored = encryptSecret(keys, 'my-secret');
-    expect(stored).toMatch(/^v1:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/);
+  it('should round-trip an encrypted secret bound to its key prefix and refuse tampering or another server key', () => {
+    const stored = encryptSecret(keys, 'my-secret', 'Abcd1234');
+    expect(stored).toMatch(/^v2:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/);
     expect(stored).not.toContain('my-secret');
-    expect(decryptSecret(keys, stored)).toBe('my-secret');
+    expect(decryptSecret(keys, stored, 'Abcd1234')).toBe('my-secret');
+    // The prefix is the AES-GCM additional data: a ciphertext copied onto another key row does not decrypt.
+    expect(decryptSecret(keys, stored, 'Zzzz9999')).toBeUndefined();
     const parts = stored.split(':');
     const flipped = Buffer.from(parts[3], 'base64');
     flipped[0] ^= 1;
-    expect(decryptSecret(keys, [parts[0], parts[1], parts[2], flipped.toString('base64')].join(':'))).toBeUndefined();
-    expect(decryptSecret(serverKeys('b'.repeat(64)), stored)).toBeUndefined();
-    expect(decryptSecret(keys, null)).toBeUndefined();
-    expect(decryptSecret(keys, 'garbage')).toBeUndefined();
+    expect(decryptSecret(keys, [parts[0], parts[1], parts[2], flipped.toString('base64')].join(':'), 'Abcd1234')).toBeUndefined();
+    expect(decryptSecret(serverKeys('b'.repeat(64)), stored, 'Abcd1234')).toBeUndefined();
+    expect(decryptSecret(keys, `v1${stored.slice(2)}`, 'Abcd1234')).toBeUndefined();
+    expect(decryptSecret(keys, null, 'Abcd1234')).toBeUndefined();
+    expect(decryptSecret(keys, 'garbage', 'Abcd1234')).toBeUndefined();
   });
 
   it('should hash secrets with scrypt and a random salt', () => {

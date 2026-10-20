@@ -30,34 +30,35 @@ describe('public authentication response', () => {
     const body = await authenticationResponse('r1', decision({
       outcome: 'success', matched_identity_id: 'i1', confidence: 0.91, failure_reason: null, session_status: 'succeeded',
       attributes: { display_name: 'Ada', photo: 'f1' },
-    }), storage);
+    }), storage, 'identification');
     expect(body).toMatchObject({ outcome: 'success', authenticated: true, confidence: 0.91, next_step: 'none' });
     expect(body.identity).toEqual({ id: 'i1', attributes: { display_name: 'Ada', photo: { url: 'https://files.example/f1?sig=x', expires_at: '2030-01-01T00:00:00.000Z' } } });
   });
 
   it('should never expose a candidate or score for partial matches and failures', async () => {
-    const partial = await authenticationResponse('r1', decision({ outcome: 'partial_match', matched_identity_id: 'i1', confidence: 0.55, session_status: 'open', failure_reason: null }), storage);
+    const partial = await authenticationResponse('r1', decision({ outcome: 'partial_match', matched_identity_id: 'i1', confidence: 0.55, session_status: 'open', failure_reason: null }), storage, 'identification');
     expect(partial.identity).toBeUndefined();
     expect(partial.confidence).toBeUndefined();
     expect(partial).toMatchObject({ failure: { code: 'partial_match', retryable: true }, next_step: 'recapture' });
-    const failure = await authenticationResponse('r1', decision({ matched_identity_id: 'i1', confidence: 0.3 }), storage);
+    const failure = await authenticationResponse('r1', decision({ matched_identity_id: 'i1', confidence: 0.3 }), storage, 'identification');
     expect(failure.identity).toBeUndefined();
     expect(failure.confidence).toBeUndefined();
     expect(failure).toMatchObject({ failure: { code: 'below_threshold', retryable: false }, next_step: 'none' });
   });
 
   it('should map unknown reasons to below_threshold and keep quality failures retryable while open', async () => {
-    expect((await authenticationResponse('r', decision({ failure_reason: 'not_retrieved' }), storage)).failure?.code).toBe('below_threshold');
-    const blur = await authenticationResponse('r', decision({ failure_reason: 'blur', session_status: 'open' }), storage);
+    expect((await authenticationResponse('r', decision({ failure_reason: 'not_retrieved' }), storage, 'identification')).failure?.code).toBe('below_threshold');
+    const blur = await authenticationResponse('r', decision({ failure_reason: 'blur', session_status: 'open' }), storage, 'identification');
     expect(blur).toMatchObject({ failure: { code: 'blur', retryable: true }, next_step: 'recapture' });
     expect(blur.failure?.guidance).toMatch(/steady/);
   });
 
   it('should choose the next step of a partial match by recaptures used and review', () => {
-    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 0 })).toBe('recapture');
-    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 1 })).toBe('second_factor');
-    expect(nextStep({ outcome: 'partial_match', session_status: 'review', recapture_count: 2 })).toBe('review');
-    expect(nextStep({ outcome: 'success', session_status: 'succeeded', recapture_count: 0 })).toBe('none');
+    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 0 }, 'verification')).toBe('recapture');
+    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 1 }, 'verification')).toBe('second_factor');
+    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 1 }, 'identification')).toBe('recapture');
+    expect(nextStep({ outcome: 'partial_match', session_status: 'review', recapture_count: 2 }, 'identification')).toBe('review');
+    expect(nextStep({ outcome: 'success', session_status: 'succeeded', recapture_count: 0 }, 'verification')).toBe('none');
   });
 
   it('should null a photo that cannot be signed and leave other attributes untouched', async () => {

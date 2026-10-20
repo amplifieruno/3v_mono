@@ -33,6 +33,8 @@ export type PipelineInput = {
   /** Epoch ms after which no decision is started (the request timeout). */
   deadline: number;
   startedAt: number;
+  /** Client request id (X-Request-Id or generated), stored on the attempt (attack_details.request_id). */
+  requestId?: string;
 };
 
 export const timeoutError = () =>
@@ -149,17 +151,28 @@ export async function runAuthentication(deps: PipelineDeps, input: PipelineInput
       p_access_point: input.session.access_point_id,
       p_embedding: embedding,
       p_quality: quality,
-      p_attack: { outcome: attack.outcome, details: attack.details, sequence_digest: digest.toString('hex') },
+      p_attack: {
+        outcome: attack.outcome,
+        details: { ...attack.details, ...(input.requestId ? { request_id: input.requestId } : {}) },
+        sequence_digest: digest.toString('hex'),
+      },
       p_request_threshold: input.requestThreshold,
       p_evidence_file: evidence,
     });
   } catch (error: unknown) {
-    if (evidence) void deps.storage.deleteFile(evidence).catch(() => undefined);
+    if (evidence) {
+      void deps.storage.deleteFile(evidence).catch((cause: unknown) => {
+        console.error(`Auth service: could not delete evidence ${evidence} of a failed decision:`, cause);
+      });
+    }
     throw serviceErrorFromSql(error) ?? error;
   }
   if (decision.outcome === 'success' && evidence) {
     // Successes keep no image (SA_6 §2.1.7); the attempt row does not reference it.
-    void deps.storage.deleteFile(evidence).catch(() => undefined);
+    void deps.storage.deleteFile(evidence).catch((error: unknown) => {
+      // Left for the evidence sweep (expire_auth_sessions cron: unreferenced auth_capture files older than 10 min).
+      console.error(`Auth service: could not delete success evidence ${evidence}:`, error);
+    });
   }
   return decision;
 }
