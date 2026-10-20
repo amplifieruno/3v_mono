@@ -169,8 +169,14 @@ describe('seed_auth_flow', () => {
     expect(new Date(data.live[0].created_at).getTime()).toBeGreaterThanOrEqual(before - 5_000);
   });
 
-  it('should not be exposed to organization admins', async () => {
+  it('should be callable with the admin secret only, not by organization admins', async () => {
     const w = await pastWorld();
+    const at = Date.now() - 24 * 60 * MIN;
+    const ok = await flow(w, {
+      kind: 'session', application_id: w.app.id, session_id: randomUUID(), mode: 'identification', device_ref: 'k', at: iso(at),
+      steps: [step(at + 1_000, axis(0))],
+    });
+    expect(ok.map((a) => a.outcome)).toEqual(['success']);
     await expectDenied(
       w.a.request(`mutation($f: jsonb!) { seed_auth_flow(args: { p_flow: $f }) { id } }`, { f: { kind: 'review' } }),
       'seed_auth_flow',

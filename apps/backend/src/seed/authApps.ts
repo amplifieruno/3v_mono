@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { encryptSecret, generateClientKey, hashSecret, serverKeys, type ServerKeys } from '../auth-service/crypto.js';
 import { issueClientKey } from '../auth-service/keys.js';
 import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
+import { historyKeyOf } from './authKeys.js';
 import { AUTH_APPS, type AuthAppKey, type AuthAppSpec } from './authAppsPlan.js';
 import type { SeedContext } from './tenancy.js';
 
@@ -121,14 +122,19 @@ export async function seedAuthApps(ctx: SeedContext, ids: Ids): Promise<SeedAuth
       created += 1;
     }
     apps[spec.key] = id;
-    if (!spec.keyed || !keys) continue;
-    const own = existing.client_application_keys.filter((k) => k.application_id === id);
-    const revoked = own.find((k) => k.revoked_at !== null && k.expires_at === null);
-    if (revoked) historyKeys[spec.key] = revoked.id;
-    else if (own.length === 0) {
+    if (!spec.keyed) continue;
+    const history = historyKeyOf(existing.client_application_keys.filter((k) => k.application_id === id));
+    if (history.kind === 'seed') {
+      // Without AUTH_KEY_ENCRYPTION_KEY no key can be stored (logged by the seed); history sessions then carry none.
+      if (!keys) continue;
       const result = await seedKeys(ctx, actor, keys, ids, spec.key, id);
       historyKeys[spec.key] = result.history;
       issued.push(result.issued);
+    } else {
+      if (history.kind === 'recovered') {
+        process.stdout.write(`Face auth: ${spec.name} has keys but no revoked history key (interrupted seed?); history uses its oldest key.\n`);
+      }
+      historyKeys[spec.key] = history.id;
     }
   }
   return { apps, historyKeys, issued, created, keysSkipped: keys === null };

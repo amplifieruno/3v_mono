@@ -122,8 +122,14 @@ function logFaceAuth(result: SeedFaceAuthResult, synthetic: SeedSyntheticResult 
     (history ? `; ${history.sessions} sessions, ${history.attempts} attempts, ${history.reviews} reviews, ${history.evidence} evidence frames` : '; history already seeded') +
     ` in ${Math.round(result.durationMs / 1000)} s.`);
   if (result.keysSkipped) log('Face auth: AUTH_KEY_ENCRYPTION_KEY is not set (use the backend value): no client keys seeded.');
-  // Dev-only convenience: the plaintext of a client key is never stored; it is shown here once, when issued.
-  for (const key of result.issuedKeys) log(`Face auth: demo key for ${key.app} (shown once, dev only): key=${key.prefix} secret=${key.secret}`);
+  // Dev-only convenience: the plaintext of a client key is never stored; it is shown here once, when issued — never in
+  // production (prefix only there; rotate a key in the console to get a secret).
+  const plaintext = process.env.NODE_ENV !== 'production';
+  for (const key of result.issuedKeys) {
+    log(plaintext
+      ? `Face auth: demo key for ${key.app} (shown once, dev only): key=${key.prefix} secret=${key.secret}`
+      : `Face auth: key issued for ${key.app}: key=${key.prefix} (secret not printed in production)`);
+  }
 }
 
 async function main(): Promise<void> {

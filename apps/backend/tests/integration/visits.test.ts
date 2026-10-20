@@ -302,6 +302,10 @@ describe('run_lifecycle_jobs', () => {
     const verified = await mk(`status = 'verified', last_seen_at = '${old}'`);
     const foreign = await insertOne(asOrgAdmin(s.other.id, s.orgB.id), 'identities', {});
     await runSql(`UPDATE itap.identities SET last_seen_at = '${old}' WHERE id = '${foreign.id}'`);
+    // Synthetic sandbox identities (slice 9) are never seen by cameras: never archived as unknown faces.
+    const [synthetic] = await runSqlRows(
+      `INSERT INTO itap.identities (organization_id, is_synthetic, created_at) VALUES ('${s.orgA.id}', true, '${old}') RETURNING id`,
+    );
     const status = async (id: string) => (await runSqlRows(`SELECT status FROM itap.identities WHERE id = '${id}'`))[0].status;
     // 2026-03-10 minus 30 days = 2026-02-08.
     await runLifecycle(s.orgA.id, NOW);
@@ -313,6 +317,7 @@ describe('run_lifecycle_jobs', () => {
     expect(await status(linked)).toBe('unverified');
     expect(await status(verified)).toBe('verified');
     expect(await status(foreign.id)).toBe('unverified');
+    expect(await status(String(synthetic.id))).toBe('unverified');
     const updated = (await runSqlRows(`SELECT updated_at FROM itap.identities WHERE id = '${stale}'`))[0].updated_at;
     await runLifecycle(s.orgA.id, NOW);
     expect((await runSqlRows(`SELECT updated_at FROM itap.identities WHERE id = '${stale}'`))[0].updated_at).toBe(updated);
