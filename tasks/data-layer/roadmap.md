@@ -11,7 +11,7 @@ Spec: `tasks/data-layer/design.md`. One implementation plan per slice, written w
 | 5 | Notifications, escalation, on-call, subscriptions, webhooks (stage C) | §6.12, §8.2–8.4 | `plan-05-notifications.md` (done; `summary-05-notifications.md`) |
 | 6 | Segments (translator, evaluation, history) | §6.5 | `plan-06-segments.md` (done; `summary-06-segments.md`) |
 | 7 | Analytics stats, reports, search, bulk jobs, dashboards | §6.10, §6.11 | `plan-07-analytics.md` (done; `summary-07-analytics.md`) |
-| 8 | Physical access: policies (versioned), grants, decisions, overrides | §6.13 | — |
+| 8 | Physical access: policies (versioned), grants, decisions, overrides | §6.13 | `plan-08-physical-access.md` (done; `summary-08-physical-access.md`) |
 | 9 | Face authentication service (SA_6) | §6.16 | — |
 | 10 | Compliance, retention, DSR, integrations, exports, prod cutover | §6.14, §6.15, §10 | — |
 
