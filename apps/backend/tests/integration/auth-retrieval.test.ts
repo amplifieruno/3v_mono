@@ -14,9 +14,9 @@ describe('auth_decide: two-stage retrieval', () => {
     const w = await decideWorld();
     const segment = await manualSegment(w.a, 'identities');
     await runSql(`update itap.segment_members set removed_at = now() where segment_id = '${w.segment.id}'`);
-    const x = await faceIdentity(w.org, [0, 1, 2, 3, 4].map((i) => axis(i)));
+    const x = await faceIdentity(w.org, [0, 1, 2, 3, 4].map((i) => axis(i)), { link: true });
     const decoys: string[] = [];
-    for (let k = 0; k < 20; k += 1) decoys.push(await faceIdentity(w.org, [similarTo(0, 10 + k, 0.7)]));
+    for (let k = 0; k < 20; k += 1) decoys.push(await faceIdentity(w.org, [similarTo(0, 10 + k, 0.7)], { link: true }));
     await addSegmentRows(w.org, segment.id, 'identities', [x, ...decoys]);
     await bind(w.org, w.app.id, { segments: [segment.id] });
 

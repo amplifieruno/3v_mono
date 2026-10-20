@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { authWorld, createApp, insertSession, type ClientApp } from './authService.js';
 import { EMBEDDING_DIM, axis, vectorLiteral } from './faces.js';
 import { runSql, runSqlRows } from './sql.js';
@@ -92,12 +93,16 @@ export function similarTo(from: number, to: number, similarity: number): number[
   return Array.from({ length: EMBEDDING_DIM }, (_, i) => (i === from ? similarity : i === to ? sin : 0));
 }
 
+/** sha256 (hex) of the claimed identity id as sent: the session binding of a verification. */
+export const claimedRefHash = (ref: string): string => createHash('sha256').update(ref).digest('hex');
+
 /** Inserts an identity (SQL, admin) with one template per vector; returns its id. */
 export async function faceIdentity(
   org: string,
   vectors: number[][],
-  extra: { profile?: string; synthetic?: boolean; status?: string; matching?: boolean } = {},
+  extra: { profile?: string; link?: boolean; synthetic?: boolean; status?: string; matching?: boolean } = {},
 ): Promise<string> {
+  if (extra.link && !extra.profile) extra = { ...extra, profile: await sqlProfile(org) };
   const [row] = await runSqlRows(
     `insert into itap.identities (organization_id, profile_id, is_synthetic)
      values ('${org}', ${lit(extra.profile, 'uuid')}, ${extra.synthetic ? 'true' : 'false'})
@@ -156,7 +161,11 @@ export async function decideWorld(appExtra: Record<string, unknown> = {}) {
   await bind(org, app.id, { segments: [w.segment.id], modes: ['identification', 'verification'] });
   const person = await faceIdentity(org, [axis(0)], { profile: w.profile });
   await addSegmentRows(org, w.segment.id, 'profiles', [w.profile]);
-  const session = (extra: Record<string, unknown> = {}): Promise<string> => insertSession(org, app.id, extra);
+  /** A session; a verification session binds `claimedRef` (default: its claimed_identity_id) by hash. */
+  const session = (extra: Record<string, unknown> = {}, claimedRef?: string): Promise<string> => {
+    const ref = claimedRef ?? (typeof extra.claimed_identity_id === 'string' ? extra.claimed_identity_id : undefined);
+    return insertSession(org, app.id, ref ? { claimed_ref_hash: claimedRefHash(ref), ...extra } : extra);
+  };
   return { ...w, org, app, person, session };
 }
 export type DecideWorld = Awaited<ReturnType<typeof decideWorld>>;

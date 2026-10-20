@@ -23,18 +23,20 @@ describe('auth_population: segments', () => {
     const w = await decideWorld();
     const idSegment = await manualSegment(w.a, 'identities');
     await bind(w.org, w.app.id, { segments: [idSegment.id] });
-    const loose = await faceIdentity(w.org, [axis(1)]);
-    const archived = await faceIdentity(w.org, [axis(2)], { status: 'archived' });
-    const disabled = await faceIdentity(w.org, [axis(3)], { matching: false });
+    const linked = await faceIdentity(w.org, [axis(1)], { link: true });
+    const archived = await faceIdentity(w.org, [axis(2)], { link: true, status: 'archived' });
+    const disabled = await faceIdentity(w.org, [axis(3)], { link: true, matching: false });
     const synthetic = await faceIdentity(w.org, [axis(4)], { synthetic: true });
-    const noTemplate = await faceIdentity(w.org, []);
-    const removed = await faceIdentity(w.org, [axis(5)]);
-    const outsider = await faceIdentity(w.org, [axis(6)]);
-    await addSegmentRows(w.org, idSegment.id, 'identities', [loose, archived, disabled, synthetic, noTemplate]);
+    const noTemplate = await faceIdentity(w.org, [], { link: true });
+    const removed = await faceIdentity(w.org, [axis(5)], { link: true });
+    const outsider = await faceIdentity(w.org, [axis(6)], { link: true });
+    // Unlinked camera identities never authenticate, even as identity-segment members.
+    const unlinked = await faceIdentity(w.org, [axis(16)]);
+    await addSegmentRows(w.org, idSegment.id, 'identities', [linked, archived, disabled, synthetic, noTemplate, unlinked]);
     await addSegmentRows(w.org, idSegment.id, 'identities', [removed], `now() - interval '2 days'`);
     await runSql(`update itap.segment_members set removed_at = now() - interval '1 day' where identity_id = '${removed}'`);
 
-    expect(await population(w.org, w.app.id)).toEqual(sorted([w.person, loose]));
+    expect(await population(w.org, w.app.id)).toEqual(sorted([w.person, linked]));
     expect(await population(w.org, w.app.id, null, new Date(Date.now() - 36 * 3600_000).toISOString())).toEqual(
       sorted([removed]),
     );
@@ -43,6 +45,13 @@ describe('auth_population: segments', () => {
     expect(scope.segments).toEqual(expect.arrayContaining([w.segment.id, idSegment.id]));
     expect(scope.sandbox).toBe(false);
     expect(scope.sizes).toMatchObject({ matchable: 4, segments: 2, facilities: 0, union: 2, final: 2 });
+  });
+
+  it('should ignore archived segments', async () => {
+    const w = await decideWorld();
+    expect(await population(w.org, w.app.id)).toEqual([w.person]);
+    await runSql(`update itap.segments set status = 'archived' where id = '${w.segment.id}'`);
+    expect(await population(w.org, w.app.id)).toEqual([]);
   });
 
   it('should resolve merged and profile-linked members to their effective identities', async () => {
@@ -59,7 +68,7 @@ describe('auth_population: segments', () => {
     const sandbox = await createApp(w.a, { is_sandbox: true });
     const idSegment = await manualSegment(w.a, 'identities');
     const synthetic = await faceIdentity(w.org, [axis(8)], { synthetic: true });
-    const production = await faceIdentity(w.org, [axis(9)]);
+    const production = await faceIdentity(w.org, [axis(9)], { link: true });
     await addSegmentRows(w.org, idSegment.id, 'identities', [synthetic, production]);
     await bind(w.org, sandbox.id, { segments: [idSegment.id, w.segment.id], modes: ['identification'] });
     await bind(w.org, w.app.id, { segments: [idSegment.id] });
@@ -86,13 +95,17 @@ describe('auth_population: facilities, access point, work schedules', () => {
     const contractor = await sqlProfile(w.org, { profile_type: 'contractor' });
     const contractorFace = await faceIdentity(w.org, [axis(11)], { profile: contractor });
     await publishPolicy(w, { profile_type: 'contractor' }, { facility_id: w.facility.id });
-    const seen = await faceIdentity(w.org, [axis(12)]);
-    const stale = await faceIdentity(w.org, [axis(13)]);
+    const seen = await faceIdentity(w.org, [axis(12)], { link: true });
+    const stale = await faceIdentity(w.org, [axis(13)], { link: true });
+    const stranger = await faceIdentity(w.org, [axis(17)]);
     await runSql(`insert into itap.tracking_sessions (organization_id, identity_id, facility_id, status, started_at, ended_at, last_detected_at)
       values ('${w.org}', '${seen}', '${w.facility.id}', 'completed', now() - interval '3 days', now() - interval '3 days' + interval '1 hour', now() - interval '3 days' + interval '1 hour'),
+             ('${w.org}', '${stranger}', '${w.facility.id}', 'completed', now() - interval '2 days', now() - interval '2 days' + interval '1 hour', now() - interval '2 days' + interval '1 hour'),
              ('${w.org}', '${stale}', '${w.facility.id}', 'completed', now() - interval '40 days', now() - interval '40 days' + interval '1 hour', now() - interval '40 days' + interval '1 hour')`);
 
+    // Linked and seen within 30 days: in; seen 40 days ago: out; an unlinked stranger seen there: never.
     expect(await population(w.org, app.id)).toEqual(sorted([grantedFace, contractorFace, seen]));
+    expect(await population(w.org, app.id)).not.toContain(stranger);
     const scope = await populationScope(w.org, app.id);
     expect(scope.facilities).toEqual([w.facility.id]);
     expect(scope.sizes).toMatchObject({ segments: 0, facilities: 3, final: 3 });
@@ -122,7 +135,7 @@ describe('auth_population: facilities, access point, work schedules', () => {
     const [ws] = await runSqlRows(`insert into itap.work_schedules (organization_id, name, timezone, windows)
       values ('${w.org}', 'Always ${Date.now()}', 'UTC', '[{"days":[1,2,3,4,5,6,7],"from":"00:00","to":"24:00"}]') returning id`);
     const idSegment = await manualSegment(w.a, 'identities');
-    const loose = await faceIdentity(w.org, [axis(15)]);
+    const loose = await faceIdentity(w.org, [axis(15)], { link: true });
     await addSegmentRows(w.org, idSegment.id, 'identities', [loose]);
     await bind(w.org, w.app.id, { segments: [idSegment.id] });
     expect(await population(w.org, w.app.id)).toEqual([]);

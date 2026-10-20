@@ -79,9 +79,10 @@ BEGIN
     mode := CASE WHEN i % 3 = 0 THEN 'verification' ELSE 'identification' END;
     claimed := CASE WHEN mode = 'verification' THEN tpl_identity[k] END;
     point := CASE WHEN i % 4 = 0 THEN ap END;
-    INSERT INTO itap.authentication_sessions (organization_id, application_id, mode, claimed_identity_id, access_point_id,
-                                              device_ref, nonce_hash, expires_at)
-    VALUES (org, app, mode, claimed, point, 'bench', md5(random()::text), now() + interval '5 minutes') RETURNING id INTO sess;
+    INSERT INTO itap.authentication_sessions (organization_id, application_id, mode, claimed_identity_id, claimed_ref_hash,
+                                              access_point_id, device_ref, nonce_hash, expires_at)
+    VALUES (org, app, mode, claimed, encode(sha256(convert_to(claimed::text, 'UTF8')), 'hex'), point, 'bench',
+            md5(random()::text), now() + interval '5 minutes') RETURNING id INTO sess;
     t := clock_timestamp();
     r := itap.auth_decide(org, app, sess, mode, claimed, point, probe, '{"model_version":"bench"}'::jsonb,
                           jsonb_build_object('outcome', 'passed', 'sequence_digest', md5(random()::text)), NULL, now(), true);

@@ -29,7 +29,7 @@ export const authTables: TableSpec[] = [
   // Key metadata only: created by store_client_key (backend action rotate_client_key), revoked by revoke_client_key.
   { name: 'client_application_keys', profile: 'tenant_read', secretColumns: ['secret_hash'] },
   // Written by the backend service / decision engine; org_admin reads (attempts: the evidentiary record).
-  { name: 'authentication_sessions', profile: 'tenant_read', secretColumns: ['nonce_hash'] },
+  { name: 'authentication_sessions', profile: 'tenant_read', secretColumns: ['nonce_hash', 'claimed_ref_hash'] },
   { name: 'authentication_attempts', profile: 'tenant_read' },
   // Internal: stage-1 retrieval centroids and replay detection.
   { name: 'identity_centroids', profile: 'none' },

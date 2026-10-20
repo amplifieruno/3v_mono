@@ -97,7 +97,7 @@ describe('auth_decide: verification (Review Focus 2)', () => {
     const outsider = await faceIdentity(w.org, [axis(20)]);
     const verify = async (claimed: string, embedding: number[], bound: string | null = claimed) =>
       decide(w.org, w.app.id, {
-        session: await w.session({ mode: 'verification', claimed_identity_id: bound }),
+        session: await w.session({ mode: 'verification', claimed_identity_id: bound }, claimed),
         mode: 'verification',
         claimed,
         embedding,
@@ -110,7 +110,7 @@ describe('auth_decide: verification (Review Focus 2)', () => {
     expect(outside).toMatchObject({ outcome: 'failure', failure_reason: 'below_threshold', confidence: null, retrieval_hit: null });
     expect(await attemptRow(nonMatch.attempt_id)).toMatchObject({ failure_reason: 'below_threshold', claimed_identity_id: w.person });
     const rec = await attemptRow(outside.attempt_id);
-    expect(rec).toMatchObject({ failure_reason: 'not_in_population', claimed_identity_id: outsider, retrieval_hit: 'f' });
+    expect(rec).toMatchObject({ failure_reason: 'not_in_population', claimed_identity_id: outsider, retrieval_hit: 'NULL' });
     expect(Number(rec.comparison_score)).toBeCloseTo(1, 4);
     // An identity of another organization is answered the same way and never stored.
     const foreign = await faceIdentity(w.orgB.id, [axis(21)]);
@@ -179,11 +179,48 @@ describe('auth_decide: short-circuits and recording', () => {
     await expect(decide(w.org, w.app.id, { session: await w.session({ mode: 'verification', claimed_identity_id: w.person }) })).rejects.toThrow(
       /auth_session_mismatch/,
     );
-    await expect(decide(w.org, w.app.id, { session: await w.session(), claimed: w.person })).rejects.toThrow(
+    await expect(decide(w.org, w.app.id, { session: null, record: false, claimed: w.person })).rejects.toThrow(
       /auth_claimed_identity_not_allowed/,
     );
     await runSql(`update itap.client_applications set status = 'suspended' where id = '${w.app.id}'`);
     await expect(decide(w.org, w.app.id, { session: await w.session() })).rejects.toThrow(/client_application_inactive/);
+  });
+});
+
+describe('auth_decide: session binding and liveness', () => {
+  it('should refuse an attempt whose claimed identity or access point differs from the session binding', async () => {
+    const w = await decideWorld();
+    const other = await faceIdentity(w.org, [axis(22)], { link: true });
+    await bind(w.org, w.app.id, { accessPoints: [w.door.id] });
+    const verifyArgs = { mode: 'verification' as const, embedding: axis(0) };
+    const bound = await w.session({ mode: 'verification', claimed_identity_id: w.person });
+    await expect(decide(w.org, w.app.id, { ...verifyArgs, session: bound, claimed: other })).rejects.toThrow(/auth_session_mismatch/);
+    // Bound by hash only (the claimed id is unknown in the organization): another claim is refused, the same is accepted.
+    const unknown = '00000000-0000-4000-8000-000000000001';
+    const byHash = await w.session({ mode: 'verification' }, unknown);
+    await expect(decide(w.org, w.app.id, { ...verifyArgs, session: byHash, claimed: w.person })).rejects.toThrow(/auth_session_mismatch/);
+    expect(await decide(w.org, w.app.id, { ...verifyArgs, session: byHash, claimed: unknown })).toMatchObject({ outcome: 'failure' });
+    // Access point: equality including NULL in both directions.
+    await expect(decide(w.org, w.app.id, { session: await w.session(), accessPoint: w.door.id })).rejects.toThrow(/auth_session_mismatch/);
+    await expect(decide(w.org, w.app.id, { session: await w.session({ access_point_id: w.door.id }) })).rejects.toThrow(
+      /auth_session_mismatch/,
+    );
+    await expect(w.session({ mode: 'verification', claimed_identity_id: w.person }, other)).rejects.toThrow(
+      /authentication_sessions_claimed_ref/,
+    );
+  });
+
+  it('should fail with liveness_failed when the app requires liveness and it was not checked', async () => {
+    const w = await decideWorld();
+    const s = await w.session();
+    const d = await decide(w.org, w.app.id, { session: s, attack: { outcome: 'not_checked' } });
+    expect(d).toMatchObject({ outcome: 'failure', failure_reason: 'liveness_failed', attack_outcome: 'not_checked', retrieval_candidates: null });
+    expect(await attemptRow(d.attempt_id)).toMatchObject({ failure_reason: 'liveness_failed', comparison_score: 'NULL' });
+    const lax = await createApp(w.a, { liveness_required: false });
+    await bind(w.org, lax.id, { segments: [w.segment.id], modes: ['identification'] });
+    expect(
+      await decide(w.org, lax.id, { session: await w.session({ application_id: lax.id }), attack: { outcome: 'not_checked' } }),
+    ).toMatchObject({ outcome: 'success', attack_outcome: 'not_checked' });
   });
 });
 
@@ -210,6 +247,10 @@ describe('auth_decide: populations and attributes', () => {
       outcome: 'failure',
       matched_identity_id: null,
     });
+    // Sandbox traffic never reaches events / Stage C.
+    const sandboxAttempts = await runSqlRows(`select id from itap.authentication_attempts where application_id = '${sandbox.id}'`);
+    expect(sandboxAttempts).toHaveLength(2);
+    for (const a of sandboxAttempts) expect(await eventsOf(a.id)).toEqual([]);
   });
 
   it('should return exactly the permitted attributes, never the identity record (Review Focus 5)', async () => {
