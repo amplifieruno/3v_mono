@@ -17,7 +17,7 @@ import { expectDenied, expectError } from './support/fixtures.js';
 import { callFn } from './support/operations.js';
 import { addMembers, manualSegment } from './support/segments.js';
 import { waitFor } from './support/sending.js';
-import { runSql } from './support/sql.js';
+import { runSql, runSqlRows } from './support/sql.js';
 
 /** Policy distribution to access terminals (slice 8 task 4): payload, cron, action, status, Review Focus 4. */
 
@@ -79,6 +79,24 @@ describe('terminal_policy_payload', () => {
     expect(Object.keys(status).sort()).toEqual([w.online, w.offline].sort());
     expect(await syncStatus(w.b)).toEqual({});
     await w.a.request(`query { terminal_policy_syncs { id } }`);
+  });
+});
+
+describe('record_terminal_sync', () => {
+  it('should reject a synced result without a checksum or for an epoch the organization never reached', async () => {
+    const w = await terminalWorld();
+    const { epoch } = await policyEpoch(w.orgA.id);
+    const record = (epochArg: number, checksum: string | null) =>
+      runSqlRows(`select id from itap.record_terminal_sync('${w.online}', ${epochArg}, false, false, 'synced',
+        ${checksum === null ? 'null' : `'${checksum}'`}, 10, 1)`);
+    await expect(record(epoch, null)).rejects.toThrow(/terminal_sync_checksum_required/);
+    await expect(record(epoch + 1, 'abc')).rejects.toThrow(/terminal_sync_epoch_invalid/);
+    expect(await deviceSync(w.online)).toMatchObject({ synced: null });
+    expect(await record(epoch, 'abc')).toHaveLength(1);
+    expect(await deviceSync(w.online)).toMatchObject({ synced: epoch, error: null });
+    // A failed attempt carries no checksum.
+    expect(await runSqlRows(`select id from itap.record_terminal_sync('${w.online}', ${epoch}, false, false, 'failed',
+      null, null, 1, 'timeout')`)).toHaveLength(1);
   });
 });
 

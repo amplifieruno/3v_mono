@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluate as evaluateAccess } from './support/accessEngine.js';
+import { runSqlRows } from './support/sql.js';
 import { evaluate, orgEvents } from './support/stageB.js';
 import { accessTrackingWorld, person, publishTrackingPolicy } from './support/stageBAccess.js';
 import { at, createIdentity, detect } from './support/tracking.js';
@@ -100,5 +101,26 @@ describe('Stage B: tailgating', () => {
     for (const [i, id] of people.entries()) detections.push(await detect(w.orgA.id, w.exitCam, id, 3 + i));
     await Promise.all([...detections, ...detections].map((d) => evaluate(d.id)));
     expect(await tailgating(w.orgA.id)).toHaveLength(1);
+  });
+
+  it('should take the door lock first, before writing anything, for every detection at an access point', async () => {
+    const w = await accessTrackingWorld();
+    // A door without face credential: before the fix the lock came last (tailgating), after events were written.
+    const d = await detect(w.orgA.id, w.exitCam, w.identity, 0);
+    const key = `hashtextextended('access_point:${w.exitDoor.id}', 0)`;
+    const hold = runSqlRows(`select pg_advisory_xact_lock(${key}), pg_sleep(1.5)`);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const waiting = evaluate(d.id);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    // The evaluating backends wait on the door lock holding no row-exclusive lock on any itap table.
+    const [row] = await runSqlRows(`select count(*) filter (where l.locktype = 'relation' and l.mode = 'RowExclusiveLock'
+        and l.relation in (select c.oid from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'itap'))
+        as written, count(distinct a.pid) as waiters
+      from pg_stat_activity a join pg_locks l on l.pid = a.pid
+      where a.wait_event = 'advisory' and a.query ilike '%evaluate_detection%'`);
+    await Promise.all([hold, waiting]);
+    // Waiters: this call, and possibly the detection_created event trigger evaluating the same detection.
+    expect(Number(row.waiters)).toBeGreaterThanOrEqual(1);
+    expect(row.written).toBe('0');
   });
 });

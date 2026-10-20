@@ -150,10 +150,10 @@ describe('Review Focus 5: a lock override denies a valid grant; manual end and e
     expect(await endExpired(w.orgA.id)).toEqual([]);
     const events = await eventsOf(w.orgA.id, ['emergency_override_ended']);
     expect(events.map((e) => e.dedup_key).sort()).toEqual([`override:${a.id}:ended`, `override:${b.id}:ended`].sort());
-    // Every end is urgent (2 bumps), unless the real cron got there first.
+    // Every end is urgent: exactly 2 bumps (this call ended both, so the real cron did not touch them).
     const after = await policyEpoch(w.orgA.id);
     expect(after.urgent).toBe(after.epoch);
-    expect(after.epoch - before.epoch).toBeLessThanOrEqual(2);
+    expect(after.epoch - before.epoch).toBe(2);
   });
 
   it('should not let the cron end overrides of another organization or before their ends_at', async () => {
@@ -173,5 +173,21 @@ describe('Review Focus 5: a lock override denies a valid grant; manual end and e
         justification: "Direct insert attempt", ends_at: "${inMinutes(30)}"}) { id } }`),
     );
     expect(err.message).toContain('insert_emergency_overrides_one');
+  });
+
+  it('should let the seed-only override record past drills only by active members (started_by, ended_by)', async () => {
+    const w = await accessWorld();
+    const suspended = await createTestUser();
+    await addMember(w.orgA.id, suspended.id, 'suspended');
+    const outsider = await createTestUser();
+    const drill = (startedBy: string, endedBy: string | null) =>
+      runSqlRows(`select id from itap.seed_emergency_override('${w.orgA.id}', '${w.facility.id}', 'evacuation',
+        'Quarterly fire drill', now() - interval '2 hours', now() - interval '1 hour', '${startedBy}',
+        now() - interval '90 minutes', ${endedBy ? `'${endedBy}'` : 'null'}, 'Drill completed')`);
+    await expect(drill(outsider.id, w.user.id)).rejects.toThrow(/member_required/);
+    await expect(drill(suspended.id, w.user.id)).rejects.toThrow(/member_required/);
+    await expect(drill(w.user.id, suspended.id)).rejects.toThrow(/member_required/);
+    expect(await drill(w.user.id, w.approverUser.id)).toHaveLength(1);
+    expect(await drill(w.user.id, null)).toHaveLength(1);
   });
 });

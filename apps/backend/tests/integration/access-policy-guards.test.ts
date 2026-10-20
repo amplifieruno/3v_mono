@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   accessWorld,
+  approveVersion,
   archivePolicy,
   createDraft,
   createPolicyWithDraft,
   publishVersion,
+  rejectVersion,
   submitVersion,
   type AccessWorld,
 } from './support/access.js';
@@ -98,6 +100,26 @@ describe('access policies: SQL / admin bypass guards', () => {
       and user_id = '${w.user.id}'`);
     const e = await expectError(callFn(w.a, 'revoke_access_grant', { p_grant: grant.id, p_reason: 'x' }, 'id'));
     expect(e.message).toContain('member_required');
+  });
+
+  it('should require an active, unexpired member for every policy lifecycle function', async () => {
+    const w = await accessWorld();
+    const { policy, draft } = await doorPolicy(w);
+    const setMember = (user: string, sql: string) =>
+      runSql(`update itap.organization_members set ${sql} where organization_id = '${w.orgA.id}' and user_id = '${user}'`);
+    const denied = async (call: Promise<unknown>) => expect((await expectError(call)).message).toContain('member_required');
+    await setMember(w.user.id, `status = 'suspended'`);
+    await denied(submitVersion(w.a, draft.id));
+    await denied(createDraft(w.a, policy.id));
+    await denied(archivePolicy(w.a, policy.id));
+    await setMember(w.user.id, `status = 'active'`);
+    await submitVersion(w.a, draft.id);
+    // An expired approver can neither approve nor reject (previously only membership existence was checked).
+    await setMember(w.approverUser.id, `expires_at = now() - interval '1 minute'`);
+    await denied(approveVersion(w.approver, draft.id));
+    await denied(rejectVersion(w.approver, draft.id, 'Too broad'));
+    await setMember(w.approverUser.id, `expires_at = null`);
+    expect((await approveVersion(w.approver, draft.id)).status).toBe('published');
   });
 
   it('should delete an access point and its facility while decisions keep their rows', async () => {
