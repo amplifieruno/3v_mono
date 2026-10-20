@@ -49,6 +49,15 @@ export const crons: CronSpec[] = [
     comment: 'End emergency overrides past ends_at (automatic policy restoration) with the ended event',
   },
   {
+    // Face authentication sessions: open sessions past expires_at (5 minutes) become expired, per organization
+    // (itap.expire_auth_sessions; apps/backend/src/events/authCrons.ts). Review sessions are never touched.
+    name: 'expire_auth_sessions',
+    schedule: '* * * * *',
+    toleranceSeconds: 120,
+    includeInMetadata: true,
+    comment: 'Mark open face authentication sessions past their expiry as expired',
+  },
+  {
     // Policy distribution: access terminals behind the urgent epoch now, behind the epoch lazily (last sync older than
     // 15 min); stub transport, real state (apps/backend/src/access/terminalSync.ts). Revocation bound: SA_5 §2.1.4.
     name: 'sync_terminal_policies',

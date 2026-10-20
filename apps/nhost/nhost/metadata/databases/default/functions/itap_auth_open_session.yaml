@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: auth_open_session
+configuration:
+  custom_name: auth_open_session
+  exposed_as: mutation

@@ -27,18 +27,35 @@ export const authTables: TableSpec[] = [
     insertOnlyColumns: ['application_id', 'access_point_id'],
   },
   // Key metadata only: created by store_client_key (backend action rotate_client_key), revoked by revoke_client_key.
-  { name: 'client_application_keys', profile: 'tenant_read', secretColumns: ['secret_hash'] },
+  // secret: the AES-256-GCM encrypted key secret the backend verifies request signatures with (slice 9 task 3).
+  { name: 'client_application_keys', profile: 'tenant_read', secretColumns: ['secret_hash', 'secret'] },
   // Written by the backend service / decision engine; org_admin reads (attempts: the evidentiary record).
   { name: 'authentication_sessions', profile: 'tenant_read', secretColumns: ['nonce_hash', 'claimed_ref_hash'] },
   { name: 'authentication_attempts', profile: 'tenant_read' },
   // Internal: stage-1 retrieval centroids and replay detection.
   { name: 'identity_centroids', profile: 'none' },
   { name: 'auth_sequence_digests', profile: 'none' },
+  // Row types of the backend service functions (public projection of a decision; session state); store nothing.
+  { name: 'auth_decisions', schema: 'itap_results', profile: 'none' },
+  { name: 'auth_session_states', schema: 'itap_results', profile: 'none' },
 ];
+
+const serviceOnly = (name: string, exposedAs: 'query' | 'mutation', reason: string): FunctionSpec => ({
+  name,
+  exposedAs,
+  roles: [],
+  unscopedReturnReason: `admin-only: ${reason}`,
+});
 
 export const authFunctions: FunctionSpec[] = [
   { name: 'revoke_client_key', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
   { name: 'review_authentication_attempt', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
   // Backend only: the rotate_client_key action generates the plaintext and stores its hash with the caller session.
   { name: 'store_client_key', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [] },
+  // Backend face authentication service (/v1/auth/*, action authenticate_face) after key auth; cron sweep.
+  serviceOnly('auth_open_session', 'mutation', 'auth service after key auth (explicit organization and application)'),
+  serviceOnly('auth_service_decide', 'mutation', 'auth service after key auth (explicit organization and application)'),
+  serviceOnly('auth_second_factor', 'mutation', 'auth service after key auth (explicit organization and application)'),
+  serviceOnly('auth_session_state', 'query', 'auth service after key auth (explicit organization and application)'),
+  serviceOnly('expire_auth_sessions', 'mutation', 'cron expire_auth_sessions per organization'),
 ];

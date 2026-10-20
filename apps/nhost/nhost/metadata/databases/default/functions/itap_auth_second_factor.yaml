@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: auth_second_factor
+configuration:
+  custom_name: auth_second_factor
+  exposed_as: mutation

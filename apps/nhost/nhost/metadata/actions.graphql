@@ -27,6 +27,15 @@ type Mutation {
     fuzzy: Boolean
   ): SearchResult!
   publish_policy_to_terminals(facility_id: uuid): [TerminalPublishResult!]!
+  rotate_client_key(application_id: uuid!, expires_at: timestamptz): ClientKeySecret!
+  authenticate_face(
+    application_id: uuid!
+    file_ids: [uuid!]!
+    mode: String!
+    claimed_identity_id: String
+    access_point_id: uuid
+    threshold: Float
+  ): FaceAuthResult!
 }
 
 type Query {
@@ -120,4 +129,28 @@ type TerminalPublishResult {
   device_id: uuid!
   result: String!
   epoch: bigint!
+}
+
+type ClientKeySecret {
+  key_id: uuid!
+  application_id: uuid!
+  prefix: String!
+  secret: String!
+  expires_at: timestamptz
+}
+
+type FaceAuthResult {
+  request_id: String!
+  session_id: uuid!
+  attempt_id: uuid
+  outcome: String!
+  authenticated: Boolean!
+  confidence: Float
+  identity_id: uuid
+  attributes: jsonb
+  attack_outcome: String!
+  failure_code: String
+  failure_message: String
+  failure_guidance: String
+  next_step: String!
 }

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: auth_session_state
+configuration:
+  custom_name: auth_session_state
+  exposed_as: query

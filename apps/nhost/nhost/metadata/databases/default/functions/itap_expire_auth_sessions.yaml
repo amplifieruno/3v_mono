@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: expire_auth_sessions
+configuration:
+  custom_name: expire_auth_sessions
+  exposed_as: mutation

@@ -169,6 +169,8 @@
 - "!include itap_results_access_policy_simulations.yaml"
 - "!include itap_results_activity_stats_refreshes.yaml"
 - "!include itap_results_area_refs.yaml"
+- "!include itap_results_auth_decisions.yaml"
+- "!include itap_results_auth_session_states.yaml"
 - "!include itap_results_dashboard_kpi_rows.yaml"
 - "!include itap_results_delivery_report_rows.yaml"
 - "!include itap_results_face_matches.yaml"

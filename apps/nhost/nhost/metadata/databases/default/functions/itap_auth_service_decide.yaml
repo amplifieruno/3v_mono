@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: auth_service_decide
+configuration:
+  custom_name: auth_service_decide
+  exposed_as: mutation

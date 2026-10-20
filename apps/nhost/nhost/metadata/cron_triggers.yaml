@@ -110,6 +110,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Evaluate dynamic segments of organizations whose segment inputs changed (30 s debounce)
+- name: expire_auth_sessions
+  webhook: "{{BACKEND_URL}}/hasura/events/expire_auth_sessions"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 120
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Mark open face authentication sessions past their expiry as expired
 - name: heartbeat
   webhook: "{{BACKEND_URL}}/hasura/events/heartbeat"
   schedule: "*/5 * * * *"

@@ -4,6 +4,7 @@ import type { Env } from '../config/env.js';
 import { createHasuraClient, type HasuraSession } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { addIdentityPhotos, createIdentityFromPhotos, enrollFace } from './enrollment.js';
+import { authenticateFace, rotateClientKey } from './faceAuth.js';
 import { deleteFile, openFile } from './files.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
 import { uploadProfileDocument } from './profileDocuments.js';
@@ -33,6 +34,8 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   evaluate_segment: evaluateSegmentAction,
   search_faces: searchFaces,
   publish_policy_to_terminals: publishPolicyToTerminals,
+  rotate_client_key: rotateClientKey,
+  authenticate_face: authenticateFace,
 };
 
 const payloadSchema = z.object({

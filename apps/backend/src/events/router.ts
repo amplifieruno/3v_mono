@@ -8,6 +8,7 @@ import { runSavedSearches } from '../search/savedSearches.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
 import { endEmergencyOverrides, policyUrgentEpochBumped, syncTerminalPolicies } from './accessCrons.js';
 import { aggregateStatsCron } from './analyticsCrons.js';
+import { expireAuthSessions } from './authCrons.js';
 import { detectionCreated } from './detectionCreated.js';
 import { deviceHealthCheck } from './deviceHealthCheck.js';
 import { heartbeat } from './heartbeat.js';
@@ -59,6 +60,7 @@ export const defaultEventHandlers: EventHandlers = {
   end_emergency_overrides: endEmergencyOverrides,
   sync_terminal_policies: syncTerminalPolicies,
   policy_urgent_epoch_bumped: policyUrgentEpochBumped,
+  expire_auth_sessions: expireAuthSessions,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

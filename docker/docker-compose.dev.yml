@@ -118,6 +118,8 @@ services:
       GRAPHQL_ADMIN_SECRET: ${GRAPHQL_ADMIN_SECRET}
       HASURA_JWT_SECRET: ${JWT_SECRET}
       ACTION_SECRET: ${ACTION_SECRET}
+      # Face authentication service: encrypts client key secrets, derives session nonces (64 hex).
+      AUTH_KEY_ENCRYPTION_KEY: ${AUTH_KEY_ENCRYPTION_KEY:-}
       NHOST_STORAGE_URL: http://storage:5000/v1
       ORG_TOKEN_TTL_SECONDS: ${ORG_TOKEN_TTL_SECONDS:-900}
       INSIGHTFACE_API_URL: http://insightface:18080

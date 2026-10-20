@@ -193,6 +193,30 @@ actions:
     permissions:
       - role: org_admin
     comment: Pushes the current policy payload to every access terminal of the organization (optionally one facility) now; per-terminal result and epoch (stub transport, real sync state)
+  - name: rotate_client_key
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/rotate_client_key'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: New API key of a client application (prefix + secret, the secret returned once; at most two active keys)
+  - name: authenticate_face
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/authenticate_face'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Console test of face authentication with 3-5 stored images of the organization (recorded like any attempt)
 custom_types:
   enums: []
   input_objects: []
@@ -210,4 +234,6 @@ custom_types:
     - name: SegmentEvaluation
     - name: SearchResult
     - name: TerminalPublishResult
+    - name: ClientKeySecret
+    - name: FaceAuthResult
   scalars: []

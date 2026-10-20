@@ -70,7 +70,13 @@ export function storeKey(
   return callFn<ClientKey>(
     client,
     'store_client_key',
-    { p_application: application, p_key_prefix: newPrefix(), p_secret_hash: 'scrypt$16384$8$1$c2FsdA$aGFzaA', ...extra },
+    {
+      p_application: application,
+      p_key_prefix: newPrefix(),
+      p_secret_hash: 'scrypt$16384$8$1$c2FsdA$aGFzaA',
+      p_secret: 'v1:aXY=:dGFn:Y3Q=',
+      ...extra,
+    },
     KEY_FIELDS,
   );
 }
