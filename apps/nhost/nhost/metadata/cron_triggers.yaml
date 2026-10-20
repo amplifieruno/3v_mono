@@ -40,6 +40,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: "Probe the stream-server per camera: metrics, health_status, last_seen_at, device_events"
+- name: drain_file_deletions
+  webhook: "{{BACKEND_URL}}/hasura/events/drain_file_deletions"
+  schedule: "*/10 * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Delete queued storage files (retention / erasure) through the storage API
 - name: end_emergency_overrides
   webhook: "{{BACKEND_URL}}/hasura/events/end_emergency_overrides"
   schedule: "* * * * *"

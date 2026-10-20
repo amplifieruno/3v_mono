@@ -71,7 +71,7 @@ export const reportTables: TableSpec[] = [
 export const reportFunctions: FunctionSpec[] = [
   ...[
     'claim_report', 'compute_report', 'complete_report', 'fail_report', 'init_report_schedule', 'run_report_schedule',
-    'record_report_schedule_failure',
+    'record_report_schedule_failure', 'seed_complete_report',
   ].map(
     (name): FunctionSpec => ({ name, exposedAs: 'mutation', roles: [] }),
   ),

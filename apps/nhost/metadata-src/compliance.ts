@@ -126,4 +126,10 @@ export const complianceFunctions: FunctionSpec[] = [
     roles: [],
     unscopedReturnReason: 'admin-only: called per organization by the retention_cleanup cron handler',
   },
+  {
+    name: 'claim_file_deletions',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: the storage deletion drain (retention_cleanup, drain_file_deletions crons)',
+  },
 ];

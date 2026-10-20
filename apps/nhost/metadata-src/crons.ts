@@ -96,6 +96,16 @@ export const crons: CronSpec[] = [
     comment: 'Daily: apply retention policies (delete / anonymize / archive, legal holds) and drain file deletions',
   },
   {
+    // Storage deletion queue (slice 10): files queued by retention / erasure are deleted through the storage API every
+    // 10 minutes (itap.claim_file_deletions, at most 500 per run; apps/backend/src/retention/fileQueue.ts), besides the
+    // drain after the daily retention run.
+    name: 'drain_file_deletions',
+    schedule: '*/10 * * * *',
+    toleranceSeconds: 600,
+    includeInMetadata: true,
+    comment: 'Delete queued storage files (retention / erasure) through the storage API',
+  },
+  {
     // Failed notification deliveries (stubbed channels) whose backoff passed: claimed and sent again
     // (itap.due_notification_deliveries / claim_notification_delivery; apps/backend/src/events/sending.ts).
     name: 'retry_deliveries',

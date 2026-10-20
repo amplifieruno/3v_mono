@@ -10,8 +10,9 @@ import type { SeedContext } from './tenancy.js';
  * past reports (reportPlan). A past report runs through the real pipeline: inserted queued (targets in the same
  * insert, while targets may still change) and claimed in the same transaction (itap.claim_report: generating, attempt 1,
  * so the live render_report handler finds nothing to claim), itap.compute_report (metrics + dataset), the report renderer, an upload to
- * the organization bucket, then itap.complete_report (report_generated event, schedule deliveries, Stage C). The same
- * request back-dates the report and its event to the planned time, and itap.seed_finalize_notifications dates the
+ * the organization bucket, then itap.seed_complete_report (complete_report at the planned time: report_generated
+ * event, schedule deliveries, Stage C; events are append-only, so the time is set when they are written). The same
+ * request back-dates the report's creation, and itap.seed_finalize_notifications dates the
  * deliveries and inbox rows at the event time (email sent; in-app read). The failed report is claimed and then failed
  * with its error (itap.fail_report, the generator's failure path). The schedules get last_run_at = their latest seeded
  * run and next_run_at = the next cron instant. Idempotent: templates and schedules by name; past reports only when the
@@ -54,14 +55,11 @@ const COMPUTE = `
 `;
 const COMPLETE = `
   mutation SeedCompleteReport(
-    $org: uuid!, $id: uuid!, $file: uuid!, $summary: jsonb!, $at: timestamptz!, $requested: timestamptz!, $key: String!,
+    $org: uuid!, $id: uuid!, $file: uuid!, $summary: jsonb!, $at: timestamptz!, $requested: timestamptz!,
     $until: timestamptz!
   ) {
-    complete_report(args: { p_report: $id, p_attempt: 1, p_file: $file, p_summary: $summary }) { id }
-    update_reports_by_pk(pk_columns: { id: $id }, _set: { generated_at: $at, created_at: $requested }) { id }
-    update_events(where: { organization_id: { _eq: $org }, dedup_key: { _eq: $key } }, _set: { occurred_at: $at, created_at: $at }) {
-      affected_rows
-    }
+    seed_complete_report(args: { p_report: $id, p_attempt: 1, p_file: $file, p_summary: $summary, p_at: $at }) { id }
+    update_reports_by_pk(pk_columns: { id: $id }, _set: { created_at: $requested }) { id }
     seed_finalize_notifications(args: { p_organization: $org, p_until: $until }) { id }
   }
 `;
@@ -137,7 +135,6 @@ async function generatePast(
     summary: { row_count: dataset.rows.length, truncated: dataset.truncated, file_name: name, size_bytes: file.data.length, items: dataset.summary },
     at: iso(plan.generatedAt),
     requested: iso(requested),
-    key: `report:${id}:report_generated`,
     until: iso(plan.generatedAt + 10 * MINUTE),
   });
 }

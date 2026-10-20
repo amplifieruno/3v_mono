@@ -61,7 +61,7 @@ describe('incident audit', () => {
     const p = await escalationPolicy(w.a, [{ after_minutes: 1, channel: 'in_app', recipient_group_id: group }]);
     const incident = await escalationIncident(w.a, w.orgA.id, p.id);
     const audits = async () =>
-      (await runSqlRows(`select changes::text from itap.audit_log where entity = 'incidents' and entity_id = '${incident}' and action = 'update'`))
+      (await runSqlRows(`select changes::text from itap.audit_log where entity = 'incidents' and entity_id = '${incident}' and action = 'update' order by occurred_at, id`))
         .map((r) => r.changes ?? '');
     const before = await audits();
     expect(await escalate(w.orgA.id, minutes(1))).toMatchObject([{ id: incident, escalation_step: 1 }]);

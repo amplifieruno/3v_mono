@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: claim_file_deletions
+configuration:
+  custom_name: claim_file_deletions
+  exposed_as: mutation

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: seed_complete_report
+configuration:
+  custom_name: seed_complete_report
+  exposed_as: mutation

@@ -5,6 +5,7 @@ import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { resumeBulkJobs, runBulkJobTrigger } from '../bulk/handlers.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { retentionCleanup } from '../retention/cron.js';
+import { drainFileDeletionsCron } from '../retention/fileQueue.js';
 import { runSavedSearches } from '../search/savedSearches.js';
 import { evaluateSegmentsHourly, evaluateSegmentsPending } from '../segments/crons.js';
 import { endEmergencyOverrides, policyUrgentEpochBumped, syncTerminalPolicies } from './accessCrons.js';
@@ -63,6 +64,7 @@ export const defaultEventHandlers: EventHandlers = {
   policy_urgent_epoch_bumped: policyUrgentEpochBumped,
   expire_auth_sessions: expireAuthSessions,
   retention_cleanup: retentionCleanup,
+  drain_file_deletions: drainFileDeletionsCron,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {
