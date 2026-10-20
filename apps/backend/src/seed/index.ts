@@ -10,6 +10,8 @@ import { seedCompanies, type SeedCompaniesResult } from './companies.js';
 import { seedDeviceHealth, type SeedDeviceHealthResult } from './deviceHealth.js';
 import { seedDevices, type SeedDevicesResult } from './devices.js';
 import { seedFacilities, type SeedFacilitiesResult } from './facilities.js';
+import type { SeedSyntheticResult } from './authSynthetic.js';
+import { seedFaceAuth, seedSandboxIdentities, type SeedFaceAuthResult } from './faceAuth.js';
 import { seedFaces, type SeedIdentitiesResult } from './faces.js';
 import { seedHistory, type SeedHistoryResult } from './history.js';
 import { seedNotifications, type SeedNotificationsResult } from './notifications.js';
@@ -23,6 +25,7 @@ export type SeedResults = {
   companies: SeedCompaniesResult;
   profiles: SeedPeopleResult;
   identities: SeedIdentitiesResult;
+  sandboxIdentities: SeedSyntheticResult;
   facilities: SeedFacilitiesResult;
   devices: SeedDevicesResult;
   notifications: SeedNotificationsResult;
@@ -31,6 +34,7 @@ export type SeedResults = {
   history: SeedHistoryResult;
   segments: SeedSegmentsResult;
   access: SeedAccessResult;
+  faceAuth: SeedFaceAuthResult;
   analytics: SeedAnalyticsResult;
 };
 
@@ -63,6 +67,9 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   companies: step(['tenancy'], (ctx, { tenancy }) => seedCompanies(ctx, tenancy)),
   profiles: step(['tenancy', 'companies'], (ctx, { tenancy, companies }) => seedPeople(ctx, tenancy, companies)),
   identities: step(['tenancy', 'profiles'], (ctx, { tenancy, profiles }) => seedFaces(ctx, tenancy, profiles)),
+  // Slice 9: synthetic identities of the face authentication sandbox and their segment (before the segments step, whose
+  // daily stats then cover it).
+  sandboxIdentities: step(['tenancy', 'identities'], (ctx, { tenancy }) => seedSandboxIdentities(ctx, tenancy)),
   facilities: step(['tenancy'], (ctx, { tenancy }) => seedFacilities(ctx, tenancy)),
   // After identities: the seeded faces' camera photos are re-pointed to the camera that captured them.
   devices: step(['tenancy', 'facilities', 'profiles', 'identities'], (ctx, { tenancy, facilities, profiles }) =>
@@ -84,6 +91,9 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   ),
   // After the segments (the executive floor policy uses one): live-only policies, Riverside, terminal sync (slice 8).
   access: step(['tenancy', 'facilities', 'segments', 'accessConfig'], (ctx, r) => seedAccess(ctx, r.tenancy, r.facilities)),
+  // Slice 9, after the segments (Employees / Visitors populations) and the access policies (turnstile narrowing):
+  // sandbox identities, client apps and keys, 30 days of attempts through the decision engine (before the stats).
+  faceAuth: step(['tenancy', 'sandboxIdentities', 'segments', 'access', 'notifications'], (ctx, { tenancy }) => seedFaceAuth(ctx, tenancy)),
   // Last: stats over the whole history, reports computed from them, searches, bulk jobs and dashboards.
   analytics: step(['tenancy', 'facilities', 'history', 'segments'], (ctx, r) => seedAnalytics(ctx, r.tenancy, r.facilities)),
 };
@@ -104,6 +114,16 @@ export async function runSeed(ctx: SeedContext, options: { reset: boolean }): Pr
     (results as Record<string, unknown>)[name] = await steps[name].run(ctx, results);
   }
   return results;
+}
+
+function logFaceAuth(result: SeedFaceAuthResult, synthetic: SeedSyntheticResult | undefined): void {
+  const { history } = result;
+  log(`Face auth: ${result.appsCreated} apps created, ${synthetic?.identities.length ?? 0} synthetic identities (${synthetic?.created ?? 0} new)` +
+    (history ? `; ${history.sessions} sessions, ${history.attempts} attempts, ${history.reviews} reviews, ${history.evidence} evidence frames` : '; history already seeded') +
+    ` in ${Math.round(result.durationMs / 1000)} s.`);
+  if (result.keysSkipped) log('Face auth: AUTH_KEY_ENCRYPTION_KEY is not set (use the backend value): no client keys seeded.');
+  // Dev-only convenience: the plaintext of a client key is never stored; it is shown here once, when issued.
+  for (const key of result.issuedKeys) log(`Face auth: demo key for ${key.app} (shown once, dev only): key=${key.prefix} secret=${key.secret}`);
 }
 
 async function main(): Promise<void> {
@@ -138,6 +158,8 @@ async function main(): Promise<void> {
     log(`Access: ${accessConfig.policiesCreated + access.policiesCreated} policies created, ${grants} visitor grants` +
       `${history?.access.drill ? ', fire drill' : ''}; terminals ${access.terminals.synced} synced, ${access.terminals.unreachable} unreachable.`);
   }
+  const faceAuth = results.faceAuth;
+  if (faceAuth) logFaceAuth(faceAuth, results.sandboxIdentities);
   const analytics = results.analytics;
   if (analytics) {
     const { stats, reports, searches, bulk } = analytics;

@@ -53,7 +53,10 @@ BEGIN
   SELECT array_agg(x.id) INTO profiles FROM (SELECT p.id FROM itap.profiles p WHERE p.organization_id = org ORDER BY p.id LIMIT 80) x;
   SELECT array_agg(x.id) INTO identities
   FROM (SELECT i.id FROM itap.identities i WHERE i.organization_id = org ORDER BY i.id LIMIT 80) x;
+  -- Not the all-employee / all-visitor segments (slice 9 auth populations): a facility-wide allow for them would decide
+  -- before the grant path.
   SELECT s.id INTO seg FROM itap.segments s WHERE s.organization_id = org AND s.target = 'profiles'
+    AND s.name NOT IN ('Employees', 'Visitors')
   ORDER BY s.member_count DESC, s.id LIMIT 1;
 
   -- The seed's own policies (slice 8 task 5) cover the turnstiles and the server room door and would decide before

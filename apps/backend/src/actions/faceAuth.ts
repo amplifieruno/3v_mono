@@ -1,20 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { claimedRef, encryptSecret, generateClientKey, hashSecret, serverKeys, sha256Hex } from '../auth-service/crypto.js';
+import { claimedRef, serverKeys, sha256Hex } from '../auth-service/crypto.js';
 import { ServiceError, serviceErrorFromSql } from '../auth-service/errors.js';
 import { fromFrames, MAX_FRAMES, MIN_FRAMES } from '../auth-service/frames.js';
+import { ClientKeyError, issueClientKey } from '../auth-service/keys.js';
 import { runAuthentication } from '../auth-service/pipeline.js';
 import { authenticationResponse } from '../auth-service/response.js';
 import { createAuthServiceDeps } from '../auth-service/service.js';
-import { HasuraError } from '../hasura/client.js';
 import { OWNER_ONLY_FILE_KINDS, SENSITIVE_FILE_KINDS } from '../storage/storageClient.js';
 import { ActionError, defineAction, type ActionContext } from './types.js';
 
-const STORE_KEY = `
-  mutation RotateClientKey($args: store_client_key_args!) {
-    store_client_key(args: $args) { id application_id key_prefix expires_at }
-  }
-`;
 const FILES = `
   query AuthConsoleFiles($ids: [uuid!]!) { files(where: { id: { _in: $ids } }) { id bucketId metadata uploadedByUserId } }
 `;
@@ -23,11 +18,6 @@ function organizationOf(ctx: ActionContext<unknown>): string {
   const org = ctx.session.organizationId?.toLowerCase();
   if (!org) throw new ActionError('no_organization', 'An organization session is required');
   return org;
-}
-
-function sqlCode(error: unknown): string | undefined {
-  if (!(error instanceof HasuraError)) return undefined;
-  return /\b(client_[a-z_]+|auth_[a-z_]+|access_point_not_bound)\b/.exec(`${error.detail ?? ''} ${error.message}`)?.[1];
 }
 
 /**
@@ -41,33 +31,15 @@ export const rotateClientKey = defineAction(
     organizationOf(ctx);
     if (ctx.session.role !== 'org_admin') throw new ActionError('forbidden', 'Only an organization admin can rotate keys');
     if (!ctx.env.AUTH_KEY_ENCRYPTION_KEY) throw new ActionError('auth_service_not_configured', 'AUTH_KEY_ENCRYPTION_KEY is not set');
-    const keys = serverKeys(ctx.env.AUTH_KEY_ENCRYPTION_KEY);
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const { prefix, secret } = generateClientKey();
-      try {
-        const data = await ctx.actor.request<{ store_client_key: { id: string; application_id: string; key_prefix: string; expires_at: string | null }[] }>(
-          STORE_KEY,
-          {
-            args: {
-              p_application: ctx.input.application_id,
-              p_key_prefix: prefix,
-              p_secret_hash: hashSecret(secret),
-              p_secret: encryptSecret(keys, secret, prefix),
-              p_expires_at: ctx.input.expires_at ?? null,
-            },
-          },
-        );
-        const row = data.store_client_key[0];
-        return { key_id: row.id, application_id: row.application_id, prefix: row.key_prefix, secret, expires_at: row.expires_at };
-      } catch (error: unknown) {
-        const text = error instanceof HasuraError ? `${error.detail ?? ''} ${error.message}` : '';
-        if (text.includes('client_application_keys_key_prefix_key')) continue;
-        const code = sqlCode(error);
-        if (code) throw new ActionError(code, code.replace(/_/g, ' '));
-        throw error;
+    try {
+      return await issueClientKey(ctx.actor, serverKeys(ctx.env.AUTH_KEY_ENCRYPTION_KEY), ctx.input.application_id, ctx.input.expires_at ?? null);
+    } catch (error: unknown) {
+      if (error instanceof ClientKeyError) {
+        const message = error.code === 'client_key_prefix_conflict' ? 'Could not allocate a unique key prefix; retry' : error.message;
+        throw new ActionError(error.code, message);
       }
+      throw error;
     }
-    throw new ActionError('client_key_prefix_conflict', 'Could not allocate a unique key prefix; retry');
   },
 );
 

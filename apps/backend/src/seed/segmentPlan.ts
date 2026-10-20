@@ -86,6 +86,10 @@ export const SEGMENT_NAMES = {
   fitOut: 'Floor 12 fit-out crew',
   weekend: 'Weekend presence',
   riversideSecurity: 'Security staff',
+  // Slice 9: the populations of the face authentication client apps (the sandbox segment is seeded with them).
+  employees: 'Employees',
+  visitors: 'Visitors',
+  sandbox: 'Sandbox test identities',
 } as const;
 
 export type SegmentSpec = {
@@ -116,8 +120,9 @@ export type SegmentRefs = { nightShiftSchedule: string; fitOutCompany: string };
 /**
  * Nova Tower: Night shift (work schedule), Frequent visitors (non-employees on site on 6+ days of 30), VIP (profile
  * type), Contractors ending soon (relative end date), Unknown frequent faces (identities), the manual Executive floor
- * access list, Parking permit holders (inactive), the Floor 12 fit-out crew (active window: the renovation) and
- * Weekend presence (schedule: Saturdays and Sundays).
+ * access list, Parking permit holders (inactive), the Floor 12 fit-out crew (active window: the renovation),
+ * Employees and Visitors (the face authentication populations, slice 9) and Weekend presence (schedule: Saturdays and
+ * Sundays).
  */
 export function novaSegments(refs: SegmentRefs, args: { now: number }): SegmentSpec[] {
   const contractorsEnding = SEGMENT_TEMPLATES.find((t) => t.name === 'Contractors ending soon');
@@ -159,6 +164,16 @@ export function novaSegments(refs: SegmentRefs, args: { now: number }): SegmentS
       icon: 'hard-hat', target: 'profiles',
       activeFrom: args.now - 20 * DAY_MS, activeUntil: args.now + 10 * DAY_MS,
       conditions: and(leaf('profile_type', 'eq', 'contractor'), leaf('company_id', 'eq', refs.fitOutCompany)),
+    }),
+    dynamic({
+      name: SEGMENT_NAMES.employees, description: 'Active employee profiles (face authentication: Lobby Kiosk, HR Portal)',
+      color: '#0369a1', icon: 'briefcase', target: 'profiles',
+      conditions: and(leaf('profile_type', 'eq', 'employee'), leaf('status', 'eq', 'active')),
+    }),
+    dynamic({
+      name: SEGMENT_NAMES.visitors, description: 'Active visitor profiles (face authentication: Visitor Check-in)',
+      color: '#9333ea', icon: 'user-round-check', target: 'profiles',
+      conditions: and(leaf('profile_type', 'eq', 'visitor'), leaf('status', 'eq', 'active')),
     }),
     dynamic({
       name: SEGMENT_NAMES.weekend, description: 'People seen in the last 24 hours, evaluated on weekends only', color: '#16a34a',

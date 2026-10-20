@@ -1,0 +1,7 @@
+function:
+  schema: itap
+  name: seed_auth_flow
+configuration:
+  custom_name: seed_auth_flow
+  exposed_as: mutation
+  session_argument: hasura_session

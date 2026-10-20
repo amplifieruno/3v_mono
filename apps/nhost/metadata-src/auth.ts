@@ -58,4 +58,12 @@ export const authFunctions: FunctionSpec[] = [
   serviceOnly('auth_second_factor', 'mutation', 'auth service after key auth (explicit organization and application)'),
   serviceOnly('auth_session_state', 'query', 'auth service after key auth (explicit organization and application)'),
   serviceOnly('expire_auth_sessions', 'mutation', 'cron expire_auth_sessions per organization'),
+  // Seed only (task 4): back-dated sessions / attempts / reviews of the 30-day history through the real functions.
+  {
+    name: 'seed_auth_flow',
+    exposedAs: 'mutation',
+    sessionArgument: 'hasura_session',
+    roles: [],
+    unscopedReturnReason: 'admin-only: seed history (pnpm seed)',
+  },
 ];

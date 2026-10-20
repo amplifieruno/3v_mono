@@ -6,6 +6,7 @@ import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
 import { expectSeededAccess } from './support/seedAccess.js';
 import { expectSeededAnalytics } from './support/seedAnalytics.js';
+import { expectSeededFaceAuth, expectSeededKeyAuthenticates } from './support/seedFaceAuth.js';
 import { expectSeededHistory } from './support/seedHistory.js';
 import { expectSeededNotifications } from './support/seedNotifications.js';
 import { expectSeededSegments } from './support/seedSegments.js';
@@ -203,6 +204,12 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
 
   it('should seed physical access: policies, grants, 30 days of engine decisions, the fire drill and terminals (slice 8)', async () => {
     await expectSeededAccess(SLUGS[0], SLUGS[1]);
+  });
+
+  it('should seed the face authentication service: apps, keys, sandbox and 30 days of decisions (slice 9)', async () => {
+    await expectSeededFaceAuth(SLUGS[0]);
+    // Last: a live request with the seeded Lobby Kiosk key (records one attempt now).
+    await expectSeededKeyAuthenticates(SLUGS[0]);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {

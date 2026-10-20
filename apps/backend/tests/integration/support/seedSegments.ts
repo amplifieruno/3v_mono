@@ -4,9 +4,11 @@ import { runSqlRows } from './sql.js';
 /** Assertions on the seeded segments (slice 6, task 4), shared by the seed test. */
 
 const NOVA_SEGMENTS = [
-  'Contractors ending soon', 'Executive floor access', 'Floor 12 fit-out crew', 'Frequent visitors',
+  // Slice 9: Employees / Visitors (face authentication populations) and the sandbox's synthetic identities.
+  'Contractors ending soon', 'Employees', 'Executive floor access', 'Floor 12 fit-out crew', 'Frequent visitors',
   // Slice 8: the manual server room list an access policy allows (written before the replay).
-  'IT and server room staff', 'Night shift', 'Parking permit holders', 'Unknown frequent faces', 'VIP', 'Weekend presence',
+  'IT and server room staff', 'Night shift', 'Parking permit holders', 'Sandbox test identities', 'Unknown frequent faces', 'VIP',
+  'Visitors', 'Weekend presence',
 ].join(',');
 
 /** Membership invariants that hold for every organization (Review Focus 1, 2). */
