@@ -6,15 +6,12 @@ import { configurationTime, localDate, zonedTime } from './historyTime.js';
 import {
   ESCALATION_POLICY,
   ESCALATION_STEPS,
-  NOTIFICATION_RULES,
   NOTIFICATION_TEMPLATES,
   ON_CALL_SCHEDULE,
-  WEBHOOK_DESCRIPTION,
-  WEBHOOK_EVENT_TYPES,
-  WEBHOOK_SINK_PATH,
   groupSpecs,
   onCallOrder,
 } from './notificationPlan.js';
+import { NOTIFICATION_RULES, WEBHOOK_DESCRIPTION, WEBHOOK_EVENT_TYPES, WEBHOOK_SINK_PATH } from './notificationRules.js';
 import type { SeedContext, SeedTenancyResult } from './tenancy.js';
 
 /**

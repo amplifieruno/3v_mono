@@ -67,7 +67,9 @@ const LOBBY: AreaNode = {
   children: [
     { name: 'Main Entrance', type: 'entrance', capacity: 80, rect: [480, 680, 240, 100] },
     { name: 'Reception', type: 'zone', capacity: 30, rect: [60, 460, 320, 220] },
-    { name: 'Turnstile Gallery', type: 'zone', capacity: 60, rect: [440, 440, 320, 200] },
+    // Floors have no camera: arrivals stay in the gallery's occupancy until their session closes (up to ~95 in the
+    // morning rush, dates vary with the run day); 120 keeps occupancy_exceeded to the planned Meeting Room 12A case.
+    { name: 'Turnstile Gallery', type: 'zone', capacity: 120, rect: [440, 440, 320, 200] },
     { name: 'Lobby Lounge', type: 'zone', capacity: 60, loitering: 1200, rect: [800, 460, 340, 240] },
     { name: 'Elevator Hall', type: 'corridor', access: 'restricted', capacity: 80, rect: [400, 80, 400, 300] },
     { name: 'Loading Dock', type: 'zone', access: 'restricted', capacity: 15, loitering: 600, rect: [880, 60, 280, 220] },

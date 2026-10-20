@@ -1,6 +1,6 @@
 import { createHasuraClient } from '../hasura/client.js';
 import { signWebhookBody } from '../webhooks/signature.js';
-import { NOTIFICATION_RULES } from './notificationPlan.js';
+import { NOTIFICATION_RULES } from './notificationRules.js';
 import type { SeedContext } from './tenancy.js';
 
 /**

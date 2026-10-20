@@ -90,7 +90,10 @@ async function expectEvents(org: string): Promise<void> {
             (select count(*) from itap.notification_deliveries d join itap.events e on e.id = d.event_id
               join itap.notification_rules r on r.id = d.rule_id
               where d.organization_id = ${org} and e.event_type like 'emergency_override_%' and r.name = 'Emergency overrides'
-                and d.created_at < now() - interval '1 day') as override_deliveries`,
+                and d.created_at < now() - interval '1 day') as override_deliveries,
+            (select count(*) from itap.notification_deliveries d join itap.events e on e.id = d.event_id
+              join itap.notification_rules r on r.id = d.rule_id
+              where d.organization_id = ${org} and e.event_type = 'tailgating' and r.name = 'Tailgating') as tailgating_deliveries`,
   );
   expect(n(row, 'tailgating')).toBeGreaterThanOrEqual(1);
   expect(n(row, 'tailgating')).toBeLessThanOrEqual(5);
@@ -99,6 +102,8 @@ async function expectEvents(org: string): Promise<void> {
   expect(n(row, 'restricted')).toBeLessThanOrEqual(12);
   expect(row).toMatchObject({ drills: '1', started: '1', ended: '1' });
   expect(n(row, 'override_deliveries')).toBeGreaterThanOrEqual(2);
+  // Tailgating reaches the security team inbox (rule "Tailgating").
+  expect(n(row, 'tailgating_deliveries')).toBeGreaterThanOrEqual(1);
 }
 
 async function expectTerminals(org: string): Promise<void> {

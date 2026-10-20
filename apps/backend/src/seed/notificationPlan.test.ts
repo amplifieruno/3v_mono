@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ESCALATION_POLICY,
   ESCALATION_STEPS,
-  NOTIFICATION_RULES,
   NOTIFICATION_TEMPLATES,
   escalationTimes,
   groupSpecs,
   historyEscalations,
 } from './notificationPlan.js';
+import { NOTIFICATION_RULES } from './notificationRules.js';
 
 const MIN = 60_000;
 // Mirrors the CHECK notification_templates_placeholders_valid: every "{{" opens a well-formed placeholder.
@@ -49,6 +49,12 @@ describe('notification seed plan', () => {
     expect(rule).toMatchObject({ group: 'Security team', digest: 'none', escalate: false });
     expect(rule?.eventTypes).toEqual(['emergency_override_started', 'emergency_override_ended']);
     expect(rule?.channels).toEqual(['in_app', 'email']);
+  });
+
+  it('should send tailgating to the security team inbox at once (slice 8 final review)', () => {
+    const rule = NOTIFICATION_RULES.find((r) => r.eventTypes.includes('tailgating'));
+    expect(rule).toMatchObject({ name: 'Tailgating', group: 'Security team', channels: ['in_app'], digest: 'none', escalate: false });
+    expect(rule?.eventTypes).toEqual(['tailgating']);
   });
 
   it('should escalate only blacklist matches: watch-list matches have their own rule without a policy', () => {
