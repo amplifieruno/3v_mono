@@ -28,7 +28,8 @@ describe('legal holds follow completed merges', () => {
     expect(await covers(idA)).toBe(true);
     expect(await covers(idC)).toBe(false);
     expect(await sqlIds(`itap.held_identity_ids('${orgA.id}', now())`)).toEqual([idA, idB].sort());
-    await runSql(`update itap.legal_holds set ends_at = now() - interval '1 second', starts_at = now() - interval '1 day' where id = '${hold}'`);
+    // End the hold (an ended hold covers nothing now).
+    await runSql(`update itap.legal_holds set ends_at = now() where id = '${hold}'`);
     expect(await covers(idA)).toBe(false);
 
     await sqlHold(orgA.id, { identity_id: idA });
@@ -46,8 +47,65 @@ describe('legal holds follow completed merges', () => {
     );
     const target = hold.targets[0].id;
     expect((await expectError(deleteByPk(a, 'legal_hold_targets', target))).message).toContain('legal_hold_active');
-    await updateByPk(a, 'legal_holds', hold.id, { starts_at: new Date(Date.now() - 86_400_000).toISOString(), ends_at: new Date(Date.now() - 1000).toISOString() });
+    // Ending "in the past" ends it now (clamped), never retroactively.
+    const before = Date.now() - 2000;
+    const ended = await updateByPk<{ ends_at: string }>(a, 'legal_holds', hold.id, { ends_at: '2020-01-01T00:00:00Z' }, 'ends_at');
+    expect(new Date(String(ended?.ends_at)).getTime()).toBeGreaterThan(before);
     await deleteByPk(a, 'legal_hold_targets', target);
+  });
+
+  it('should keep the hold timeline one-way: no moved start, no extension, no reactivation', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const profile = await createProfile(a);
+    const hold = await sqlHold(orgA.id, { profile_id: profile }, { starts: `now() - interval '1 day'`, ends: `now() + interval '10 days'` });
+    const update = (set: string): Promise<void> => runSql(`update itap.legal_holds set ${set} where id = '${hold}'`);
+    await expect(update(`starts_at = now() + interval '1 hour'`)).rejects.toThrow(/legal_hold_start_immutable/);
+    await expect(update(`ends_at = now() + interval '20 days'`)).rejects.toThrow(/legal_hold_end_extension/);
+    await expect(update(`ends_at = null`)).rejects.toThrow(/legal_hold_end_extension/);
+    await update(`ends_at = now() + interval '5 days'`);
+    await update(`name = 'Renamed'`);
+    await update(`ends_at = now()`);
+    // Ended: the dates are frozen, so the hold cannot come back (old workaround: move the period).
+    await expect(update(`ends_at = null`)).rejects.toThrow(/legal_hold_ended/);
+    await expect(update(`ends_at = now() + interval '1 day'`)).rejects.toThrow(/legal_hold_ended/);
+    await expect(update(`starts_at = now() - interval '2 days'`)).rejects.toThrow(/legal_hold_start_immutable/);
+    // A hold that has not started yet may still be rescheduled.
+    const future = await sqlHold(orgA.id, { profile_id: profile }, { starts: `now() + interval '1 day'` });
+    await runSql(`update itap.legal_holds set starts_at = now() + interval '2 days' where id = '${future}'`);
+  });
+});
+
+describe('legal hold coverage closure (fixed point)', () => {
+  /** A merged into B, B linked to P, C linked to P. */
+  async function world() {
+    const { orgA, user } = await createTwoOrgs();
+    const a = asOrgAdmin(user.id, orgA.id);
+    const profile = await createProfile(a);
+    const idA = await faceIdentity(orgA.id, [axis(70)]);
+    const idB = await faceIdentity(orgA.id, [axis(71)], { profile });
+    const idC = await faceIdentity(orgA.id, [axis(72)], { profile });
+    const idD = await faceIdentity(orgA.id, [axis(73)]);
+    await mergeInto(a, idB, [idA]);
+    const covers = (id: string): Promise<boolean> => sqlBool(`itap.legal_hold_covers_identity('${orgA.id}', '${id}', now())`);
+    return { org: orgA.id, profile, idA, idB, idC, idD, covers };
+  }
+
+  it('should reach the other identities of the profile from a held merge source', async () => {
+    const w = await world();
+    await sqlHold(w.org, { identity_id: w.idA });
+    expect(await w.covers(w.idC)).toBe(true);
+    expect(await w.covers(w.idD)).toBe(false);
+    expect(await sqlBool(`itap.legal_hold_covers_profile('${w.org}', '${w.profile}', now())`)).toBe(true);
+    expect(await sqlIds(`itap.held_identity_ids('${w.org}', now())`)).toEqual([w.idA, w.idB, w.idC].sort());
+    expect(await sqlIds(`itap.held_profile_ids('${w.org}', now())`)).toEqual([w.profile]);
+  });
+
+  it('should reach the merge source from another identity of the profile', async () => {
+    const w = await world();
+    await sqlHold(w.org, { identity_id: w.idC });
+    expect(await w.covers(w.idA)).toBe(true);
+    expect(await sqlIds(`itap.held_identity_ids('${w.org}', now())`)).toEqual([w.idA, w.idB, w.idC].sort());
   });
 });
 
