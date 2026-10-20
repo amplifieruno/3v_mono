@@ -85,6 +85,17 @@ export const crons: CronSpec[] = [
     comment: 'Daily: delete delivered/failed event trigger and cron logs older than 3 days',
   },
   {
+    // Retention (spec §8.3, slice 10): per organization itap.run_retention at scheduled_time (policies, legal holds,
+    // resumable batches with a time budget), then the storage deletion queue is drained through the storage API
+    // (apps/backend/src/retention). Daily 03:30 UTC; up to an hour late still runs; long timeout for big backlogs.
+    name: 'retention_cleanup',
+    schedule: '30 3 * * *',
+    toleranceSeconds: 3600,
+    includeInMetadata: true,
+    retry: { num_retries: 2, retry_interval_seconds: 300, timeout_seconds: 600 },
+    comment: 'Daily: apply retention policies (delete / anonymize / archive, legal holds) and drain file deletions',
+  },
+  {
     // Failed notification deliveries (stubbed channels) whose backoff passed: claimed and sent again
     // (itap.due_notification_deliveries / claim_notification_delivery; apps/backend/src/events/sending.ts).
     name: 'retry_deliveries',

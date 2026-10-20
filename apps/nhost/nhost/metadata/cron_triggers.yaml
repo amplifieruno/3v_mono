@@ -180,6 +180,20 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Resume stalled bulk jobs (expired leases, missed triggers); close search requests stuck over 10 min
+- name: retention_cleanup
+  webhook: "{{BACKEND_URL}}/hasura/events/retention_cleanup"
+  schedule: 30 3 * * *
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 2
+    retry_interval_seconds: 300
+    timeout_seconds: 600
+    tolerance_seconds: 3600
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: "Daily: apply retention policies (delete / anonymize / archive, legal holds) and drain file deletions"
 - name: retry_deliveries
   webhook: "{{BACKEND_URL}}/hasura/events/retry_deliveries"
   schedule: "* * * * *"

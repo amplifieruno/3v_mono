@@ -84,6 +84,28 @@ export const complianceTables: TableSpec[] = [
   },
   // Row type of itap.match_face_suppressed (backend only); stores nothing.
   { name: 'face_suppressions', schema: 'itap_results', profile: 'none' },
+  {
+    // Row type of the org_admin dry run itap.retention_plan; stores nothing, rows only through the function.
+    name: 'retention_plan_rows',
+    schema: 'itap_results',
+    profile: 'tenant_read',
+    extraPermissions: {
+      select_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: [
+              'action', 'candidates', 'cutoff', 'data_class', 'facility_id', 'held', 'organization_id', 'policy_id',
+              'retain_days',
+            ],
+            filter: ownOrganizationRow,
+            query_root_fields: [],
+            subscription_root_fields: [],
+          },
+        },
+      ],
+    },
+  },
 ];
 
 export const complianceFunctions: FunctionSpec[] = [
@@ -95,5 +117,13 @@ export const complianceFunctions: FunctionSpec[] = [
     sessionArgument: 'hasura_session',
     roles: [],
     unscopedReturnReason: 'admin-only: backend recognition and enrollment with the organization session',
+  },
+  // Retention (task 2): dry run for org_admin; the runner is called per organization by the retention_cleanup cron.
+  { name: 'retention_plan', exposedAs: 'query', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  {
+    name: 'run_retention',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: called per organization by the retention_cleanup cron handler',
   },
 ];

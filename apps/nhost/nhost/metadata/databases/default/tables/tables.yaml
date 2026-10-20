@@ -200,6 +200,7 @@
 - "!include itap_results_occupancy_series_rows.yaml"
 - "!include itap_results_policy_analytics_rows.yaml"
 - "!include itap_results_report_datasets.yaml"
+- "!include itap_results_retention_plan_rows.yaml"
 - "!include itap_results_search_matches.yaml"
 - "!include itap_results_segment_evaluation_contexts.yaml"
 - "!include itap_results_segment_field_rows.yaml"

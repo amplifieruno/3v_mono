@@ -28,6 +28,7 @@ select_permissions:
         - abnormal_movement_min_total
         - policy_revocation_bound_seconds
         - face_credential_cooldown_seconds
+        - consent_embedding_retention_days
         - policy_epoch
         - policy_epoch_at
         - policy_urgent_epoch
@@ -53,6 +54,7 @@ update_permissions:
         - abnormal_movement_min_total
         - policy_revocation_bound_seconds
         - face_credential_cooldown_seconds
+        - consent_embedding_retention_days
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

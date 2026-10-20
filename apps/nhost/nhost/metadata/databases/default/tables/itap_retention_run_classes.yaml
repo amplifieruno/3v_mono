@@ -52,6 +52,7 @@ select_permissions:
         - data_class
         - error
         - facility_id
+        - files_enqueued
         - id
         - organization_id
         - policy_id

@@ -1,0 +1,14 @@
+DROP FUNCTION itap.purge_audit(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_audit(itap.retention_scope);
+DROP FUNCTION itap.purge_stats(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_stats(itap.retention_scope);
+DROP FUNCTION itap.purge_terminal_syncs(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_terminal_syncs(itap.retention_scope);
+DROP FUNCTION itap.purge_access_decisions(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_access_decisions(itap.retention_scope);
+DROP FUNCTION itap.purge_reports(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_reports(itap.retention_scope);
+DROP FUNCTION itap.purge_bulk_jobs(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_bulk_jobs(itap.retention_scope);
+DROP FUNCTION itap.purge_search_history(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_search_history(itap.retention_scope);

@@ -31,6 +31,7 @@ select_permissions:
         - error
         - finished_at
         - id
+        - lease_expires_at
         - organization_id
         - scheduled_at
         - started_at

@@ -1,0 +1,24 @@
+table:
+  schema: itap_results
+  name: retention_plan_rows
+configuration:
+  custom_name: retention_plan_rows
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - candidates
+        - cutoff
+        - data_class
+        - facility_id
+        - held
+        - organization_id
+        - policy_id
+        - retain_days
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      query_root_fields: []
+      subscription_root_fields: []
+      allow_aggregations: true

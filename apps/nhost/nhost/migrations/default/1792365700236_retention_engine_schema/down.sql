@@ -1,0 +1,16 @@
+DROP TABLE itap_results.retention_plan_rows;
+DROP FUNCTION itap.tagged_files(uuid, text, uuid[]);
+DROP FUNCTION itap.enqueue_unused_files(uuid, uuid[], text);
+DROP FUNCTION itap.file_in_use(uuid, uuid);
+DROP FUNCTION itap.retention_open_hold_target(uuid, uuid, uuid);
+DROP FUNCTION itap.retention_held(itap.retention_scope, uuid, uuid, uuid);
+DROP FUNCTION itap.retention_subject(itap.retention_scope, uuid, uuid);
+DROP FUNCTION itap.retention_in_facility(itap.retention_scope, uuid);
+DROP FUNCTION itap.retention_scope(text, uuid, timestamptz, uuid, uuid, uuid, text, timestamptz);
+DROP TYPE itap.retention_scope;
+DROP INDEX itap.retention_run_classes_scope_key;
+ALTER TABLE itap.retention_run_classes DROP COLUMN files_enqueued;
+ALTER TABLE itap.retention_runs DROP COLUMN lease_expires_at;
+UPDATE itap.retention_runs SET status = 'failed', error = 'interrupted' WHERE status = 'interrupted';
+DELETE FROM itap.retention_run_statuses WHERE value = 'interrupted';
+ALTER TABLE itap.organization_settings DROP COLUMN consent_embedding_retention_days;

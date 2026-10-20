@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: run_retention
+configuration:
+  custom_name: run_retention
+  exposed_as: mutation

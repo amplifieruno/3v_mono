@@ -1,0 +1,12 @@
+DROP FUNCTION itap.purge_auth_evidence(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_auth_evidence(itap.retention_scope);
+DROP FUNCTION itap.purge_auth_attempts(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_auth_attempts(itap.retention_scope);
+DROP FUNCTION itap.purge_unknown_identities(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_unknown_identities(itap.retention_scope);
+DROP FUNCTION itap.purge_embeddings_withdrawn(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_embeddings_withdrawn(itap.retention_scope);
+DROP FUNCTION itap.purge_photos(uuid, timestamptz, uuid, uuid, uuid, integer, text);
+DROP FUNCTION itap.retention_candidates_photos(itap.retention_scope);
+DROP FUNCTION itap.delete_identity_biometrics(uuid, uuid[]);
+DROP FUNCTION itap.identity_face_files(uuid, uuid[]);

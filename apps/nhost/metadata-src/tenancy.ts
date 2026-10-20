@@ -32,6 +32,7 @@ const SETTINGS_WRITABLE = [
   'abnormal_movement_min_total',
   'policy_revocation_bound_seconds',
   'face_credential_cooldown_seconds',
+  'consent_embedding_retention_days',
 ];
 // Policy distribution state (bump_policy_epoch): readable, never writable.
 const SETTINGS_READ_ONLY = ['policy_epoch', 'policy_epoch_at', 'policy_urgent_epoch', 'policy_urgent_at'];
