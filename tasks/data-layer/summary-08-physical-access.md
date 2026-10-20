@@ -1,6 +1,6 @@
 # Slice 8 summary: Physical access (policies, grants, decisions, overrides, terminal distribution)
 
-Branch `feat/data-layer-foundation`: commits `f3d483a..HEAD` (`1ad319f` .. `07bac11` plus the Task 6 docs/gates commit). Spec: `design.md` (§6.13, §8.1-8.5, as built); plan: `plan-08-physical-access.md`. Migrations 150-180. No new backend dependencies.
+Branch `feat/data-layer-foundation`: commits `f3d483a..HEAD` (`1ad319f` .. `07bac11`, the Task 6 docs/gates commit and the final-review fix wave). Spec: `design.md` (§6.13, §8.1-8.5, as built); plan: `plan-08-physical-access.md`. Migrations 150-186. No new backend dependencies.
 
 ## What was built
 
@@ -46,22 +46,32 @@ Branch `feat/data-layer-foundation`: commits `f3d483a..HEAD` (`1ad319f` .. `07ba
 - Seed: policy approval timestamps (`submitted_at`, `approved_at`, `published_at`) are at seed time (guards forbid back-dating); `valid_from` and `created_at` are back-dated.
 
 ## Deferred minors and known limits
-- Simulation risk uses current occupancy; the 2500-sample cap has no test (fixtures too slow).
+- Risk components (occupancy, device health) are read now also for a past `at` (seed replay, simulation): past risk scores are approximate. The 2500-sample simulation cap has no test (fixtures too slow).
+- `check_access` records and so consumes a single-use grant (no dry run; use `simulate_access_policy`).
+- The blacklist-entry bump is conservative: neither the engine nor the payload reads blacklists directly.
+- Four-eyes covers the policy version, not the definition of a segment it references (segment conditions and manual members change without approval).
 - Terminal payload `profiles` is computed per terminal (cache per epoch at scale); identity-target subjects carry identity ids (edge terminals would need identity resolution); real terminals must reject payloads older than their synced epoch (the stub does).
 - A single-use grant authorizes area presence for its whole window even after consumption; it does not open the door again.
 - Tailgating buckets can rarely split one case across buckets under out-of-order evaluation (dedup by ± window event check mitigates).
 - Concerns carried from Task 1: hourly `sync_segment_members` closing rule rows and identity merges may cause frequent urgent epochs in high-churn organizations (narrowed to referenced segments).
-- Seed: Parking/Loading dock policies not enforced by design; no notification rule for tailgating/restricted events and no seeded incident from them (see pending below).
+- Seed: Parking/Loading dock policies not enforced by design; tailgating reaches the security team through the "Tailgating" rule (final review), restricted entries through "Restricted areas and after-hours presence"; no seeded incident from them.
 
-## Pending for the slice final review ("Carry -> final wave")
-1. Closed `segment_members` DELETE (retention) causes a spurious urgent bump: add `WHEN (OLD.removed_at IS NULL)`.
-2. Take the door lock at the start of `evaluate_detection` for every detection with an access point (uniform "door lock first"; removes the `face_credential`-toggle deadlock); reword the conventions lock-order text accordingly.
-3. Lazy bumps still missing: access-widening profile changes (reactivation, type/level widening), unmerge reopening memberships, area move (path change).
-4. Expiry test should assert `delta == 2`.
-5. Investigate both time-of-day failures (`segments-hourly` in the hour before UTC midnight; slice-7 `expectStatsReproducible` in the seed test) - may be a real day-boundary bug in aggregation/daily stats; fix code or tests with deterministic times.
-6. Back-date approval timestamps in the seed (submitted/approved/published before `valid_from`).
-7. Benchmark comment: archived seed policies make p95 optimistic; add a run with the seed policies active.
-8. `seed_emergency_override`: validate members; `notificationPlan.ts` is 302 lines (split); seeded notification rule for tailgating -> Security team.
+## Final review fix wave (migrations 181-186)
+All pending items of the task reviews and the eleven final-review findings are resolved (report:
+`.superpowers/sdd/plan-08-physical-access/final-fix-report.md`):
+1. `stats_presence` ignores locations after the session end (`181`); the seed's estimated locations lie inside their session (`occurred_at = last_detected_at`). The slice-7 `expectStatsReproducible` seed check passes at any time (it was a real day/hour-boundary difference: a location after `ended_at` extended presence in a range run but not hour by hour).
+2. `segments-hourly`: test times kept inside one UTC day (`refresh_segment_daily_stats` writes the days of `at - 1 h` and `at`); code unchanged.
+3. Identity links reach terminals (`183`): unlink / relink / delete of a linked identity bump urgently (merge rollback included), a new link lazily; reopened memberships bump lazily.
+4. Policy lifecycle functions (create draft, submit, approve, reject, archive) require an active, unexpired member (`182`).
+5. Lazy bumps on profile reactivation and raised access level (narrowed); area path change urgent (`183`). A type change was already urgent when it matters.
+6. Door lock first for every detection with an access point (`184`); conventions updated.
+7. `record_terminal_sync` rejects a synced result without checksum or above the current epoch (`185`).
+8. `segment_members` delete withdraws only open rows (`183`).
+9. Override expiry test asserts exactly two urgent bumps.
+10. Seed: notification rule "Tailgating" -> Security team inbox; `seed_emergency_override` requires active members (`186`); `notificationPlan.ts` split (`notificationRules.ts`). Turnstile Gallery capacity 60 -> 120: floors have no camera, so morning arrivals stay in the gallery until their session closes; on some run days the replay crossed 60 and added a second `occupancy_exceeded` (date-dependent seed flake).
+11. Docs (design §8.1, conventions): risk components read now for past times; `check_access` consumes single-use grants (no dry run, use simulation); blacklist bump is conservative; four-eyes covers the policy version, not a referenced segment's definition.
+
+Still open (accepted): back-dated approval timestamps in the seed (guards forbid back-dating; documented under Deviations) and a benchmark run with the seed policies active (the benchmark comment states its synthetic policy set).
 
 ## Carry-overs to slice 10 (retention must purge)
 - `access_decisions` (append-only log, ~6.6k seeded, grows per door passage) and their events.
@@ -69,6 +79,7 @@ Branch `feat/data-layer-foundation`: commits `f3d483a..HEAD` (`1ad319f` .. `07ba
 - `policy_urgent_epochs` (keep only epochs above the minimum synced epoch).
 - Used and expired `access_grants` (a used grant cannot be deleted by users; retention must run as the system), revoked grants.
 - Ended `emergency_overrides` with their areas.
+- Final review additions: delete order (decisions/events before grants and overrides; override areas before overrides); the override guard flag (`itap.override_context`) must be set to delete override rows; a grant DELETE bumps urgently today, so retention needs a `WHEN` (skip expired / revoked / used grants) or a system flag to avoid storms; `access_grants` reference profiles, so open grants block profile deletion (retention / DSR must delete or revoke them first); volumes to plan: `access_granted` / `access_denied` events and their deliveries, audit rows of the policy lifecycle, `terminal_policy_syncs` successes.
 
 ## Owner actions (not done by the agents)
 - Rotate ALL secrets (Hasura admin secret, JWT key, Postgres password, action secret).
@@ -98,6 +109,5 @@ RUN_SEED_TEST=1 pnpm --filter backend exec vitest run -c vitest.integration.conf
 Live demo: as org_admin call `check_access` on a turnstile for a seeded profile; start an emergency override and watch `access_decisions`; revoke a grant and read `terminal_sync_status`; run `simulate_access_policy` on the pending parking-gate version; query `policy_analytics`.
 
 ## Gate results
-- `pnpm lint` (0 errors, pre-existing warnings in packages/shared), `pnpm typecheck`, `pnpm build`: clean. `pnpm --filter nhost test` 97/97. Backend unit (`vitest run src`) 59 files / 430 tests.
-- Full integration run (once, after UTC midnight): 123 files passed, 1 skipped; 827 tests passed, 10 skipped, 0 failed. A run in the hour before UTC midnight is expected to fail `segments-hourly` (known, carried).
-- Seed test (`RUN_SEED_TEST=1`): 9/10; the failing case is the slice-7 `expectStatsReproducible` (stats re-aggregation differs from replay-time stats for a sampled day; fails identically on pre-slice-8 baseline code; known, carried as final-wave item 5). The physical-access seed case passes. `pnpm seed` on the dev DB: idempotent, 4 s, data intact.
+- Final review fix wave (2026-10-20): `pnpm lint` (0 errors, pre-existing warnings in packages/shared), `pnpm typecheck`, `pnpm build`: clean. `pnpm --filter nhost test` 97/97. Backend unit (`vitest run src`) 59 files / 431 tests. Full integration run (once): 123 files passed, 1 skipped; 835 tests passed, 10 skipped, 0 failed. Seed test (`RUN_SEED_TEST=1`): 10/10 (incl. `expectStatsReproducible`). `pnpm seed --reset` 235 s, then `pnpm seed` idempotent (4 s). Migrations 181-186: down 6 and up again applied cleanly.
+- Task 6 (before the fix wave): full integration 123 files / 827 tests passed; seed test 9/10 (the slice-7 stats check, fixed above).
