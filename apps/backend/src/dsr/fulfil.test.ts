@@ -11,7 +11,7 @@ const bundle = { schema: 'itap-dsr-access/1', files: [{ file_id: 'photo-1', path
 
 type Calls = { query: string; variables: Record<string, unknown> }[];
 
-function fakeAdmin(type: string, o: { claim?: unknown[]; step?: () => unknown; complete?: unknown[]; completeError?: string; fail?: unknown[]; owned?: string | null } = {}) {
+function fakeAdmin(type: string, o: { claim?: unknown[]; step?: () => unknown; restrict?: () => unknown; complete?: unknown[]; completeError?: string; fail?: unknown[]; owned?: string | null } = {}) {
   const calls: Calls = [];
   const request = vi.fn(async (query: string, variables: Record<string, unknown> = {}) => {
     calls.push({ query, variables });
@@ -23,6 +23,7 @@ function fakeAdmin(type: string, o: { claim?: unknown[]; step?: () => unknown; c
     if (query.includes('fail_dsr')) return { fail_dsr: o.fail ?? [{ id: ID }] };
     if (query.includes('DsrExportFile')) return { data_subject_requests_by_pk: { export_file_id: o.owned ?? null } };
     if (query.includes('claim_file_deletions')) return { claim_file_deletions: [] };
+    if (query.includes('dsr_erase_restrict')) return o.restrict ? o.restrict() : { dsr_erase_restrict: [{ id: ID, status: 'in_progress', partial: false }] };
     for (const fn of ['dsr_erase', 'dsr_restrict', 'dsr_await_rectification']) {
       if (query.includes(fn)) return o.step ? o.step() : { [fn]: [{ id: ID, status: fn === 'dsr_await_rectification' ? 'in_progress' : 'completed', partial: true }] };
     }
@@ -83,7 +84,9 @@ describe('fulfilDsr', () => {
   it('should run erasure in SQL, then drain the storage deletion queue', async () => {
     const { admin, calls } = fakeAdmin('erasure');
     expect(await fulfilDsr(ID, { admin, storage: fakeStorage() })).toEqual({ request_id: ID, status: 'completed', partial: true });
-    expect(calls.map((c) => c.query).some((q) => q.includes('dsr_erase'))).toBe(true);
+    // The restriction is its own committed step before the erasure.
+    const steps = calls.map((c) => c.query).filter((q) => q.includes('dsr_erase'));
+    expect(steps.map((q) => (q.includes('dsr_erase_restrict') ? 'restrict' : 'erase'))).toEqual(['restrict', 'erase']);
     expect(calls.map((c) => c.query).some((q) => q.includes('claim_file_deletions'))).toBe(true);
   });
 
@@ -93,6 +96,12 @@ describe('fulfilDsr', () => {
       request_id: ID,
       status: 'in_progress',
     });
+  });
+
+  it('should not erase when the restriction step finds a newer attempt', async () => {
+    const { admin, calls } = fakeAdmin('erasure', { restrict: () => ({ dsr_erase_restrict: [] }) });
+    expect(await fulfilDsr(ID, { admin, storage: fakeStorage() })).toEqual({ request_id: ID, skipped: 'superseded' });
+    expect(calls.some((c) => c.query.includes('dsr_erase(') || /dsr_erase\(args/.test(c.query))).toBe(false);
   });
 
   it('should report superseded when the fenced step or the failure record finds a newer attempt', async () => {
@@ -111,10 +120,19 @@ describe('buildExportArchive', () => {
     const archive = await buildExportArchive(bundle, missing);
     expect(archive).toMatchObject({ files: 0, missing: ['photo-1'] });
     expect(archive.data.subarray(0, 4).readUInt32LE(0)).toBe(0x04034b50);
-    const broken = fakeStorage(async () => {
+    // hasura-storage answers 500 for a row whose object is missing: retried once, then reported as missing.
+    const ghost = fakeStorage(async () => {
       throw new StorageError('File download failed (500)', 500);
     });
-    await expect(buildExportArchive(bundle, broken)).rejects.toThrow('500');
+    expect(await buildExportArchive(bundle, ghost)).toMatchObject({ files: 0, missing: ['photo-1'] });
+    expect(ghost.download).toHaveBeenCalledTimes(2);
+    const flaky = fakeStorage(async () => Buffer.from('ok'));
+    flaky.download.mockRejectedValueOnce(new StorageError('File download failed (500)', 500));
+    expect(await buildExportArchive(bundle, flaky)).toMatchObject({ files: 1, missing: [] });
+    const broken = fakeStorage(async () => {
+      throw new StorageError('File download timed out', 504);
+    });
+    await expect(buildExportArchive(bundle, broken)).rejects.toThrow('timed out');
     await expect(buildExportArchive({ files: 'nope' }, missing)).rejects.toThrow();
   });
 });

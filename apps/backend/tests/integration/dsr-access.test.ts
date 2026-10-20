@@ -50,8 +50,15 @@ describe('DSR subject bundle', () => {
     expect(len(b.entities.search_results)).toBe(2);
     expect(len(b.entities.audit)).toBeGreaterThanOrEqual(1);
     expect(b.entities.incidents).toEqual([expect.objectContaining({ role: 'subject' })]);
-    // Files: avatar, identity photo, profile document, consent document.
-    expect(b.files.map((f) => f.category).sort()).toEqual(['avatar', 'consent_document', 'document', 'photo']);
+    // Files: avatar, identity photo, documents, the detection thumbnail, auth evidence and the search images.
+    expect(b.files.map((f) => f.category).sort()).toEqual([
+      'auth_evidence', 'avatar', 'consent_document', 'document', 'photo', 'search_image', 'search_image', 'thumbnail',
+    ]);
+    // Nothing about other people: no deliveries / inbox, no other person's id (event payload keys stripped).
+    expect(b.entities).not.toHaveProperty('deliveries');
+    expect(b.entities).not.toHaveProperty('inbox');
+    expect(JSON.stringify(b)).not.toContain(w.otherIdentity);
+    expect(JSON.stringify(b)).not.toContain(w.otherProfile);
     for (const f of b.files) expect(f.path).toMatch(new RegExp(`^files/${f.category}s?/${f.file_id}`));
     expect(b.truncated).toEqual({});
     expect(b.notes).toEqual([]);
@@ -65,21 +72,20 @@ describe('DSR subject bundle', () => {
     expect(b.notes.join(' ')).toContain('events');
   });
 
-  it('should include deliveries and inbox rows when the person is a member of the organization', async () => {
+  it('should never include deliveries or inbox rows, even of a member with the same email', async () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const profile = await createProfile(a, { email: user.email.toUpperCase() });
     const subscription = await insertRow('notification_subscriptions', {
       organization_id: q(orgA.id), user_id: q(user.id), channel: q('in_app'), event_type: q('watchlist_match'),
     });
-    const delivery = await insertRow('notification_deliveries', {
+    await insertRow('notification_deliveries', {
       organization_id: q(orgA.id), subscription_id: q(subscription), recipient_user_id: q(user.id), channel: q('in_app'), status: q('delivered'),
       content: `'{"title": "Hello"}'::jsonb`, sent_at: 'now()', delivered_at: 'now()',
     });
-    await insertRow('user_notifications', { organization_id: q(orgA.id), user_id: q(user.id), delivery_id: q(delivery), title: q('Hello') });
     const b = await subjectBundle(orgA.id, profile);
-    expect(ids(b.entities.deliveries)).toEqual([delivery]);
-    expect(len(b.entities.inbox)).toBe(1);
+    expect(Object.keys(b.entities)).not.toContain('deliveries');
+    expect(Object.keys(b.entities)).not.toContain('inbox');
   });
 });
 

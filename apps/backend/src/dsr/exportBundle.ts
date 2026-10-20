@@ -14,6 +14,23 @@ const bundleSchema = z
   })
   .passthrough();
 
+/**
+ * A file deleted meanwhile (404) or a storage row whose object is gone (hasura-storage answers 500; retried once to
+ * ride out a transient error) is missing: null. Any other failure (timeouts, ...) propagates and retries the job.
+ */
+async function downloadOrMissing(storage: StorageClient, fileId: string): Promise<Buffer | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await storage.download(fileId);
+    } catch (error: unknown) {
+      if (!(error instanceof StorageError)) throw error;
+      if (error.status === 404) return null;
+      if (error.status !== 500) throw error;
+    }
+  }
+  return null;
+}
+
 export type ExportArchive = { data: Buffer; files: number; missing: string[] };
 
 export async function buildExportArchive(bundle: unknown, storage: StorageClient): Promise<ExportArchive> {
@@ -21,16 +38,9 @@ export async function buildExportArchive(bundle: unknown, storage: StorageClient
   const entries: ZipFile[] = [];
   const missing: string[] = [];
   for (const file of parsed.files) {
-    try {
-      entries.push({ name: file.path, data: await storage.download(file.file_id) });
-    } catch (error: unknown) {
-      // A file deleted meanwhile is reported in the bundle; any other storage failure retries the job.
-      if (error instanceof StorageError && error.status === 404) {
-        missing.push(file.file_id);
-        continue;
-      }
-      throw error;
-    }
+    const data = await downloadOrMissing(storage, file.file_id);
+    if (data) entries.push({ name: file.path, data });
+    else missing.push(file.file_id);
   }
   const json = Buffer.from(JSON.stringify({ ...parsed, missing_files: missing }, null, 2), 'utf8');
   return { data: zip([{ name: 'bundle.json', data: json }, ...entries]), files: entries.length, missing };

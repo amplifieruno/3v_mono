@@ -144,7 +144,7 @@ export const complianceFunctions: FunctionSpec[] = [
   { name: 'reject_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
   { name: 'complete_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
   { name: 'retry_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
-  ...['claim_dsr', 'fail_dsr', 'dsr_restrict', 'dsr_await_rectification', 'dsr_bundle', 'complete_dsr_export', 'dsr_erase',
+  ...['claim_dsr', 'fail_dsr', 'dsr_restrict', 'dsr_erase_restrict', 'dsr_await_rectification', 'dsr_bundle', 'complete_dsr_export', 'dsr_erase',
     'dsr_overdue_events'].map(
     (name): FunctionSpec => ({
       name,

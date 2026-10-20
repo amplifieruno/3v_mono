@@ -31,7 +31,14 @@ export type Subject = {
   files: string[];
 };
 
-export type ErasureWorld = DecideWorld & { subject: Subject; camera: string; otherProfile: string; otherIdentity: string };
+export type ErasureWorld = DecideWorld & {
+  subject: Subject;
+  camera: string;
+  otherProfile: string;
+  otherIdentity: string;
+  digest: string;
+  incident: string;
+};
 
 const json = (v: unknown): string => `${q(JSON.stringify(v))}::jsonb`;
 
@@ -70,7 +77,8 @@ export async function erasureWorld(): Promise<ErasureWorld> {
   const searchImage = await file('search');
   const bulkInput = await file('bulk_input', 'text/plain');
   const reportFile = await file('report', 'text/plain');
-  await runSql(`update storage.files set uploaded_by_user_id = '${w.user.id}' where id in ('${searchImage}', '${bulkInput}')`);
+  const faceQuery = await file('search');
+  await runSql(`update storage.files set uploaded_by_user_id = '${w.user.id}' where id in ('${searchImage}', '${bulkInput}', '${faceQuery}')`);
   await runSql(`update itap.profiles set avatar_file_id = '${avatar}' where id = '${profile}'`);
   await insertRow('identity_photos', { organization_id: q(org), identity_id: q(person), file_id: q(photo), kind: q('enrollment') });
   await runSql(`update itap.identities set primary_photo_file_id = '${photo}' where id = '${person}'`);
@@ -101,7 +109,7 @@ export async function erasureWorld(): Promise<ErasureWorld> {
   const event = await insertRow('events', {
     organization_id: q(org), event_type: q('watchlist_match'), severity: q('high'), facility_id: q(w.facility.id),
     identity_id: q(person), profile_id: q(profile), title: q('Watch list match'), occurred_at: `now() - interval '4 minutes'`,
-    payload: json({ matched_identity_id: person, label: full }),
+    payload: json({ matched_identity_id: person, label: full, companion_identity_id: otherIdentity }),
   });
   await insertRow('events', {
     organization_id: q(org), event_type: q('tailgating'), severity: q('high'), facility_id: q(w.facility.id), title: q('Tailgating'),
@@ -129,6 +137,19 @@ export async function erasureWorld(): Promise<ErasureWorld> {
     organization_id: q(org), subscription_id: q(subscription), event_id: q(event), recipient_user_id: q(w.user.id), channel: q('in_app'), status: q('delivered'),
     content: json({ title: 'Watch list match', body: `${full} seen at the entrance` }), sent_at: 'now()', delivered_at: 'now()',
   });
+  // A digest of another subscription summarising a delivery about the person (redacted, not deleted).
+  const digestSubscription = await insertRow('notification_subscriptions', {
+    organization_id: q(org), user_id: q(w.user.id), event_type: q('watchlist_match'), channel: q('in_app'),
+  });
+  const digest = await insertRow('notification_deliveries', {
+    organization_id: q(org), subscription_id: q(digestSubscription), recipient_user_id: q(w.user.id), channel: q('in_app'), status: q('delivered'),
+    content: json({ title: 'Daily digest', items: [{ title: 'Watch list match', body: `${full} seen` }], count: 1 }),
+    sent_at: 'now()', delivered_at: 'now()',
+  });
+  await insertRow('notification_deliveries', {
+    organization_id: q(org), subscription_id: q(digestSubscription), recipient_user_id: q(w.user.id), channel: q('in_app'),
+    status: q('digested'), digested_into: q(digest), content: json({ title: 'Watch list match' }),
+  });
   await insertRow('user_notifications', {
     organization_id: q(org), user_id: q(w.user.id), delivery_id: q(delivery), event_id: q(event), title: q('Watch list match'), body: q(`${full} seen`),
   });
@@ -152,12 +173,13 @@ export async function erasureWorld(): Promise<ErasureWorld> {
   });
   await insertRow('search_results', { organization_id: q(org), search_request_id: q(search), identity_id: q(person), profile_id: q(profile), rank: '1', match_type: q('exact') });
   const baseline = await insertRow('search_requests', {
-    organization_id: q(org), user_id: q(w.user.id), search_type: q('attribute'), status: q('running'),
+    organization_id: q(org), user_id: q(w.user.id), search_type: q('facial'), image_file_id: q(faceQuery), status: q('running'),
   });
   await insertRow('search_results', { organization_id: q(org), search_request_id: q(baseline), identity_id: q(person), rank: '1', match_type: q('partial') });
   await runSql(`update itap.search_requests set status = 'completed', results_count = 1, completed_at = now() where id in ('${search}', '${baseline}')`);
   await insertRow('saved_searches', {
-    organization_id: q(org), owner_id: q(w.user.id), name: q('Daily'), search_type: q('attribute'), last_search_request_id: q(baseline),
+    organization_id: q(org), owner_id: q(w.user.id), name: q('Face watch'), search_type: q('facial'), image_file_id: q(faceQuery),
+    last_search_request_id: q(baseline),
   });
 
   // Bulk import naming the person.
@@ -191,10 +213,10 @@ export async function erasureWorld(): Promise<ErasureWorld> {
     summary: q(`Watch ${full} at the lobby`),
   });
 
-  // An attendance report (its file lists people by name).
+  // An incident report (its timeline names the person).
   await insertRow('reports', {
-    organization_id: q(org), report_type: q('attendance'), title: q('Attendance'), format: q('csv'), status: q('completed'),
-    start_date: 'current_date', end_date: 'current_date', file_id: q(reportFile), generated_at: 'now()',
+    organization_id: q(org), report_type: q('incident'), incident_id: q(incident.id), title: q('Incident report'), format: q('csv'),
+    status: q('completed'), file_id: q(reportFile), generated_at: 'now()',
   });
 
   // An ended legal hold on the person (its target goes with the erasure).
@@ -209,54 +231,8 @@ export async function erasureWorld(): Promise<ErasureWorld> {
     camera,
     otherProfile,
     otherIdentity,
+    digest,
+    incident: incident.id,
     subject: { profile, identities: [person, merged], first, last, email, phone, employee, files },
   };
-}
-
-/** Text patterns (ILIKE) of the person: ids, names, contacts. */
-export function subjectPatterns(s: Subject, withProfileId = true): string[] {
-  return [...(withProfileId ? [s.profile] : []), ...s.identities, ...identifierPatterns(s)].map((t) => (t.startsWith('%') ? t : `%${t}%`));
-}
-
-/** Direct identifiers only: names, contacts, employee id. */
-export function identifierPatterns(s: Subject): string[] {
-  return [s.first, s.last, s.email, s.phone, s.employee].map((t) => `%${t}%`);
-}
-
-const patternArray = (patterns: string[]): string => `ARRAY[${patterns.map((p) => q(p)).join(', ')}]::text[]`;
-
-/** Rows per itap table whose whole-row text mentions any pattern (only tables with hits). */
-export async function scanTables(patterns: string[]): Promise<Record<string, number>> {
-  const rows = await runSqlRows(
-    `select t.table_name as t,
-            (xpath('/row/n/text()', query_to_xml(format('select count(*) as n from itap.%I x where x::text ilike any (%L)',
-              t.table_name, ${patternArray(patterns)}), false, true, '')))[1]::text::int as n
-     from information_schema.tables t where t.table_schema = 'itap' and t.table_type = 'BASE TABLE' order by 1`,
-  );
-  return Object.fromEntries(rows.filter((r) => Number(r.n) > 0).map((r) => [String(r.t), Number(r.n)]));
-}
-
-/** Rows of `itap.<table>` mentioning a pattern, as JSON objects. */
-export async function matchingRows(table: string, patterns: string[]): Promise<Record<string, unknown>[]> {
-  const rows = await runSqlRows(`select to_jsonb(x)::text as j from itap.${table} x where x::text ilike any (${patternArray(patterns)})`);
-  return rows.map((r) => JSON.parse(String(r.j)) as Record<string, unknown>);
-}
-
-/** Hasura event log rows (any state) mentioning a pattern. */
-export async function eventLogHits(patterns: string[], deliveredOnly = false): Promise<number> {
-  const [r] = await runSqlRows(
-    `select count(*) as n from hdb_catalog.event_log e where e.payload::text ilike any (${patternArray(patterns)})
-       ${deliveredOnly ? 'and (e.delivered or e.error or e.archived)' : ''}`,
-  );
-  return Number(r.n);
-}
-
-/** Storage rows of the bucket mentioning a pattern (name / metadata), plus the given files still present. */
-export async function storageHits(org: string, patterns: string[], files: string[]): Promise<number> {
-  const ids = files.length > 0 ? `or f.id in (${files.map((f) => q(f)).join(', ')})` : '';
-  const [r] = await runSqlRows(
-    `select count(*) as n from storage.files f where (f.bucket_id = '${org}' and (f.name ilike any (${patternArray(patterns)})
-       or f.metadata::text ilike any (${patternArray(patterns)}))) ${ids}`,
-  );
-  return Number(r.n);
 }

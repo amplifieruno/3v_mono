@@ -7,7 +7,8 @@ import { buildExportArchive } from './exportBundle.js';
 /**
  * The fulfil_dsr job (spec §8.4, slice 10 task 3): claim the request (lease, attempt + 1), then by type —
  * access / portability: bundle (SQL) -> zip with the files -> upload (kind dsr_export, sensitive) -> complete;
- * erasure: itap.dsr_erase in one transaction, then the storage deletion queue is drained;
+ * erasure: itap.dsr_erase_restrict (committed), then itap.dsr_erase in one transaction, then the storage deletion
+ * queue is drained;
  * restriction: itap.dsr_restrict; rectification: itap.dsr_await_rectification (org_admin applies and closes it).
  * Every SQL writer takes the attempt (a stale attempt is a no-op). A failure records the error with a backoff lease
  * (fail_dsr; the dsr_maintenance cron reclaims it) and deletes this attempt's upload; when even that cannot be
@@ -104,11 +105,17 @@ async function runExport(r: Claimed, deps: DsrDeps, uploaded: (id: string) => vo
   return done[0];
 }
 
+async function callStep(fn: string, r: Claimed, deps: DsrDeps): Promise<Row | null> {
+  const data = await deps.admin.request<Record<string, Row[]>>(STEP(fn), { id: r.id, attempt: r.attempts });
+  return data[fn]?.[0] ?? null;
+}
+
 async function runStep(r: Claimed, deps: DsrDeps): Promise<Row | null> {
   const fn = STEP_FUNCTIONS[r.request_type];
   if (!fn) throw new Error(`Unsupported request type: ${r.request_type}`);
-  const data = await deps.admin.request<Record<string, Row[]>>(STEP(fn), { id: r.id, attempt: r.attempts });
-  const row = data[fn]?.[0] ?? null;
+  // Erasure: the restriction is committed first (processing stops even if the erasure itself fails and retries).
+  if (r.request_type === 'erasure' && !(await callStep('dsr_erase_restrict', r, deps))) return null;
+  const row = await callStep(fn, r, deps);
   // Erasure queued the person's files: delete them through the storage API now (the 10-minute cron is the net).
   if (row && r.request_type === 'erasure') {
     await drainFileDeletions(deps.admin, deps.storage, (deps.now ?? (() => new Date()))()).catch(() => undefined);

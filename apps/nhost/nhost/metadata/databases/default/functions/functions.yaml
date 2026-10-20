@@ -43,6 +43,7 @@
 - "!include itap_dsr_await_rectification.yaml"
 - "!include itap_dsr_bundle.yaml"
 - "!include itap_dsr_erase.yaml"
+- "!include itap_dsr_erase_restrict.yaml"
 - "!include itap_dsr_overdue_events.yaml"
 - "!include itap_dsr_restrict.yaml"
 - "!include itap_due_bulk_jobs.yaml"
