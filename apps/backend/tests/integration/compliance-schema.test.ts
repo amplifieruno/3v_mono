@@ -68,7 +68,7 @@ describe('data_subject_requests', () => {
     const dsr = await insertOne<Record<string, unknown>>(
       a,
       'data_subject_requests',
-      { profile_id: profile, request_type: 'access', received_at: '2026-10-01T10:00:00Z', notes: 'By email' },
+      { profile_id: profile, request_type: 'rectification', received_at: '2026-10-01T10:00:00Z', notes: 'By email' },
       'id code status received_at due_at completed_at requested_by attempts',
     );
     expect(dsr).toMatchObject({ status: 'received', requested_by: user.id, attempts: 0, completed_at: null });
@@ -81,7 +81,7 @@ describe('data_subject_requests', () => {
     // Explicit due_at within the extension limit; beyond it refused.
     const extended = await insertOne<{ due_at: string }>(
       a, 'data_subject_requests',
-      { profile_id: profile, request_type: 'erasure', received_at: '2026-10-01T00:00:00Z', due_at: '2026-12-01T00:00:00Z' }, 'due_at',
+      { profile_id: profile, request_type: 'rectification', received_at: '2026-10-01T00:00:00Z', due_at: '2026-12-01T00:00:00Z' }, 'due_at',
     );
     expect(new Date(extended.due_at).toISOString()).toBe('2026-12-01T00:00:00.000Z');
     expect((await expectError(insertOne(a, 'data_subject_requests', { profile_id: profile, request_type: 'erasure', received_at: '2026-10-01T00:00:00Z', due_at: '2027-02-01T00:00:00Z' }))).message).toMatch(

@@ -1,0 +1,13 @@
+DROP FUNCTION itap.dsr_overdue_events(timestamptz);
+DROP FUNCTION itap.retry_dsr(json, uuid);
+DROP FUNCTION itap.complete_dsr(json, uuid, text);
+DROP FUNCTION itap.reject_dsr(json, uuid, text);
+DROP FUNCTION itap.dsr_session_request(json, uuid);
+DROP FUNCTION itap.dsr_await_rectification(uuid, integer);
+DROP FUNCTION itap.dsr_restrict(uuid, integer);
+DROP FUNCTION itap.due_dsrs(timestamptz, integer);
+DROP FUNCTION itap.fail_dsr(uuid, integer, text);
+DROP FUNCTION itap.claim_dsr(uuid);
+DROP FUNCTION itap.dsr_fenced(uuid, integer, text[]);
+DROP FUNCTION itap.dsr_step(itap.data_subject_requests, text, jsonb);
+DROP FUNCTION itap.dsr_max_attempts();

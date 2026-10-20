@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: dsr_bundle
+configuration:
+  custom_name: dsr_bundle
+  exposed_as: mutation

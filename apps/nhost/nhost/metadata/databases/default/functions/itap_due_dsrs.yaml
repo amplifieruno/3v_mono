@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_dsrs
+configuration:
+  custom_name: due_dsrs
+  exposed_as: query

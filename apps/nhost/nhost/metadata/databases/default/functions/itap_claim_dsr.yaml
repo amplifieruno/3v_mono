@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: claim_dsr
+configuration:
+  custom_name: claim_dsr
+  exposed_as: mutation

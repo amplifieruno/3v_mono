@@ -14,12 +14,13 @@ export const profileTables: TableSpec[] = [
     // Lifecycle by status (spec §6.0): inactive/terminated, not deleted (consent evidence and documents stay;
     // erasure: DSR flow, slice 10). source_integration_id: set by the integration sync (slice 10 task 4).
     // Restriction columns: only through set_processing_restriction / the DSR job (trigger profiles_restriction_guard).
+    // erased_at: DSR erasure tombstone (frozen by profiles_erased_guard).
     name: 'profiles',
     profile: 'tenant_crud',
     noDelete: true,
     readOnlyColumns: [
       'number', 'identities_count', 'source_integration_id', 'processing_restricted', 'restricted_at', 'restricted_by',
-      'restriction_reason',
+      'restriction_reason', 'erased_at',
     ],
     computedFields: [
       { name: 'has_face', function: 'profile_has_face' },

@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: complete_dsr
+configuration:
+  custom_name: complete_dsr
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

@@ -52,6 +52,7 @@ insert_permissions:
   - role: org_admin
     permission:
       columns:
+        - details
         - due_at
         - notes
         - profile_id
@@ -71,6 +72,7 @@ select_permissions:
         - code
         - completed_at
         - created_at
+        - details
         - due_at
         - export_file_id
         - id
@@ -79,6 +81,9 @@ select_permissions:
         - notes
         - number
         - organization_id
+        - outcome
+        - overdue_notified_at
+        - partial
         - profile_id
         - received_at
         - rejection_reason
@@ -98,3 +103,20 @@ update_permissions:
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
+event_triggers:
+  - name: fulfil_dsr
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+      update:
+        columns:
+          - attempts_at_retry
+    retry_conf:
+      num_retries: 3
+      interval_sec: 60
+      timeout_sec: 300
+    webhook: "{{BACKEND_URL}}/hasura/events/fulfil_dsr"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

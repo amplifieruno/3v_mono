@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: complete_dsr_export
+configuration:
+  custom_name: complete_dsr_export
+  exposed_as: mutation

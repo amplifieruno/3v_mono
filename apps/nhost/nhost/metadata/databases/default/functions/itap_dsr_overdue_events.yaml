@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: dsr_overdue_events
+configuration:
+  custom_name: dsr_overdue_events
+  exposed_as: mutation

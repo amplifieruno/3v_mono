@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: dsr_erase
+configuration:
+  custom_name: dsr_erase
+  exposed_as: mutation

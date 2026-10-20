@@ -106,6 +106,17 @@ export const crons: CronSpec[] = [
     comment: 'Delete queued storage files (retention / erasure) through the storage API',
   },
   {
+    // Data subject requests (slice 10 task 3): requests the fulfil_dsr trigger left received for over a minute or
+    // whose job lease expired are claimed and run again (itap.due_dsrs), then one dsr_overdue event per open request
+    // past its due date (itap.dsr_overdue_events; apps/backend/src/dsr/cron.ts).
+    name: 'dsr_maintenance',
+    schedule: '*/10 * * * *',
+    toleranceSeconds: 1200,
+    includeInMetadata: true,
+    retry: { num_retries: 2, retry_interval_seconds: 60, timeout_seconds: 600 },
+    comment: 'Resume stalled data subject requests and emit dsr_overdue events',
+  },
+  {
     // Failed notification deliveries (stubbed channels) whose backoff passed: claimed and sent again
     // (itap.due_notification_deliveries / claim_notification_delivery; apps/backend/src/events/sending.ts).
     name: 'retry_deliveries',

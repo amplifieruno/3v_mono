@@ -3,6 +3,7 @@ import type { Env } from '../config/env.js';
 import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { resumeBulkJobs, runBulkJobTrigger } from '../bulk/handlers.js';
+import { dsrMaintenance, fulfilDsrTrigger } from '../dsr/handlers.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { retentionCleanup } from '../retention/cron.js';
 import { drainFileDeletionsCron } from '../retention/fileQueue.js';
@@ -65,6 +66,8 @@ export const defaultEventHandlers: EventHandlers = {
   expire_auth_sessions: expireAuthSessions,
   retention_cleanup: retentionCleanup,
   drain_file_deletions: drainFileDeletionsCron,
+  fulfil_dsr: fulfilDsrTrigger,
+  dsr_maintenance: dsrMaintenance,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

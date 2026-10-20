@@ -34,17 +34,29 @@ export const complianceTables: TableSpec[] = [
     insertOnlyColumns: ['hold_id', 'identity_id', 'profile_id', 'incident_id', 'facility_id'],
   },
   {
-    // org_admin files the request (requested_by stamped from the session) and edits notes; the fulfil_dsr job
-    // (task 3) owns status, completion, the export bundle and the lease columns. Records of compliance: no delete.
+    // org_admin files the request (requested_by stamped from the session; details = the requested changes of a
+    // rectification) and edits notes; the fulfil_dsr job owns status, completion, partial, the export bundle, the SLA
+    // mark and the lease columns; reject_dsr / complete_dsr / retry_dsr close or requeue. Records of compliance: no
+    // delete.
     name: 'data_subject_requests',
     profile: 'tenant_crud',
     noDelete: true,
     readOnlyColumns: [
       'number', 'status', 'completed_at', 'export_file_id', 'rejection_reason', 'requested_by', 'attempts',
-      'attempts_at_retry', 'lease_expires_at', 'last_error',
+      'attempts_at_retry', 'lease_expires_at', 'last_error', 'partial', 'outcome', 'overdue_notified_at',
     ],
-    insertOnlyColumns: ['profile_id', 'request_type', 'received_at', 'due_at'],
+    insertOnlyColumns: ['profile_id', 'request_type', 'received_at', 'due_at', 'details'],
     relationshipNames: { dsr_steps_request_fkey: 'steps' },
+    eventTriggers: [
+      {
+        // Insert, and requeue by retry_dsr (attempts_at_retry); the handler claims with a lease, so redeliveries are
+        // no-ops; the dsr_maintenance cron reclaims expired leases.
+        name: 'fulfil_dsr',
+        operations: ['insert', 'update'],
+        columns: ['attempts_at_retry'],
+        retry: { num_retries: 3, retry_interval_seconds: 60, timeout_seconds: 300 },
+      },
+    ],
   },
   // Step log written by the DSR job.
   { name: 'dsr_steps', profile: 'tenant_read' },
@@ -82,6 +94,8 @@ export const complianceTables: TableSpec[] = [
       update_permissions: [{ role: ORG_ADMIN, permission: { columns: INTEGRATION_WRITABLE, filter: ownOrganizationRow } }],
     },
   },
+  // Row type of itap.dsr_bundle (backend only); stores nothing.
+  { name: 'dsr_bundles', schema: 'itap_results', profile: 'none' },
   // Row type of itap.match_face_suppressed (backend only); stores nothing.
   { name: 'face_suppressions', schema: 'itap_results', profile: 'none' },
   {
@@ -125,6 +139,25 @@ export const complianceFunctions: FunctionSpec[] = [
     exposedAs: 'mutation',
     roles: [],
     unscopedReturnReason: 'admin-only: called per organization by the retention_cleanup cron handler',
+  },
+  // DSR (task 3): org_admin closes / requeues requests; the fulfil_dsr job functions are admin-only.
+  { name: 'reject_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  { name: 'complete_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  { name: 'retry_dsr', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  ...['claim_dsr', 'fail_dsr', 'dsr_restrict', 'dsr_await_rectification', 'dsr_bundle', 'complete_dsr_export', 'dsr_erase',
+    'dsr_overdue_events'].map(
+    (name): FunctionSpec => ({
+      name,
+      exposedAs: 'mutation',
+      roles: [],
+      unscopedReturnReason: 'admin-only: the fulfil_dsr job and the dsr_maintenance cron',
+    }),
+  ),
+  {
+    name: 'due_dsrs',
+    exposedAs: 'query',
+    roles: [],
+    unscopedReturnReason: 'admin-only: the dsr_maintenance cron across organizations',
   },
   {
     name: 'claim_file_deletions',

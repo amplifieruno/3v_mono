@@ -316,6 +316,7 @@ select_permissions:
         - email
         - employee_id
         - end_date
+        - erased_at
         - external_id
         - first_name
         - id

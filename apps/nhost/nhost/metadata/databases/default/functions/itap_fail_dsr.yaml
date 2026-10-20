@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: fail_dsr
+configuration:
+  custom_name: fail_dsr
+  exposed_as: mutation

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: dsr_await_rectification
+configuration:
+  custom_name: dsr_await_rectification
+  exposed_as: mutation
