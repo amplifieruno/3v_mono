@@ -13,8 +13,10 @@ Spec: `tasks/data-layer/design.md`. One implementation plan per slice, written w
 | 7 | Analytics stats, reports, search, bulk jobs, dashboards | §6.10, §6.11 | `plan-07-analytics.md` (done; `summary-07-analytics.md`) |
 | 8 | Physical access: policies (versioned), grants, decisions, overrides | §6.13 | `plan-08-physical-access.md` (done; `summary-08-physical-access.md`) |
 | 9 | Face authentication service (SA_6) | §6.16 | `plan-09-face-auth.md` (done; `summary-09-face-auth.md`; integrator doc `face-auth-api.md`) |
-| 10 | Compliance, retention, DSR, integrations, exports, prod cutover | §6.14, §6.15, §10 | — |
+| 10 | Compliance, retention, DSR, integrations, exports, prod cutover | §6.14, §6.15, §10 | `plan-10-compliance.md` (done; `summary-10-compliance.md`; runbook `prod-cutover.md`) |
 
 Ruling (2026-10-19): live camera recognition moves from slice 2 to slice 4 — it writes `detections` (slice 4) for `devices` (slice 3); between slices 2 and 4 the legacy recognition manager is disabled (it targets dropped tables anyway).
 
 The seed grows with every slice (each slice adds its part of the office-center scenario).
+
+All ten slices are done; the overview across slices, owner actions and known limits are in `summary.md`. Production is untouched until the owner runs `prod-cutover.md`.

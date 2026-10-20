@@ -166,6 +166,31 @@ paths:
 
 ## Compliance (slice 10)
 
+Checklist for new work. The details are in the bullets below.
+
+- **New table holding person data, files or log rows:**
+  1. Decide its retention class and add it to the class helpers (`retention_class_has_facility`, `retention_action_allowed`, `retention_min_days`, `retention_class_order`) or to the purge of an existing class.
+  2. Write one `itap.retention_candidates_<class>(itap.retention_scope)` and one `itap.purge_<class>(org, cutoff, facility, subject_profile, subject_identity, limit, action) -> (affected, skipped_by_hold, files_enqueued)`. It does one batch, `affected = 0` means drained, and it is admin-only.
+  3. Add every file column to `itap.file_in_use`.
+  4. Cover the table in DSR erasure (`dsr_erase`) and in the erasure scan test (`dsr-erasure.test.ts`).
+  5. If it is append-only, put `itap.guard_append_only` on it.
+- **Guard bypass:**
+  - Retention and erasure bypass guards **only** under the transaction-local `itap.retention_context`, set by `itap.retention_begin()` / `itap.retention_end(prev)`. Never bypass in metadata or the backend.
+  - Restriction changes only under `itap.restriction_context` (`apply_processing_restriction`).
+- **Legal-hold coverage:** test it only through `itap.legal_hold_covers_identity|profile|incident|facility` and `itap.held_identity_ids` / `itap.held_profile_ids`. These follow the person graph and merges (`itap.legal_hold_subjects`). Never compare target ids directly.
+- **File deletion:** SQL never deletes `storage.files` rows.
+  - Queue the file with `itap.enqueue_file_deletion` / `itap.enqueue_unused_files` into `pending_file_deletions`.
+  - The backend drains the queue through the storage API with `itap.claim_file_deletions`: after retention runs, every 10 min (`drain_file_deletions`), and after a DSR erasure.
+- **Background jobs** (DSR, exports, integration syncs, reports, bulk) use lease / attempt fencing:
+  - a claim function (SKIP LOCKED, lease, attempts + 1, max attempts);
+  - every writer takes the attempt (`itap.dsr_fenced` for DSRs);
+  - a failure sets a backoff lease;
+  - a cron reclaims expired leases;
+  - where the job has a retry column (`attempts_at_retry`), the event trigger also fires on it, so a requeue is picked up.
+- **New automated matching or population paths** must exclude `processing_restricted` profiles and apply `itap.match_face_suppressed`.
+- **HR-style sync:** must skip restricted profiles and keys present in `integration_suppressions` (`itap.integration_suppression_key`). Never store an erased person's identifier.
+- **Incremental exports:** use the keyset cursor `(watermark, watermark_id)`, with the same "after cursor" predicate for paging and for the start. The cursor moves only in `complete_export_job`, and only from the job's own cursor. Rows committed late behind the cursor are a documented limit.
+
 - Retention data classes (`retention_data_classes`, organization data only — Hasura's trigger logs stay with the platform cron `purge_trigger_logs`) are described by IMMUTABLE helpers that must list every enum value: `itap.retention_class_has_facility(class)` (facility-specific policies allowed: detections, locations, sessions, events, incidents, access_decisions, terminal_syncs, stats), `itap.retention_action_allowed(class, action)` (delete: every class; anonymize: detections, sessions, events, incidents, access_decisions, auth_attempts, unknown_identities, audit; archive = keep the row, remove files / derived children: reports, bulk_jobs) and `itap.retention_min_days(class)` (365 for audit and auth_attempts, else 1). A new class needs the helpers updated (test `compliance-schema`). One active policy per (organization, class, facility) (`NULLS NOT DISTINCT`).
 - Legal holds: active in `[starts_at, ends_at)`; targets exactly one of identity / profile / incident / facility (NO ACTION); targets of an active hold cannot be deleted (`legal_hold_active`; retention removes targets of ended holds). Timeline is one-way (`legal_holds_timeline`): once started, starts_at is frozen; ends_at may be set (a past time means now) or shortened, never extended or cleared; an ended hold is frozen (`legal_hold_start_immutable` / `legal_hold_end_extension` / `legal_hold_ended`). Coverage only through `itap.legal_hold_covers_identity|profile|incident|facility(org, id, at)` and `itap.held_profile_ids(org, at)` / `itap.held_identity_ids(org, at)` (STABLE), all built on `itap.legal_hold_subjects(org, identities, profiles)`: the fixed point of identity -> profile, profile -> identities and completed merges both ways (seed-driven recursive CTE).
 - Restriction of processing: `profiles.processing_restricted` (+ `restricted_at/by`, `restriction_reason`) changes only through `itap.apply_processing_restriction(org, profile, restricted, reason, actor)` (flag `itap.restriction_context`, saved and restored; audit rows `restrict` / `unrestrict` with the reason), wrapped by `set_processing_restriction(hasura_session, ...)` (org_admin) and the DSR job. Restricting also closes the person's open manual segment memberships (rule rows close through evaluation) and open tracking sessions; lock order: the identities' tracking advisory locks -> profile row -> identities KEY SHARE -> segments (id order) -> member rows -> sessions. Guards (all writers, bypass only under the restriction context): `profiles_restriction_guard`, `identities_restricted_link` (no link / unlink), `identity_biometrics_insert_guard` (`profile_processing_restricted` on embeddings / photos), `segment_members_restricted` and `detections_restricted` (`subject_restricted`). Excluded from `match_face`, `auth_population_eval`, `search_candidates`, dynamic segments (translator + `sync_segment_members`) and activity stats. Faces of restricted or consent-withdrawn people: `itap.match_face_suppressed(hasura_session, embedding, threshold)` (backend only; same distance threshold as `match_face`) — recognition drops the face when a suppressed identity is at least as similar as the best match (no detection, no new identity, `faces_suppressed` in `recognition_status`), enrollment refuses with `subject_restricted` (backend maps the SQL guards to it). Any new automated matching / population path must apply both.
