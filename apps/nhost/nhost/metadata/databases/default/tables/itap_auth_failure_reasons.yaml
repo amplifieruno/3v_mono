@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: auth_failure_reasons
+is_enum: true
+configuration:
+  custom_name: auth_failure_reasons

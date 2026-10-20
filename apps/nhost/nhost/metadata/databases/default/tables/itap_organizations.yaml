@@ -125,6 +125,30 @@ array_relationships:
           name: areas
         column_mapping:
           id: organization_id
+  - name: auth_sequence_digests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: auth_sequence_digests
+        column_mapping:
+          id: organization_id
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          id: organization_id
+  - name: authentication_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_sessions
+        column_mapping:
+          id: organization_id
   - name: bulk_job_rows
     using:
       manual_configuration:
@@ -139,6 +163,62 @@ array_relationships:
         remote_table:
           schema: itap
           name: bulk_jobs
+        column_mapping:
+          id: organization_id
+  - name: client_application_access_points
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_access_points
+        column_mapping:
+          id: organization_id
+  - name: client_application_attributes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_attributes
+        column_mapping:
+          id: organization_id
+  - name: client_application_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_facilities
+        column_mapping:
+          id: organization_id
+  - name: client_application_keys
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_keys
+        column_mapping:
+          id: organization_id
+  - name: client_application_modes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_modes
+        column_mapping:
+          id: organization_id
+  - name: client_application_segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_segments
+        column_mapping:
+          id: organization_id
+  - name: client_applications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_applications
         column_mapping:
           id: organization_id
   - name: companies
@@ -323,6 +403,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: identity_activity_stats
+        column_mapping:
+          id: organization_id
+  - name: identity_centroids
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identity_centroids
         column_mapping:
           id: organization_id
   - name: identity_duplicate_candidates

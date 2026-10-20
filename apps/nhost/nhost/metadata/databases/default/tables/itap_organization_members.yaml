@@ -102,6 +102,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: submitted_by
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          user_id: reviewed_by
   - name: bulk_job_rows
     using:
       manual_configuration:
@@ -120,6 +129,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: owner_id
+  - name: client_application_keys_by_created_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_keys
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: client_application_keys_by_revoked_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_keys
+        column_mapping:
+          organization_id: organization_id
+          user_id: revoked_by
+  - name: client_applications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_applications
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
   - name: dashboards
     using:
       manual_configuration:

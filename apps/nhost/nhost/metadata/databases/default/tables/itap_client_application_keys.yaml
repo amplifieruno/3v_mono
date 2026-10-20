@@ -1,0 +1,70 @@
+table:
+  schema: itap
+  name: client_application_keys
+configuration:
+  custom_name: client_application_keys
+object_relationships:
+  - name: application
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_applications
+        column_mapping:
+          organization_id: organization_id
+          application_id: id
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: revoked_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          revoked_by: user_id
+array_relationships:
+  - name: authentication_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_sessions
+        column_mapping:
+          organization_id: organization_id
+          id: key_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - application_id
+        - created_at
+        - created_by
+        - expires_at
+        - id
+        - key_prefix
+        - last_used_at
+        - organization_id
+        - revoked_at
+        - revoked_by
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

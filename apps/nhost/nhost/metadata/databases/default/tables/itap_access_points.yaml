@@ -80,6 +80,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: access_point_id
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          id: access_point_id
+  - name: authentication_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_sessions
+        column_mapping:
+          organization_id: organization_id
+          id: access_point_id
+  - name: client_application_access_points
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_access_points
+        column_mapping:
+          organization_id: organization_id
+          id: access_point_id
   - name: detections
     using:
       manual_configuration:

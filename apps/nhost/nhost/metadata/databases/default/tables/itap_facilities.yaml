@@ -76,6 +76,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: client_application_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_facilities
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: detections
     using:
       manual_configuration:

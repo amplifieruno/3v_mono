@@ -1,0 +1,23 @@
+table:
+  schema: itap
+  name: identity_centroids
+configuration:
+  custom_name: identity_centroids
+object_relationships:
+  - name: identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          identity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id

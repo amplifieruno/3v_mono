@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: auth_attack_outcomes
+is_enum: true
+configuration:
+  custom_name: auth_attack_outcomes

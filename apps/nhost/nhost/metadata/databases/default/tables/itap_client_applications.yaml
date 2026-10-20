@@ -1,0 +1,163 @@
+table:
+  schema: itap
+  name: client_applications
+configuration:
+  custom_name: client_applications
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: authentication_sessions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_sessions
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_access_points
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_access_points
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_attributes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_attributes
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_facilities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_facilities
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_keys
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_keys
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_modes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_modes
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+  - name: client_application_segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_segments
+        column_mapping:
+          organization_id: organization_id
+          id: application_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - is_sandbox
+        - liveness_required
+        - name
+        - platform
+        - status
+        - threshold
+        - threshold_max
+        - threshold_min
+        - use_work_schedules
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - code
+        - created_at
+        - created_by
+        - description
+        - id
+        - is_sandbox
+        - liveness_required
+        - name
+        - number
+        - organization_id
+        - platform
+        - status
+        - threshold
+        - threshold_max
+        - threshold_min
+        - updated_at
+        - use_work_schedules
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - liveness_required
+        - name
+        - platform
+        - status
+        - threshold
+        - threshold_max
+        - threshold_min
+        - use_work_schedules
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

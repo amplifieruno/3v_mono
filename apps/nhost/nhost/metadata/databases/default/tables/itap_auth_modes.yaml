@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: auth_modes
+is_enum: true
+configuration:
+  custom_name: auth_modes

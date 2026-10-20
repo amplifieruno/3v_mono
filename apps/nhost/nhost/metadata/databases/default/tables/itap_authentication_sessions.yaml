@@ -1,0 +1,86 @@
+table:
+  schema: itap
+  name: authentication_sessions
+configuration:
+  custom_name: authentication_sessions
+object_relationships:
+  - name: access_point
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: access_points
+        column_mapping:
+          organization_id: organization_id
+          access_point_id: id
+  - name: application
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_applications
+        column_mapping:
+          organization_id: organization_id
+          application_id: id
+  - name: claimed_identity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: identities
+        column_mapping:
+          organization_id: organization_id
+          claimed_identity_id: id
+  - name: key
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_keys
+        column_mapping:
+          organization_id: organization_id
+          key_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          id: session_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - access_point_id
+        - application_id
+        - claimed_identity_id
+        - closed_at
+        - created_at
+        - created_ip
+        - device_ref
+        - expires_at
+        - id
+        - key_id
+        - mode
+        - organization_id
+        - recapture_count
+        - status
+        - step
+        - step_count
+        - updated_at
+        - user_agent
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

@@ -75,6 +75,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: authentication_attempts
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: bulk_job_rows
     using:
       manual_configuration:

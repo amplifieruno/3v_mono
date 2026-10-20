@@ -1,0 +1,10 @@
+DROP TABLE itap.auth_session_statuses;
+DROP TABLE itap.auth_attack_outcomes;
+DROP TABLE itap.auth_failure_reasons;
+DROP TABLE itap.auth_review_statuses;
+DROP TABLE itap.auth_outcomes;
+DROP TABLE itap.auth_steps;
+DROP TABLE itap.auth_attributes;
+DROP TABLE itap.auth_modes;
+DROP TABLE itap.client_application_statuses;
+DROP TABLE itap.client_application_platforms;

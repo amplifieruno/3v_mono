@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: revoke_client_key
+configuration:
+  custom_name: revoke_client_key
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

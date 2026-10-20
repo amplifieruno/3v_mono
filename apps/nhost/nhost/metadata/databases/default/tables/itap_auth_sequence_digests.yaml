@@ -1,0 +1,23 @@
+table:
+  schema: itap
+  name: auth_sequence_digests
+configuration:
+  custom_name: auth_sequence_digests
+object_relationships:
+  - name: attempt
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: authentication_attempts
+        column_mapping:
+          organization_id: organization_id
+          attempt_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id

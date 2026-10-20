@@ -32,6 +32,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: segment_id
+  - name: client_application_segments
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: client_application_segments
+        column_mapping:
+          organization_id: organization_id
+          id: segment_id
   - name: event_rule_version_scopes
     using:
       manual_configuration:

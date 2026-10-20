@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: client_application_statuses
+is_enum: true
+configuration:
+  custom_name: client_application_statuses
