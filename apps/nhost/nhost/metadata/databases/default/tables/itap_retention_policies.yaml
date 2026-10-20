@@ -1,0 +1,105 @@
+table:
+  schema: itap
+  name: retention_policies
+configuration:
+  custom_name: retention_policies
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: processing_activities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activities
+        column_mapping:
+          organization_id: organization_id
+          id: retention_policy_id
+  - name: retention_run_classes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_run_classes
+        column_mapping:
+          organization_id: organization_id
+          id: policy_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - data_class
+        - description
+        - facility_id
+        - is_active
+        - retain_days
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - created_at
+        - created_by
+        - data_class
+        - description
+        - facility_id
+        - id
+        - is_active
+        - organization_id
+        - retain_days
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - data_class
+        - description
+        - facility_id
+        - is_active
+        - retain_days
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

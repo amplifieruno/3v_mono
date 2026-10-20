@@ -113,6 +113,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: incident_id
+  - name: legal_hold_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          organization_id: organization_id
+          id: incident_id
   - name: notification_deliveries
     using:
       manual_configuration:

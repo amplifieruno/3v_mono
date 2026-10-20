@@ -1,0 +1,61 @@
+table:
+  schema: itap
+  name: processing_activity_data_classes
+configuration:
+  custom_name: processing_activity_data_classes
+object_relationships:
+  - name: activity
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activities
+        column_mapping:
+          organization_id: organization_id
+          activity_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - activity_id
+        - data_class
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - activity_id
+        - created_at
+        - data_class
+        - id
+        - organization_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns: []
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

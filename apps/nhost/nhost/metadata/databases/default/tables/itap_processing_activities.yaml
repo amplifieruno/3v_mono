@@ -1,0 +1,124 @@
+table:
+  schema: itap
+  name: processing_activities
+configuration:
+  custom_name: processing_activities
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: dpia_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          dpia_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          owner_id: user_id
+  - name: retention_policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_policies
+        column_mapping:
+          organization_id: organization_id
+          retention_policy_id: id
+array_relationships:
+  - name: data_classes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activity_data_classes
+        column_mapping:
+          organization_id: organization_id
+          id: activity_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - dpia_file_id
+        - dpia_status
+        - is_active
+        - legal_basis
+        - name
+        - owner_id
+        - purpose
+        - retention_policy_id
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - code
+        - created_at
+        - created_by
+        - description
+        - dpia_file_id
+        - dpia_status
+        - id
+        - is_active
+        - legal_basis
+        - name
+        - number
+        - organization_id
+        - owner_id
+        - purpose
+        - retention_policy_id
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - description
+        - dpia_file_id
+        - dpia_status
+        - is_active
+        - legal_basis
+        - name
+        - owner_id
+        - purpose
+        - retention_policy_id
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

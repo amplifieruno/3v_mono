@@ -1,0 +1,111 @@
+table:
+  schema: itap
+  name: integrations
+configuration:
+  custom_name: integrations
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: profiles
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          id: source_integration_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - kind
+        - name
+        - description
+        - provider
+        - config
+        - field_mapping
+        - direction
+        - status
+        - secret
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _in:
+                - active
+                - paused
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - code
+        - config
+        - created_at
+        - created_by
+        - description
+        - direction
+        - field_mapping
+        - id
+        - kind
+        - last_error
+        - last_sync_at
+        - name
+        - number
+        - organization_id
+        - provider
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - description
+        - provider
+        - config
+        - field_mapping
+        - direction
+        - status
+        - secret
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - status:
+              _in:
+                - active
+                - paused
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

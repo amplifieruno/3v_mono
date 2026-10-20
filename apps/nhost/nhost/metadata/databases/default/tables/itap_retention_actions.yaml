@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: retention_actions
+is_enum: true
+configuration:
+  custom_name: retention_actions

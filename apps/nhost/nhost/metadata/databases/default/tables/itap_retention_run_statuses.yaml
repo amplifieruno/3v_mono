@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: retention_run_statuses
+is_enum: true
+configuration:
+  custom_name: retention_run_statuses

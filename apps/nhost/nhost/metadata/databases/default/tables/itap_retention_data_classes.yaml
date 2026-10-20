@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: retention_data_classes
+is_enum: true
+configuration:
+  custom_name: retention_data_classes

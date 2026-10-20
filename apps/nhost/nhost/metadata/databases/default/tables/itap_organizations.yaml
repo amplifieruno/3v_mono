@@ -253,6 +253,14 @@ array_relationships:
           name: dashboards
         column_mapping:
           id: organization_id
+  - name: data_subject_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: data_subject_requests
+        column_mapping:
+          id: organization_id
   - name: detections
     using:
       manual_configuration:
@@ -291,6 +299,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: devices
+        column_mapping:
+          id: organization_id
+  - name: dsr_steps
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: dsr_steps
         column_mapping:
           id: organization_id
   - name: emergency_override_areas
@@ -525,6 +541,30 @@ array_relationships:
           name: incidents
         column_mapping:
           id: organization_id
+  - name: integrations
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integrations
+        column_mapping:
+          id: organization_id
+  - name: legal_hold_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          id: organization_id
+  - name: legal_holds
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_holds
+        column_mapping:
+          id: organization_id
   - name: members
     using:
       manual_configuration:
@@ -629,6 +669,22 @@ array_relationships:
           name: policy_urgent_epochs
         column_mapping:
           id: organization_id
+  - name: processing_activities
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activities
+        column_mapping:
+          id: organization_id
+  - name: processing_activity_data_classes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activity_data_classes
+        column_mapping:
+          id: organization_id
   - name: profile_activity_stats
     using:
       manual_configuration:
@@ -723,6 +779,30 @@ array_relationships:
         remote_table:
           schema: itap
           name: reports
+        column_mapping:
+          id: organization_id
+  - name: retention_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_policies
+        column_mapping:
+          id: organization_id
+  - name: retention_run_classes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_run_classes
+        column_mapping:
+          id: organization_id
+  - name: retention_runs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_runs
         column_mapping:
           id: organization_id
   - name: saved_searches

@@ -1,0 +1,38 @@
+table:
+  schema: itap
+  name: dsr_steps
+configuration:
+  custom_name: dsr_steps
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: request
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: data_subject_requests
+        column_mapping:
+          organization_id: organization_id
+          request_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - at
+        - created_at
+        - details
+        - id
+        - organization_id
+        - request_id
+        - step
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true

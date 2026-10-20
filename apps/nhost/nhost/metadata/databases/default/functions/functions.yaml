@@ -95,6 +95,7 @@
 - "!include itap_segment_evaluation_context.yaml"
 - "!include itap_segment_fields.yaml"
 - "!include itap_send_digests.yaml"
+- "!include itap_set_processing_restriction.yaml"
 - "!include itap_simulate_access_policy.yaml"
 - "!include itap_split_identity.yaml"
 - "!include itap_start_emergency_override.yaml"

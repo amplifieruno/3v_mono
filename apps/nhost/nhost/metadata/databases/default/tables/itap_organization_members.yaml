@@ -165,6 +165,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: owner_id
+  - name: data_subject_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: data_subject_requests
+        column_mapping:
+          organization_id: organization_id
+          user_id: requested_by
   - name: emergency_overrides_by_ended_by
     using:
       manual_configuration:
@@ -264,6 +273,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: resolved_by
+  - name: integrations
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integrations
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: legal_holds
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_holds
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
   - name: linked_identities
     using:
       manual_configuration:
@@ -336,6 +363,33 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: vacation_delegate_user_id
+  - name: processing_activities_by_created_by
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activities
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: processing_activities_by_owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: processing_activities
+        column_mapping:
+          organization_id: organization_id
+          user_id: owner_id
+  - name: profiles
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          user_id: restricted_by
   - name: recipient_group_members
     using:
       manual_configuration:
@@ -369,6 +423,15 @@ array_relationships:
         remote_table:
           schema: itap
           name: reports
+        column_mapping:
+          organization_id: organization_id
+          user_id: created_by
+  - name: retention_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_policies
         column_mapping:
           organization_id: organization_id
           user_id: created_by

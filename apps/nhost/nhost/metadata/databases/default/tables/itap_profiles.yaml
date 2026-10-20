@@ -38,6 +38,24 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: restricted_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          restricted_by: user_id
+  - name: source_integration
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integrations
+        column_mapping:
+          organization_id: organization_id
+          source_integration_id: id
   - name: work_schedule
     using:
       manual_configuration:
@@ -102,6 +120,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: profile_id
+  - name: data_subject_requests
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: data_subject_requests
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: events
     using:
       manual_configuration:
@@ -138,6 +165,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: inherited_profile_id
+  - name: legal_hold_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          organization_id: organization_id
+          id: profile_id
   - name: notification_subscriptions
     using:
       manual_configuration:
@@ -290,7 +326,11 @@ select_permissions:
         - number
         - organization_id
         - phone
+        - processing_restricted
         - profile_type
+        - restricted_at
+        - restricted_by
+        - restriction_reason
         - source_integration_id
         - start_date
         - status

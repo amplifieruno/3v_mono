@@ -76,7 +76,8 @@ export function translateConditions(target: SegmentTarget, conditions: unknown, 
 
 /**
  * Full `where` of a segment: organization scope, merged and synthetic (face auth sandbox) identities excluded
- * (profiles: any status), conditions.
+ * (profiles: any status), people with restricted processing excluded (profiles with `processing_restricted`,
+ * identities linked to one; slice 10), conditions.
  */
 export function segmentWhere(
   target: SegmentTarget,
@@ -86,6 +87,14 @@ export function segmentWhere(
   organizationId: string,
 ): Where {
   const scope: Where[] = [{ organization_id: { _eq: organizationId } }];
-  if (target === 'identities') scope.push({ status: { _neq: 'merged' } }, { is_synthetic: { _eq: false } });
+  if (target === 'identities') {
+    scope.push(
+      { status: { _neq: 'merged' } },
+      { is_synthetic: { _eq: false } },
+      { _not: { profile: { processing_restricted: { _eq: true } } } },
+    );
+  } else {
+    scope.push({ processing_restricted: { _eq: false } });
+  }
   return { _and: [...scope, translateConditions(target, conditions, catalog, ctx)] };
 }

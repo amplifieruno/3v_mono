@@ -3,6 +3,7 @@ import { analyticsFunctions, analyticsTables } from './analytics.js';
 import { authFunctions, authTables } from './auth.js';
 import { auditTables } from './audit.js';
 import { companyTables } from './companies.js';
+import { complianceFunctions, complianceTables } from './compliance.js';
 import { deviceFunctions, deviceTables } from './devices.js';
 import { eventFunctions, eventTables } from './events.js';
 import { facilityFunctions, facilityTables } from './facilities.js';
@@ -47,6 +48,7 @@ export const tables: TableSpec[] = [
   ...bulkTables,
   ...accessTables,
   ...authTables,
+  ...complianceTables,
 ];
 
 /** Every tracked SQL function (functions.yaml is generated from this list; untracked functions are internal). */
@@ -72,4 +74,5 @@ export const functions: FunctionSpec[] = [
   ...accessFunctions,
   ...accessOperationFunctions,
   ...authFunctions,
+  ...complianceFunctions,
 ];

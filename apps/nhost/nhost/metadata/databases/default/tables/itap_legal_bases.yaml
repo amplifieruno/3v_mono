@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: legal_bases
+is_enum: true
+configuration:
+  custom_name: legal_bases

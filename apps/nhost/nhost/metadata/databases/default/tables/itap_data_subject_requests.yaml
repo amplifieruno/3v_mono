@@ -1,0 +1,100 @@
+table:
+  schema: itap
+  name: data_subject_requests
+configuration:
+  custom_name: data_subject_requests
+object_relationships:
+  - name: export_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          export_file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: profile
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: profiles
+        column_mapping:
+          organization_id: organization_id
+          profile_id: id
+  - name: requested_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          requested_by: user_id
+array_relationships:
+  - name: steps
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: dsr_steps
+        column_mapping:
+          organization_id: organization_id
+          id: request_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - due_at
+        - notes
+        - profile_id
+        - received_at
+        - request_type
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attempts
+        - attempts_at_retry
+        - code
+        - completed_at
+        - created_at
+        - due_at
+        - export_file_id
+        - id
+        - last_error
+        - lease_expires_at
+        - notes
+        - number
+        - organization_id
+        - profile_id
+        - received_at
+        - rejection_reason
+        - request_type
+        - requested_by
+        - status
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - notes
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

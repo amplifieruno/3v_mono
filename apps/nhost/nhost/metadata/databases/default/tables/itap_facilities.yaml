@@ -166,6 +166,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: facility_id
+  - name: legal_hold_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
   - name: notification_subscriptions
     using:
       manual_configuration:
@@ -181,6 +190,24 @@ array_relationships:
         remote_table:
           schema: itap
           name: report_facilities
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: retention_policies
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_policies
+        column_mapping:
+          organization_id: organization_id
+          id: facility_id
+  - name: retention_run_classes
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_run_classes
         column_mapping:
           organization_id: organization_id
           id: facility_id

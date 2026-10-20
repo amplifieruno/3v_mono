@@ -1,0 +1,75 @@
+table:
+  schema: itap
+  name: legal_holds
+configuration:
+  custom_name: legal_holds
+object_relationships:
+  - name: created_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          created_by: user_id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+array_relationships:
+  - name: targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          organization_id: organization_id
+          id: hold_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - ends_at
+        - name
+        - reason
+        - starts_at
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        created_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - created_at
+        - created_by
+        - ends_at
+        - id
+        - name
+        - organization_id
+        - reason
+        - starts_at
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - ends_at
+        - name
+        - reason
+        - starts_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id

@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: set_processing_restriction
+configuration:
+  custom_name: set_processing_restriction
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

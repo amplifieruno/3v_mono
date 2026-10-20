@@ -1,0 +1,13 @@
+DROP TABLE itap.export_job_statuses;
+DROP TABLE itap.export_modes;
+DROP TABLE itap.export_formats;
+DROP TABLE itap.integration_directions;
+DROP TABLE itap.integration_statuses;
+DROP TABLE itap.integration_kinds;
+DROP TABLE itap.legal_bases;
+DROP TABLE itap.dpia_statuses;
+DROP TABLE itap.dsr_statuses;
+DROP TABLE itap.dsr_types;
+DROP TABLE itap.retention_run_statuses;
+DROP TABLE itap.retention_actions;
+DROP TABLE itap.retention_data_classes;

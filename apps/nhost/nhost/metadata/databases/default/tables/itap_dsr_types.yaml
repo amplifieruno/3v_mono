@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: dsr_types
+is_enum: true
+configuration:
+  custom_name: dsr_types

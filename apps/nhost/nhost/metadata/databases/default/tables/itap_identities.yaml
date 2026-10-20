@@ -210,6 +210,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: identity_id
+  - name: legal_hold_targets
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: legal_hold_targets
+        column_mapping:
+          organization_id: organization_id
+          id: identity_id
   - name: merges_as_source
     using:
       manual_configuration:

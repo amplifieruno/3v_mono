@@ -1,0 +1,64 @@
+table:
+  schema: itap
+  name: retention_run_classes
+configuration:
+  custom_name: retention_run_classes
+object_relationships:
+  - name: facility
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: facilities
+        column_mapping:
+          organization_id: organization_id
+          facility_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: policy
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_policies
+        column_mapping:
+          organization_id: organization_id
+          policy_id: id
+  - name: run
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: retention_runs
+        column_mapping:
+          organization_id: organization_id
+          run_id: id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - action
+        - affected
+        - batches
+        - completed_at
+        - created_at
+        - cutoff
+        - data_class
+        - error
+        - facility_id
+        - id
+        - organization_id
+        - policy_id
+        - run_id
+        - skipped_by_hold
+        - updated_at
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
