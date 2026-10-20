@@ -2,8 +2,8 @@ import { components } from './schemas.js';
 
 /**
  * OpenAPI 3.1 description of `/v1/auth/*` (served at GET /v1/auth/openapi.json): the machine-readable interface client
- * libraries and capture kits are generated from. Hand-written; `openapi.test.ts` checks that it parses and documents
- * every route and response code of the router.
+ * libraries and capture kits are generated from. Hand-written; the `OpenAPI document` tests in `../routes.test.ts`
+ * check that it parses and documents every route, response code and service error code of the router.
  */
 
 const json = (schema: string) => ({ 'application/json': { schema: { $ref: `#/components/schemas/${schema}` } } });
@@ -11,8 +11,8 @@ const ok = (description: string, schema: string) => ({ description, content: jso
 const error = (description: string) => ({ description, content: json('Error') });
 
 const keyed = {
-  '401': error('Missing / invalid signature (`unauthorized`), clock skew (`timestamp_skew`), a repeated signature '
-    + '(`replayed_request`), revoked or expired key.'),
+  '401': error('Missing / invalid signature (`unauthorized`), clock skew (`timestamp_skew`, retryable with a corrected '
+    + 'clock), a repeated signature (`replayed_request`), revoked or expired key.'),
   '403': error('Application not active (`application_inactive`), mode not allowed, access point not bound.'),
   '429': {
     description: 'Per-key rate limit (`rate_limited`, retryable).',
@@ -55,8 +55,9 @@ export function openApiDocument() {
       description: 'Face authentication for registered client applications (SA_6). Integration sequence: (1) POST '
         + '/v1/auth/sessions with the mode (identification, or verification with claimed_identity_id) and device_ref '
         + '→ session_id + nonce (once); (2) capture 3–5 frames, compute binding = HMAC(secret, nonce ‖ sha256(frames) '
-        + '‖ device_ref) and POST /v1/auth/authenticate; (3) follow next_step: recapture (≤ 2), second_factor, or '
-        + 'review (poll GET /v1/auth/sessions/{id}); the second factor exists only in verification. Outcomes: success (identity id, confidence, permitted attributes), '
+        + '‖ device_ref) and POST /v1/auth/authenticate; (3) follow next_step: recapture (≤ 2), second_factor '
+        + '(verification only, offered from the first partial match on), or review (poll GET /v1/auth/sessions/{id}). '
+        + 'Outcomes: success (identity id, confidence, permitted attributes), '
         + 'partial_match (no identity; additional verification), failure (code + human-readable reason + guidance). '
         + 'The population is fixed server-side per application; a verification of an identity outside it fails '
         + 'exactly like a non-match. Every response carries request_id and session_id.',
@@ -70,7 +71,12 @@ export function openApiDocument() {
           summary: 'Open an authentication session (5 minutes)',
           parameters: [requestId],
           requestBody: { required: true, content: json('OpenSessionRequest') },
-          responses: { '201': ok('The session and its nonce (returned once).', 'Session'), '400': capture['400'], ...keyed },
+          responses: {
+            '201': ok('The session and its nonce (returned once).', 'Session'),
+            '400': error('Invalid body or claim (`invalid_request`); no access_point_id although the application is bound '
+              + 'to access points (`access_point_required`).'),
+            ...keyed,
+          },
         },
       },
       '/v1/auth/authenticate': {

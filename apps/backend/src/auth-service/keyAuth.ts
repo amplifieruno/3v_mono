@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { decryptSecret, type ServerKeys } from './crypto.js';
 import { sendServiceError, ServiceError, unauthorized } from './errors.js';
 import type { TokenBuckets } from './rateLimit.js';
-import { hexEqual, parseAuthorization, signRequest, withinSkew } from './signature.js';
+import { hexEqual, MAX_SKEW_SECONDS, parseAuthorization, signRequest, withinSkew } from './signature.js';
 import type { AuthStore } from './store.js';
 
 /** The authenticated caller, set on res.locals.client by requireClientKey. */
@@ -33,23 +33,30 @@ export type KeyAuthDeps = {
   now?: () => number;
 };
 
-/** Signatures seen in the last REPLAY_WINDOW_MS (per process): a signed request is accepted once. */
-export const REPLAY_WINDOW_MS = 600_000;
-
+/**
+ * Accepted signatures (per process): a signed request is accepted once. An entry lives until its header timestamp
+ * leaves the skew window (`ts + MAX_SKEW_SECONDS + 1` s): from then on the timestamp check refuses the request anyway.
+ */
 export class ReplayCache {
-  private readonly seen = new Map<string, number>();
+  private readonly entries = new Map<string, number>();
 
-  /** True the first time `id` is seen within the window (and records it). */
-  firstUse(id: string, now: number): boolean {
-    const until = this.seen.get(id);
-    if (until !== undefined && until > now) return false;
-    this.seen.set(id, now + REPLAY_WINDOW_MS);
-    if (this.seen.size > 50_000) {
-      for (const [key, expiry] of this.seen) if (expiry <= now) this.seen.delete(key);
+  /** True while `id` is remembered (its expiry, epoch ms, is still ahead of `now`). */
+  seen(id: string, now: number): boolean {
+    const until = this.entries.get(id);
+    return until !== undefined && until > now;
+  }
+
+  /** Remembers `id` until `until` (epoch ms); expired entries are pruned when the cache grows. */
+  record(id: string, until: number, now = Date.now()): void {
+    this.entries.set(id, until);
+    if (this.entries.size > 50_000) {
+      for (const [key, expiry] of this.entries) if (expiry <= now) this.entries.delete(key);
     }
-    return true;
   }
 }
+
+/** Expiry (epoch ms) of a replay cache entry for a request signed at `ts` (unix seconds). */
+export const replayExpiry = (ts: number): number => (ts + MAX_SKEW_SECONDS + 1) * 1000;
 
 /**
  * Cheap guard mounted before the body parser: a request without a well-formed ITAP-HMAC header is refused with the
@@ -66,7 +73,11 @@ export function requireAuthorizationHeader(req: Request, res: Response, next: Ne
 /**
  * Key auth of /v1/auth/* (raw body already read into req.body as a Buffer): ITAP-HMAC signature by key prefix, ±300 s
  * skew, constant-time comparison, revoked / expired keys and non-active applications refused, per-key token bucket.
- * Unknown keys, bad signatures and undecryptable secrets answer the same 401.
+ * Unknown keys, bad signatures and undecryptable secrets answer the same 401. A revoked key is answered `key_revoked`
+ * by its prefix alone (revocation clears its ciphertext, so its signature can no longer be checked). A signature is
+ * recorded in the replay cache only once every check passed (a request refused for an expired key, an inactive
+ * application or the rate limit can be sent again unchanged); the replay lookup precedes the rate limit so replays
+ * never drain the key's bucket. Lookup, checks and recording run without an await in between.
  */
 export function requireClientKey(deps: KeyAuthDeps) {
   const touched = new Map<string, number>();
@@ -81,18 +92,21 @@ export function requireClientKey(deps: KeyAuthDeps) {
       const header = parseAuthorization(req.header('authorization'));
       if (!header) return fail(unauthorized());
       if (!withinSkew(header.ts, Math.floor(now() / 1000))) {
-        return fail(new ServiceError(401, 'timestamp_skew', 'The request timestamp is more than 300 s from the server clock'));
+        return fail(
+          new ServiceError(401, 'timestamp_skew', 'The request timestamp is more than 300 s from the server clock', true, 'Synchronize the client clock and sign a new request.'),
+        );
       }
       const key = await deps.store.keyByPrefix(header.prefix);
+      if (key?.revoked_at) return fail(new ServiceError(401, 'key_revoked', 'The key was revoked'));
       const secret = key ? decryptSecret(deps.keys, key.secret, header.prefix) : undefined;
       const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
       const expected = signRequest(secret ?? 'invalid', req.method, req.originalUrl, header.ts, body, req.header('x-request-id'));
       if (!key || !secret || !hexEqual(expected, header.sig)) return fail(unauthorized());
-      // Exact request replay (same key and signature) inside the skew window and beyond: refused.
-      if (!replays.firstUse(`${header.prefix}:${header.sig}`, now())) {
+      // Exact request replay (same key and signature) while its timestamp is inside the skew window: refused.
+      const replayId = `${header.prefix}:${header.sig}`;
+      if (replays.seen(replayId, now())) {
         return fail(new ServiceError(401, 'replayed_request', 'This signed request was already received'));
       }
-      if (key.revoked_at) return fail(new ServiceError(401, 'key_revoked', 'The key was revoked'));
       if (key.expires_at && new Date(key.expires_at).getTime() <= now()) {
         return fail(new ServiceError(401, 'key_expired', 'The key expired'));
       }
@@ -105,6 +119,7 @@ export function requireClientKey(deps: KeyAuthDeps) {
           'retry-after': String(retryAfter),
         });
       }
+      replays.record(replayId, replayExpiry(header.ts), now());
       const last = touched.get(key.id) ?? (key.last_used_at ? new Date(key.last_used_at).getTime() : 0);
       if (now() - last >= TOUCH_INTERVAL_MS) {
         touched.set(key.id, now());

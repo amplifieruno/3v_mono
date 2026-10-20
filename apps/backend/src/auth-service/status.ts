@@ -1,15 +1,18 @@
 import type { StorageClient } from '../storage/storageClient.js';
-import { publicAttributes, type NextStep } from './response.js';
+import { nextStep, publicAttributes, type NextStep } from './response.js';
 import type { SessionState } from './store.js';
 
-/** GET /v1/auth/sessions/{id}: polling a session (e.g. a partial match referred to manual review). */
+/**
+ * GET /v1/auth/sessions/{id}: polling a session (e.g. a partial match referred to manual review). next_step: capture
+ * on a fresh session, then as after the last capture (review while referred, none once closed).
+ */
 export async function sessionStatusResponse(requestId: string, state: SessionState, storage: StorageClient) {
   let next: NextStep = 'none';
   if (state.status === 'review') next = 'review';
+  else if (state.status === 'open' && state.step_count === 0) next = 'capture';
   else if (state.status === 'open' && state.last_outcome === 'partial_match') {
-    next = state.mode === 'verification' && state.recapture_count >= 1 ? 'second_factor' : 'recapture';
-  }
-  else if (state.status === 'open' && state.step_count > 0) next = 'recapture';
+    next = nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: state.recapture_count }, state.mode);
+  } else if (state.status === 'open') next = 'recapture';
   const succeeded = state.status === 'succeeded' && state.matched_identity_id !== null;
   return {
     request_id: requestId,

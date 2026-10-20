@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUTH_APPS } from './authAppsPlan.js';
-import { AUTH_WINDOWS, planAuthHistory, SCENARIOS, type AuthFlowPlan } from './authPlan.js';
+import { AUTH_WINDOWS, LOBBY_AFTER_HOURS, planAuthHistory, SCENARIOS, type AuthFlowPlan } from './authPlan.js';
 import { localDate, localMinutes, weekday } from './historyTime.js';
 
 const TZ = 'Europe/Moscow';
@@ -21,7 +21,9 @@ describe('planAuthHistory', () => {
     for (const f of plan) {
       expect(weekday(localDate(f.at, TZ)), f.app).toBeLessThanOrEqual(5);
       const minutes = localMinutes(f.at, TZ);
-      expect(AUTH_WINDOWS[f.app].some(([from, to]) => minutes >= from && minutes < to), `${f.app} ${minutes}`).toBe(true);
+      // Lobby not_retrieved: an after-hours check-in (nobody on shift); everything else inside the app windows.
+      const windows = f.scenario === 'not_retrieved' ? [LOBBY_AFTER_HOURS] : AUTH_WINDOWS[f.app];
+      expect(windows.some(([from, to]) => minutes >= from && minutes < to), `${f.app} ${f.scenario} ${minutes}`).toBe(true);
       expect(f.at).toBeGreaterThanOrEqual(NOW - 30 * DAY);
       expect(f.at + 5 * 60_000).toBeLessThan(NOW - 3_600_000);
     }
@@ -106,9 +108,11 @@ describe('planAuthHistory', () => {
     }
   });
 
-  it('should narrow visitor sessions to the reception access point only in the not_retrieved scenario', () => {
-    for (const f of of('visitor')) expect(f.accessPoint !== null).toBe(f.scenario === 'not_retrieved');
+  it('should name an access point exactly for the app with bound access points (lobby turnstiles)', () => {
     for (const f of of('lobby')) expect(f.accessPoint).toMatch(/^Turnstile [1-3]$/);
-    for (const f of [...of('hr'), ...of('sandbox')]) expect(f.accessPoint).toBeNull();
+    for (const f of [...of('hr'), ...of('visitor'), ...of('sandbox')]) expect(f.accessPoint).toBeNull();
+    for (const f of plan) expect(f.accessPoint !== null).toBe(AUTH_APPS[f.app].accessPoints.length > 0);
+    expect(of('lobby').filter((f) => f.scenario === 'not_retrieved').length).toBeGreaterThanOrEqual(3);
+    expect(of('visitor').some((f) => f.scenario === 'not_retrieved')).toBe(false);
   });
 });

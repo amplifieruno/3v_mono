@@ -42,6 +42,8 @@ const SQL_ERRORS: Record<string, () => ServiceError> = {
   auth_claimed_identity_required: () =>
     new ServiceError(400, 'invalid_request', 'Verification requires claimed_identity_id (repeat the session claim)'),
   access_point_not_bound: () => new ServiceError(403, 'access_point_not_bound', 'The application does not serve this access point'),
+  access_point_required: () =>
+    new ServiceError(400, 'access_point_required', 'The application is bound to access points: access_point_id is required'),
   auth_device_ref_invalid: () => new ServiceError(400, 'invalid_request', 'device_ref must be 1..128 characters'),
   auth_session_not_found: () => new ServiceError(404, 'session_not_found', 'Session not found'),
   auth_session_closed: () => new ServiceError(409, 'session_closed', 'The session is closed; open a new session'),

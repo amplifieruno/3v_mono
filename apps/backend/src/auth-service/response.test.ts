@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { StorageClient } from '../storage/storageClient.js';
 import { authenticationResponse, nextStep, publicAttributes } from './response.js';
-import type { PublicDecision } from './store.js';
+import { sessionStatusResponse } from './status.js';
+import type { PublicDecision, SessionState } from './store.js';
 
 const storage = {
   presignedUrl: async (id: string) => ({ url: `https://files.example/${id}?sig=x`, expiresAt: new Date('2030-01-01T00:00:00Z') }),
@@ -54,7 +55,10 @@ describe('public authentication response', () => {
   });
 
   it('should choose the next step of a partial match by recaptures used and review', () => {
-    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 0 }, 'verification')).toBe('recapture');
+    // Verification: the second factor is offered from the first partial match on (recapture still accepted), as the
+    // SQL accepts it after any partial match of an open verification session.
+    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 0 }, 'verification')).toBe('second_factor');
+    expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 0 }, 'identification')).toBe('recapture');
     expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 1 }, 'verification')).toBe('second_factor');
     expect(nextStep({ outcome: 'partial_match', session_status: 'open', recapture_count: 1 }, 'identification')).toBe('recapture');
     expect(nextStep({ outcome: 'partial_match', session_status: 'review', recapture_count: 2 }, 'identification')).toBe('review');
@@ -65,5 +69,24 @@ describe('public authentication response', () => {
     const failing = { presignedUrl: async () => { throw new Error('down'); } } as unknown as StorageClient;
     expect(await publicAttributes({ photo: 'f1', company: 'Acme' }, failing)).toEqual({ photo: null, company: 'Acme' });
     expect(await publicAttributes({ company: null }, failing)).toEqual({ company: null });
+  });
+});
+
+describe('session status response', () => {
+  const state = (extra: Partial<SessionState>): SessionState => ({
+    session_id: 's1', mode: 'identification', status: 'open', step: 'initial', step_count: 0, recapture_count: 0,
+    expires_at: '2030-01-01T00:00:00Z', last_outcome: null, last_failure_reason: null, review_status: null,
+    matched_identity_id: null, attributes: {}, ...extra,
+  });
+  const next = async (extra: Partial<SessionState>) => (await sessionStatusResponse('r', state(extra), storage)).next_step;
+
+  it('should tell the next step of a polled session', async () => {
+    expect(await next({})).toBe('capture');
+    expect(await next({ step_count: 1, step: 'recapture', last_outcome: 'failure', last_failure_reason: 'blur' })).toBe('recapture');
+    expect(await next({ step_count: 1, last_outcome: 'partial_match' })).toBe('recapture');
+    expect(await next({ step_count: 1, last_outcome: 'partial_match', mode: 'verification' })).toBe('second_factor');
+    expect(await next({ status: 'review', step_count: 3, last_outcome: 'partial_match' })).toBe('review');
+    expect(await next({ status: 'failed', step_count: 1, last_outcome: 'failure' })).toBe('none');
+    expect(await next({ status: 'expired' })).toBe('none');
   });
 });

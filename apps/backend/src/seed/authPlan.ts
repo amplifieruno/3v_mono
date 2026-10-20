@@ -48,21 +48,26 @@ export const AUTH_WINDOWS: Record<HistoryApp, [number, number][]> = {
   visitor: [[9 * 60 + 30, 17 * 60]],
   sandbox: [[10 * 60, 19 * 60]],
 };
+/**
+ * Local window [from, to) in minutes of the lobby's after-hours check-ins (scenario not_retrieved): nobody is on shift
+ * then, so the Lobby Kiosk population (work schedules) is empty.
+ */
+export const LOBBY_AFTER_HOURS: [number, number] = [20 * 60 + 15, 21 * 60 + 30];
 const VOLUME: Record<HistoryApp, [number, number]> = { lobby: [12, 16], hr: [4, 6], visitor: [2, 4], sandbox: [3, 5] };
 
 /** Scenarios that occur at least `n` times per app; the rest is drawn by weight. */
 const FORCED: Record<HistoryApp, [Scenario, number][]> = {
   lobby: [['quality_then_success', 6], ['quality_exhausted', 1], ['liveness_failed', 2], ['printed_photo', 3], ['injection', 2],
-    ['replay', 2], ['review', 8], ['partial_then_success', 6], ['outsider', 4]],
+    ['replay', 2], ['review', 8], ['partial_then_success', 6], ['outsider', 4], ['not_retrieved', 3]],
   hr: [['second_factor_passed', 4], ['second_factor_failed', 3], ['impostor', 4], ['not_in_population', 4], ['quality_then_success', 2],
     ['partial_then_success', 2]],
-  visitor: [['not_retrieved', 4], ['outsider', 3], ['partial_then_success', 2], ['review', 2], ['quality_then_success', 1]],
+  visitor: [['outsider', 3], ['partial_then_success', 2], ['review', 2], ['quality_then_success', 1]],
   sandbox: [['outsider', 3], ['not_in_population', 2], ['impostor', 2], ['partial_then_success', 2], ['quality_then_success', 1]],
 };
 const WEIGHTS: Record<HistoryApp, [Scenario, number][]> = {
   lobby: [['success', 80], ['partial_then_success', 7], ['quality_then_success', 6], ['outsider', 4], ['printed_photo', 1], ['review', 2]],
   hr: [['success', 84], ['second_factor_passed', 5], ['impostor', 4], ['not_in_population', 3], ['quality_then_success', 4]],
-  visitor: [['success', 85], ['not_retrieved', 5], ['outsider', 5], ['quality_then_success', 5]],
+  visitor: [['success', 90], ['outsider', 5], ['quality_then_success', 5]],
   sandbox: [['success', 80], ['partial_then_success', 8], ['outsider', 6], ['impostor', 3], ['quality_then_success', 3]],
 };
 /** Every scenario each app's history contains. */
@@ -133,10 +138,16 @@ const DEVICES: Record<HistoryApp, (rng: Random, ap: string | null) => { device: 
   },
 };
 
-function accessPointOf(app: HistoryApp, scenario: Scenario, rng: Random): string | null {
-  if (app === 'lobby') return `Turnstile ${rng.int(1, 3)}`;
-  if (app === 'visitor' && scenario === 'not_retrieved') return 'Reception Desk';
-  return null;
+/** Only the lobby app binds access points (a session of an app with bound access points must name one). */
+function accessPointOf(app: HistoryApp, rng: Random): string | null {
+  return app === 'lobby' ? `Turnstile ${rng.int(1, 3)}` : null;
+}
+
+/** The same local day's after-hours window (lobby not_retrieved); undefined when it is not in the past yet. */
+function afterHours(at: number, now: number, timezone: string, rng: Random): number | undefined {
+  const [from, to] = LOBBY_AFTER_HOURS;
+  const moved = zonedTime(localDate(at, timezone), from, timezone) + rng.int(0, (to - from) * 60 - 1) * 1000;
+  return moved + 5 * MIN < now - REPLAY_END_OFFSET_MS ? moved : undefined;
 }
 
 const REVIEW_NOTES = { approve: 'Identity confirmed by the lobby guard (badge checked)', reject: 'Not the employee: badge mismatch, escorted to reception' };
@@ -185,10 +196,16 @@ export function planAuthHistory(args: { now: number; timezone: string }): AuthFl
   for (const app of ['lobby', 'hr', 'visitor', 'sandbox'] as const) {
     const times = sessionTimes(app, args.now, args.timezone, rng);
     const scenarios = scenariosFor(app, times.length, rng);
-    times.forEach((at, i) => {
-      const scenario = scenarios[i];
+    times.forEach((planned, i) => {
+      let scenario = scenarios[i];
+      let at = planned;
+      if (scenario === 'not_retrieved') {
+        const moved = afterHours(planned, args.now, args.timezone, rng);
+        if (moved === undefined) scenario = 'success';
+        else at = moved;
+      }
       const mode = modeOf(app, scenario, rng);
-      const accessPoint = accessPointOf(app, scenario, rng);
+      const accessPoint = accessPointOf(app, rng);
       flows.push({
         app, mode, scenario, at, accessPoint, ...DEVICES[app](rng, accessPoint),
         subject: rng.int(0, 999), other: rng.int(0, 999), steps: [], replayOf: null, review: null,

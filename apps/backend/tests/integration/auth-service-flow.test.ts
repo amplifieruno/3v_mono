@@ -116,7 +116,8 @@ describe('face auth REST: partial match flow', () => {
   async function partialVerification() {
     const session = await openSession(strict.key, { mode: 'verification', claimed_identity_id: w.person });
     const first = await capture(strict.key, session, await sequence('low'), { claimed_identity_id: w.person });
-    expect(first.body).toMatchObject({ outcome: 'partial_match', next_step: 'recapture' });
+    // The second factor is offered from the first partial match of a verification on (a recapture is still accepted).
+    expect(first.body).toMatchObject({ outcome: 'partial_match', next_step: 'second_factor' });
     expect(first.body.identity).toBeUndefined();
     return session;
   }
@@ -138,6 +139,8 @@ describe('face auth REST: partial match flow', () => {
     expect(failed.body).toMatchObject({ outcome: 'failure', failure: { code: 'second_factor_failed' }, next_step: 'none' });
     expect(failed.body.identity).toBeUndefined();
     const fresh = await openSession(strict.key, { mode: 'verification', claimed_identity_id: w.person });
+    const polled = await call(strict.key, 'GET', `/v1/auth/sessions/${fresh.session_id}`);
+    expect(polled.body).toMatchObject({ status: 'open', attempts: 0, next_step: 'capture' });
     const early = await call(strict.key, 'POST', `/v1/auth/sessions/${fresh.session_id}/second-factor`, { result: 'passed', method: 'pin' });
     expect(early.status).toBe(409);
     expect(early.body.error?.code).toBe('second_factor_not_allowed');
@@ -166,7 +169,7 @@ describe('face auth REST: partial match flow', () => {
     expect(status.body).toMatchObject({ status: 'review', review_status: 'pending', authenticated: false, next_step: 'review' });
   });
 
-  it('should offer the second factor to a verification after one recapture', async () => {
+  it('should keep offering the second factor to a verification after a recapture', async () => {
     const session = await partialVerification();
     const second = await capture(strict.key, session, await sequence('low'), { claimed_identity_id: w.person }, true);
     expect(second.body).toMatchObject({ outcome: 'partial_match', next_step: 'second_factor' });

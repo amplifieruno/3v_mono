@@ -134,6 +134,10 @@ describe('ITAP-HMAC key auth', () => {
     const reply = await sessions(key);
     expect(reply.status).toBe(401);
     expect(reply.body.error?.code).toBe('key_revoked');
+    // Revocation clears the ciphertext (the fingerprint stays); the prefix alone answers key_revoked.
+    const [row] = await runSqlRows(`select secret, secret_hash from itap.client_application_keys where id = '${key.key_id}'`);
+    expect(row.secret).toBe('NULL');
+    expect(row.secret_hash).toMatch(/^scrypt\$/);
   });
 
   it('should refuse every request of a suspended application', async () => {
@@ -149,10 +153,18 @@ describe('ITAP-HMAC key auth', () => {
     }
   });
 
-  it('should validate the session request (mode allowed, access point bound)', async () => {
+  it('should validate the session request (mode allowed, access point bound, required when the app has bindings)', async () => {
     const bad = await call(w.key, 'POST', '/v1/auth/sessions', { mode: 'identification', device_ref: 'k1', access_point_id: w.door.id });
     expect(bad.status).toBe(403);
     expect(bad.body.error?.code).toBe('access_point_not_bound');
+    const doorApp = await createApp(w.a);
+    await bind(w.org, doorApp.id, { segments: [w.segment.id], modes: ['identification'], accessPoints: [w.door.id] });
+    const doorKey = await rotateKey(w.a, doorApp.id);
+    const required = await call(doorKey, 'POST', '/v1/auth/sessions', { mode: 'identification', device_ref: 'k1' });
+    expect(required.status).toBe(400);
+    expect(required.body.error?.code).toBe('access_point_required');
+    const atDoor = await call(doorKey, 'POST', '/v1/auth/sessions', { mode: 'identification', device_ref: 'k1', access_point_id: w.door.id });
+    expect(atDoor.status, JSON.stringify(atDoor.body)).toBe(201);
     const invalid = await call(w.key, 'POST', '/v1/auth/sessions', { mode: 'other', device_ref: 'k1' });
     expect(invalid.status).toBe(400);
     expect(invalid.body.error?.code).toBe('invalid_request');

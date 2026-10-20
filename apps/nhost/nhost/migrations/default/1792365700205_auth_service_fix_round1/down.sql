@@ -113,6 +113,8 @@ $$;
 
 REVOKE ALL ON FUNCTION itap.auth_second_factor(uuid, uuid, uuid, boolean, text) FROM PUBLIC;
 
+-- Restoring the v1-only format fails while any key holds a v2 secret: revoke and delete those keys (or empty
+-- itap.client_application_keys) before running this down migration.
 ALTER TABLE itap.client_application_keys DROP CONSTRAINT client_application_keys_secret_format;
 ALTER TABLE itap.client_application_keys
   ADD CONSTRAINT client_application_keys_secret_format

@@ -107,13 +107,23 @@ async function expectVolumeAndPlaces(org: string): Promise<void> {
   }
   const [row] = await runSqlRows(
     `select (select count(*) from itap.authentication_attempts a join itap.client_applications c on c.id = a.application_id
-              where a.organization_id = ${org} and c.name = 'Lobby Kiosk' and ${HISTORY} and a.population_size = 0) as lobby_empty,
+              where a.organization_id = ${org} and c.name = 'Lobby Kiosk' and ${HISTORY} and a.population_size = 0
+                and a.failure_reason is distinct from 'not_retrieved') as lobby_empty,
+            (select count(*) from itap.authentication_attempts a join itap.client_applications c on c.id = a.application_id
+              where a.organization_id = ${org} and c.name = 'Lobby Kiosk' and a.failure_reason = 'not_retrieved') as lobby_after_hours,
+            (select count(*) from itap.authentication_sessions s
+              where s.organization_id = ${org} and s.access_point_id is null
+                and exists (select 1 from itap.client_application_access_points b
+                            where b.organization_id = s.organization_id and b.application_id = s.application_id)) as unbound_sessions,
             (select count(*) from itap.authentication_attempts a where a.organization_id = ${org} and a.evidence_file_id is not null) as evidence,
             (select count(*) from itap.authentication_attempts a join storage.files f on f.id = a.evidence_file_id
               where a.organization_id = ${org} and f.metadata ->> 'kind' = 'auth_capture' and a.outcome <> 'success') as evidence_ok`,
   );
-  // Lobby attempts run inside the work schedules and the turnstile policy hours: the population is never empty.
+  // Lobby attempts run inside the work schedules and the turnstile policy hours: the population is empty only for the
+  // after-hours check-ins (not_retrieved). Apps with bound access points always name one.
   expect(n(row, 'lobby_empty')).toBe(0);
+  expect(n(row, 'lobby_after_hours')).toBeGreaterThanOrEqual(3);
+  expect(n(row, 'unbound_sessions')).toBe(0);
   expect(n(row, 'evidence')).toBeGreaterThanOrEqual(5);
   expect(n(row, 'evidence_ok')).toBe(n(row, 'evidence'));
 }

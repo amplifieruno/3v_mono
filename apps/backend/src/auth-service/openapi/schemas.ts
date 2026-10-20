@@ -4,7 +4,7 @@ import { FAILURE_TEXTS } from '../errors.js';
 
 export const SERVICE_ERROR_CODES = [
   'invalid_request', 'invalid_sequence', 'unauthorized', 'timestamp_skew', 'replayed_request', 'key_revoked', 'key_expired',
-  'application_inactive', 'mode_not_allowed', 'access_point_not_bound', 'session_not_found', 'session_closed',
+  'application_inactive', 'mode_not_allowed', 'access_point_not_bound', 'access_point_required', 'session_not_found', 'session_closed',
   'session_expired', 'session_mismatch', 'session_step_invalid', 'recapture_limit', 'second_factor_not_allowed',
   'sequence_too_large', 'rate_limited', 'internal', 'face_service_unavailable', 'service_not_configured',
   'service_degraded', 'timeout',
@@ -14,11 +14,12 @@ const uuid = { type: 'string', format: 'uuid' };
 const timestamp = { type: 'string', format: 'date-time' };
 const nextStep = {
   type: 'string',
-  enum: ['recapture', 'second_factor', 'review', 'none'],
-  description: 'recapture: send a new sequence to /sessions/{id}/recapture (at most 2 per session); second_factor: '
-    + 'confirm with your own factor at /sessions/{id}/second-factor (verification sessions only, after one recapture; '
-    + 'recapture still accepted); review: the attempt '
-    + 'was referred to manual review, poll GET /sessions/{id}; none: the session is finished.',
+  enum: ['capture', 'recapture', 'second_factor', 'review', 'none'],
+  description: 'capture (GET /sessions/{id} of a fresh session only): send the first sequence to /authenticate; '
+    + 'recapture: send a new sequence to /sessions/{id}/recapture (at most 2 per session); second_factor: confirm with '
+    + 'your own factor at /sessions/{id}/second-factor (verification sessions only, offered from the first partial '
+    + 'match on; a recapture is still accepted instead); review: the attempt was referred to manual review, poll GET '
+    + '/sessions/{id}; none: the session is finished.',
 };
 const attackOutcome = {
   type: 'string',
@@ -44,7 +45,8 @@ export const components = {
       required: false,
       schema: uuid,
       description: 'Client request id (FS AuthenticationRequest.id); echoed as request_id and stored on the attempt. '
-        + 'Generated when absent or not a UUID.',
+        + 'Generated when absent or not a UUID. When sent, its trimmed value is covered by the signature (fifth line of '
+        + 'the signed string).',
     },
   },
   headers: {
@@ -56,9 +58,12 @@ export const components = {
       in: 'header',
       name: 'Authorization',
       description: '`ITAP-HMAC key=<8-char key prefix>, ts=<unix seconds>, sig=<hex>` with sig = hex HMAC-SHA256(key '
-        + 'secret, METHOD + "\\n" + PATH (with query) + "\\n" + ts + "\\n" + hex sha256(raw body)); ts within ±300 s; '
-        + 'each signed request is accepted once (a repeated signature within 600 s is `replayed_request`). A request '
-        + 'without a well-formed header is refused before its body is read.',
+        + 'secret, METHOD + "\\n" + PATH (with query) + "\\n" + ts + "\\n" + hex sha256(raw body) [+ "\\n" + '
+        + 'X-Request-Id]); the fifth line is the trimmed X-Request-Id value, present only when that header is sent. '
+        + 'ts within ±300 s; each signed request is accepted once: its signature is remembered until ts + 301 s, after '
+        + 'which the timestamp check refuses it anyway (a repeat is `replayed_request`). A request refused for an '
+        + 'expired key, an inactive application or the rate limit is not remembered. A request without a well-formed '
+        + 'header is refused before its body is read.',
     },
   },
   schemas: {

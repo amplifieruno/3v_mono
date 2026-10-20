@@ -1,5 +1,5 @@
 import type { HasuraClient } from '../hasura/client.js';
-import { createStorageClient, type StorageClient } from '../storage/storageClient.js';
+import { createStorageClient, StorageError, type StorageClient } from '../storage/storageClient.js';
 import { perOrganizationCron } from './trackingCrons.js';
 import { defineCronHandler } from './types.js';
 
@@ -25,7 +25,8 @@ export const EVIDENCE_ORPHAN_AGE_MS = 10 * 60_000;
 
 /**
  * Deletes auth_capture files older than 10 minutes that no attempt references (a success whose evidence delete
- * failed, a decision that errored after the upload). At most 200 per run; returns the number deleted.
+ * failed, a decision that errored after the upload). At most 200 per run; returns the number deleted (a 404 counts:
+ * the file is already gone). One failing delete is logged and skipped, never stops the run (retried next minute).
  */
 export async function sweepAuthEvidence(admin: HasuraClient, storage: StorageClient, at: Date): Promise<number> {
   const before = new Date(at.getTime() - EVIDENCE_ORPHAN_AGE_MS).toISOString();
@@ -38,8 +39,17 @@ export async function sweepAuthEvidence(admin: HasuraClient, storage: StorageCli
   );
   const referenced = new Set(used.map((u) => u.evidence_file_id));
   const orphans = ids.filter((id) => !referenced.has(id));
-  for (const id of orphans) await storage.deleteFile(id);
-  return orphans.length;
+  let deleted = 0;
+  for (const id of orphans) {
+    try {
+      await storage.deleteFile(id);
+      deleted += 1;
+    } catch (error: unknown) {
+      if (error instanceof StorageError && error.status === 404) deleted += 1;
+      else console.error(`Auth evidence sweep: could not delete ${id}:`, error);
+    }
+  }
+  return deleted;
 }
 
 const expireSessions = perOrganizationCron('expire_auth_sessions', EXPIRE_SESSIONS);

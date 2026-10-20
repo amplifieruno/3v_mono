@@ -50,7 +50,7 @@ export const AUTH_APPS: Record<AuthAppKey, AuthAppSpec> = {
     key: 'visitor', name: 'Visitor Check-in', description: 'Reception tablet: returning visitors check in by face',
     platform: 'ios', status: 'active', threshold: 0.6, thresholdMin: 0.5, thresholdMax: 0.9, livenessRequired: true,
     useWorkSchedules: false, isSandbox: false, modes: ['identification'], attributes: ['display_name', 'profile_type', 'photo'],
-    segments: [SEGMENT_NAMES.visitors], accessPoints: ['Reception Desk'], keyed: true,
+    segments: [SEGMENT_NAMES.visitors], accessPoints: [], keyed: true,
   },
   sandbox: {
     key: 'sandbox', name: 'Developer Sandbox', description: 'Integration sandbox on synthetic identities (no production data)',
