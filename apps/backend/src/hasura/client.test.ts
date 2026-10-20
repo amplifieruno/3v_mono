@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createHasuraClient, HasuraError } from './client.js';
+import { createHasuraClient, createHasuraTokenClient, HasuraError } from './client.js';
 import type { Env } from '../config/env.js';
 import { hangingBodyFetch } from '../http/fetchStubs.js';
 
@@ -35,6 +35,23 @@ describe('createHasuraClient', () => {
     expect(headers['x-hasura-user-id']).toBe('u1');
     expect(headers['x-hasura-organization-id']).toBe('o1');
     expect(JSON.parse(init.body as string)).toEqual({ query: 'query { ok }', variables: { a: 1 } });
+  });
+
+  it('should add extra session variables as headers and refuse names outside x-hasura-*', async () => {
+    const fn = stubFetch({ data: { ok: true } });
+    const client = createHasuraClient(env, { role: 'admin', organizationId: 'o1' }, { sessionVariables: { 'X-Hasura-Audit-Reason': 'integration:INT-00001' } });
+    await client.request('query { ok }');
+    const headers = (fn.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
+    expect(headers['x-hasura-audit-reason']).toBe('integration:INT-00001');
+    expect(() => createHasuraClient(env, undefined, { sessionVariables: { authorization: 'x' } })).toThrow(/Invalid session variable/);
+  });
+
+  it('should send only the bearer token (no admin secret) with a token client', async () => {
+    const fn = stubFetch({ data: { ok: true } });
+    await createHasuraTokenClient(env, 'jwt-token').request('query { ok }');
+    const headers = (fn.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
+    expect(headers.authorization).toBe('Bearer jwt-token');
+    expect(headers['x-hasura-admin-secret']).toBeUndefined();
   });
 
   it('sends only the admin secret without a session', async () => {

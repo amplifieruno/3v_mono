@@ -1,0 +1,88 @@
+table:
+  schema: itap
+  name: integration_sync_runs
+configuration:
+  custom_name: integration_sync_runs
+object_relationships:
+  - name: fixture_file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          fixture_file_id: id
+  - name: integration
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integrations
+        column_mapping:
+          organization_id: organization_id
+          integration_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: requested_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          requested_by: user_id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attempts
+        - created_at
+        - created_count
+        - deactivated_count
+        - error
+        - errors
+        - finished_at
+        - fixture_file_id
+        - id
+        - integration_id
+        - lease_expires_at
+        - organization_id
+        - records_in
+        - records_out
+        - requested_by
+        - skipped_count
+        - started_at
+        - status
+        - trigger
+        - updated_at
+        - updated_count
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+event_triggers:
+  - name: run_sync
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+        payload:
+          - id
+          - integration_id
+          - organization_id
+          - trigger
+    retry_conf:
+      num_retries: 3
+      interval_sec: 60
+      timeout_sec: 300
+    webhook: "{{BACKEND_URL}}/hasura/events/run_sync"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

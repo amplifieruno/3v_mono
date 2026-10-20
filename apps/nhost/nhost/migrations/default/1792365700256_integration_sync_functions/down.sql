@@ -1,0 +1,11 @@
+DROP FUNCTION itap.run_integration_schedule(uuid, timestamptz, timestamptz);
+DROP FUNCTION itap.init_integration_schedule(uuid, timestamptz);
+DROP FUNCTION itap.due_integration_syncs(timestamptz, integer);
+DROP FUNCTION itap.fail_integration_sync(uuid, integer, text, jsonb);
+DROP FUNCTION itap.complete_integration_sync(uuid, integer, jsonb);
+DROP FUNCTION itap.claim_integration_sync(uuid);
+DROP FUNCTION itap.integration_sync_failed(itap.integration_sync_runs, text, jsonb);
+DROP FUNCTION itap.request_integration_sync(uuid, uuid, text, uuid);
+DROP FUNCTION itap.integration_sync_errors(jsonb);
+DROP FUNCTION itap.integration_sync_count(jsonb, text);
+DROP FUNCTION itap.integration_sync_max_attempts();

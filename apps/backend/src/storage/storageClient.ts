@@ -2,7 +2,7 @@ import type { Env } from '../config/env.js';
 import { mapAbort } from '../http/abort.js';
 
 /** `metadata.kind` values whose access is audited (`open_file`) and which org_admin cannot select directly. */
-export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_document', 'dsr_export', 'auth_capture']);
+export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_document', 'dsr_export', 'auth_capture', 'export']);
 
 /**
  * `metadata.kind` values whose opening through `open_file` is audited (`view_sensitive`): the sensitive kinds plus
@@ -12,11 +12,12 @@ export const AUDITED_FILE_KINDS: ReadonlySet<string> = new Set([...SENSITIVE_FIL
 
 /**
  * `metadata.kind` values visible to their uploader only (`uploaded_by_user_id`, preset from the session on upload):
- * search images, bulk job input files and bulk search results (the job owner becomes their uploader). Enforced by the
+ * search images, bulk job input files, bulk search results and export files (the job owner / requester becomes their
+ * uploader; exports are also sensitive, so never selectable directly). Enforced by the
  * storage.files select permission, open_file / delete_file, enrollment photo sources, the search service and SQL
  * (`itap.owner_only_file_kinds()`).
  */
-export const OWNER_ONLY_FILE_KINDS: ReadonlySet<string> = new Set(['search', 'bulk_input', 'bulk_search_result']);
+export const OWNER_ONLY_FILE_KINDS: ReadonlySet<string> = new Set(['search', 'bulk_input', 'bulk_search_result', 'export']);
 
 export type StorageClient = {
   presignedUrl(fileId: string): Promise<{ url: string; expiresAt: Date }>;

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: fail_export_job
+configuration:
+  custom_name: fail_export_job
+  exposed_as: mutation

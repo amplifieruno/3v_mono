@@ -201,6 +201,24 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: published_by
+  - name: export_definitions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_definitions
+        column_mapping:
+          organization_id: organization_id
+          user_id: owner_id
+  - name: export_jobs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_jobs
+        column_mapping:
+          organization_id: organization_id
+          user_id: requested_by
   - name: identity_merges_by_merged_by
     using:
       manual_configuration:
@@ -273,6 +291,15 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           user_id: resolved_by
+  - name: integration_sync_runs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integration_sync_runs
+        column_mapping:
+          organization_id: organization_id
+          user_id: requested_by
   - name: integrations
     using:
       manual_configuration:

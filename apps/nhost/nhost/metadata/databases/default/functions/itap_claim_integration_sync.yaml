@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: claim_integration_sync
+configuration:
+  custom_name: claim_integration_sync
+  exposed_as: mutation

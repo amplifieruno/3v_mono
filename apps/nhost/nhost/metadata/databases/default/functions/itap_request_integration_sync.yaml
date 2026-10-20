@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: request_integration_sync
+configuration:
+  custom_name: request_integration_sync
+  exposed_as: mutation

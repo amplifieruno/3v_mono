@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: record_export_definition_failure
+configuration:
+  custom_name: record_export_definition_failure
+  exposed_as: mutation

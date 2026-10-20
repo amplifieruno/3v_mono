@@ -53,11 +53,17 @@ export function buildEventTriggers(spec: TableSpec, columns: string[]): EventTri
         const unknown = trigger.columns.find((c) => !columns.includes(c));
         if (unknown) throw new Error(`${owner}: unknown column "${unknown}"`);
       }
+      if (trigger.payloadColumns !== undefined) {
+        if (trigger.payloadColumns.length === 0) throw new Error(`${owner}: payloadColumns must not be empty (omit for all)`);
+        const unknown = trigger.payloadColumns.find((c) => !columns.includes(c));
+        if (unknown) throw new Error(`${owner}: unknown payload column "${unknown}"`);
+      }
+      const payload = trigger.payloadColumns ? { payload: [...trigger.payloadColumns].sort() } : {};
       const retry = retryOf(owner, trigger.retry);
       const definition: EventTriggerMetadata['definition'] = { enable_manual: false };
       for (const op of OPERATIONS.filter((o) => trigger.operations.includes(o))) {
-        if (op === 'update') definition.update = { columns: trigger.columns ? [...trigger.columns].sort() : '*' };
-        else definition[op] = { columns: '*' };
+        if (op === 'update') definition.update = { columns: trigger.columns ? [...trigger.columns].sort() : '*', ...payload };
+        else definition[op] = { columns: '*', ...payload };
       }
       return {
         name: trigger.name,

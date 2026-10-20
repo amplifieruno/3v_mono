@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: run_integration_schedule
+configuration:
+  custom_name: run_integration_schedule
+  exposed_as: mutation

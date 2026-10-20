@@ -76,6 +76,10 @@ insert_permissions:
                           metadata:
                             _contains:
                               kind: auth_capture
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: export
           - _and:
               - bucket_id:
                   _eq: org-logos
@@ -100,6 +104,10 @@ insert_permissions:
                           metadata:
                             _contains:
                               kind: auth_capture
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: export
       columns:
         - bucket_id
         - etag
@@ -147,6 +155,10 @@ select_permissions:
                           metadata:
                             _contains:
                               kind: auth_capture
+                      - _not:
+                          metadata:
+                            _contains:
+                              kind: export
                       - _not:
                           metadata:
                             _contains:

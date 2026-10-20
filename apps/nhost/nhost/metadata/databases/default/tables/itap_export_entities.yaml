@@ -1,0 +1,6 @@
+table:
+  schema: itap
+  name: export_entities
+is_enum: true
+configuration:
+  custom_name: export_entities

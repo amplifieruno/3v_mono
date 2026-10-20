@@ -250,6 +250,34 @@
     - name: x-action-secret
       value_from_env: ACTION_SECRET
   comment: Retry webhook deliveries whose next_attempt_at passed; dead_letter after 5 attempts
+- name: run_export_definitions
+  webhook: "{{BACKEND_URL}}/hasura/events/run_export_definitions"
+  schedule: "*/15 * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 1800
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Create jobs for due export definitions and reclaim stalled export jobs
+- name: run_integration_schedules
+  webhook: "{{BACKEND_URL}}/hasura/events/run_integration_schedules"
+  schedule: "*/15 * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 3
+    retry_interval_seconds: 10
+    timeout_seconds: 60
+    tolerance_seconds: 1800
+  headers:
+    - name: x-action-secret
+      value_from_env: ACTION_SECRET
+  comment: Run scheduled integration syncs and reclaim stalled sync runs
 - name: run_report_schedules
   webhook: "{{BACKEND_URL}}/hasura/events/run_report_schedules"
   schedule: "*/15 * * * *"

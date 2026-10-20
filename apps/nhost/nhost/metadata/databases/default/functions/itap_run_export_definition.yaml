@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: run_export_definition
+configuration:
+  custom_name: run_export_definition
+  exposed_as: mutation

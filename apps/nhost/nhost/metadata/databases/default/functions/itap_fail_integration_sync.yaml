@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: fail_integration_sync
+configuration:
+  custom_name: fail_integration_sync
+  exposed_as: mutation

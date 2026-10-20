@@ -37,11 +37,13 @@ type Mutation {
     threshold: Float
   ): FaceAuthResult!
   set_integration_secret(integration_id: uuid!, secret: String): IntegrationSecretResult!
+  run_integration_sync(integration_id: uuid!): IntegrationSyncRequest!
 }
 
 type Query {
   recognition_status(device_id: uuid!): RecognitionStatus!
   preview_segment(target: String!, conditions: jsonb!, limit: Int): SegmentPreview!
+  get_system_status: SystemStatus!
 }
 
 type OrgToken {
@@ -160,4 +162,20 @@ type FaceAuthResult {
 type IntegrationSecretResult {
   integration_id: uuid!
   has_secret: Boolean!
+}
+
+type IntegrationSyncRequest {
+  run_id: uuid!
+  integration_id: uuid!
+  status: String!
+}
+
+type SystemStatus {
+  generated_at: timestamptz!
+  status: String!
+  checks: jsonb!
+  postgres: jsonb!
+  crons: jsonb!
+  queues: jsonb!
+  retention: jsonb
 }

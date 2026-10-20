@@ -4,6 +4,8 @@ import { createHasuraClient } from '../hasura/client.js';
 import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { resumeBulkJobs, runBulkJobTrigger } from '../bulk/handlers.js';
 import { dsrMaintenance, fulfilDsrTrigger } from '../dsr/handlers.js';
+import { runExportDefinitions, runExportTrigger } from '../exports/handlers.js';
+import { runIntegrationSchedules, runSyncTrigger } from '../integrations/handlers.js';
 import { renderReport, runReportSchedules } from '../reports/schedules.js';
 import { retentionCleanup } from '../retention/cron.js';
 import { drainFileDeletionsCron } from '../retention/fileQueue.js';
@@ -68,6 +70,10 @@ export const defaultEventHandlers: EventHandlers = {
   drain_file_deletions: drainFileDeletionsCron,
   fulfil_dsr: fulfilDsrTrigger,
   dsr_maintenance: dsrMaintenance,
+  run_sync: runSyncTrigger,
+  run_integration_schedules: runIntegrationSchedules,
+  run_export: runExportTrigger,
+  run_export_definitions: runExportDefinitions,
 };
 
 function sendError(res: Response, status: number, error: string, message: string): void {

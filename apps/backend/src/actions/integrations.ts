@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { encryptSecret, serverKeys } from '../auth-service/crypto.js';
+import { HasuraError } from '../hasura/client.js';
 import { ActionError, defineAction } from './types.js';
 
 const INTEGRATION = `
@@ -40,3 +41,41 @@ export const setIntegrationSecret = defineAction(
     return { integration_id: id, has_secret: stored !== null };
   },
 );
+
+const REQUEST_SYNC = `
+  mutation RequestIntegrationSync($org: uuid!, $id: uuid!, $actor: uuid) {
+    request_integration_sync(args: { p_org: $org, p_integration: $id, p_trigger: "manual", p_actor: $actor }) {
+      id integration_id status
+    }
+  }
+`;
+const SYNC_REFUSALS: Record<string, string> = {
+  integration_not_found: 'Integration not found',
+  integration_paused: 'The integration is paused',
+  integration_sync_running: 'A sync of this integration is already running',
+};
+
+/**
+ * run_integration_sync(integration_id) (org_admin): queues a manual sync run (itap.request_integration_sync); the
+ * run_sync event trigger applies it asynchronously. Refusals: integration_not_found (also another organization's),
+ * integration_paused, integration_sync_running.
+ */
+export const runIntegrationSync = defineAction(z.object({ integration_id: z.string().uuid() }), async (ctx) => {
+  const org = ctx.session.organizationId?.toLowerCase();
+  if (!org || ctx.session.role !== 'org_admin') throw new ActionError('forbidden', 'An organization admin session is required');
+  try {
+    const { request_integration_sync: rows } = await ctx.actor.request<{
+      request_integration_sync: { id: string; integration_id: string; status: string }[];
+    }>(REQUEST_SYNC, { org, id: ctx.input.integration_id.toLowerCase(), actor: ctx.session.userId ?? null });
+    const run = rows[0];
+    if (!run) throw new ActionError('integration_not_found', SYNC_REFUSALS.integration_not_found);
+    return { run_id: run.id, integration_id: run.integration_id, status: run.status };
+  } catch (error: unknown) {
+    if (error instanceof HasuraError) {
+      const text = `${error.detail ?? ''} ${error.message}`;
+      const code = Object.keys(SYNC_REFUSALS).find((c) => text.includes(c));
+      if (code) throw new ActionError(code, SYNC_REFUSALS[code]);
+    }
+    throw error;
+  }
+});

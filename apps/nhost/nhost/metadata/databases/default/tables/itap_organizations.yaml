@@ -373,6 +373,22 @@ array_relationships:
           name: events
         column_mapping:
           id: organization_id
+  - name: export_definitions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_definitions
+        column_mapping:
+          id: organization_id
+  - name: export_jobs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_jobs
+        column_mapping:
+          id: organization_id
   - name: facilities
     using:
       manual_configuration:
@@ -539,6 +555,14 @@ array_relationships:
         remote_table:
           schema: itap
           name: incidents
+        column_mapping:
+          id: organization_id
+  - name: integration_sync_runs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integration_sync_runs
         column_mapping:
           id: organization_id
   - name: integrations

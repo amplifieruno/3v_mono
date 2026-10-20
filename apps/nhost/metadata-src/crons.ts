@@ -193,6 +193,24 @@ export const crons: CronSpec[] = [
     comment: 'Run due report schedules and reclaim stalled report generation',
   },
   {
+    // Slice 10 task 4: integrations with config.schedule_cron get their scheduled sync runs (the insert fires run_sync);
+    // then runs the trigger missed or whose lease expired run again (apps/backend/src/integrations/handlers.ts).
+    name: 'run_integration_schedules',
+    schedule: '*/15 * * * *',
+    toleranceSeconds: 1800,
+    includeInMetadata: true,
+    comment: 'Run scheduled integration syncs and reclaim stalled sync runs',
+  },
+  {
+    // Spec §8.3 run_export_definitions: due scheduled export definitions -> export_jobs as their owner (skipped with
+    // last_error owner_not_member when the owner left); then jobs the run_export trigger missed or whose lease expired.
+    name: 'run_export_definitions',
+    schedule: '*/15 * * * *',
+    toleranceSeconds: 1800,
+    includeInMetadata: true,
+    comment: 'Create jobs for due export definitions and reclaim stalled export jobs',
+  },
+  {
     // Spec §8.3: scheduled saved searches (schedule_cron, organization timezone) run as their owner (skipped when the
     // owner is no longer an active member); saved_search_match events for identities new since the previous run.
     // Missed hours are not replayed (next run strictly after the scheduled time).

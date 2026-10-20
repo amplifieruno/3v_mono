@@ -1,0 +1,115 @@
+table:
+  schema: itap
+  name: export_definitions
+configuration:
+  custom_name: export_definitions
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: owner
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          owner_id: user_id
+array_relationships:
+  - name: jobs
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_jobs
+        column_mapping:
+          organization_id: organization_id
+          id: definition_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - description
+        - entity
+        - format
+        - filters
+        - mode
+        - schedule_cron
+        - timezone
+        - is_active
+      check:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      set:
+        organization_id: x-hasura-organization-id
+        owner_id: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - code
+        - created_at
+        - description
+        - entity
+        - filters
+        - format
+        - id
+        - is_active
+        - last_error
+        - last_failed_at
+        - last_run_at
+        - mode
+        - name
+        - next_run_at
+        - number
+        - organization_id
+        - owner_id
+        - schedule_cron
+        - timezone
+        - updated_at
+        - watermark
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+update_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - name
+        - description
+        - entity
+        - format
+        - filters
+        - mode
+        - schedule_cron
+        - timezone
+        - is_active
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: org_admin
+    permission:
+      filter:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - owner_id:
+              _eq: X-Hasura-User-Id

@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_integration_syncs
+configuration:
+  custom_name: due_integration_syncs
+  exposed_as: query

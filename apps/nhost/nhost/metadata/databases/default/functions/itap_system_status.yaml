@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: system_status
+configuration:
+  custom_name: system_status
+  exposed_as: query

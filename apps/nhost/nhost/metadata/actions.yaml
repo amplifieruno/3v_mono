@@ -229,6 +229,31 @@ actions:
     permissions:
       - role: org_admin
     comment: Sets (encrypted, AES-256-GCM) or clears the write-only secret of an integration
+  - name: run_integration_sync
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/run_integration_sync'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Queues a sync run of an integration (manual trigger); the run_sync event trigger applies it
+  - name: get_system_status
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/get_system_status'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+      type: query
+    permissions:
+      - role: org_admin
+    comment: Platform health (Hasura, Postgres, InsightFace, storage, stream-server), cron lag, this organization's queue depths and last retention run
 custom_types:
   enums: []
   input_objects: []
@@ -249,4 +274,6 @@ custom_types:
     - name: ClientKeySecret
     - name: FaceAuthResult
     - name: IntegrationSecretResult
+    - name: IntegrationSyncRequest
+    - name: SystemStatus
   scalars: []

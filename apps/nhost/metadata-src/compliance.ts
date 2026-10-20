@@ -3,6 +3,10 @@ import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
 const INTEGRATION_WRITABLE = ['name', 'description', 'provider', 'config', 'field_mapping', 'direction', 'status'];
+const EXPORT_DEFINITION_WRITABLE = [
+  'name', 'description', 'entity', 'format', 'filters', 'mode', 'schedule_cron', 'timezone', 'is_active',
+];
+const ownedDefinition: BoolExp = { _and: [ownOrganizationRow, { owner_id: { _eq: 'X-Hasura-User-Id' } }] };
 
 /** Compliance, governance and integrations (spec §6.14, §6.15, SA_4; slice 10). */
 export const complianceTables: TableSpec[] = [
@@ -77,7 +81,8 @@ export const complianceTables: TableSpec[] = [
     // selectable; status error is system-only (trigger integrations_status_guard); last_sync_at / last_error: sync job.
     name: 'integrations',
     profile: 'tenant_crud',
-    readOnlyColumns: ['number', 'last_sync_at', 'last_error'],
+    readOnlyColumns: ['number', 'last_sync_at', 'last_error', 'next_sync_at'],
+    relationshipNames: { integration_sync_runs_integration_fkey: 'sync_runs' },
     insertOnlyColumns: ['kind'],
     secretColumns: ['secret'],
     extraPermissions: {
@@ -94,6 +99,73 @@ export const complianceTables: TableSpec[] = [
       update_permissions: [{ role: ORG_ADMIN, permission: { columns: INTEGRATION_WRITABLE, filter: ownOrganizationRow } }],
     },
   },
+  {
+    // Sync log (run_integration_sync action / run_integration_schedules cron insert, the run_sync job writes). The
+    // event payload carries only the run's identifiers (never integration columns; the secret is never in a payload).
+    name: 'integration_sync_runs',
+    profile: 'tenant_read',
+    relationshipNames: { integration_sync_runs_integration_fkey: 'integration' },
+    eventTriggers: [
+      {
+        name: 'run_sync',
+        operations: ['insert'],
+        payloadColumns: ['id', 'organization_id', 'integration_id', 'trigger'],
+        retry: { num_retries: 3, retry_interval_seconds: 60, timeout_seconds: 300 },
+      },
+    ],
+  },
+  { name: 'export_entities', isEnum: true, profile: 'none' },
+  {
+    // The owner (session member) edits, deletes and runs a definition (jobs run with the owner's permissions);
+    // every org_admin sees them. watermark / schedule bookkeeping: system columns.
+    name: 'export_definitions',
+    profile: 'tenant_crud',
+    readOnlyColumns: ['number', 'watermark', 'next_run_at', 'last_run_at', 'last_error', 'last_failed_at', 'owner_id'],
+    relationshipNames: { export_jobs_definition_fkey: 'jobs' },
+    extraPermissions: {
+      insert_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: EXPORT_DEFINITION_WRITABLE,
+            check: ownOrganizationRow,
+            set: { organization_id: 'x-hasura-organization-id', owner_id: 'x-hasura-user-id' },
+          },
+        },
+      ],
+      update_permissions: [{ role: ORG_ADMIN, permission: { columns: EXPORT_DEFINITION_WRITABLE, filter: ownedDefinition, check: ownedDefinition } }],
+      delete_permissions: [{ role: ORG_ADMIN, permission: { filter: ownedDefinition } }],
+    },
+  },
+  {
+    // org_admin requests a job of their own definition (definition_id only; requested_by from the session); the
+    // run_export job writes the rest. Jobs are history (no update / delete).
+    name: 'export_jobs',
+    profile: 'tenant_read',
+    relationshipNames: { export_jobs_definition_fkey: 'definition' },
+    extraPermissions: {
+      insert_permissions: [
+        {
+          role: ORG_ADMIN,
+          permission: {
+            columns: ['definition_id'],
+            check: { _and: [ownOrganizationRow, { definition: { owner_id: { _eq: 'X-Hasura-User-Id' } } }] },
+            set: { organization_id: 'x-hasura-organization-id', requested_by: 'x-hasura-user-id' },
+          },
+        },
+      ],
+    },
+    eventTriggers: [
+      {
+        name: 'run_export',
+        operations: ['insert'],
+        payloadColumns: ['id', 'organization_id', 'definition_id'],
+        retry: { num_retries: 3, retry_interval_seconds: 60, timeout_seconds: 300 },
+      },
+    ],
+  },
+  // Row type of itap.system_status (backend only, get_system_status); stores nothing.
+  { name: 'system_status_snapshots', schema: 'itap_results', profile: 'none' },
   // Row type of itap.dsr_bundle (backend only); stores nothing.
   { name: 'dsr_bundles', schema: 'itap_results', profile: 'none' },
   // Row type of itap.match_face_suppressed (backend only); stores nothing.
@@ -159,6 +231,25 @@ export const complianceFunctions: FunctionSpec[] = [
     roles: [],
     unscopedReturnReason: 'admin-only: the dsr_maintenance cron across organizations',
   },
+  // Integrations and exports (task 4): job / cron functions, admin-only.
+  ...['request_integration_sync', 'claim_integration_sync', 'complete_integration_sync', 'fail_integration_sync',
+    'init_integration_schedule', 'run_integration_schedule', 'claim_export_job', 'complete_export_job', 'fail_export_job',
+    'init_export_definition', 'run_export_definition', 'record_export_definition_failure'].map(
+    (name): FunctionSpec => ({
+      name,
+      exposedAs: 'mutation',
+      roles: [],
+      unscopedReturnReason: 'admin-only: the run_sync / run_export jobs, their crons and the run_integration_sync action',
+    }),
+  ),
+  ...['due_integration_syncs', 'due_export_jobs', 'system_status'].map(
+    (name): FunctionSpec => ({
+      name,
+      exposedAs: 'query',
+      roles: [],
+      unscopedReturnReason: 'admin-only: crons across organizations and the get_system_status action (organization argument)',
+    }),
+  ),
   {
     name: 'claim_file_deletions',
     exposedAs: 'mutation',

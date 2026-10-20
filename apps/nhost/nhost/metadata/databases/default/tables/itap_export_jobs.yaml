@@ -1,0 +1,104 @@
+table:
+  schema: itap
+  name: export_jobs
+configuration:
+  custom_name: export_jobs
+object_relationships:
+  - name: definition
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: export_definitions
+        column_mapping:
+          organization_id: organization_id
+          definition_id: id
+  - name: file
+    using:
+      manual_configuration:
+        remote_table:
+          schema: storage
+          name: files
+        column_mapping:
+          file_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id
+  - name: requested_by_member
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organization_members
+        column_mapping:
+          organization_id: organization_id
+          requested_by: user_id
+insert_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - definition_id
+      check:
+        _and:
+          - organization_id:
+              _eq: X-Hasura-Organization-Id
+          - definition:
+              owner_id:
+                _eq: X-Hasura-User-Id
+      set:
+        organization_id: x-hasura-organization-id
+        requested_by: x-hasura-user-id
+select_permissions:
+  - role: org_admin
+    permission:
+      columns:
+        - attempts
+        - created_at
+        - definition_id
+        - entity
+        - error
+        - file_id
+        - filters
+        - finished_at
+        - format
+        - id
+        - lease_expires_at
+        - mode
+        - organization_id
+        - requested_by
+        - row_count
+        - scheduled_for
+        - started_at
+        - status
+        - trigger
+        - truncated
+        - updated_at
+        - watermark_from
+        - watermark_to
+      filter:
+        organization_id:
+          _eq: X-Hasura-Organization-Id
+      allow_aggregations: true
+event_triggers:
+  - name: run_export
+    definition:
+      enable_manual: false
+      insert:
+        columns: "*"
+        payload:
+          - definition_id
+          - id
+          - organization_id
+    retry_conf:
+      num_retries: 3
+      interval_sec: 60
+      timeout_sec: 300
+    webhook: "{{BACKEND_URL}}/hasura/events/run_export"
+    headers:
+      - name: x-action-secret
+        value_from_env: ACTION_SECRET

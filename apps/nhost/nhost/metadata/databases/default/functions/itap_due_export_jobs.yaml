@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: due_export_jobs
+configuration:
+  custom_name: due_export_jobs
+  exposed_as: query

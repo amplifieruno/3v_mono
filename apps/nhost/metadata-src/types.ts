@@ -107,6 +107,11 @@ export interface EventTriggerSpec {
   operations: TriggerOperation[];
   /** Columns whose change fires an update trigger (default: all); only valid with the update operation. */
   columns?: string[];
+  /**
+   * Columns sent in the webhook payload (default: all). Use it to keep secret or bulky columns out of Hasura's event
+   * log (`hdb_catalog.event_log`) and the request.
+   */
+  payloadColumns?: string[];
   retry?: RetrySpec;
 }
 
@@ -133,9 +138,9 @@ export interface EventTriggerMetadata {
   name: string;
   definition: {
     enable_manual: false;
-    insert?: { columns: '*' };
-    update?: { columns: '*' | string[] };
-    delete?: { columns: '*' };
+    insert?: { columns: '*'; payload?: string[] };
+    update?: { columns: '*' | string[]; payload?: string[] };
+    delete?: { columns: '*'; payload?: string[] };
   };
   retry_conf: { num_retries: number; interval_sec: number; timeout_sec: number };
   webhook: string;

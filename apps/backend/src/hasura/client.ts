@@ -67,7 +67,23 @@ export async function parseHasuraResponse<T>(res: Response, readBody: () => Prom
 export type HasuraClientOptions = {
   /** Per-request limit; a request still pending then fails with HasuraError code `timeout`. No limit by default. */
   timeoutMs?: number;
+  /**
+   * Extra session variables sent as headers with the admin secret (names must start with `x-hasura-`), e.g.
+   * `x-hasura-audit-reason` (the audit trigger records it as the reason of admin-session writes).
+   */
+  sessionVariables?: Record<string, string>;
 };
+
+function requestFn(env: Env, headers: Record<string, string>, options: HasuraClientOptions): HasuraClient['request'] {
+  return async <T>(query: string, variables?: Record<string, unknown>): Promise<T> => {
+    const init: RequestInit = { method: 'POST', headers, body: JSON.stringify({ query, variables }) };
+    if (options.timeoutMs !== undefined) init.signal = AbortSignal.timeout(options.timeoutMs);
+    const timedOut = () => new HasuraError('timeout', `Hasura request timed out after ${options.timeoutMs} ms`);
+    const res = await mapAbort(fetch(env.HASURA_GRAPHQL_URL, init), timedOut);
+    // The signal also covers the body read; a timeout there is the same HasuraError, not a raw DOMException.
+    return parseHasuraResponse<T>(res, () => mapAbort(res.text(), timedOut));
+  };
+}
 
 export function createHasuraClient(env: Env, session?: HasuraSession, options: HasuraClientOptions = {}): HasuraClient {
   const headers: Record<string, string> = {
@@ -79,15 +95,17 @@ export function createHasuraClient(env: Env, session?: HasuraSession, options: H
     if (session.userId) headers['x-hasura-user-id'] = session.userId;
     if (session.organizationId) headers['x-hasura-organization-id'] = session.organizationId;
   }
+  for (const [name, value] of Object.entries(options.sessionVariables ?? {})) {
+    if (!/^x-hasura-[a-z0-9-]+$/i.test(name)) throw new Error(`Invalid session variable name: ${name}`);
+    headers[name.toLowerCase()] = value;
+  }
+  return { request: requestFn(env, headers, options) };
+}
 
-  return {
-    async request<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-      const init: RequestInit = { method: 'POST', headers, body: JSON.stringify({ query, variables }) };
-      if (options.timeoutMs !== undefined) init.signal = AbortSignal.timeout(options.timeoutMs);
-      const timedOut = () => new HasuraError('timeout', `Hasura request timed out after ${options.timeoutMs} ms`);
-      const res = await mapAbort(fetch(env.HASURA_GRAPHQL_URL, init), timedOut);
-      // The signal also covers the body read; a timeout there is the same HasuraError, not a raw DOMException.
-      return parseHasuraResponse<T>(res, () => mapAbort(res.text(), timedOut));
-    },
-  };
+/**
+ * Client authenticated with a bearer token only (no admin secret): Hasura verifies the JWT and applies the role's
+ * permissions exactly as for the token's owner (exports run as the requesting member, slice 10).
+ */
+export function createHasuraTokenClient(env: Env, token: string, options: HasuraClientOptions = {}): HasuraClient {
+  return { request: requestFn(env, { 'content-type': 'application/json', authorization: `Bearer ${token}` }, options) };
 }

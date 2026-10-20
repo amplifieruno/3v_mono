@@ -47,6 +47,19 @@ describe('buildEventTriggers', () => {
     expect(trigger.retry_conf).toEqual({ num_retries: 5, interval_sec: 10, timeout_sec: 30 });
   });
 
+  it('should restrict the payload to the listed columns on every operation', () => {
+    const [trigger] =
+      buildEventTriggers(
+        spec([{ name: 'run_sync', operations: ['insert', 'update'], columns: ['status'], payloadColumns: ['status', 'id'] }]),
+        columns,
+      ) ?? [];
+    expect(trigger.definition).toEqual({
+      enable_manual: false,
+      insert: { columns: '*', payload: ['id', 'status'] },
+      update: { columns: ['status'], payload: ['id', 'status'] },
+    });
+  });
+
   it('should return undefined when the spec declares no event triggers', () => {
     expect(buildEventTriggers(spec(undefined), columns)).toBeUndefined();
   });
@@ -59,6 +72,8 @@ describe('buildEventTriggers', () => {
     [[{ name: 't', operations: ['update'], columns: ['nope'] }], /unknown column "nope"/],
     [[{ name: 't', operations: ['insert'], columns: ['status'] }], /columns apply to update/],
     [[{ name: 't', operations: ['update'], columns: [] }], /columns must not be empty/],
+    [[{ name: 't', operations: ['insert'], payloadColumns: [] }], /payloadColumns must not be empty/],
+    [[{ name: 't', operations: ['insert'], payloadColumns: ['secret'] }], /unknown payload column "secret"/],
     [[{ name: 't', operations: ['insert'], retry: { num_retries: -1 } }], /retry/],
     [[{ name: 't', operations: ['insert'], retry: { timeout_seconds: 0 } }], /retry/],
   ] as [NonNullable<TableSpec['eventTriggers']>, RegExp][])('should reject an invalid trigger %#', (triggers, error) => {
