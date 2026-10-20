@@ -95,10 +95,15 @@ describe('translateConditions: columns', () => {
 });
 
 describe('segmentWhere', () => {
-  it('should scope to the organization and exclude merged identities', () => {
+  it('should scope to the organization and exclude merged and synthetic identities', () => {
     const tree = leaf('detection_count', 'gt', 1);
     expect(segmentWhere('identities', tree, identityCatalog, context, 'org-1')).toEqual({
-      _and: [{ organization_id: { _eq: 'org-1' } }, { status: { _neq: 'merged' } }, { detection_count: { _gt: 1 } }],
+      _and: [
+        { organization_id: { _eq: 'org-1' } },
+        { status: { _neq: 'merged' } },
+        { is_synthetic: { _eq: false } },
+        { detection_count: { _gt: 1 } },
+      ],
     });
     expect(segmentWhere('profiles', leaf('first_name', 'eq', 'A'), profileCatalog, context, 'org-1')).toEqual({
       _and: [{ organization_id: { _eq: 'org-1' } }, { first_name: { _eq: 'A' } }],

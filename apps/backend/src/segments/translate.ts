@@ -74,7 +74,10 @@ export function translateConditions(target: SegmentTarget, conditions: unknown, 
   return translateNode(conditions, '$', target, new Map(catalog.map((f) => [f.field, f])), ctx);
 }
 
-/** Full `where` of a segment: organization scope, merged identities excluded (profiles: any status), conditions. */
+/**
+ * Full `where` of a segment: organization scope, merged and synthetic (face auth sandbox) identities excluded
+ * (profiles: any status), conditions.
+ */
 export function segmentWhere(
   target: SegmentTarget,
   conditions: unknown,
@@ -83,6 +86,6 @@ export function segmentWhere(
   organizationId: string,
 ): Where {
   const scope: Where[] = [{ organization_id: { _eq: organizationId } }];
-  if (target === 'identities') scope.push({ status: { _neq: 'merged' } });
+  if (target === 'identities') scope.push({ status: { _neq: 'merged' } }, { is_synthetic: { _eq: false } });
   return { _and: [...scope, translateConditions(target, conditions, catalog, ctx)] };
 }
