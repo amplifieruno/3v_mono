@@ -1,8 +1,10 @@
 -- Client applications of the face authentication service (spec §6.16, SA_6 §2.1.6): registration, the population
 -- they may authenticate against (segments ∪ facilities, narrowed by access points), allowed modes and the
 -- attributes they may receive. Thresholds are cosine similarities in 0..1 (threshold_min <= threshold <= threshold_max).
--- is_sandbox is fixed at insert (a sandbox app sees only is_synthetic identities, a production app never does —
--- enforced by the decision engine); sandbox apps cannot bind facilities or access points (trigger below).
+-- is_sandbox is fixed at insert. A sandbox app sees only is_synthetic identities, a production app never does
+-- (population filter of the decision engine, slice 9 task 2); production matching paths (match_face: camera
+-- recognition, enrollment duplicate checks) exclude synthetic identities (migration 1792365700194). Sandbox apps
+-- cannot bind facilities or access points (trigger below).
 CREATE TABLE itap.client_applications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES itap.organizations (id) ON DELETE CASCADE,
@@ -140,8 +142,8 @@ CREATE INDEX client_application_access_points_organization_id_access_point_id_id
   ON itap.client_application_access_points (organization_id, access_point_id);
 
 -- sandbox_population_check (spec §8.1): a sandbox application authenticates only synthetic identities, which have
--- no profile and are never seen at a facility, so it may bind segments (filtered to synthetic identities by the
--- engine) but no facilities or access points.
+-- no profile (CHECK identities_synthetic_unlinked) and are never matched by cameras (match_face excludes them), so
+-- it may bind segments (filtered to synthetic identities by the engine) but no facilities or access points.
 CREATE FUNCTION itap.sandbox_population_check() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog, itap

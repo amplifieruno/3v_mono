@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { authWorld, createApp, insertAttempt, insertSession } from './support/authService.js';
 import { addMember, createTestUser, expectDenied, expectError } from './support/fixtures.js';
 import { asOrgAdmin } from './support/clients.js';
+import { createIdentity } from './support/faces.js';
 import { callFn, updateByPk } from './support/operations.js';
 import { runSql, runSqlRows } from './support/sql.js';
 
@@ -99,7 +100,8 @@ describe('review_authentication_attempt', () => {
     const w = await authWorld();
     const app = await createApp(w.a);
     const session = await insertSession(w.orgA.id, app.id, { status: 'review' });
-    const attempt = await insertAttempt(w.orgA.id, app.id, session);
+    const matched = await createIdentity(w.user.id, w.orgA.id);
+    const attempt = await insertAttempt(w.orgA.id, app.id, session, { matched_identity_id: matched.id });
     const r = await review(w.a, attempt, true, 'Matches the badge photo');
     expect(r).toMatchObject({ review_status: 'approved', reviewed_by: w.user.id, review_note: 'Matches the badge photo' });
     const s = await sessionRow(session);
@@ -117,7 +119,8 @@ describe('review_authentication_attempt', () => {
     const w = await authWorld();
     const app = await createApp(w.a);
     const session = await insertSession(w.orgA.id, app.id);
-    const attempt = await insertAttempt(w.orgA.id, app.id, session);
+    const matched = await createIdentity(w.user.id, w.orgA.id);
+    const attempt = await insertAttempt(w.orgA.id, app.id, session, { matched_identity_id: matched.id });
     const foreign = await expectError(review(w.b, attempt, true));
     expect(foreign.message).toContain('auth_attempt_not_found');
     const suspendedUser = await createTestUser();
