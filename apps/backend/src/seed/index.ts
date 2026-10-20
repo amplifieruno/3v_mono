@@ -7,6 +7,7 @@ import { seedAccessConfig, type SeedAccessConfigResult } from './access.js';
 import { seedAccess, type SeedAccessResult } from './accessLive.js';
 import { seedAnalytics, type SeedAnalyticsResult } from './analytics.js';
 import { seedCompanies, type SeedCompaniesResult } from './companies.js';
+import { seedCompliance, type SeedComplianceResult } from './compliance.js';
 import { seedDeviceHealth, type SeedDeviceHealthResult } from './deviceHealth.js';
 import { seedDevices, type SeedDevicesResult } from './devices.js';
 import { seedFacilities, type SeedFacilitiesResult } from './facilities.js';
@@ -36,6 +37,7 @@ export type SeedResults = {
   access: SeedAccessResult;
   faceAuth: SeedFaceAuthResult;
   analytics: SeedAnalyticsResult;
+  compliance: SeedComplianceResult;
 };
 
 type StepName = keyof SeedResults;
@@ -96,6 +98,11 @@ const steps: { [K in StepName]: SeedStep<SeedResults[K]> } = {
   faceAuth: step(['tenancy', 'sandboxIdentities', 'segments', 'access', 'notifications'], (ctx, { tenancy }) => seedFaceAuth(ctx, tenancy)),
   // Last: stats over the whole history, reports computed from them, searches, bulk jobs and dashboards.
   analytics: step(['tenancy', 'facilities', 'history', 'segments'], (ctx, r) => seedAnalytics(ctx, r.tenancy, r.facilities)),
+  // Slice 10, after everything that processes people (the restriction and the erasure must not disturb the replay,
+  // the analytics or face auth): policies, holds, activities, retention history, integrations, exports, requests.
+  compliance: step(['tenancy', 'facilities', 'profiles', 'history', 'analytics', 'faceAuth'], (ctx, r) =>
+    seedCompliance(ctx, r.tenancy, r.facilities, r.profiles),
+  ),
 };
 
 function log(message: string): void {
@@ -130,6 +137,14 @@ function logFaceAuth(result: SeedFaceAuthResult, synthetic: SeedSyntheticResult 
       ? `Face auth: demo key for ${key.app} (shown once, dev only): key=${key.prefix} secret=${key.secret}`
       : `Face auth: key issued for ${key.app}: key=${key.prefix} (secret not printed in production)`);
   }
+}
+
+function logCompliance(r: SeedComplianceResult): void {
+  const { config, integrations, exports, dsrs } = r;
+  log(`Compliance: ${config.policies} retention policies; ${config.activities} processing activities and ${config.holds} legal holds created, ` +
+    `${config.retentionRuns} past retention runs; ${integrations.created} integrations (${integrations.runs} sync runs, ${integrations.failed} failed); ` +
+    `${exports.definitions} export definitions (${exports.jobs} jobs, ${exports.rows} rows); ` +
+    `${dsrs.requests} data subject requests (${dsrs.statuses.join(', ') || 'already seeded'}) in ${Math.round(r.durationMs / 1000)} s.`);
 }
 
 async function main(): Promise<void> {
@@ -173,6 +188,8 @@ async function main(): Promise<void> {
       `${reports.reports} past reports (${reports.failed} failed), ${searches.requests} searches, ${bulk.jobs} bulk jobs ` +
       `(${bulk.statuses.join(', ') || 'already seeded'}) in ${Math.round(analytics.durationMs / 1000)} s.`);
   }
+  const compliance = results.compliance;
+  if (compliance) logCompliance(compliance);
   log(`Seed complete in ${Math.round((Date.now() - ctx.now.getTime()) / 1000)} s.`);
 }
 

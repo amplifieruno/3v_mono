@@ -6,6 +6,7 @@ import { requireBackend } from './support/backend.js';
 import { asAdminWithSession } from './support/faces.js';
 import { expectSeededAccess } from './support/seedAccess.js';
 import { expectSeededAnalytics } from './support/seedAnalytics.js';
+import { expectSeededCompliance } from './support/seedCompliance.js';
 import { expectSeededFaceAuth, expectSeededKeyAuthenticates } from './support/seedFaceAuth.js';
 import { expectSeededHistory } from './support/seedHistory.js';
 import { expectSeededNotifications } from './support/seedNotifications.js';
@@ -210,6 +211,10 @@ describe.skipIf(!RUN_SEED_TEST)('seed (skipped unless RUN_SEED_TEST=1: it resets
     await expectSeededFaceAuth(SLUGS[0]);
     // Last: a live request with the seeded Lobby Kiosk key (records one attempt now).
     await expectSeededKeyAuthenticates(SLUGS[0]);
+  });
+
+  it('should seed compliance: policies keeping the history, holds, activities, requests, integrations and exports (slice 10)', async () => {
+    await expectSeededCompliance(SLUGS[0], SLUGS[1]);
   });
 
   it('should give Riverside a light, separate history with one incident', async () => {

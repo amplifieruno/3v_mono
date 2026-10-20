@@ -75,6 +75,17 @@ const TABLES = [
   'access_decisions',
   'emergency_overrides',
   'emergency_override_areas',
+  // Compliance (slice 10): configuration keyed by class / name, requests and integrations only once. Sync runs, export
+  // jobs and retention runs are left out (their schedules add rows at any time).
+  'retention_policies',
+  'legal_holds',
+  'legal_hold_targets',
+  'processing_activities',
+  'processing_activity_data_classes',
+  'data_subject_requests',
+  'dsr_steps',
+  'integrations',
+  'export_definitions',
 ];
 
 /** Counts every seeded table of the organization with the given slug, plus storage files and derived counts. */
