@@ -24,7 +24,9 @@ describe('evaluate_segments (hourly)', () => {
     // Scheduled times in the future: a late run evaluates its segments at now, so the run must not be late here.
     await detect(w.orgA.id, w.lobbyCam, w.identity, 0, { detected_at: fromNow(-86_400) });
     const frequent = await dynamicSegment(w.a, 'identities', { field: 'visits_last_30d', operator: 'gte', value: 1 });
-    const hour = fromNow(3600);
+    // refresh_segment_daily_stats writes the days of (at - 1 h) and at: keep both in one UTC day (skip 00:00-01:00).
+    const next = Date.parse(fromNow(3600));
+    const hour = new Date(next % 86_400_000 < 3_600_000 ? next + 3_600_000 : next).toISOString();
     const day = (iso: string) => iso.slice(0, 10); // test organizations are UTC
 
     expect(await runHourly([w.orgA.id], hour)).toMatchObject({ organizations: 1, segments: 1, failed: 0 });

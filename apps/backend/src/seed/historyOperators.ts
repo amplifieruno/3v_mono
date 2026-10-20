@@ -150,7 +150,8 @@ async function seedEstimatedLocations(
         is_estimated: true,
         uncertainty_m: 25,
         confidence: 0.6,
-        occurred_at: new Date(Date.parse(s.last_detected_at) + 90_000).toISOString(),
+        // Inside the session (its last detection): presence never outlives the session it belongs to.
+        occurred_at: s.last_detected_at,
       }];
     });
   if (objects.length === 0) return 0;

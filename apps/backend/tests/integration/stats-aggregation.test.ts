@@ -140,6 +140,26 @@ describe('stats aggregation', () => {
     expect([await hourlyStats(w.orgA.id), await dailyStats(w.orgA.id), await transitions(w.orgA.id)]).toEqual(hourByHour);
   });
 
+  it('should keep presence inside its session: a location after ended_at in the next hour changes nothing', async () => {
+    const w = await createTrackingWorld();
+    await setTrackingTimeout(w.orgA.id, 600);
+    // Lobby 08:00 .. 08:40, closed (ended 08:40); then a stray estimated location in Zone A at 09:10 (after ended_at).
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 0);
+    await detect(w.orgA.id, w.lobbyCam, w.identity, 2400);
+    await closeStale(w.orgA.id, 3300);
+    const [session] = await sessions(w.identity);
+    await runSql(`INSERT INTO itap.identity_locations (organization_id, identity_id, session_id, facility_id, area_id,
+        movement_type, is_estimated, occurred_at)
+      VALUES ('${w.orgA.id}', '${w.identity}', '${session.id}', '${w.facility.id}', '${w.zone.id}', 'movement', true, '${at(4200)}')`);
+    await aggregateHours(w.orgA.id, -1, 3);
+    const hourByHour = [await hourlyStats(w.orgA.id), await dailyStats(w.orgA.id), await transitions(w.orgA.id)];
+    expect(hourByHour[0].map((r) => r.area)).not.toContain('Zone A');
+    expect(hourByHour[2]).toEqual([]);
+    await clearStats(w.orgA.id);
+    await aggregateRange(w.orgA.id, -HOUR, 3 * HOUR);
+    expect([await hourlyStats(w.orgA.id), await dailyStats(w.orgA.id), await transitions(w.orgA.id)]).toEqual(hourByHour);
+  });
+
   it('should count merged identities once (effective identity) in unique, dwell and peak', async () => {
     const w = await createTrackingWorld();
     await setTrackingTimeout(w.orgA.id, 7200);
