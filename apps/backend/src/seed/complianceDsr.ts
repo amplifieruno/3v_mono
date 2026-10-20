@@ -6,7 +6,7 @@ import { photoFromBuffer } from '../face/photoSources.js';
 import { createHasuraClient, type HasuraClient } from '../hasura/client.js';
 import { blendedFaces } from './authSynthetic.js';
 import { DEDICATED_SUBJECTS, DSRS, type DsrSpec } from './complianceFlowsPlan.js';
-import { waitFor } from './complianceIntegrations.js';
+import { waitFor } from './waitFor.js';
 import { renderPdf } from './pdf.js';
 import type { SeedPeopleResult } from './people.js';
 import type { SeedContext } from './tenancy.js';

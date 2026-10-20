@@ -46,7 +46,7 @@ export const reportTables: TableSpec[] = [
     profile: 'tenant_crud',
     readOnlyColumns: [
       'number', 'status', 'file_id', 'summary', 'error', 'generated_at', 'attempts', 'attempts_at_retry',
-      'lease_expires_at', 'schedule_id',
+      'lease_expires_at', 'claimed_at', 'schedule_id',
     ],
     insertOnlyColumns: ['report_type', 'parameters', 'start_date', 'end_date', 'incident_id', 'format', 'template_id'],
     noDelete: true,

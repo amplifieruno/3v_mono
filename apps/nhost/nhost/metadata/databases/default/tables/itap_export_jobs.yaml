@@ -58,6 +58,7 @@ select_permissions:
     permission:
       columns:
         - attempts
+        - claimed_at
         - created_at
         - definition_id
         - entity

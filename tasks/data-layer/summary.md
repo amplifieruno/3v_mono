@@ -2,7 +2,7 @@
 
 The data layer of the ITAP demo is built on branch `feat/data-layer-foundation` (not merged to `main`; production untouched):
 - Postgres 16 with pgvector 0.8, under Hasura v2.46 (through Nhost auth and storage), plus an Express/TypeScript backend for everything Hasura cannot do;
-- 341 migrations (`apps/nhost/nhost/migrations/default`);
+- 346 migrations (`apps/nhost/nhost/migrations/default`);
 - generated metadata (`apps/nhost/metadata-src` -> `pnpm --filter nhost metadata:generate`; auth / storage / actions hand-edited);
 - a backend in `apps/backend/src`.
 
@@ -164,8 +164,7 @@ pnpm --filter backend test:cleanup           # remove test leftovers
    - decide on `RECOGNITION_ENABLED`.
 7. **Dev server:** check the unrelated NoMachine `nxd` listening on `0.0.0.0:4000`.
 8. **Merge and cut over:** merge the branch (nothing is merged) and run the cutover (`prod-cutover.md`): the database and storage are recreated, then migrations, metadata and the seed run on the server.
-9. **Minor:** the dev `postgresql.auto.conf` has `log_min_error_statement = 'error'` (the default value, set by `ALTER SYSTEM` on 2026-10-19 18:00 UTC). Confirm where it came from.
-10. **Out of the data layer's scope:**
+9. **Out of the data layer's scope:**
     - the admin UI (`apps/admin-ui`) does not work against the new schema and waits for its rebuild (design §10);
     - real email / SMS / push providers, real HR / SIEM / BMS connectors and a real terminal transport are stubs;
     - face-auth client libraries and capture kits should be generated from the OpenAPI document.
@@ -220,10 +219,11 @@ Details and the remaining deferred minors are in each slice summary.
   - Rotating the encryption key invalidates the stored keys.
   - Synthetic identities exist only through the seed.
 - **Compliance (10):**
-  - Exports: rows committed late behind the keyset cursor are never exported; `audit_log` export subject tracking covers only rows about profiles / identities; an export job queued or running at erasure time may complete naming the subject.
+  - Exports: rows committed late behind the keyset cursor are never exported; `audit_log` export subject tracking covers only rows about profiles / identities. (Reports, export jobs and DSR bundles in flight at erasure time are fenced: they are retried or rejected, never attached.)
+  - Retention: the `export_jobs` hold predicate ignores held incidents / facilities; `dsr_export` bundles have no retention class; replaced HR fixtures are not swept; a big organization's continuation restarts the classes the next day.
   - DSR erasure: free text is redacted by exact terms only; the member's own user account is out of DSR scope.
   - Holds are evaluated at `now()`.
-  - Erasure is one transaction.
+  - Erasure is one transaction (not batched).
   - Seed times are not back-dated for the BMS failures and the DSR steps.
   - `organization_settings.default_retention_days` is unused (no policy means keep).
 - **Seed:**

@@ -141,6 +141,18 @@ A retention grant delete does not bump the policy epoch.
 - `itap.system_status(org, at)`: connections, database size, 10 largest tables, cron lag from `hdb_catalog.hdb_cron_events`, the caller organization's queue depths and its last retention run;
 - `scopes` marks which sections are platform-wide and which are organization-scoped.
 
+### Final fix wave (migrations 266-270)
+
+- **Erasure fence (266, 267):**
+  - `complete_dsr_export` locks the subject profile `FOR SHARE` (`dsr_erase` holds it `FOR UPDATE`); an erased subject finishes the access / portability request as `rejected` (`subject_erased`), attaches no file and queues the zip (the backend also deletes it).
+  - Reports and export jobs: an organization-wide advisory fence. `dsr_erase` takes it exclusively and stamps `completed_at` with `clock_timestamp()`; `claim_report` / `claim_export_job` take it shared without waiting (a running erasure = skipped, the cron reclaims) and stamp the new `claimed_at`; `complete_report` / `complete_export_job` take it shared and wait. An erasure completed after the attempt's `claimed_at` (`itap.erased_since`) ends the attempt as retryable: the row goes back to `queued` (`error = subject_erased`), the file is queued for deletion, and the re-run reads the erased state. `report_transition_allowed` gains `generating -> queued` (system only).
+  - `dsr_erase_prepare` keeps handling completed reports only; queued / generating ones are covered by the fence.
+- **File queue (268):** `check_file_bucket` refuses a file queued in `pending_file_deletions` (`file_pending_deletion:<column>`), and enrollment photo sources refuse it (`file_not_found`). `claim_file_deletions(p_limit, p_organization DEFAULT NULL)` can be scoped to one organization (tests).
+- **Audit (269):** inside the retention context an UPDATE that changes nothing but `updated_at` writes no audit row.
+- **Orphan sweep (270):** the org-wide orphan sweeps of reports / bulk jobs / export jobs skip files still in use (they stalled the sweep); `purge_export_jobs` counts job rows only in `affected` (orphans stay in `files_enqueued`).
+- **Backend:** DSR bundles treat a storage 500 as a missing file only when the storage row is confirmed gone (otherwise the job retries); HR fixture files (`integration_fixture`) are audited on `open_file`; the seed's `waitFor` moved to `src/seed/waitFor.ts`.
+- **Runbook:** new secrets go into `.env.prod.new` (step 2); the backup and the stop of the old stack use the old `.env.prod` (step 5); `mv .env.prod.new .env.prod` starts step 6; the rollback stops the new stack before restoring the old env.
+
 ### Task 5: seed (no SQL)
 
 Step `compliance` (Nova Tower only, about 14 s; `apps/backend/src/seed/compliance*.ts`):
@@ -244,7 +256,9 @@ The rules behind this order:
 **Exports:**
 - A row committed after an export run but with an earlier insertion time than the keyset cursor (a long transaction) is never exported. A lag window would duplicate rows under the keyset ruling. `updated_at` changes are not exported incrementally.
 - `export_jobs.subject_ids` tracks `audit_log` rows only through their entity: rows about a profile or identity. Audit rows of other entities that mention a person only inside `changes` are not matched; erasure already strips them in the database.
-- An export job that is queued or running when an erasure happens can still complete with a file that names the subject (narrow race; not re-scanned at completion).
+- Reports, export jobs and access / portability bundles that are in flight when an erasure commits are fenced (final fix wave): they are requeued or rejected instead of attaching a file naming the subject.
+- The `export_jobs` hold predicate looks at held people only (`subject_ids`), not at held incidents or facilities: export copies are purged after their retention period while the held originals stay.
+- `dsr_export` bundles have no retention class: they are kept until an erasure of the same person.
 - Export definitions are owner-only: other admins see definitions and jobs but cannot run them or open the files. Exports depend on GraphQL introspection being enabled for org_admin (`entity_not_readable` otherwise).
 
 **DSR erasure:**
@@ -255,6 +269,8 @@ The rules behind this order:
 - Undelivered Hasura trigger payloads, and free text without an identifier in trigger payloads, stay until `purge_trigger_logs` (3 days).
 - Published policy versions keep the tombstone profile id.
 - HR fixture files are not modified on erasure. The suppression key is a plain sha256, so it is pseudonymous for low-entropy external ids.
+- HR fixture files that an integration no longer references (replaced fixtures) are not swept by retention. They are audited on `open_file` but stay selectable by org_admin (a sensitive kind would need its own upload action).
+- `dsr_erase` is not batched (see the one-transaction note above).
 
 **Retention:**
 - Holds are evaluated at `now()`, not at the scheduled time.
@@ -264,8 +280,8 @@ The rules behind this order:
   - digests with a held source;
   - unknown identities that take part in merges, are incident subjects or are on watch lists.
 - Audit rows of incident children are not covered by an incident hold.
-- `retention_cleanup` processes every organization in one delivery (at most 12 calls of 20 s each); a larger backlog continues the next day.
-- hasura-storage answers 500 for a storage row without an object. Exports treat that as a missing file after one retry.
+- `retention_cleanup` processes every organization in one delivery (at most 12 calls of 20 s each); a larger backlog continues the next day, and that continuation restarts the classes from the first one (its per-run counts start again at 0).
+- hasura-storage answers 500 for a storage row without an object. DSR access / portability bundles retry once and then record the file as missing only when its storage row is confirmed gone; otherwise the job fails and retries.
 
 **Seed:**
 - Times are not back-dated for the BMS failures (events are append-only, so they are dated "now") or for the DSR steps (`dsr_steps.at` is the clock time).
@@ -278,23 +294,20 @@ The rules behind this order:
 - Restriction: identities linked concurrently between the unlocked read and the profile lock get no advisory lock (tiny window). Sessions close at their last detection.
 - Size guideline exceeded: `recognition/frame.ts` has 305 lines; migrations 237 / 239 (~400 lines), 238 (~350) and 250 (359) are each one logical change.
 
-## Open for the slice final review (ledger carries)
+## Final review carries (done in the final fix wave)
 
-- File drain: re-check that a file is in use right before the storage delete, in addition to the check at claim.
-- Make the claim test scoped to its organization.
-- Retention: no-op audit rows; orphan sweep stall (exclude in-use files from candidates).
-- Storage 500: treat a file as missing only when the object is confirmed absent.
-- Seed:
-  - add a shared `waitFor` util;
-  - the retention `not_backdated` assertion is sensitive to live cron history;
-  - the slice-9 `lobby_after_hours` assertion is date-dependent; its floor was lowered to 2 by the controller, and the re-run was pending when this was written.
+- File drain: a queued file can no longer be attached again (`check_file_bucket`, enrollment), which replaces a re-check before the storage delete; the claim still drops rows whose file is referenced.
+- The claim test is scoped to its organization (`claim_file_deletions(p_limit, p_organization)`).
+- Retention: no-op audit rows are skipped; the orphan sweep excludes in-use files.
+- Storage 500: a file is missing only when its storage row is confirmed gone.
+- Seed: shared `waitFor` util. The slice-9 `lobby_after_hours` floor (7435ac9) made the seed test pass 12/12. The retention `not_backdated` assertion still depends on live cron history (unchanged).
 
 ## Test results
 
-- **Integration:** 164 files (1 skipped), 1056 passed, 12 skipped, 0 failed (Task 5 full run, 675 s).
-- **Unit:** backend 532 passed (78 files); metadata generator 100 passed (9 files).
+- **Integration:** 166 files (1 skipped), 1065 passed, 12 skipped, 0 failed (final fix wave full run, 703 s).
+- **Unit:** backend 534 passed (78 files); metadata generator 100 passed (9 files).
 - **Gates:** `pnpm lint` (0 errors), `pnpm typecheck`, `pnpm build` pass.
-- **Seed test** (`RUN_SEED_TEST=1`): 12 tests. The compliance test passes; see the carry above for the slice-9 assertion.
+- **Seed test** (`RUN_SEED_TEST=1`): 12/12 since 7435ac9 (slice-9 lobby floor); re-run in the final fix wave: 12/12 (405 s).
 - **Review Focus coverage:**
   - legal holds through merges and linked profiles, plus crash resumption: `retention-runner`, `compliance-schema-fixes`;
   - an all-tables erasure scan, including cross-org isolation for low-entropy ids: `dsr-erasure`, `dsr-erasure-isolation`;

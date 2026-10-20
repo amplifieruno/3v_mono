@@ -84,7 +84,8 @@ describe('Export retention and erasure', () => {
     const orphan = await fileRow(w.org, 'export', { export_job_id: '00000000-0000-4000-8000-000000000009' });
     await runSql(`update storage.files set created_at = now() - interval '40 days' where id = '${orphan}'`);
     const r = await purgeAll('export_jobs', w.org, ago(30));
-    expect(r.affected).toBe(2);
+    // affected counts job rows only; the orphan file is queued (files_enqueued) but is not a row.
+    expect(r).toMatchObject({ affected: 1, files_enqueued: 2 });
     expect(await count(`itap.export_jobs where id = '${job.id}'`)).toBe(0);
     expect(await queued(String(job.file_id))).toBe(true);
     expect(await queued(orphan)).toBe(true);

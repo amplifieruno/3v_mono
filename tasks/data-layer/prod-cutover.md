@@ -8,6 +8,8 @@ Files referenced: `docker/docker-compose.prod.yml`, `Makefile` (`prod`, `prod-do
 
 Throughout, `DC` stands for `docker compose --env-file .env.prod -f docker/docker-compose.prod.yml`, run from the repository root on the server.
 
+**Env files.** Until step 6, `.env.prod` is the **old** file the running stack was started with: `DC` and `make prod-down` must use it to reach the old project (its `COMPOSE_PROJECT_NAME`). The new values are prepared in `.env.prod.new` (step 2) and become `.env.prod` only at the start of step 6, after the backup and the stop of the old stack (step 5).
+
 ## 0. Plan and timing
 
 | Phase | Approx. time | Downtime |
@@ -35,9 +37,14 @@ Treat every value that was ever used in dev as leaked:
 - The old Hasura JWT key is in git history: 6 commits of `apps/backend/.env` and 2 commits of the root `.env`.
 - The dev admin secret is the default `change-me`.
 
-Generate new values on the server and put them into `.env.prod`. Never copy a dev value.
+Generate new values on the server and put them into a **new file `.env.prod.new`** (do not edit `.env.prod` yet: the old stack is still running with it, and step 5 needs it to back it up and stop it). Never copy a dev value.
 
-| Variable (`.env.prod`) | Used by | Generate | Notes |
+```bash
+umask 077
+cp .env.example .env.prod.new          # variable names; fill in every value below, never copy one from .env.prod
+```
+
+| Variable (`.env.prod.new`) | Used by | Generate | Notes |
 |---|---|---|---|
 | `GRAPHQL_ADMIN_SECRET` | graphql, auth, storage, migrate, backend (`GRAPHQL_ADMIN_SECRET`) | `openssl rand -hex 32` | Dev default is `change-me`. |
 | `POSTGRES_PASSWORD` | postgres, graphql, auth, storage, migrate | `openssl rand -hex 32` | Applied only when the volume is initialised. That is fine here because the volume is recreated (step 6). On a kept volume, change it with `ALTER ROLE postgres PASSWORD ...` as well. |
@@ -56,7 +63,7 @@ Also set the non-secret variables the prod compose needs:
 - `AUTH_EMAIL_SIGNIN_EMAIL_VERIFIED_REQUIRED`.
 - **A new `COMPOSE_PROJECT_NAME`** (for example `itap_v2`), so the old volumes stay untouched for rollback (step 6).
 
-After the cutover, check that no secret appears in shell history or in tickets, and keep the old `.env.prod` only inside the encrypted backup (step 5).
+`.env.prod.new` stays unused until step 6. After the cutover, check that no secret appears in shell history or in tickets, and keep the old `.env.prod` only inside the encrypted backup (step 5).
 
 ## 3. Compose review (`docker/docker-compose.prod.yml`)
 
@@ -178,8 +185,6 @@ FROM pg_stat_activity WHERE datname IS NOT NULL ORDER BY backend_start;
 - schemas: `auth`, `hdb_catalog`, `itap`, `itap_results`, `public`, `storage`;
 - no foreign servers.
 
-The dev `postgresql.auto.conf` holds `log_min_error_statement = 'error'`, written by an `ALTER SYSTEM` on 2026-10-19 18:00 UTC. That is the default value, so it is harmless, but the owner may want to confirm where it came from.
-
 Dev also mounts a `trust` `pg_hba` file on purpose, because its port is published on 127.0.0.1 only. Production uses the image default, so its `host` lines must show `scram-sha-256`.
 
 An old production database may also show legacy schemas or tables from before slice 1; those are expected. Any role, event trigger, function, database, extension, foreign server or `trust` rule not explained above is a finding.
@@ -206,12 +211,15 @@ ALTER ROLE postgres PASSWORD '<new POSTGRES_PASSWORD>';
 
 ## 5. Backup of the old stack
 
+Everything in this step runs with the **current (old) `.env.prod`**: `DC` and `make prod-down` must address the old project. `.env.prod.new` is not used yet.
+
 ```bash
+mkdir -p backup
 git rev-parse HEAD > backup/old-commit.txt                       # the commit the old stack runs
-cp .env.prod backup/old.env.prod                                 # contains leaked secrets: keep encrypted, offline
+cp .env.prod backup/old.env.prod                                 # the OLD env: leaked secrets, keep encrypted, offline
 DC exec -T postgres pg_dumpall -U postgres > backup/old-pg_dumpall.sql
 docker volume ls --format '{{.Name}}' | grep -E '_(pgdata|minio)$' > backup/old-volumes.txt
-make prod-down                                                    # stops the old stack, keeps its volumes
+make prod-down                                                    # old env -> stops the old stack, keeps its volumes
 docker run --rm -v <old project>_minio:/data:ro -v "$PWD/backup":/backup alpine tar czf /backup/old-minio.tgz -C /data .
 docker run --rm -v <old project>_pgdata:/data:ro -v "$PWD/backup":/backup alpine tar czf /backup/old-pgdata.tgz -C /data .
 ```
@@ -222,9 +230,12 @@ Encrypt the `backup/` directory and move it off the web server.
 
 ## 6. Recreate the database and storage
 
+The old stack is down and its env is in the backup (step 5); only now the new env takes the place of `.env.prod`:
+
 ```bash
-git fetch && git checkout <release commit>
-# .env.prod: new secrets (step 2), new COMPOSE_PROJECT_NAME, compose changes (step 3) committed in the release
+git fetch && git checkout <release commit>                       # compose changes (step 3) are committed in the release
+mv .env.prod.new .env.prod                                       # new secrets (step 2) and the new COMPOSE_PROJECT_NAME
+grep -q '^COMPOSE_PROJECT_NAME=' .env.prod && ! cmp -s .env.prod backup/old.env.prod && echo new env in place
 DC build backend frontend insightface stream-server
 DC up -d postgres minio graphql auth storage
 DC ps                                                            # wait until postgres, graphql, auth, storage are healthy
@@ -245,7 +256,7 @@ DC run --rm --entrypoint hasura-cli migrate metadata inconsistency list --endpoi
 ```
 
 Expected:
-- 341 migrations applied, the last being `1792365700265_dsr_erase_exports_suppression`;
+- 346 migrations applied, the last being `1792365700270_orphan_sweep_in_use`;
 - no metadata inconsistencies;
 - 24 cron triggers, 9 event triggers and 21 actions (step 9).
 
@@ -340,11 +351,14 @@ Prefer a forward fix:
 To return to the old stack (time-boxed; the old secrets are leaked):
 
 ```bash
-make prod-down                                   # stops the new stack (new project name; its volumes stay)
+make prod-down                                   # still the NEW .env.prod: stops the new stack (its volumes stay)
+mv .env.prod .env.prod.new                       # keep the new env (encrypted) for a later forward attempt
 git checkout "$(cat backup/old-commit.txt)"
-cp backup/old.env.prod .env.prod                 # old COMPOSE_PROJECT_NAME -> the old, untouched volumes
-make prod
+cp backup/old.env.prod .env.prod                 # the OLD env: old COMPOSE_PROJECT_NAME -> the old, untouched volumes
+make prod                                        # old stack on its old volumes
 ```
+
+The order matters: `make prod-down` must run while `.env.prod` is still the new file (otherwise it addresses the old project, which is already stopped, and the new stack keeps running).
 
 - If step 4 found persistence, remove it (step 4 SQL) **before** the old stack takes traffic again.
 - Rotate what can be rotated without data changes: the admin secret, the action secret and the JWT key (sessions are invalidated), and the Postgres password via `ALTER ROLE`.

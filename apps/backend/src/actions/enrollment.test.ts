@@ -29,9 +29,12 @@ const IDENTITY = '66666666-6666-4666-8666-666666666666';
 function run(
   handler: ActionHandler<unknown, unknown>,
   input: unknown,
-  { bucket = ORG, organizationId = ORG as string | null, metadata = null as unknown } = {},
+  { bucket = ORG, organizationId = ORG as string | null, metadata = null as unknown, queued = false } = {},
 ) {
-  const adminRequest = vi.fn(async () => ({ files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10, metadata, isUploaded: true }] }));
+  const adminRequest = vi.fn(async () => ({
+    files: [{ id: FILE, bucketId: bucket, mimeType: 'image/jpeg', size: 10, metadata, isUploaded: true }],
+    pending_file_deletions: queued ? [{ file_id: FILE }] : [],
+  }));
   const client = { request: adminRequest } as unknown as HasuraClient;
   return handler({
     env,
@@ -106,6 +109,11 @@ describe('enrollment actions', () => {
     // A regular own-bucket file of another kind is accepted.
     await run(enrollFace, { profile_id: PROFILE, file_ids: [FILE] }, { metadata: { kind: 'identity_photo' } });
     expect(service.enrollForProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('should answer file_not_found for a file queued for deletion without calling the service', async () => {
+    expect(await errorCode(run(enrollFace, { profile_id: PROFILE, file_ids: [FILE] }, { queued: true }))).toBe('file_not_found');
+    expect(service.enrollForProfile).not.toHaveBeenCalled();
   });
 
   it('should pass service refusals through with their code and message', async () => {

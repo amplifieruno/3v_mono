@@ -118,6 +118,7 @@ select_permissions:
       columns:
         - attempts
         - attempts_at_retry
+        - claimed_at
         - code
         - created_at
         - created_by

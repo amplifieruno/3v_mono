@@ -6,7 +6,8 @@ import { buildExportArchive } from './exportBundle.js';
 
 /**
  * The fulfil_dsr job (spec §8.4, slice 10 task 3): claim the request (lease, attempt + 1), then by type —
- * access / portability: bundle (SQL) -> zip with the files -> upload (kind dsr_export, sensitive) -> complete;
+ * access / portability: bundle (SQL) -> zip with the files -> upload (kind dsr_export, sensitive) -> complete (rejected
+ * with subject_erased when the person was erased meanwhile: the upload is deleted);
  * erasure: itap.dsr_erase_restrict (committed), then itap.dsr_erase in one transaction, then the storage deletion
  * queue is drained;
  * restriction: itap.dsr_restrict; rectification: itap.dsr_await_rectification (org_admin applies and closes it).
@@ -52,6 +53,7 @@ const LEFTOVER_FILES = `
   }
 `;
 const EXPORT_FILE = `query DsrExportFile($id: uuid!) { data_subject_requests_by_pk(id: $id) { export_file_id } }`;
+const FILE_EXISTS = `query DsrFileExists($id: uuid!) { file(id: $id) { id } }`;
 
 /** One fenced job function `fn(p_request, p_attempt)` returning the request row (or none when superseded). */
 const STEP = (fn: string): string => `
@@ -82,7 +84,9 @@ async function runExport(r: Claimed, deps: DsrDeps, uploaded: (id: string) => vo
     attempt: r.attempts,
   });
   if (!rows[0]) return null;
-  const archive = await buildExportArchive(rows[0].bundle, deps.storage);
+  const exists = async (fileId: string): Promise<boolean> =>
+    (await deps.admin.request<{ file: { id: string } | null }>(FILE_EXISTS, { id: fileId })).file !== null;
+  const archive = await buildExportArchive(rows[0].bundle, deps.storage, exists);
   const { id: file } = await deps.storage.upload({
     bucketId: r.organization_id.toLowerCase(),
     name: `${r.code}.zip`,
@@ -98,11 +102,9 @@ async function runExport(r: Claimed, deps: DsrDeps, uploaded: (id: string) => vo
     file,
     summary,
   });
-  if (!done[0]) {
-    await deps.storage.deleteFile(file).catch(() => undefined);
-    return null;
-  }
-  return done[0];
+  // Superseded, or rejected because the subject was erased meanwhile (SQL queued the zip; deleted now).
+  if (!done[0] || done[0].status === 'rejected') await deps.storage.deleteFile(file).catch(() => undefined);
+  return done[0] ?? null;
 }
 
 async function callStep(fn: string, r: Claimed, deps: DsrDeps): Promise<Row | null> {

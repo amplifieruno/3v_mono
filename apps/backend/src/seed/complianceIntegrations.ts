@@ -14,6 +14,7 @@ import {
 } from './complianceFlowsPlan.js';
 import { localAt } from './analyticsPlan.js';
 import type { SeedContext } from './tenancy.js';
+import { waitFor } from './waitFor.js';
 
 /**
  * Integrations of Nova Tower (slice 10) with a sync history through the real sync job (integrations/sync.ts):
@@ -52,17 +53,6 @@ const BACKDATE = `
 const LAST_SYNC = `
   mutation SeedLastSync($id: uuid!, $at: timestamptz!) { update_integrations_by_pk(pk_columns: { id: $id }, _set: { last_sync_at: $at }) { id } }
 `;
-
-/** Polls `read` until `done` (500 ms steps) or throws after `timeoutMs`. */
-export async function waitFor<T>(read: () => Promise<T>, done: (value: T) => boolean, timeoutMs: number, what: string): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const value = await read();
-    if (done(value)) return value;
-    if (Date.now() > deadline) throw new Error(`seed: ${what} did not finish`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-}
 
 type Ctx = { ctx: SeedContext; org: string; actor: string };
 type RunState = { status: string; started_at: string; finished_at: string | null };

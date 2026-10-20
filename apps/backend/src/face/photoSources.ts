@@ -38,6 +38,7 @@ export function photoFromBuffer(ref: string, image: Buffer): PhotoSource {
 const FILES_QUERY = `
   query EnrollmentFiles($ids: [uuid!]!) {
     files(where: { id: { _in: $ids } }) { id bucketId mimeType size metadata uploadedByUserId isUploaded }
+    pending_file_deletions(where: { file_id: { _in: $ids } }) { file_id }
   }
 `;
 
@@ -58,7 +59,8 @@ function fileKind(metadata: unknown): string | undefined {
 
 /**
  * Resolves uploaded files of the organization into photo sources. Every id must exist in the organization's own
- * bucket (bucket id = organization uuid), must not be a sensitive kind (SENSITIVE_FILE_KINDS) and, for an owner-only
+ * bucket (bucket id = organization uuid), must not be queued for deletion, must not be a sensitive kind
+ * (SENSITIVE_FILE_KINDS) and, for an owner-only
  * kind (search images), must have been uploaded by `userId`; otherwise PhotoNotFoundError (other tenants', sensitive
  * and other members' private files are not disclosed).
  * Nothing is downloaded here; non-image or oversized files become `invalid_image` when loaded.
@@ -70,13 +72,18 @@ export async function loadOrganizationPhotos(
   fileIds: string[],
   userId?: string,
 ): Promise<PhotoSource[]> {
-  const { files } = await admin.request<{ files: FileRow[] }>(FILES_QUERY, { ids: fileIds });
+  const { files, pending_file_deletions: queued } = await admin.request<{
+    files: FileRow[];
+    pending_file_deletions?: { file_id: string }[];
+  }>(FILES_QUERY, { ids: fileIds });
   const byId = new Map(files.map((file) => [file.id, file]));
+  // Files queued for deletion (retention / erasure) are never a source again.
+  const deleting = new Set((queued ?? []).map((q) => q.file_id.toLowerCase()));
   const bucket = organizationId.toLowerCase();
 
   return fileIds.map((fileId) => {
     const file = byId.get(fileId);
-    if (!file || file.bucketId !== bucket) throw new PhotoNotFoundError(fileId);
+    if (!file || file.bucketId !== bucket || deleting.has(fileId.toLowerCase())) throw new PhotoNotFoundError(fileId);
     // Sensitive files are read only through audited access: an enrollment crop would bypass that audit.
     const kind = fileKind(file.metadata);
     if (kind !== undefined && SENSITIVE_FILE_KINDS.has(kind)) throw new PhotoNotFoundError(fileId);

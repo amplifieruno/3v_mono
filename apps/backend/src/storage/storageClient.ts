@@ -6,9 +6,11 @@ export const SENSITIVE_FILE_KINDS: ReadonlySet<string> = new Set(['profile_docum
 
 /**
  * `metadata.kind` values whose opening through `open_file` is audited (`view_sensitive`): the sensitive kinds plus
- * generated reports (aggregated personal data: attendance, incident timelines). Reports stay selectable by org_admin.
+ * generated reports (aggregated personal data: attendance, incident timelines) and HR integration fixtures (employee
+ * records). Both stay selectable by org_admin (fixtures are uploaded by org_admin through hasura-storage; a sensitive
+ * kind would need a dedicated upload action).
  */
-export const AUDITED_FILE_KINDS: ReadonlySet<string> = new Set([...SENSITIVE_FILE_KINDS, 'report']);
+export const AUDITED_FILE_KINDS: ReadonlySet<string> = new Set([...SENSITIVE_FILE_KINDS, 'report', 'integration_fixture']);
 
 /**
  * `metadata.kind` values visible to their uploader only (`uploaded_by_user_id`, preset from the session on upload):

@@ -21,6 +21,7 @@ function fakeAdmin(type: string, o: { claim?: unknown[]; step?: () => unknown; r
     if (query.includes('complete_dsr_export') && o.completeError) throw new Error(o.completeError);
     if (query.includes('complete_dsr_export')) return { complete_dsr_export: o.complete ?? [{ id: ID, status: 'completed', partial: false }] };
     if (query.includes('fail_dsr')) return { fail_dsr: o.fail ?? [{ id: ID }] };
+    if (query.includes('DsrFileExists')) return { file: { id: 'photo-1' } };
     if (query.includes('DsrExportFile')) return { data_subject_requests_by_pk: { export_file_id: o.owned ?? null } };
     if (query.includes('claim_file_deletions')) return { claim_file_deletions: [] };
     if (query.includes('dsr_erase_restrict')) return o.restrict ? o.restrict() : { dsr_erase_restrict: [{ id: ID, status: 'in_progress', partial: false }] };
@@ -65,6 +66,13 @@ describe('fulfilDsr', () => {
     const { admin } = fakeAdmin('portability', { complete: [] });
     const storage = fakeStorage();
     expect(await fulfilDsr(ID, { admin, storage })).toEqual({ request_id: ID, skipped: 'superseded' });
+    expect(storage.deleteFile).toHaveBeenCalledWith('zip-1');
+  });
+
+  it('should delete its upload when the request was rejected because the subject was erased meanwhile', async () => {
+    const { admin } = fakeAdmin('access', { complete: [{ id: ID, status: 'rejected', partial: false }] });
+    const storage = fakeStorage();
+    expect(await fulfilDsr(ID, { admin, storage })).toEqual({ request_id: ID, status: 'rejected' });
     expect(storage.deleteFile).toHaveBeenCalledWith('zip-1');
   });
 
@@ -117,22 +125,26 @@ describe('buildExportArchive', () => {
     const missing = fakeStorage(async () => {
       throw new StorageError('File download failed (404)', 404);
     });
-    const archive = await buildExportArchive(bundle, missing);
+    const exists = vi.fn(async () => true);
+    const archive = await buildExportArchive(bundle, missing, exists);
     expect(archive).toMatchObject({ files: 0, missing: ['photo-1'] });
     expect(archive.data.subarray(0, 4).readUInt32LE(0)).toBe(0x04034b50);
-    // hasura-storage answers 500 for a row whose object is missing: retried once, then reported as missing.
+    // hasura-storage answers 500 (also while a file is being deleted): retried once, then the storage row is checked;
+    // only a confirmed absent file is missing, otherwise the job fails and retries.
     const ghost = fakeStorage(async () => {
       throw new StorageError('File download failed (500)', 500);
     });
-    expect(await buildExportArchive(bundle, ghost)).toMatchObject({ files: 0, missing: ['photo-1'] });
+    expect(await buildExportArchive(bundle, ghost, async () => false)).toMatchObject({ files: 0, missing: ['photo-1'] });
     expect(ghost.download).toHaveBeenCalledTimes(2);
+    await expect(buildExportArchive(bundle, ghost, exists)).rejects.toThrow('500');
+    expect(exists).toHaveBeenCalledWith('photo-1');
     const flaky = fakeStorage(async () => Buffer.from('ok'));
     flaky.download.mockRejectedValueOnce(new StorageError('File download failed (500)', 500));
-    expect(await buildExportArchive(bundle, flaky)).toMatchObject({ files: 1, missing: [] });
+    expect(await buildExportArchive(bundle, flaky, exists)).toMatchObject({ files: 1, missing: [] });
     const broken = fakeStorage(async () => {
       throw new StorageError('File download timed out', 504);
     });
-    await expect(buildExportArchive(bundle, broken)).rejects.toThrow('timed out');
-    await expect(buildExportArchive({ files: 'nope' }, missing)).rejects.toThrow();
+    await expect(buildExportArchive(bundle, broken, exists)).rejects.toThrow('timed out');
+    await expect(buildExportArchive({ files: 'nope' }, missing, exists)).rejects.toThrow();
   });
 });

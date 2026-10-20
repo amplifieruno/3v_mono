@@ -2,7 +2,7 @@ import { runExport } from '../exports/run.js';
 import type { HasuraClient } from '../hasura/client.js';
 import { localAt } from './analyticsPlan.js';
 import { EXPORTS } from './complianceFlowsPlan.js';
-import { waitFor } from './complianceIntegrations.js';
+import { waitFor } from './waitFor.js';
 import type { SeedContext } from './tenancy.js';
 
 /**

@@ -151,15 +151,22 @@ describe('retention fixes: file queue', () => {
     const w = await retentionWorld();
     const reused = await fileRow(w.org, 'identity_photo');
     const free = await fileRow(w.org, 'misc');
-    await runSql(`select itap.enqueue_file_deletion('${w.org}', '${reused}', 't'), itap.enqueue_file_deletion('${w.org}', '${free}', 't')`);
+    const foreign = await fileRow(w.orgB, 'misc');
+    // Referenced again behind the queue's back (check_file_bucket now refuses attaching a queued file).
     await runSql(`update itap.identities set primary_photo_file_id = '${reused}' where id = '${await sqlIdentity(w.org)}'`);
-    const claimed = await runSqlRows(`select file_id from itap.claim_file_deletions(5000)`);
+    await runSql(`select itap.enqueue_file_deletion('${w.org}', '${reused}', 't'), itap.enqueue_file_deletion('${w.org}', '${free}', 't'),
+      itap.enqueue_file_deletion('${w.orgB}', '${foreign}', 't')`);
+    const claimed = await runSqlRows(`select file_id from itap.claim_file_deletions(5000, '${w.org}')`);
     const ids = claimed.map((r) => r.file_id);
     expect(ids).toContain(free);
     expect(ids).not.toContain(reused);
     expect(await queued(reused)).toBe(false);
-    const again = await runSqlRows(`select file_id from itap.claim_file_deletions(5000)`);
+    const again = await runSqlRows(`select file_id from itap.claim_file_deletions(5000, '${w.org}')`);
     expect(again.map((r) => r.file_id)).not.toContain(free);
+    // Scoped to the organization: another organization's row is neither handed out nor leased.
+    expect(ids).not.toContain(foreign);
+    const [other] = await runSqlRows(`select lease_expires_at from itap.pending_file_deletions where file_id = '${foreign}'`);
+    expect(other.lease_expires_at).toBe('NULL');
     await runSql(`update itap.pending_file_deletions set lease_expires_at = null where file_id = '${free}'`);
   });
 
