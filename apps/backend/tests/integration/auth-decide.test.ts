@@ -111,7 +111,7 @@ describe('auth_decide: verification (Review Focus 2)', () => {
     expect(await attemptRow(nonMatch.attempt_id)).toMatchObject({ failure_reason: 'below_threshold', claimed_identity_id: w.person });
     const rec = await attemptRow(outside.attempt_id);
     expect(rec).toMatchObject({ failure_reason: 'not_in_population', claimed_identity_id: outsider, retrieval_hit: 'NULL' });
-    expect(Number(rec.comparison_score)).toBeCloseTo(1, 4);
+    expect(rec.comparison_score).toBe('NULL'); // nothing is compared with templates outside the population
     // An identity of another organization is answered the same way and never stored.
     const foreign = await faceIdentity(w.orgB.id, [axis(21)]);
     const cross = await verify(foreign, axis(21), null);
