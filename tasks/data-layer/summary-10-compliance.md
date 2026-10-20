@@ -281,7 +281,8 @@ The rules behind this order:
   - unknown identities that take part in merges, are incident subjects or are on watch lists.
 - Audit rows of incident children are not covered by an incident hold.
 - `retention_cleanup` processes every organization in one delivery (at most 12 calls of 20 s each); a larger backlog continues the next day, and that continuation restarts the classes from the first one (its per-run counts start again at 0).
-- hasura-storage answers 500 for a storage row without an object. DSR access / portability bundles retry once and then record the file as missing only when its storage row is confirmed gone; otherwise the job fails and retries.
+- hasura-storage answers 500 for a storage row without an object. DSR access / portability bundles retry once and then record the file as missing only when its storage row is confirmed gone; otherwise the job fails and retries. A storage row whose object is lost keeps answering 500, so that person's access / portability requests end at `max_attempts` until the row is cleaned up.
+- An access request in progress for a person whose erasure runs at the same moment can deadlock with the erasure when the request's notes name the person (completion locks the request then the profile; erasure locks the profile then updates that person's other requests). Postgres aborts one side and it retries (the access request then ends `subject_erased`); rare and self-healing.
 
 **Seed:**
 - Times are not back-dated for the BMS failures (events are append-only, so they are dated "now") or for the DSR steps (`dsr_steps.at` is the clock time).
