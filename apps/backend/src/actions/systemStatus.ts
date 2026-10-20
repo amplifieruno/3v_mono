@@ -13,6 +13,12 @@ type Snapshot = {
   retention: Record<string, unknown> | null;
 };
 
+/**
+ * What each section describes: platform-wide health (shared by every organization; service status, Postgres figures
+ * and table sizes, Hasura cron lag — no tenant rows) versus the caller's organization only (queue depths, retention).
+ */
+const SCOPES = { checks: 'platform', postgres: 'platform', crons: 'platform', queues: 'organization', retention: 'organization' };
+
 const origin = (url: string): string => new URL(url).origin;
 
 function insightFaceDetails(body: string): Record<string, unknown> {
@@ -60,5 +66,6 @@ export const getSystemStatus = defineAction(z.unknown(), async (ctx) => {
     crons,
     queues: db.snapshot?.queues ?? {},
     retention: db.snapshot?.retention ?? null,
+    scopes: SCOPES,
   };
 });

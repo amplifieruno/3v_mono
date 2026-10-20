@@ -98,6 +98,25 @@ function textValue(value: unknown): string | null | undefined {
   return undefined;
 }
 
+const DATE_COLUMNS = new Set(['start_date', 'end_date']);
+const CODE_COLUMNS = new Set(['profile_type', 'status', 'access_level']);
+
+/**
+ * Canonical form of a mapped value, so the comparison with the stored profile is exact: dates as YYYY-MM-DD (from a
+ * date or an ISO date-time), code columns lower case. Undefined = not a valid value for the column.
+ */
+export function normalizeValue(column: string, value: string | null): string | null | undefined {
+  if (value === null) return null;
+  if (DATE_COLUMNS.has(column)) {
+    const plain = /^(\d{4}-\d{2}-\d{2})(?:$|[T ])/.exec(value);
+    if (plain) return Number.isNaN(Date.parse(`${plain[1]}T00:00:00Z`)) ? undefined : plain[1];
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? undefined : new Date(parsed).toISOString().slice(0, 10);
+  }
+  if (CODE_COLUMNS.has(column)) return value.toLowerCase();
+  return value;
+}
+
 /** One source record mapped to profile fields, or the code of why it is skipped. */
 export function mapRecord(record: unknown, mapping: Record<string, string>, externalIdField: string): MappedRecord | { error: string } {
   if (!isObject(record)) return { error: 'invalid_record' };
@@ -110,7 +129,8 @@ export function mapRecord(record: unknown, mapping: Record<string, string>, exte
   const customFields: Record<string, string | null> = {};
   for (const [source, target] of pairs) {
     if (!Object.hasOwn(record, source)) continue;
-    const value = textValue(record[source]);
+    const text = textValue(record[source]);
+    const value = text === undefined || target.startsWith(CUSTOM_PREFIX) ? text : normalizeValue(target, text);
     if (value === undefined) return { error: `invalid_value:${target}` };
     if (target.startsWith(CUSTOM_PREFIX)) customFields[target.slice(CUSTOM_PREFIX.length)] = value;
     else fields[target] = value;

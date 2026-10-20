@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapRecord, parseFieldMapping, parseFixture, SyncFailure } from './fixture.js';
+import { mapRecord, normalizeValue, parseFieldMapping, parseFixture, SyncFailure } from './fixture.js';
 
 describe('parseFixture', () => {
   it('should read a JSON array, a JSON {records} document and a CSV with a header row', () => {
@@ -50,5 +50,17 @@ describe('mapRecord', () => {
     expect(mapRecord({ given: 'A' }, mapping, 'emp')).toEqual({ error: 'missing_external_id' });
     expect(mapRecord({ emp: ' ' }, mapping, 'emp')).toEqual({ error: 'missing_external_id' });
     expect(mapRecord({ emp: 'E', given: { a: 1 } }, mapping, 'emp')).toEqual({ error: 'invalid_value:first_name' });
+  });
+});
+
+describe('normalizeValue', () => {
+  it('should canonicalise dates and code columns and refuse invalid dates', () => {
+    expect(normalizeValue('start_date', '2024-01-05T00:00:00Z')).toBe('2024-01-05');
+    expect(normalizeValue('start_date', '2024-01-05')).toBe('2024-01-05');
+    expect(normalizeValue('end_date', 'January 5, 2024 12:00 UTC')).toBe('2024-01-05');
+    expect(normalizeValue('end_date', 'soon')).toBeUndefined();
+    expect(normalizeValue('profile_type', 'Employee')).toBe('employee');
+    expect(normalizeValue('first_name', 'Ann')).toBe('Ann');
+    expect(normalizeValue('start_date', null)).toBeNull();
   });
 });

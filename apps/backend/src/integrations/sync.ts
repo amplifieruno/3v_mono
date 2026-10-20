@@ -54,6 +54,9 @@ const FAIL = `
     fail_integration_sync(args: { p_run: $id, p_attempt: $attempt, p_error: $error, p_result: $result }) { id }
   }
 `;
+const RENEW = `
+  mutation RenewSyncLease($id: uuid!, $attempt: Int!) { renew_integration_sync_lease(args: { p_run: $id, p_attempt: $attempt }) { id } }
+`;
 const EVENTS_SINCE = `
   query SiemWindow($org: uuid!, $after: timestamptz!, $until: timestamptz!) {
     events_aggregate(where: { organization_id: { _eq: $org }, created_at: { _gt: $after, _lte: $until } }) { aggregate { count } }
@@ -63,7 +66,10 @@ const OCCUPANCY = `
   query BmsSnapshot($org: uuid!) { area_occupancy_aggregate(where: { organization_id: { _eq: $org } }) { aggregate { count } } }
 `;
 
-const empty = (): SyncCounts => ({ records_in: 0, records_out: 0, created: 0, updated: 0, deactivated: 0, skipped: 0, errors: [] });
+const empty = (): SyncCounts => ({
+  records_in: 0, records_out: 0, created: 0, updated: 0, deactivated: 0, skipped: 0, skipped_suppressed: 0, skipped_restricted: 0,
+  errors: [],
+});
 const DAY_MS = 86_400_000;
 
 async function aggregateCount(admin: HasuraClient, query: string, key: string, variables: Record<string, unknown>): Promise<number> {
@@ -89,6 +95,9 @@ async function runHr(run: Claimed, i: Integration, deps: SyncDeps): Promise<Sync
     mapping,
     externalIdField: typeof field === 'string' && field.trim() !== '' ? field.trim() : 'external_id',
     reader: deps.admin,
+    renew: async () =>
+      (await deps.admin.request<{ renew_integration_sync_lease: unknown[] }>(RENEW, { id: run.id, attempt: run.attempts }))
+        .renew_integration_sync_lease.length > 0,
     writer: createHasuraClient(
       deps.env,
       { role: 'admin', organizationId: run.organization_id },

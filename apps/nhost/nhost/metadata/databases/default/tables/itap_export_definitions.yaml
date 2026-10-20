@@ -44,6 +44,7 @@ insert_permissions:
         - schedule_cron
         - timezone
         - is_active
+        - max_rows
       check:
         organization_id:
           _eq: X-Hasura-Organization-Id
@@ -65,6 +66,7 @@ select_permissions:
         - last_error
         - last_failed_at
         - last_run_at
+        - max_rows
         - mode
         - name
         - next_run_at
@@ -75,6 +77,7 @@ select_permissions:
         - timezone
         - updated_at
         - watermark
+        - watermark_id
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
@@ -92,6 +95,7 @@ update_permissions:
         - schedule_cron
         - timezone
         - is_active
+        - max_rows
       filter:
         _and:
           - organization_id:

@@ -22,6 +22,15 @@ object_relationships:
         column_mapping:
           organization_id: id
 array_relationships:
+  - name: integration_suppressions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integration_suppressions
+        column_mapping:
+          organization_id: organization_id
+          id: integration_id
   - name: profiles
     using:
       manual_configuration:

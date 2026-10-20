@@ -178,4 +178,5 @@ type SystemStatus {
   crons: jsonb!
   queues: jsonb!
   retention: jsonb
+  scopes: jsonb!
 }

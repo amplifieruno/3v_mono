@@ -557,6 +557,14 @@ array_relationships:
           name: incidents
         column_mapping:
           id: organization_id
+  - name: integration_suppressions
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integration_suppressions
+        column_mapping:
+          id: organization_id
   - name: integration_sync_runs
     using:
       manual_configuration:

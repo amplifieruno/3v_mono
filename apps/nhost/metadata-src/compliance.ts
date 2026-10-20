@@ -4,7 +4,7 @@ const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
 const INTEGRATION_WRITABLE = ['name', 'description', 'provider', 'config', 'field_mapping', 'direction', 'status'];
 const EXPORT_DEFINITION_WRITABLE = [
-  'name', 'description', 'entity', 'format', 'filters', 'mode', 'schedule_cron', 'timezone', 'is_active',
+  'name', 'description', 'entity', 'format', 'filters', 'mode', 'schedule_cron', 'timezone', 'is_active', 'max_rows',
 ];
 const ownedDefinition: BoolExp = { _and: [ownOrganizationRow, { owner_id: { _eq: 'X-Hasura-User-Id' } }] };
 
@@ -114,13 +114,15 @@ export const complianceTables: TableSpec[] = [
       },
     ],
   },
+  // Erasure suppression keys (sha256 of integration + external id) read by the HR sync; backend only.
+  { name: 'integration_suppressions', profile: 'none' },
   { name: 'export_entities', isEnum: true, profile: 'none' },
   {
     // The owner (session member) edits, deletes and runs a definition (jobs run with the owner's permissions);
     // every org_admin sees them. watermark / schedule bookkeeping: system columns.
     name: 'export_definitions',
     profile: 'tenant_crud',
-    readOnlyColumns: ['number', 'watermark', 'next_run_at', 'last_run_at', 'last_error', 'last_failed_at', 'owner_id'],
+    readOnlyColumns: ['number', 'watermark', 'watermark_id', 'next_run_at', 'last_run_at', 'last_error', 'last_failed_at', 'owner_id'],
     relationshipNames: { export_jobs_definition_fkey: 'jobs' },
     extraPermissions: {
       insert_permissions: [
@@ -233,7 +235,7 @@ export const complianceFunctions: FunctionSpec[] = [
   },
   // Integrations and exports (task 4): job / cron functions, admin-only.
   ...['request_integration_sync', 'claim_integration_sync', 'complete_integration_sync', 'fail_integration_sync',
-    'init_integration_schedule', 'run_integration_schedule', 'claim_export_job', 'complete_export_job', 'fail_export_job',
+    'init_integration_schedule', 'run_integration_schedule', 'renew_integration_sync_lease', 'claim_export_job', 'complete_export_job', 'fail_export_job',
     'init_export_definition', 'run_export_definition', 'record_export_definition_failure'].map(
     (name): FunctionSpec => ({
       name,

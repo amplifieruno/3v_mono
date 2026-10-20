@@ -64,12 +64,26 @@ export async function readableColumns(member: HasuraClient, entity: string): Pro
   return columns;
 }
 
-/** The job's where: the definition's filters, the entity window, rows after the watermark, rows up to `until`. */
-export function baseWhere(entity: string, filters: Record<string, unknown>, watermarkFrom: string | null, until: Date): Record<string, unknown> {
+/** Rows strictly after the cursor (watermark, id) in the export order — the same predicate for paging and runs. */
+export function afterCursor(watermark: string, value: unknown, id: unknown): Record<string, unknown> {
+  if (id === null || id === undefined) return { [watermark]: { _gt: value } };
+  return { _or: [{ [watermark]: { _gt: value } }, { [watermark]: { _eq: value }, id: { _gt: id } }] };
+}
+
+/**
+ * The job's where: the definition's filters, the entity window, rows after the incremental cursor (watermark,
+ * watermark id), rows up to `until`.
+ */
+export function baseWhere(
+  entity: string,
+  filters: Record<string, unknown>,
+  cursor: { watermark: string | null; id: string | null },
+  until: Date,
+): Record<string, unknown> {
   const { watermark, window } = entityConfig(entity);
   const parts: Record<string, unknown>[] = [filters, { [watermark]: { _lte: until.toISOString() } }];
   if (window) parts.push({ [window.column]: { _gte: new Date(until.getTime() - window.days * 86_400_000).toISOString() } });
-  if (watermarkFrom) parts.push({ [watermark]: { _gt: watermarkFrom } });
+  if (cursor.watermark) parts.push(afterCursor(watermark, cursor.watermark, cursor.id));
   return { _and: parts };
 }
 
@@ -84,9 +98,9 @@ export async function validateFilters(member: HasuraClient, entity: string, filt
   }
 }
 
-export type ExportRows = { rows: Record<string, unknown>[]; truncated: boolean; lastWatermark: string | null };
+export type ExportRows = { rows: Record<string, unknown>[]; truncated: boolean; lastWatermark: string | null; lastId: string | null };
 
-/** Every row (up to MAX_ROWS) in (watermark, id) order, keyset-paged. */
+/** Every row (up to maxRows) in (watermark, id) order, keyset-paged. */
 export async function fetchRows(
   member: HasuraClient,
   entity: string,
@@ -110,10 +124,10 @@ export async function fetchRows(
     rows.push(...page);
     if (page.length < limit || rows.length > maxRows) break;
     const last = page[page.length - 1];
-    after = { _or: [{ [watermark]: { _gt: last[watermark] } }, { [watermark]: { _eq: last[watermark] }, id: { _gt: last.id } }] };
+    after = afterCursor(watermark, last[watermark], last.id);
   }
   const truncated = rows.length > maxRows;
   if (truncated) rows.length = maxRows;
   const tail = rows[rows.length - 1];
-  return { rows, truncated, lastWatermark: tail ? String(tail[watermark]) : null };
+  return { rows, truncated, lastWatermark: tail ? String(tail[watermark]) : null, lastId: tail ? String(tail.id) : null };
 }

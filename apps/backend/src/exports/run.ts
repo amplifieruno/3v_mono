@@ -10,9 +10,10 @@ import { isExportFormat, renderExport } from './render.js';
  * The run_export job (spec §8.4, slice 10 task 4): claim the job (lease, attempt + 1), then query Hasura AS THE
  * REQUESTING MEMBER with a freshly signed organization token (role org_admin, their user id) — permissions decide rows
  * and columns (Review Focus 4) — validate the filters with a dry query, page through the rows (incremental: after the
- * job's watermark), render (csv / json / xlsx), upload to the organization bucket as kind `export` with the member as
- * the uploader (owner-only, sensitive), and complete (the watermark advances to the last exported row only then).
- * A failure records `failed` (fenced) and deletes this attempt's upload.
+ * job's cursor (watermark, id), the same predicate as paging; at most the job's max_rows), render (csv / json / xlsx),
+ * upload to the organization bucket as kind `export` with the member as the uploader (owner-only, sensitive), and
+ * complete with the exported row ids (SQL records the people they name) — the cursor advances to the last exported
+ * row only then. A failure records `failed` (fenced) and deletes this attempt's upload.
  */
 
 export interface ExportDeps {
@@ -37,20 +38,26 @@ type Claimed = {
   format: string;
   filters: Record<string, unknown>;
   watermark_from: string | null;
+  watermark_from_id: string | null;
+  max_rows: number;
   requested_by: string;
   attempts: number;
 };
 
-const JOB = 'id organization_id definition_id entity format filters watermark_from requested_by attempts';
+const JOB = 'id organization_id definition_id entity format filters watermark_from watermark_from_id max_rows requested_by attempts';
 const CLAIM = `mutation ClaimExport($id: uuid!) { claim_export_job(args: { p_job: $id }) { ${JOB} } }`;
 const DEFINITION = `query ExportDefinition($id: uuid!) { export_definitions_by_pk(id: $id) { code name } }`;
 const SET_UPLOADER = `
   mutation ExportUploader($id: uuid!, $user: uuid!) { updateFile(pk_columns: { id: $id }, _set: { uploadedByUserId: $user }) { id } }
 `;
 const COMPLETE = `
-  mutation CompleteExport($id: uuid!, $attempt: Int!, $file: uuid!, $rows: Int!, $truncated: Boolean!, $watermark: timestamptz) {
+  mutation CompleteExport(
+    $id: uuid!, $attempt: Int!, $file: uuid!, $rows: Int!, $truncated: Boolean!, $watermark: timestamptz, $watermarkId: uuid,
+    $rowIds: _uuid!
+  ) {
     complete_export_job(args: {
-      p_job: $id, p_attempt: $attempt, p_file: $file, p_row_count: $rows, p_truncated: $truncated, p_watermark: $watermark
+      p_job: $id, p_attempt: $attempt, p_file: $file, p_row_count: $rows, p_truncated: $truncated, p_watermark: $watermark,
+      p_watermark_id: $watermarkId, p_row_ids: $rowIds
     }) { id }
   }
 `;
@@ -89,7 +96,8 @@ async function produce(job: Claimed, deps: ExportDeps, uploaded: (id: string) =>
   const member = (deps.memberClient ?? memberClientFor(deps.env))(job.organization_id, job.requested_by);
   const columns = await readableColumns(member, job.entity);
   await validateFilters(member, job.entity, job.filters);
-  const result = await fetchRows(member, job.entity, columns, baseWhere(job.entity, job.filters, job.watermark_from, now));
+  const where = baseWhere(job.entity, job.filters, { watermark: job.watermark_from, id: job.watermark_from_id }, now);
+  const result = await fetchRows(member, job.entity, columns, where, job.max_rows);
   const { export_definitions_by_pk: d } = await deps.admin.request<{ export_definitions_by_pk: { code: string; name: string } | null }>(
     DEFINITION,
     { id: job.definition_id },
@@ -114,6 +122,9 @@ async function produce(job: Claimed, deps: ExportDeps, uploaded: (id: string) =>
     rows: result.rows.length,
     truncated: result.truncated,
     watermark: result.lastWatermark,
+    watermarkId: result.lastId,
+    // Postgres array literal of the exported row ids: the job records the people they name (subject_ids).
+    rowIds: `{${result.rows.map((r) => String(r.id)).join(',')}}`,
   });
   if (done.length === 0) {
     await deps.storage.deleteFile(fileId).catch(() => undefined);

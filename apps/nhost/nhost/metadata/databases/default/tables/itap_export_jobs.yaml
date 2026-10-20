@@ -68,6 +68,7 @@ select_permissions:
         - format
         - id
         - lease_expires_at
+        - max_rows
         - mode
         - organization_id
         - requested_by
@@ -75,11 +76,14 @@ select_permissions:
         - scheduled_for
         - started_at
         - status
+        - subject_ids
         - trigger
         - truncated
         - updated_at
         - watermark_from
+        - watermark_from_id
         - watermark_to
+        - watermark_to_id
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

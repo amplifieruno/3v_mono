@@ -58,6 +58,8 @@ select_permissions:
         - records_out
         - requested_by
         - skipped_count
+        - skipped_restricted
+        - skipped_suppressed
         - started_at
         - status
         - trigger

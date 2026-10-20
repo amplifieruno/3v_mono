@@ -31,6 +31,8 @@ export type SyncRun = {
   updated_count: number;
   deactivated_count: number;
   skipped_count: number;
+  skipped_suppressed: number;
+  skipped_restricted: number;
   errors: { row?: number; code: string }[];
   error: string | null;
   attempts: number;
@@ -38,7 +40,7 @@ export type SyncRun = {
   requested_by: string | null;
 };
 export const RUN_FIELDS = `id integration_id trigger status records_in records_out created_count updated_count deactivated_count
-  skipped_count errors error attempts fixture_file_id requested_by`;
+  skipped_count skipped_suppressed skipped_restricted errors error attempts fixture_file_id requested_by`;
 
 export async function createIntegration(a: HasuraClient, object: Record<string, unknown>): Promise<Integration> {
   return insertOne<Integration>(

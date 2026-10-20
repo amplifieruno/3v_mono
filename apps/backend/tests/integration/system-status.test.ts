@@ -14,9 +14,10 @@ type Status = {
   crons: { name: string; status: string; lag_seconds: number; last_delivered_at: string | null }[];
   queues: Record<string, number>;
   retention: { status: string; scheduled_at: string } | null;
+  scopes: Record<string, string>;
 };
 
-const STATUS = `query { get_system_status { generated_at status checks postgres crons queues retention } }`;
+const STATUS = `query { get_system_status { generated_at status checks postgres crons queues retention scopes } }`;
 const LEVELS = ['ok', 'degraded', 'down'];
 
 describe('get_system_status', () => {
@@ -40,6 +41,7 @@ describe('get_system_status', () => {
     const heartbeat = s.crons.find((c) => c.name === 'heartbeat');
     expect(heartbeat).toBeDefined();
     expect(LEVELS).toContain(heartbeat?.status);
+    expect(s.scopes).toEqual({ checks: 'platform', postgres: 'platform', crons: 'platform', queues: 'organization', retention: 'organization' });
     expect(Object.keys(s.queues).sort()).toEqual([
       'bulk_jobs', 'data_subject_requests', 'export_jobs', 'file_deletions', 'integration_syncs', 'notification_deliveries',
       'reports', 'webhook_deliveries',

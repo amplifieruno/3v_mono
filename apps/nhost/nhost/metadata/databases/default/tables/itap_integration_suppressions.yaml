@@ -1,0 +1,23 @@
+table:
+  schema: itap
+  name: integration_suppressions
+configuration:
+  custom_name: integration_suppressions
+object_relationships:
+  - name: integration
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: integrations
+        column_mapping:
+          organization_id: organization_id
+          integration_id: id
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: itap
+          name: organizations
+        column_mapping:
+          organization_id: id

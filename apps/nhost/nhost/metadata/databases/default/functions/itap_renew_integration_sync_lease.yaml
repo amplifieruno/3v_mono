@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: renew_integration_sync_lease
+configuration:
+  custom_name: renew_integration_sync_lease
+  exposed_as: mutation

@@ -135,6 +135,7 @@
 - "!include itap_integration_directions.yaml"
 - "!include itap_integration_kinds.yaml"
 - "!include itap_integration_statuses.yaml"
+- "!include itap_integration_suppressions.yaml"
 - "!include itap_integration_sync_runs.yaml"
 - "!include itap_integrations.yaml"
 - "!include itap_invitation_statuses.yaml"

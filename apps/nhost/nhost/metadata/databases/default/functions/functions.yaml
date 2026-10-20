@@ -102,6 +102,7 @@
 - "!include itap_reject_dsr.yaml"
 - "!include itap_reject_verification.yaml"
 - "!include itap_remove_segment_members.yaml"
+- "!include itap_renew_integration_sync_lease.yaml"
 - "!include itap_request_integration_sync.yaml"
 - "!include itap_resolve_incident.yaml"
 - "!include itap_retention_plan.yaml"
