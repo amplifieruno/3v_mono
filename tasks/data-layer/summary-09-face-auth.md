@@ -1,6 +1,6 @@
 # Slice 9 summary: Face authentication service (SA_6)
 
-Branch `feat/data-layer-foundation`: commits `95d910b..HEAD` (Task 1 `c3388bf`..`fa498d1`, Task 2 `21e14f5`..`3e6f323`, Task 3 `564b849`..`e7a052f`, Task 4 `7678a8a`..`4a13557`, Task 5 docs/gates). Spec: `design.md` §6.16, §7, §8.1, §8.3, §8.5 (as built); plan: `plan-09-face-auth.md`. Migrations 187-207. Integrator doc: `face-auth-api.md`; machine-readable interface: `GET /v1/auth/openapi.json` (OpenAPI 3.1).
+Branch `feat/data-layer-foundation`: commits `95d910b..HEAD` (Task 1 `c3388bf`..`fa498d1`, Task 2 `21e14f5`..`3e6f323`, Task 3 `564b849`..`e7a052f`, Task 4 `7678a8a`..`4a13557`, Task 5 docs/gates, final review fix wave after `61a08d1`). Spec: `design.md` §6.16, §7, §8.1, §8.3, §8.5 (as built); plan: `plan-09-face-auth.md`. Migrations 187-211. Integrator doc: `face-auth-api.md`; machine-readable interface: `GET /v1/auth/openapi.json` (OpenAPI 3.1).
 
 ## What was built
 
@@ -22,6 +22,15 @@ Branch `feat/data-layer-foundation`: commits `95d910b..HEAD` (Task 1 `c3388bf`..
 ### Task 4: seed (206-207)
 - Five apps (Lobby Kiosk, HR Portal, Visitor Check-in, Developer Sandbox, Legacy Badge Kiosk suspended), 20 synthetic identities (pixel blends of two seed crops plus mirror), keys (history key revoked after rotation, current key printed once in dev, an expired pilot key), 30 days of history through the real engine via `itap.seed_auth_flow` (555 sessions, 667 attempts, 10 reviews, 8 evidence frames, 410 `auth_success` / 97 `auth_failed` events). `itap.auth_now()` is the seed-only back-dating clock. Seed +15-18 s (full reset ~300 s).
 - `run_lifecycle_jobs` skips synthetic identities.
+
+### Final review fix wave (208-211)
+- `auth_decide` (208): a detected attack (binding mismatch, replayed / duplicated sequence) takes precedence over a quality failure and closes the session; a verification of a claimed identity outside the population compares nothing (no `comparison_score` / `confidence` stored).
+- `sync_segment_members` (209) drops synthetic identities, and the backend segment translator adds `is_synthetic = false`: sandbox identities never become dynamic segment members.
+- `auth_open_session` (210): an application bound to access points must name one (`400 access_point_required`).
+- `revoke_client_key` (211) clears the encrypted secret (the key guard allows only that, only on revocation); earlier revoked keys cleared; the middleware answers a revoked key `key_revoked` by its prefix.
+- Key auth: replay entries expire at `ts + 300 + 1` s and are recorded only after the expired / inactive / rate-limit checks (the replay lookup precedes the rate limit, no await in between); `timestamp_skew` is retryable. Evidence sweep: per-file errors logged and skipped, 404 counts as deleted.
+- `next_step`: verification offers `second_factor` from the first partial match (as the SQL accepts it); the status endpoint answers `capture` for a session without a capture. OpenAPI: signing string with the optional fifth line (trimmed `X-Request-Id`), replay memory, `access_point_required`.
+- Seed: Visitor Check-in binds no access point (every visitor session would otherwise need the reception desk, where visitors are not allowed); the `not_retrieved` history moved to Lobby Kiosk after-hours check-ins (20:15-21:30, nobody on shift).
 
 ## Rulings (from the ledger)
 - Facility-bound population: profiles with a published policy or active grant covering the facility, or identities with a tracking session there in the last 30 days; amended: only identities linked to an ACTIVE profile ever authenticate (unlinked camera identities never). Sandbox population = synthetic identities (they cannot link to profiles).
@@ -49,22 +58,22 @@ Branch `feat/data-layer-foundation`: commits `95d910b..HEAD` (Task 1 `c3388bf`..
 - Rate limit 30 burst / 10 per second per key (per process).
 
 ## Deferred minors and known limits
-- Liveness is a cheap heuristic (a perfectly still live person may be flagged `printed_photo`; screens are not told from prints; masks never).
+- Liveness is a cheap heuristic (a perfectly still live person may be flagged `printed_photo`; screens are not told from prints; masks never). What is and is not detected: `face-auth-api.md` §4a (binding = possession of the secret only; replay = byte-identical only; non-identical stills pass; SA_6 attack test set not run).
+- Population evaluation per capture; access point narrowing ~1.3 ms per identity (~170-184 ms for 132-137 identities), so the 50 000 identities / 2 s target is not met with narrowing (future: lazy narrowing on the top candidates). Measured seeded populations: Lobby 6, HR 6, Visitor 1, Sandbox 20.
+- Synthetic identities are created only by the seed (no console enrolment flow for sandbox faces); a sandbox app must bind a segment of them.
 - Verification requests repeat `claimed_identity_id` on every capture (session keeps only a hash).
 - Rate limit, replay cache and `last_used_at` throttle are per process (in memory).
 - Rotating `AUTH_KEY_ENCRYPTION_KEY` invalidates stored keys (no re-encryption tool); `v1` rows must be rotated.
 - Seed: reviewed_at and audit dates are back-dated; Visitor population is one identity; no seeded rule routes `auth_failed` attack events yet.
 - Search (slice 7) excludes synthetic identities for everyone.
 
-## Pending final-wave carries
-- Evidence sweep: catch per-file delete errors (a 404 means already deleted) so one file cannot stop a run.
-- Replay window should be `2 * skew + 1` s (600 s now covers it only by coincidence of constants); record the replay entry only after the revoked / expired / rate-limit checks.
-- Migration 205 down comment: needs an empty key table.
-- OpenAPI note: sign the trimmed `X-Request-Id` (documented in `face-auth-api.md`).
-- Seed a notification rule routing `auth_failed` attacks to the Security team; enrol more visitors for Visitor Check-in.
+## Pending carries
+- Done in the final wave: evidence sweep per-file errors; replay expiry `ts + skew + 1` and recording after the checks; migration 205 down comment (needs no v2 secrets); OpenAPI signing note.
+- Open: seed a notification rule routing `auth_failed` attacks to the Security team; enrol more visitors for Visitor Check-in; lazy access point narrowing; a console flow for sandbox (synthetic) enrolment.
 
 ## Slice 10 purge list (retention / DSR)
-`authentication_attempts`, `authentication_sessions`, `auth_sequence_digests`, evidence files of kind `auth_capture`, revoked/expired `client_application_keys`, sandbox applications and synthetic identities; DSR erasure must null `matched_identity_id` / `claimed_identity_id` / `profile_id` on attempts and delete the evidence file.
+- Retention: `authentication_attempts` (incl. `ip`, `user_agent`, `device_ref`, `comparison_score` / `confidence`, `attack_details`, `quality`), `authentication_sessions` (`nonce_hash`, `claimed_ref_hash`, `created_ip`, `user_agent`, `device_ref`), `auth_sequence_digests`, evidence files of kind `auth_capture`, `auth_success` / `auth_failed` events and their notification deliveries (payload carries the claimed identity and confidence), audit rows of reviews (`review_authentication_attempt`) and review notes, revoked/expired `client_application_keys` (revocation already clears the ciphertext; the scrypt fingerprint and audit rows remain), sandbox applications and synthetic identities.
+- DSR erasure of a person: null `matched_identity_id` / `claimed_identity_id` / `profile_id` and the comparison scores on their attempts, delete their evidence files, the session hashes of their claims, the `auth_*` events (and deliveries) naming them, and review notes about them.
 
 ## Owner actions
 - Set `AUTH_KEY_ENCRYPTION_KEY` (64 hex characters) in prod `.env` before enabling the service; without it keyed routes answer 503 `service_not_configured` and rotation is refused. Never change it afterwards without re-issuing every key.
