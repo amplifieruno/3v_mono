@@ -33,6 +33,7 @@ export function createRecognitionSession(device: RecognitionDevice, deps: Sessio
     framesProcessed: 0,
     framesDropped: 0,
     facesDetected: 0,
+    facesSuppressed: 0,
     detections: 0,
     lastFrameAt: null,
     lastError: null,
@@ -47,6 +48,7 @@ export function createRecognitionSession(device: RecognitionDevice, deps: Sessio
       const result = await deps.processFrame(frame, capturedAt, signal);
       counters.framesProcessed += 1;
       counters.facesDetected += result.faces;
+      counters.facesSuppressed += result.suppressed;
       counters.detections += result.detections.length;
       counters.lastFrameAt = capturedAt.toISOString();
       counters.lastError = null;

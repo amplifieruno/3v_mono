@@ -22,6 +22,7 @@ function fakeSession(d: RecognitionDevice): RecognitionSession & { device: Recog
       framesProcessed: 0,
       framesDropped: 0,
       facesDetected: 0,
+      facesSuppressed: 0,
       detections: 0,
       lastFrameAt: null,
       lastError: null,

@@ -12,6 +12,7 @@ export type RecognitionStatus = {
   frames_processed: number;
   frames_dropped: number;
   faces_detected: number;
+  faces_suppressed: number;
   detections: number;
   last_frame_at: string | null;
   last_error: string | null;
@@ -66,6 +67,7 @@ function statusOf(device: DeviceRow, enabled: boolean): RecognitionStatus {
     frames_processed: stats?.framesProcessed ?? 0,
     frames_dropped: stats?.framesDropped ?? 0,
     faces_detected: stats?.facesDetected ?? 0,
+    faces_suppressed: stats?.facesSuppressed ?? 0,
     detections: stats?.detections ?? 0,
     last_frame_at: stats?.lastFrameAt ?? null,
     last_error: stats?.lastError ?? null,

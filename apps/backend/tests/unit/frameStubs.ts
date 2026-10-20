@@ -36,6 +36,8 @@ export type StubOptions = {
   matches?: Record<number, string>;
   templates?: Record<string, Templates>;
   admitTemplate?: boolean;
+  /** Similarity of the best restricted / consent-withdrawn identity per face tag (match_face_suppressed). */
+  suppressed?: Record<number, number>;
   /** The identity lock of the device organization (default: a fresh per-call mutex). */
   lock?: KeyedMutex;
 };
@@ -53,6 +55,11 @@ export function stubs(faces: ExtractedFace[], options: StubOptions = {}) {
         const tag = Number(String(vars.embedding).slice(1).split(',')[0]);
         const id = matches[tag];
         return { match_face: id ? [{ identity_id: id, profile_id: id === KNOWN_A ? 'p-a' : null, similarity: 0.8 }] : [] };
+      }
+      case 'RecognitionSuppressed': {
+        const tag = Number(String(vars.embedding).slice(1).split(',')[0]);
+        const similarity = options.suppressed?.[tag];
+        return { match_face_suppressed: similarity === undefined ? [] : [{ similarity }] };
       }
       case 'RecognitionIdentity': {
         const t = options.templates?.[String(vars.id)] ?? { count: 5, worst: 0.99 };

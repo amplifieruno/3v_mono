@@ -137,10 +137,27 @@ describe('processFrame', () => {
     expect(confidences.sort()).toEqual([0.8, 0.85, 0.9, 0.95, 0.7].sort());
   });
 
+  it('should drop the face of a restricted or consent-withdrawn person: no detection, no identity', async () => {
+    const { deps, ops } = stubs([face(1), face(2, 0.9)], { matches: { 2: KNOWN_A }, suppressed: { 1: 0.9 } });
+    const result = await processFrame(deps, DEVICE, frame, AT);
+    expect(deps.createIdentity).not.toHaveBeenCalled();
+    expect(ops('RecognitionInsertDetection').map((c) => (c.vars.object as { identity_id: string }).identity_id)).toEqual([KNOWN_A]);
+    expect(result).toMatchObject({ faces: 2, suppressed: 1 });
+  });
+
+  it('should drop a matched face when a suppressed identity is at least as similar, else keep it', async () => {
+    const closer = stubs([face(1)], { matches: { 1: KNOWN_A }, suppressed: { 1: 0.85 } });
+    expect((await processFrame(closer.deps, DEVICE, frame, AT)).detections).toEqual([]);
+    const farther = stubs([face(1)], { matches: { 1: KNOWN_A }, suppressed: { 1: 0.6 } });
+    const kept = await processFrame(farther.deps, DEVICE, frame, AT);
+    expect(kept.detections.map((d) => d.identityId)).toEqual([KNOWN_A]);
+    expect(kept.suppressed).toBe(0);
+  });
+
   it('should insert nothing for a frame without faces', async () => {
     const { deps, ops } = stubs([]);
     const result = await processFrame(deps, DEVICE, frame, AT);
-    expect(result).toEqual({ faces: 0, detections: [] });
+    expect(result).toEqual({ faces: 0, suppressed: 0, detections: [] });
     expect(ops('RecognitionInsertDetection')).toHaveLength(0);
   });
 });

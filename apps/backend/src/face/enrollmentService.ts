@@ -56,7 +56,7 @@ const SETTINGS = `
 `;
 const PROFILE = `
   query EnrollmentProfile($id: uuid!, $org: uuid!) {
-    profiles(where: { id: { _eq: $id }, organization_id: { _eq: $org } }) { id }
+    profiles(where: { id: { _eq: $id }, organization_id: { _eq: $org } }) { id processing_restricted }
   }
 `;
 const LINK = `
@@ -94,8 +94,18 @@ async function duplicateThreshold(deps: EnrollmentDeps): Promise<number | undefi
   return data.organization_settings_by_pk?.enrollment_duplicate_threshold;
 }
 
+function subjectRestricted(): EnrollmentError {
+  return new EnrollmentError('subject_restricted', 'Processing of this person is restricted');
+}
+
+/**
+ * Detect / score / match the photos; a face of a person whose processing is restricted or who withdrew biometric
+ * consent (match_face_suppressed) refuses the whole request with `subject_restricted`, writing nothing.
+ */
 async function analyze(deps: EnrollmentDeps, photos: PhotoSource[]) {
-  return analyzePhotos(photos, deps.insightFace, deps.clients.actor, await duplicateThreshold(deps));
+  const analyzed = await analyzePhotos(photos, deps.insightFace, deps.clients.actor, await duplicateThreshold(deps));
+  if (analyzed.accepted.some((photo) => photo.suppressed)) throw subjectRestricted();
+  return analyzed;
 }
 
 function consentWithdrawn(): EnrollmentError {
@@ -192,11 +202,12 @@ export async function enrollForProfile(
   deps: EnrollmentDeps,
   input: { profileId: string; photos: PhotoSource[] },
 ): Promise<EnrollmentOutcome> {
-  const { profiles } = await deps.clients.admin.request<{ profiles: { id: string }[] }>(PROFILE, {
+  const { profiles } = await deps.clients.admin.request<{ profiles: { id: string; processing_restricted: boolean }[] }>(PROFILE, {
     id: input.profileId,
     org: deps.organizationId,
   });
   if (profiles.length === 0) throw new EnrollmentError('profile_not_found', 'Profile not found');
+  if (profiles[0].processing_restricted) throw subjectRestricted();
   if (!(await profileAllowsBiometrics(deps.clients.admin, deps.organizationId, input.profileId))) throw consentWithdrawn();
 
   const { accepted, rejected } = await analyze(deps, input.photos);
@@ -208,10 +219,11 @@ export async function enrollForProfile(
   if (!target) {
     const match = nearest(accepted, (m) => m.profile_id === input.profileId) ?? nearest(accepted, (m) => m.profile_id === null);
     if (match) {
-      const { update_identities: linked } = await deps.clients.actor.request<{ update_identities: { affected_rows: number } }>(
-        LINK,
-        { id: match.identity_id, profile: input.profileId },
-      );
+      const { update_identities: linked } = await deps.clients.actor
+        .request<{ update_identities: { affected_rows: number } }>(LINK, { id: match.identity_id, profile: input.profileId })
+        .catch((error: unknown) => {
+          throw mapGuardError(error);
+        });
       if (linked.affected_rows !== 1) throw new EnrollmentError('identity_conflict', 'The matched identity changed; retry');
       target = await identityById(deps, match.identity_id);
     }

@@ -35,7 +35,7 @@ function deferred<T>() {
 function stubDeps(overrides: Partial<SessionDeps> = {}): SessionDeps {
   return {
     fetchSnapshot: vi.fn(async () => Buffer.from('jpeg')),
-    processFrame: vi.fn(async () => ({ faces: 1, detections: [message] })),
+    processFrame: vi.fn(async () => ({ faces: 1, suppressed: 1, detections: [message] })),
     onDetection: vi.fn(),
     log: vi.fn(),
     ...overrides,
@@ -62,12 +62,14 @@ describe('recognition session', () => {
     expect(deps.onDetection).toHaveBeenCalledTimes(2);
     expect(deps.onDetection).toHaveBeenCalledWith(message);
     const stats = session.stats();
-    expect(stats).toMatchObject({ running: false, fps: 2, framesProcessed: 2, facesDetected: 2, detections: 2, lastError: null });
+    expect(stats).toMatchObject({
+      running: false, fps: 2, framesProcessed: 2, facesDetected: 2, facesSuppressed: 2, detections: 2, lastError: null,
+    });
     expect(stats.lastFrameAt).not.toBeNull();
   });
 
   it('should drop frames while the previous frame is still processing (per-device backpressure)', async () => {
-    const gate = deferred<{ faces: number; detections: DetectionMessage[] }>();
+    const gate = deferred<{ faces: number; suppressed: number; detections: DetectionMessage[] }>();
     const processFrame = vi.fn(() => gate.promise);
     const deps = stubDeps({ processFrame });
     const session = createRecognitionSession(DEVICE, deps);
@@ -77,7 +79,7 @@ describe('recognition session', () => {
     expect(processFrame).toHaveBeenCalledTimes(1);
     expect(session.stats().framesDropped).toBe(3);
 
-    gate.resolve({ faces: 0, detections: [] });
+    gate.resolve({ faces: 0, suppressed: 0, detections: [] });
     await vi.advanceTimersByTimeAsync(500);
     expect(processFrame).toHaveBeenCalledTimes(2);
     session.stop();
@@ -130,7 +132,7 @@ describe('recognition session', () => {
       fetchSnapshot: vi.fn(() => gate.promise),
       processFrame: vi.fn(async (_frame: Buffer, _at: Date, signal: AbortSignal) => {
         seen = signal;
-        return { faces: 0, detections: [] };
+        return { faces: 0, suppressed: 0, detections: [] };
       }),
     });
     const session = createRecognitionSession(DEVICE, deps);

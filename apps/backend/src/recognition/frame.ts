@@ -32,6 +32,11 @@ const MATCH = `
     match_face(args: { p_embedding: $embedding, p_limit: 1 }) { identity_id profile_id similarity }
   }
 `;
+const SUPPRESSED = `
+  query RecognitionSuppressed($embedding: String!) {
+    match_face_suppressed(args: { p_embedding: $embedding }) { similarity }
+  }
+`;
 const IDENTITY = `
   query RecognitionIdentity($id: uuid!) {
     identities_by_pk(id: $id) {
@@ -81,6 +86,17 @@ async function matchFace(deps: FrameDeps, capture: AcceptedPhoto): Promise<FaceM
   return matches[0];
 }
 
+/**
+ * Best similarity among identities whose processing is restricted or whose biometric consent was withdrawn
+ * (itap.match_face_suppressed, same threshold as match_face), if any.
+ */
+async function suppressedSimilarity(deps: FrameDeps, capture: AcceptedPhoto): Promise<number | undefined> {
+  const { match_face_suppressed: rows } = await deps.org.request<{ match_face_suppressed: { similarity: number }[] }>(SUPPRESSED, {
+    embedding: vectorLiteral(capture.face.embedding),
+  });
+  return rows[0]?.similarity;
+}
+
 async function known(deps: FrameDeps, capture: AcceptedPhoto, match: FaceMatch): Promise<Resolved> {
   const { identities_by_pk: info } = await deps.org.request<{ identities_by_pk: IdentityInfo | null }>(IDENTITY, {
     id: match.identity_id,
@@ -103,14 +119,18 @@ async function known(deps: FrameDeps, capture: AcceptedPhoto, match: FaceMatch):
 /**
  * Match, else (good enough faces) create a camera identity. Creation runs under the organization's identity lock
  * and re-matches first, so two cameras of one organization seeing the same new person create one identity.
+ * Returns null for the face of a person whose processing is restricted or who withdrew biometric consent (a
+ * suppressed identity at least as similar as the best match): it is dropped, no detection and no new identity.
  */
 async function resolveFace(
   deps: FrameDeps,
   device: RecognitionDevice,
   capture: AcceptedPhoto,
   capturedAt: Date,
-): Promise<Resolved> {
+): Promise<Resolved | null> {
   const match = await matchFace(deps, capture);
+  const suppressed = await suppressedSimilarity(deps, capture);
+  if (suppressed !== undefined && (!match || suppressed >= match.similarity)) return null;
   if (match) return known(deps, capture, match);
   const unidentified = {
     face: capture.face,
@@ -198,7 +218,8 @@ function byIdentity(a: { resolved: Resolved }, b: { resolved: Resolved }): numbe
 
 /**
  * Recognizes one camera frame: detect + embed (InsightFace), then per face (at most five) match within the device's
- * organization (match_face with the organization's recognition_threshold); an unmatched face of sufficient quality
+ * organization (match_face with the organization's recognition_threshold); faces of restricted / consent-withdrawn
+ * people are dropped (counted in `suppressed`); an unmatched face of sufficient quality
  * becomes a camera identity (its crop is the detection thumbnail). Detection rows are inserted one per statement,
  * sorted by identity id (Stage A runs per row in the same transaction). Recognised identities then get the template
  * rule; its failure never loses the detection. An aborted `signal` (session stopped) stops matching further faces; the
@@ -217,6 +238,7 @@ export async function processFrame(
   const selected = [...faces].sort((a, b) => b.score - a.score).slice(0, MAX_FACES_PER_FRAME);
 
   const items: { capture: AcceptedPhoto; resolved: Resolved }[] = [];
+  let suppressed = 0;
   for (const [index, face] of selected.entries()) {
     if (signal?.aborted) break;
     const capture: AcceptedPhoto = {
@@ -227,7 +249,9 @@ export async function processFrame(
       quality: qualityScore(face, width, height),
       match: null,
     };
-    items.push({ capture, resolved: await resolveFace(deps, device, capture, capturedAt) });
+    const resolved = await resolveFace(deps, device, capture, capturedAt);
+    if (resolved) items.push({ capture, resolved });
+    else suppressed += 1;
   }
 
   const detections: DetectionMessage[] = [];
@@ -277,5 +301,5 @@ export async function processFrame(
       deps.log(`recognition ${device.id}: template update failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  return { faces: faces.length, detections };
+  return { faces: faces.length, suppressed, detections };
 }

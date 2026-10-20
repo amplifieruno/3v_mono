@@ -19,11 +19,14 @@ export type AcceptedPhoto = {
   quality: number;
   /** Nearest identity of the organization within the match threshold, if any. */
   match: FaceMatch | null;
+  /** The face matches (same threshold) a person whose processing is restricted or who withdrew biometric consent. */
+  suppressed?: boolean;
 };
 
 const MATCH_FACE = `
   query EnrollmentMatch($embedding: String!, $threshold: Float) {
     match_face(args: { p_embedding: $embedding, p_threshold: $threshold, p_limit: 1 }) { identity_id profile_id distance }
+    match_face_suppressed(args: { p_embedding: $embedding, p_threshold: $threshold }) { similarity }
   }
 `;
 
@@ -87,11 +90,19 @@ export async function analyzePhotos(
       reject('low_quality');
       continue;
     }
-    const { match_face: matches } = await matcher.request<{ match_face: FaceMatch[] }>(MATCH_FACE, {
-      embedding: vectorLiteral(face.embedding),
-      threshold: threshold ?? null,
+    const { match_face: matches, match_face_suppressed: suppressed } = await matcher.request<{
+      match_face: FaceMatch[];
+      match_face_suppressed: { similarity: number }[];
+    }>(MATCH_FACE, { embedding: vectorLiteral(face.embedding), threshold: threshold ?? null });
+    accepted.push({
+      index,
+      source,
+      image: normalized.image,
+      face,
+      quality,
+      match: matches[0] ?? null,
+      suppressed: suppressed.length > 0,
     });
-    accepted.push({ index, source, image: normalized.image, face, quality, match: matches[0] ?? null });
   }
   return { accepted, rejected };
 }

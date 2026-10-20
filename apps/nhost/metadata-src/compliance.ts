@@ -2,9 +2,7 @@ import type { BoolExp, FunctionSpec, TableSpec } from './types.js';
 
 const ORG_ADMIN = 'org_admin';
 const ownOrganizationRow: BoolExp = { organization_id: { _eq: 'X-Hasura-Organization-Id' } };
-/** org_admin sets active / paused; `error` is written by the sync job (task 4). */
-const adminIntegrationStatus: BoolExp = { _and: [ownOrganizationRow, { status: { _in: ['active', 'paused'] } }] };
-const INTEGRATION_WRITABLE = ['name', 'description', 'provider', 'config', 'field_mapping', 'direction', 'status', 'secret'];
+const INTEGRATION_WRITABLE = ['name', 'description', 'provider', 'config', 'field_mapping', 'direction', 'status'];
 
 /** Compliance, governance and integrations (spec §6.14, §6.15, SA_4; slice 10). */
 export const complianceTables: TableSpec[] = [
@@ -63,7 +61,8 @@ export const complianceTables: TableSpec[] = [
   // Internal storage deletion queue (retention / DSR drain it through the backend).
   { name: 'pending_file_deletions', profile: 'none' },
   {
-    // secret: write-only credential; last_sync_at / last_error: written by the sync job (task 4).
+    // secret: AES-256-GCM ciphertext (AAD = integration id) written only by the action set_integration_secret, never
+    // selectable; status error is system-only (trigger integrations_status_guard); last_sync_at / last_error: sync job.
     name: 'integrations',
     profile: 'tenant_crud',
     readOnlyColumns: ['number', 'last_sync_at', 'last_error'],
@@ -75,18 +74,26 @@ export const complianceTables: TableSpec[] = [
           role: ORG_ADMIN,
           permission: {
             columns: ['kind', ...INTEGRATION_WRITABLE],
-            check: adminIntegrationStatus,
+            check: ownOrganizationRow,
             set: { organization_id: 'x-hasura-organization-id', created_by: 'x-hasura-user-id' },
           },
         },
       ],
-      update_permissions: [
-        { role: ORG_ADMIN, permission: { columns: INTEGRATION_WRITABLE, filter: ownOrganizationRow, check: adminIntegrationStatus } },
-      ],
+      update_permissions: [{ role: ORG_ADMIN, permission: { columns: INTEGRATION_WRITABLE, filter: ownOrganizationRow } }],
     },
   },
+  // Row type of itap.match_face_suppressed (backend only); stores nothing.
+  { name: 'face_suppressions', schema: 'itap_results', profile: 'none' },
 ];
 
 export const complianceFunctions: FunctionSpec[] = [
   { name: 'set_processing_restriction', exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] },
+  // Backend only (recognition, enrollment): faces of restricted / consent-withdrawn people are dropped.
+  {
+    name: 'match_face_suppressed',
+    exposedAs: 'query',
+    sessionArgument: 'hasura_session',
+    roles: [],
+    unscopedReturnReason: 'admin-only: backend recognition and enrollment with the organization session',
+  },
 ];

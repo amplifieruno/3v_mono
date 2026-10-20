@@ -43,15 +43,9 @@ insert_permissions:
         - field_mapping
         - direction
         - status
-        - secret
       check:
-        _and:
-          - organization_id:
-              _eq: X-Hasura-Organization-Id
-          - status:
-              _in:
-                - active
-                - paused
+        organization_id:
+          _eq: X-Hasura-Organization-Id
       set:
         organization_id: x-hasura-organization-id
         created_by: x-hasura-user-id
@@ -91,18 +85,9 @@ update_permissions:
         - field_mapping
         - direction
         - status
-        - secret
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
-      check:
-        _and:
-          - organization_id:
-              _eq: X-Hasura-Organization-Id
-          - status:
-              _in:
-                - active
-                - paused
 delete_permissions:
   - role: org_admin
     permission:

@@ -29,7 +29,8 @@ export type DetectionMessage = {
   detectedAt: string;
 };
 
-export type FrameResult = { faces: number; detections: DetectionMessage[] };
+/** `suppressed`: faces of restricted / consent-withdrawn people dropped without a detection. */
+export type FrameResult = { faces: number; suppressed: number; detections: DetectionMessage[] };
 
 /** Live counters of one device's session (recognition_status). */
 export type SessionStats = {
@@ -38,6 +39,7 @@ export type SessionStats = {
   framesProcessed: number;
   framesDropped: number;
   facesDetected: number;
+  facesSuppressed: number;
   detections: number;
   lastFrameAt: string | null;
   lastError: string | null;

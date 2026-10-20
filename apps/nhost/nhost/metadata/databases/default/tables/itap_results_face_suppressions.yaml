@@ -1,0 +1,5 @@
+table:
+  schema: itap_results
+  name: face_suppressions
+configuration:
+  custom_name: face_suppressions

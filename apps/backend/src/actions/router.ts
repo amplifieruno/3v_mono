@@ -6,6 +6,7 @@ import { requireWebhookSecret } from '../hasura/webhookSecret.js';
 import { addIdentityPhotos, createIdentityFromPhotos, enrollFace } from './enrollment.js';
 import { authenticateFace, rotateClientKey } from './faceAuth.js';
 import { deleteFile, openFile } from './files.js';
+import { setIntegrationSecret } from './integrations.js';
 import { acceptInvitation, inviteMember } from './invitations.js';
 import { uploadProfileDocument } from './profileDocuments.js';
 import { publishPolicyToTerminals } from './publishPolicy.js';
@@ -36,6 +37,7 @@ export const defaultActionHandlers: Record<string, ActionHandler<unknown, unknow
   publish_policy_to_terminals: publishPolicyToTerminals,
   rotate_client_key: rotateClientKey,
   authenticate_face: authenticateFace,
+  set_integration_secret: setIntegrationSecret,
 };
 
 const payloadSchema = z.object({

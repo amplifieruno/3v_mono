@@ -9,6 +9,13 @@ describe('mapGuardError', () => {
     expect((mapped as EnrollmentError).code).toBe(code);
   });
 
+  it('should map the restriction guards to subject_restricted', () => {
+    for (const code of ['profile_processing_restricted', 'subject_restricted']) {
+      const mapped = mapGuardError(new HasuraError('constraint-violation', 'database query error', 'path', `${code}`));
+      expect((mapped as EnrollmentError).code).toBe('subject_restricted');
+    }
+  });
+
   it('should map a guard named only in the message', () => {
     const mapped = mapGuardError(new HasuraError('unexpected', 'identity_merged_frozen'));
     expect((mapped as EnrollmentError).code).toBe('identity_merged_frozen');

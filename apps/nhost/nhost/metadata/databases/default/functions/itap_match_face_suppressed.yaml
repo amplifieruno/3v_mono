@@ -1,0 +1,7 @@
+function:
+  schema: itap
+  name: match_face_suppressed
+configuration:
+  custom_name: match_face_suppressed
+  exposed_as: query
+  session_argument: hasura_session

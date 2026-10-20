@@ -192,6 +192,7 @@
 - "!include itap_results_dashboard_kpi_rows.yaml"
 - "!include itap_results_delivery_report_rows.yaml"
 - "!include itap_results_face_matches.yaml"
+- "!include itap_results_face_suppressions.yaml"
 - "!include itap_results_facility_occupancy_rows.yaml"
 - "!include itap_results_flow_matrix_rows.yaml"
 - "!include itap_results_identity_timeline_entries.yaml"

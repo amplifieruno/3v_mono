@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { faceIdentity, population, decideWorld } from './support/authDecide.js';
+import { addSegmentRows, decideWorld, faceIdentity, population } from './support/authDecide.js';
 import { asOrgAdmin } from './support/clients.js';
 import { setRestriction } from './support/compliance.js';
 import { axis, vectorLiteral } from './support/faces.js';
@@ -103,6 +103,9 @@ describe('processing restriction: automated processing paths', () => {
     await setRestriction(w.a, w.profile, true);
     expect(await population(w.org, w.app.id)).toEqual([]);
     await setRestriction(w.a, w.profile, false);
+    // The restriction closed the profile's manual membership of the bound segment: membership is re-granted.
+    expect(await population(w.org, w.app.id)).toEqual([]);
+    await addSegmentRows(w.org, w.segment.id, 'profiles', [w.profile]);
     expect(await population(w.org, w.app.id)).toEqual([w.person]);
   });
 

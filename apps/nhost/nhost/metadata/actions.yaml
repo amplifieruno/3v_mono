@@ -217,6 +217,18 @@ actions:
     permissions:
       - role: org_admin
     comment: Console test of face authentication with 3-5 stored images of the organization (recorded like any attempt)
+  - name: set_integration_secret
+    definition:
+      kind: synchronous
+      handler: '{{BACKEND_URL}}/hasura/actions/set_integration_secret'
+      forward_client_headers: false
+      headers:
+        - name: x-action-secret
+          value_from_env: ACTION_SECRET
+      timeout: 30
+    permissions:
+      - role: org_admin
+    comment: Sets (encrypted, AES-256-GCM) or clears the write-only secret of an integration
 custom_types:
   enums: []
   input_objects: []
@@ -236,4 +248,5 @@ custom_types:
     - name: TerminalPublishResult
     - name: ClientKeySecret
     - name: FaceAuthResult
+    - name: IntegrationSecretResult
   scalars: []

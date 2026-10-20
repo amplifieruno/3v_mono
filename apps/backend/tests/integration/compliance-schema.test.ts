@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { asOrgAdmin, orgAdminToken } from './support/clients.js';
 import { sqlValue } from './support/compliance.js';
 import { createFacility } from './support/facilities.js';
-import { createTwoOrgs, expectDenied, expectError, PERMISSION_CHECK, uploadFile } from './support/fixtures.js';
+import { createTwoOrgs, expectDenied, expectError, uploadFile } from './support/fixtures.js';
 import { deleteByPk, insertOne, updateByPk } from './support/operations.js';
 import { createProfile } from './support/segments.js';
 import { runSql, runSqlRows } from './support/sql.js';
@@ -103,23 +103,18 @@ describe('data_subject_requests', () => {
 });
 
 describe('integrations', () => {
-  it('should keep the secret writable but never selectable and redacted in audit', async () => {
+  it('should never expose the secret and keep system columns read-only', async () => {
     const { orgA, user } = await createTwoOrgs();
     const a = asOrgAdmin(user.id, orgA.id);
     const integration = await insertOne<{ id: string; code: string; status: string }>(
       a, 'integrations',
-      { name: 'HR feed', kind: 'hr', provider: 'fixture', direction: 'inbound', secret: 's3cr3t', config: { file: 'hr.json' } },
+      { name: 'HR feed', kind: 'hr', provider: 'fixture', direction: 'inbound', config: { file: 'hr.json' } },
       'id code status',
     );
     expect(integration.code).toMatch(/^INT-\d{5}$/);
     expect(integration.status).toBe('active');
     await expectDenied(a.request(`{ integrations { id secret } }`), 'secret');
-    await updateByPk(a, 'integrations', integration.id, { secret: 'rotated' });
     await expectDenied(updateByPk(a, 'integrations', integration.id, { last_error: 'x' }), 'last_error');
-    await expectDenied(updateByPk(a, 'integrations', integration.id, { status: 'error' }), PERMISSION_CHECK);
-    const audit = await runSqlRows(`select changes::text as c from itap.audit_log where entity = 'integrations' and entity_id = '${integration.id}'`);
-    expect(audit.length).toBe(2);
-    for (const row of audit) expect(row.c).not.toMatch(/s3cr3t|rotated/);
   });
 
   it('should reference profiles.source_integration_id with a composite FK that nulls on delete', async () => {

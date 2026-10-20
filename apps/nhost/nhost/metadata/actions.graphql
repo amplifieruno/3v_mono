@@ -36,6 +36,7 @@ type Mutation {
     access_point_id: uuid
     threshold: Float
   ): FaceAuthResult!
+  set_integration_secret(integration_id: uuid!, secret: String): IntegrationSecretResult!
 }
 
 type Query {
@@ -95,6 +96,7 @@ type RecognitionStatus {
   frames_processed: Int!
   frames_dropped: Int!
   faces_detected: Int!
+  faces_suppressed: Int!
   detections: Int!
   last_frame_at: timestamptz
   last_error: String
@@ -153,4 +155,9 @@ type FaceAuthResult {
   failure_message: String
   failure_guidance: String
   next_step: String!
+}
+
+type IntegrationSecretResult {
+  integration_id: uuid!
+  has_secret: Boolean!
 }

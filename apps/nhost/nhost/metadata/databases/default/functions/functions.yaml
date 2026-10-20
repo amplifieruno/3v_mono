@@ -62,6 +62,7 @@
 - "!include itap_init_saved_search.yaml"
 - "!include itap_mark_notifications_read.yaml"
 - "!include itap_match_face.yaml"
+- "!include itap_match_face_suppressed.yaml"
 - "!include itap_merge_identities.yaml"
 - "!include itap_merge_profiles.yaml"
 - "!include itap_occupancy_series.yaml"
