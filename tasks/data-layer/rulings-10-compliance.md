@@ -31,3 +31,8 @@
 ## Task 5: seed
 - Ruling (dispatch): DSRs via the real fulfil flow; erasure on a dedicated seeded person; restriction after the replay; policies >= 31 days.
 - Ruling: deviations accepted (BMS failure / dsr_steps times not back-dated; retention history = real 0-row runs).
+
+## Final review and fix wave
+- Ruling: fix in one wave — erasure fence (DSR access bundles, exports and reports completing after an erasure are rejected or requeued; org-wide advisory fence + claimed_at), runbook secret ordering (.env.prod.new until after the backup), queued files un-attachable, org-scoped claim_file_deletions, no-op retention audit rows skipped, orphan sweeps exclude in-use files, storage 500 counted as missing only when confirmed absent, shared seed waitFor, export orphan files not counted as rows, HR fixture opens audited.
+- Ruling: the dev postgresql.auto.conf log_min_error_statement entry came from an implementer's debug ALTER SYSTEM (not an intrusion); reset, owner check removed from the docs.
+- Ruling: two re-review minors documented, not fixed (lost storage object blocks access DSRs at max_attempts; rare self-healing deadlock between an in-progress access DSR and an erasure).
