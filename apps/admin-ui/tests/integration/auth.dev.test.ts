@@ -32,7 +32,7 @@ describe.skipIf(!enabled)('auth against the dev stack', () => {
     const ctx = {} as AuthContext;
 
     const result = await provider.login?.({ email: 'admin@itap.demo', password }, ctx);
-    expect(result).toBeDefined();
+    expect(result).toEqual({ success: true });
     const identity = await provider.getIdentity(ctx);
     expect(identity?.memberships).toHaveLength(2);
 

@@ -46,14 +46,32 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
   let memberships: readonly Membership[] | null = null;
   let renewal: Promise<OrgSession | null> | null = null;
 
+  let baseRefresh: Promise<BaseSession | null> | null = null;
+
+  /**
+   * hasura-auth rotates refresh tokens, so the exchange must run once at a time. A result is
+   * discarded when the session it started from was replaced or ended meanwhile.
+   */
+  function refreshBase(started: BaseSession): Promise<BaseSession | null> {
+    baseRefresh ??= nhost
+      .refresh(started.refreshToken)
+      .then((next) => {
+        if (store.snapshot().base?.refreshToken !== started.refreshToken) return store.snapshot().base;
+        store.setBase(next);
+        return next;
+      })
+      .finally(() => {
+        baseRefresh = null;
+      });
+    return baseRefresh;
+  }
+
   /** A base session valid for at least a few more seconds; refreshes it when needed. */
   async function freshBase(): Promise<BaseSession | null> {
     const { base } = store.snapshot();
     if (!base) return null;
     if (base.expiresAt - now() > BASE_SKEW_MS) return base;
-    const next = await nhost.refresh(base.refreshToken);
-    store.setBase(next);
-    return next;
+    return refreshBase(base);
   }
 
   async function renewOrg(): Promise<OrgSession | null> {
@@ -62,6 +80,8 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
     const base = await freshBase();
     if (!base) return null;
     const next = await org.switchOrganization(base.accessToken, current.organizationId);
+    // The organization was switched or the user signed out while this renewal ran: the newer state wins.
+    if (store.snapshot().org?.accessToken !== current.accessToken) return store.snapshot().org;
     store.setOrg(next);
     return next;
   }
@@ -164,7 +184,11 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
       try {
         const base = await freshBase();
         if (!base) return failure({ kind: 'auth', code: 'unauthenticated', message: 'You are signed out.' });
-        store.setOrg(await org.switchOrganization(base.accessToken, organizationId));
+        const next = await org.switchOrganization(base.accessToken, organizationId);
+        if (!store.snapshot().base) {
+          return failure({ kind: 'auth', code: 'unauthenticated', message: 'You are signed out.' });
+        }
+        store.setOrg(next);
         return { success: true };
       } catch (error) {
         return failure(error);

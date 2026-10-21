@@ -20,6 +20,8 @@ interface World {
   switchCalls: number;
   refreshCalls: number;
   tokenSeq: number;
+  holdRefresh: Promise<void> | null;
+  holdSwitch: Promise<void> | null;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -37,6 +39,8 @@ function setup(partial: Partial<World> = {}) {
     switchCalls: 0,
     refreshCalls: 0,
     tokenSeq: 0,
+    holdRefresh: null,
+    holdSwitch: null,
     ...partial,
   };
   const session = (tag: string) => ({
@@ -54,12 +58,16 @@ function setup(partial: Partial<World> = {}) {
     if (url.endsWith('/signin/email-password')) return json(session(`s${++world.tokenSeq}`));
     if (url.endsWith('/token')) {
       world.refreshCalls += 1;
+      if (world.holdRefresh) await world.holdRefresh;
       return world.refreshRejected ? json({ message: 'Invalid refresh token' }, 401) : json(session(`s${++world.tokenSeq}`));
     }
     if (url.endsWith('/signout')) return json({});
     const query = String(body.query);
     if (query.includes('switch_organization')) {
       world.switchCalls += 1;
+      const held = world.holdSwitch;
+      world.holdSwitch = null;
+      if (held) await held;
       await Promise.resolve();
       if (world.switchFailure) {
         return json({ errors: [{ message: world.switchFailure.message, extensions: { code: world.switchFailure.code } }] });
@@ -89,13 +97,14 @@ function setup(partial: Partial<World> = {}) {
     });
   };
   const store = createTokenStore(undefined);
-  const provider = createItapAuthProvider({
-    store,
-    nhost: createNhostClient({ baseUrl: 'http://auth/v1', fetch: fakeFetch, now: () => world.now }),
-    org: createOrgClient({ endpoint: 'http://hasura/v1/graphql', fetch: fakeFetch }),
-    now: () => world.now,
-  });
-  return { world, store, provider };
+  const make = () =>
+    createItapAuthProvider({
+      store,
+      nhost: createNhostClient({ baseUrl: 'http://auth/v1', fetch: fakeFetch, now: () => world.now }),
+      org: createOrgClient({ endpoint: 'http://hasura/v1/graphql', fetch: fakeFetch }),
+      now: () => world.now,
+    });
+  return { world, store, provider: make(), make };
 }
 
 const creds = { email: 'admin@itap.demo', password: 'x' };
@@ -158,6 +167,51 @@ describe('ItapAuthProvider', () => {
     expect(world.refreshCalls).toBe(1);
     expect(store.snapshot().base?.accessToken).toBe('base-s2');
     expect(world.calls.slice(-2)).toEqual(['http://auth/v1/token', 'http://hasura/v1/graphql']);
+  });
+
+  it('single-flights the base refresh across getIdentity and getToken', async () => {
+    const { provider, world, store, make } = setup();
+    await provider.login?.(creds, ctx);
+    const reloaded = make(); // a page reload: memberships are not cached yet
+    world.now += 16 * 60_000;
+    world.holdRefresh = Promise.resolve();
+    const [identity, token] = await Promise.all([reloaded.getIdentity(ctx), reloaded.getToken()]);
+    expect(world.refreshCalls).toBe(1);
+    expect(identity?.organizationId).toBe(NOVA);
+    expect(token).toBe('org-2');
+    expect(store.snapshot().base).not.toBeNull();
+  });
+
+  it('keeps a newer organization when a slower renewal finishes', async () => {
+    const { provider, world, store } = setup();
+    await provider.login?.(creds, ctx);
+    world.now += 15 * 60_000 - 30_000;
+    let release = (): void => undefined;
+    world.holdSwitch = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const renewing = provider.getToken();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await provider.switchOrganization(RIVER)).toEqual({ success: true });
+    release();
+    await renewing;
+    expect(store.snapshot().org?.organizationId).toBe(RIVER);
+  });
+
+  it('stays signed out when logout happens during a refresh', async () => {
+    const { provider, world, store } = setup();
+    await provider.login?.(creds, ctx);
+    world.now += 16 * 60_000;
+    let release = (): void => undefined;
+    world.holdRefresh = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const renewing = provider.getToken();
+    await new Promise((r) => setTimeout(r, 0));
+    await provider.logout?.(undefined, ctx);
+    release();
+    expect(await renewing).toBeNull();
+    expect(store.snapshot()).toEqual({ base: null, org: null });
   });
 
   it('refreshes after an auth error from the data layer', async () => {
