@@ -15,6 +15,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { HOME_PATH, useConsoleBrand } from '../app/brand';
 import { useConsole } from '../app/console-context';
 import { performOrganizationSwitch } from '../app/scope';
+import { IdentityRetry } from './identity-retry';
 import { LOGIN_PATH, ORGANIZATIONS_PATH } from './require-auth';
 import type { ItapIdentity, Membership } from './types';
 
@@ -91,6 +92,7 @@ export function OrganizationPickerPage(): React.ReactElement | null {
   if (check.status === 'pending') return null;
   if (check.data?.authenticated !== true) return <Navigate to={LOGIN_PATH} replace />;
   if (identity.status === 'pending') return null;
+  if (identity.status === 'error') return <IdentityRetry onRetry={() => void identity.refetch()} />;
   if (!identity.data) return <Navigate to={LOGIN_PATH} replace />;
 
   const active = identity.data.memberships.filter((membership) => membership.status === 'active');

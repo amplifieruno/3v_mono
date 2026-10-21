@@ -85,17 +85,21 @@ export async function applyFacility(
 }
 
 /**
- * Switches the organization: a new organization token, then a new data
- * session (cache and drafts of the previous organization are dropped). A
+ * Switches the organization: a new organization token, its remembered
+ * facility as the data scope, then a new data session (cache and drafts of the previous organization are dropped). A
  * refusal is returned unchanged for the caller to report; the current
  * organization stays.
  */
 export async function performOrganizationSwitch(
   auth: Pick<ItapAuthProvider, 'switchOrganization'>,
-  dataSession: Pick<ScopeDataSession, 'rotateSession'>,
+  dataSession: ScopeDataSession,
   organizationId: string,
 ): Promise<AuthResult> {
   const result = await auth.switchOrganization(organizationId);
-  if (result.success) await dataSession.rotateSession();
+  if (!result.success) return result;
+  // The new organization's facility is in scope before its first read; the resolver slice
+  // follows from `IdentitySync` once the new identity arrives.
+  await dataSession.replaceScope(initialScopeKey(organizationId));
+  await dataSession.rotateSession();
   return result;
 }

@@ -22,6 +22,7 @@ interface World {
   tokenSeq: number;
   holdRefresh: Promise<void> | null;
   holdSwitch: Promise<void> | null;
+  membershipsDown: boolean;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -41,6 +42,7 @@ function setup(partial: Partial<World> = {}) {
     tokenSeq: 0,
     holdRefresh: null,
     holdSwitch: null,
+    membershipsDown: false,
     ...partial,
   };
   const session = (tag: string) => ({
@@ -84,6 +86,7 @@ function setup(partial: Partial<World> = {}) {
         },
       });
     }
+    if (world.membershipsDown) throw new TypeError('Failed to fetch');
     return json({
       data: {
         organization_members: world.members.map((m) => ({
@@ -292,5 +295,27 @@ describe('ItapAuthProvider', () => {
     });
     expect(await offline.check(ctx)).toEqual({ authenticated: true });
     expect(store.snapshot().base).not.toBeNull();
+  });
+  it('fails the identity read on a transient membership failure and loads it on the next read', async () => {
+    const { world, store, provider, make } = setup({ last: null });
+    await provider.login?.(creds, ctx);
+    const reloaded = make();
+    world.membershipsDown = true;
+    await expect(reloaded.getIdentity(ctx)).rejects.toMatchObject({ kind: 'transport' });
+    expect(store.snapshot().base).not.toBeNull();
+
+    world.membershipsDown = false;
+    const identity = await reloaded.getIdentity(ctx);
+    expect(identity?.memberships.map((m) => m.organizationId)).toEqual([NOVA, RIVER]);
+  });
+
+  it('signs out when the identity read finds the refresh token rejected', async () => {
+    const { world, store, provider, make } = setup();
+    await provider.login?.(creds, ctx);
+    const reloaded = make();
+    world.now += 16 * 60_000;
+    world.refreshRejected = true;
+    expect(await reloaded.getIdentity(ctx)).toBeNull();
+    expect(store.snapshot()).toEqual({ base: null, org: null });
   });
 });

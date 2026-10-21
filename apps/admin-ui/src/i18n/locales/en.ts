@@ -14,6 +14,11 @@ export default {
     facility: 'Facility',
     allFacilities: 'All facilities',
     signOut: 'Sign out',
+    retry: 'Retry',
+    identityFailed: {
+      title: 'Could not load your organizations',
+      body: 'The server could not be reached. Check the connection and try again.',
+    },
     organizations: {
       title: 'Choose an organization',
       description: 'You are a member of several organizations. You can switch later from the sidebar.',

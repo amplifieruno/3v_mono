@@ -38,6 +38,8 @@ interface FakeState {
   memberships: Membership[];
   /** When set, `switchOrganization` refuses with this result. */
   refusal?: AuthResult;
+  /** Identity reads that fail with a network error before one succeeds. */
+  identityFailures?: number;
 }
 
 function member(organizationId: string, name: string, status = 'active'): Membership {
@@ -53,6 +55,10 @@ function fakeAuth(state: FakeState): ItapAuthProvider {
     },
     async getIdentity(): Promise<ItapIdentity | null> {
       if (!state.signedIn) return null;
+      if ((state.identityFailures ?? 0) > 0) {
+        state.identityFailures = (state.identityFailures ?? 0) - 1;
+        throw { kind: 'transport', code: 'network', message: 'Cannot reach the server.' };
+      }
       return {
         id: 'user-1',
         email: 'admin@itap.demo',
@@ -152,5 +158,25 @@ describe('console routes', () => {
     expect(await screen.findByText('Your membership in Riverside is suspended.')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Organization: Nova Tower Business Center' })).toBeDefined();
     expect(screen.getByTestId('location').textContent).toBe('/dashboard');
+  });
+
+  it('should offer a retry, not "no organization", when the memberships cannot be loaded', async () => {
+    const state: FakeState = {
+      signedIn: true,
+      organizationId: null,
+      memberships: [member(NOVA, 'Nova Tower Business Center'), member(RIVER, 'Riverside Office Park')],
+      identityFailures: 100,
+    };
+    renderAt('/organizations', state);
+
+    const retry = await screen.findByRole('button', { name: 'Retry' }, { timeout: 8_000 });
+    expect(screen.getByText(/could not load your organizations/i)).toBeDefined();
+    expect(screen.queryByText(/has no active organization membership/)).toBeNull();
+    expect(screen.getByTestId('location').textContent).toBe('/organizations');
+
+    state.identityFailures = 0;
+    fireEvent.click(retry);
+    expect(await screen.findByRole('button', { name: /Nova Tower Business Center/ })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Riverside Office Park/ })).toBeDefined();
   });
 });

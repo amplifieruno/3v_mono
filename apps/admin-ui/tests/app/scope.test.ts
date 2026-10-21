@@ -90,15 +90,31 @@ describe('applyFacility', () => {
 });
 
 describe('performOrganizationSwitch', () => {
-  it('should rotate the data session after a successful switch', async () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoryStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("should apply the new organization's facility, then rotate the data session", async () => {
+    localStorage.setItem(facilityStorageKey(RIVER), FAC);
     const auth = fakeAuth({ success: true });
     const dataSession = fakeSession();
+    const order: string[] = [];
+    dataSession.replaceScope.mockImplementation(async () => {
+      order.push('scope');
+    });
+    dataSession.rotateSession.mockImplementation(async () => {
+      order.push('rotate');
+    });
 
     const result = await performOrganizationSwitch(auth, dataSession, RIVER);
 
     expect(result).toEqual({ success: true });
     expect(auth.switchOrganization).toHaveBeenCalledWith(RIVER);
-    expect(dataSession.rotateSession).toHaveBeenCalledTimes(1);
+    expect(dataSession.replaceScope).toHaveBeenCalledWith({ facility: FAC });
+    expect(order).toEqual(['scope', 'rotate']);
   });
 
   it('should return a refusal unchanged and keep the session', async () => {
@@ -112,5 +128,6 @@ describe('performOrganizationSwitch', () => {
 
     expect(result).toBe(refusal);
     expect(dataSession.rotateSession).not.toHaveBeenCalled();
+    expect(dataSession.replaceScope).not.toHaveBeenCalled();
   });
 });

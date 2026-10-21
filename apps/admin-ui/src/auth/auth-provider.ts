@@ -128,12 +128,26 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
       }
     },
 
+    /**
+     * Memberships not loaded are not "no memberships": a transient failure (network, 5xx) fails
+     * the read so the caller can retry, and the next read loads them again. An auth failure ends
+     * the session (`null`).
+     */
     async getIdentity() {
       const { base, org: orgSession } = store.snapshot();
       if (!base) return null;
       if (memberships === null) {
-        const token = await freshBase().catch(() => null);
-        if (token) await loadMemberships(token.accessToken).catch(() => undefined);
+        try {
+          const token = await freshBase();
+          if (!token) return null;
+          await loadMemberships(token.accessToken);
+        } catch (error) {
+          const dataError = toDataError(error);
+          if (dataError.kind !== 'auth') throw dataError;
+          store.clear();
+          memberships = null;
+          return null;
+        }
       }
       return {
         id: base.user.id,
