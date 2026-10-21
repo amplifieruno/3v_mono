@@ -32,6 +32,13 @@ const roleField = f.enum(MEMBER_ROLES, {
   meta: { enumNamespace: MEMBER_ROLE_ENUM },
 });
 
+const inviteRoleField = f.enum(MEMBER_ROLES, {
+  required: true,
+  default: 'admin',
+  texts: roleTexts,
+  meta: { enumNamespace: MEMBER_ROLE_ENUM },
+});
+
 const statusField = f.enum(INVITATION_STATUSES, {
   write: 'never',
   texts: {
@@ -144,12 +151,7 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
               validate: schema(inviteMemberInput.shape.email),
               texts: 'Email',
             }),
-            role: f.enum(MEMBER_ROLES, {
-              required: true,
-              default: 'admin',
-              texts: roleTexts,
-              meta: { enumNamespace: MEMBER_ROLE_ENUM },
-            }),
+            role: { ...inviteRoleField, ui: { ...inviteRoleField.ui, enum: MEMBER_ROLE_ENUM } },
           },
         },
         submit: {
