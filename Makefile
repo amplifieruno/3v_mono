@@ -36,14 +36,6 @@ dev:
 	make dev-compose
 	pnpm run dev:admin
 
-## Generate GraphQL types for admin-ui
-gql:
-	cd apps/admin-ui && pnpm gql
-
-## Generate GraphQL types (watch mode)
-gql-watch:
-	cd apps/admin-ui && pnpm gql-w
-
 # =============================================================================
 # Quality Gates
 # =============================================================================
@@ -258,8 +250,6 @@ help:
 	@echo "  dev              - Start full dev environment (Docker + servers)"
 	@echo "  dev-compose      - Start Docker infrastructure only"
 	@echo "  hasura_apply     - Apply Hasura migrations + metadata"
-	@echo "  gql              - Generate GraphQL types"
-	@echo "  gql-watch        - Generate GraphQL types (watch mode)"
 	@echo ""
 	@echo "Quality Gates:"
 	@echo "  lint             - Run linter"

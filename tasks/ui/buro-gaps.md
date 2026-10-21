@@ -52,3 +52,17 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 ### G7. Saved views and column layouts are per browser, not per user or tenant
 - **Framework:** default `UiSettingsAdapter` is `localStorage` keyed by resource (F14). **[doc]**
 - **Workaround:** pass our own `uiSettings` (user settings table) if needed.
+
+### G8. The handbook lists only resource and glossary scopes; no module or guide articles
+- **Need:** one hand-written article per module (`src/modules/<module>/docs/<topic>.<locale>.md`),
+  such as "Members and invitations", readable from the Help page.
+- **Framework:** `docsFromGlob` takes the path segment before `/docs/` as the scope, so a module
+  directory becomes the scope. `useDocumentedScopes` (`@burojs/react`), which `<DocBrowser>` lists,
+  emits only `concept/<term>` scopes, registered resources and their enum variants. An article
+  scope that is not a resource name (a module, `guide/<x>`, `page/<x>`) is never listed, though
+  `DocSources` reserves `app`, `guide` and `page`. **[code]**
+- **Workaround:** none needed yet. A module article must be filed under the resource it explains
+  (the directory name or a re-keyed entry in `src/docs.ts`); `tests/docs-integrity.test.ts` fails on
+  an article scope that names no registered resource.
+- **Expected from a framework:** guide/page scopes listed by `<DocBrowser>` (with a title from the
+  bundle), so an article about a workflow need not pretend to belong to one table.

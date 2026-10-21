@@ -1,27 +1,21 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vite';
 
-// https://vite.dev/config/
+/**
+ * Dev endpoints go through this proxy so the console talks to one origin:
+ * Hasura GraphQL (with websockets), Nhost auth and storage (prefix stripped),
+ * and the backend's Socket.io.
+ */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
   server: {
     port: 5173,
-    host: true,
+    host: '127.0.0.1',
+    strictPort: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/socket.io': {
-        target: 'http://localhost:3001',
+      '/v1/graphql': {
+        target: 'http://localhost:8080',
         changeOrigin: true,
         ws: true,
       },
@@ -30,12 +24,17 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/auth/, ''),
       },
-      '/gql': {
-        target: 'http://localhost:8080',
+      '/storage': {
+        target: 'http://local.storage.local.nhost.run',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/storage/, ''),
+      },
+      '/socket.io': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
         ws: true,
-        rewrite: (path) => path.replace(/^\/gql/, ''),
       },
     },
   },
+  preview: { port: 4173, strictPort: true },
 });

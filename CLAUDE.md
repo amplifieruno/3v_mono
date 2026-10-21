@@ -102,13 +102,14 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 ## Technology Stack
 
 ### Frontend (`apps/admin-ui/`)
-- **Framework**: React 19 + TypeScript + Vite
-- **UI**: TailwindCSS v4 + shadcn/ui + Radix UI
-- **Data**: Refine framework + React Query + GraphQL
-- **State**: Zustand for client state
-- **Forms**: react-hook-form + Zod validation
-- **Real-time**: Socket.io client
-- **Face Recognition**: Human library (`@vladmandic/human`)
+- **Framework**: buro (`@burojs/*`, every package pinned to the same exact version, `0.6.0`) on React 19 + TypeScript + Vite SPA + react-router 7
+- **Packages**: `@burojs/core` (declarations: `defineAppDefinition`, resources, sections, pages, blocks, flows, enums), `@burojs/react` (runtime, hooks, `BuroProvider`), `@burojs/ui-shadcn` (shell, lists, forms, `DocBrowser`; its `styles.css` brings Tailwind v4 and the tokens), `@burojs/i18n-core` (locale registry), `@burojs/context`, `@burojs/field-types`; `@burojs/hasura` is the only data client; `@burojs/testing` (`checkApp`, `runFlow`) and `@burojs/test-helpers` in tests
+- **Where things live**: `src/app/app-definition.ts` is the single `use()` list; `src/app/nav.ts` (sections, `NAV_ICONS`), `pages.ts`, `blocks.ts`; one folder per functional module in `src/modules/<module>/` (resources, blocks, `docs/<topic>.<locale>.md` articles); `src/i18n/` locale bundles; `src/docs.ts` (`DocsConfig`, glossary); tests in `tests/` (vitest), e2e in `e2e/` (Playwright)
+- **Texts and docs**: every user-visible text is English and declared in `texts` on its element (flat `label`/`title` are refused by buro). Translations are bundle files only (`src/i18n/<namespace>/<locale>.ts`), never inline locale maps. Every resource carries `texts.label`/`labelPlural` and `texts.doc.summary`; a field whose label does not carry its meaning gets `texts.doc.summary`. `tests/check-app.test.ts` and `tests/docs-integrity.test.ts` must stay green
+- **Framework gaps**: anything buro lacks is logged in `tasks/ui/buro-gaps.md` (same commit); a workaround is allowed only through a buro extension point (field implementation, block, frame, provider wrapper)
+- **Design and plans**: `tasks/ui/design.md`, `tasks/ui/roadmap.md`, `tasks/ui/plan-NN-*.md`
+- **Real-time**: Socket.io client (backend detections)
+- No Refine, no GraphQL codegen, no Apollo/urql/graphql-request, no Human library
 
 ### Backend (`apps/backend/`)
 - **Runtime**: Node.js + Express + TypeScript
@@ -147,7 +148,6 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 - **Database**: PostgreSQL
 - **Auth**: Nhost authentication
 - **Migrations**: Hasura CLI migrations
-- **Type Generation**: graphql-codegen
 
 ### Infrastructure
 - **Docker Compose**: PostgreSQL (pgvector), MinIO, Hasura, Nhost auth/storage, backend, Traefik
@@ -167,7 +167,7 @@ Identity Tracking and Access Platform (ITAP) monorepo — a platform leveraging 
 │   ├── AGENTS.md           # Agent role definitions
 │   └── settings.json       # Hooks, environment, permissions
 ├── apps/
-│   ├── admin-ui/           # React dashboard (Refine + shadcn/ui)
+│   ├── admin-ui/           # ITAP console (buro: @burojs/*)
 │   ├── backend/            # Express API server
 │   └── nhost/              # Hasura/Nhost configuration
 ├── packages/
@@ -262,8 +262,8 @@ pnpm --filter nhost test            # Metadata generator unit tests
 pnpm --filter backend exec vitest run src   # Backend unit tests
 pnpm --filter backend test:integration      # Integration tests against the running dev stack
 pnpm seed                           # Seed demo orgs/users, companies, profiles, enrolled faces, facilities, areas, devices, health history (needs insightface; --reset wipes seed data)
-cd apps/admin-ui && pnpm gql        # Generate GraphQL types
-cd apps/admin-ui && pnpm gql-w      # Watch mode for GraphQL codegen
+pnpm --filter admin-ui test        # Console vitest suite (checkApp, docs integrity)
+pnpm --filter admin-ui test:e2e    # Console Playwright suite against the dev stack
 ```
 
 ### Docker
@@ -297,7 +297,7 @@ make claude                         # Start Claude in team mode
 - **ALL data access via Hasura GraphQL** — never direct PostgreSQL queries from app code
 - Manage schema via Hasura console, export metadata to git
 - Permissions and RLS live in Hasura metadata, not in application code
-- Use graphql-codegen for type-safe operations
+- The console reaches GraphQL only through `@burojs/hasura` (resources and the closed custom operations registry)
 
 ### 2. Simple CRUD via Hasura
 
@@ -307,12 +307,11 @@ make claude                         # Start Claude in team mode
 
 ### 3. Frontend Patterns
 
-- **Components**: shadcn/ui from the library, never raw HTML when component exists
-- **Styling**: TailwindCSS v4 utility classes, no inline `style={}`
-- **State**: React Query for server state, Zustand for client state
-- **Forms**: react-hook-form + Zod validation
-- **Data fetching**: Never `useEffect` for fetching — use React Query hooks
-- **Icons**: lucide-react only
+- **Declarations first**: screens are buro declarations (resources with views/layout trees, flows, checks, rules, frames, blocks, custom pages); do not hand-write what buro renders (lists, forms, filters, dialogs, toasts, shell)
+- **Data**: through `@burojs/hasura` resources and custom operations (`defineQuery` / `defineMutation`) over tracked SQL functions and Hasura actions; never `useEffect` for fetching, never a second GraphQL client
+- **Custom UI**: a block (`defineBlock` + `implementBlock`), a custom field type or a frame; built from `@burojs/ui-shadcn` components, TailwindCSS v4 utility classes, no inline `style={}`
+- **Icons**: string icon names (lucide component names) resolved by `@burojs/ui-shadcn`; names the kit does not ship are registered from `lucide-react` in `src/app/register-icons.ts` (`registerIcons`)
+- **Tests**: vitest is always `vitest run`, never watch mode
 
 ### 4. File Organization
 
