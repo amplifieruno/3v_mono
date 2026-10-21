@@ -6,10 +6,14 @@
 documented), companies, work schedules (with a reusable time-windows editor), custom attribute
 definitions, and the signed-in user's preferences.
 
-**Architecture:** Same app and conventions as phase 0 (`tasks/ui/summary-00-foundation.md` is the
-reference for the built plumbing: mapping helper `hasuraTable`/`ITAP_TABLES`, enums in `src/enums`,
-modules in `src/modules/<module>`, custom field types in `src/fields`, docs and articles, dev-stack
-tests). Two new reusable custom field types: `timeWindows` and `timezone`.
+**Architecture:** Same app and conventions as phase 0 — read `tasks/ui/summary-00-foundation.md`
+("Reusable for later phases", "What phase 1 reuses") first: one `ConsoleModule` per module
+(`src/modules/<module>/index.ts`, listed in `src/modules/index.ts`) carrying uses, table mappings
+and operation documents (`hasuraOperation` beside `defineQuery`/`defineMutation`); `enumField` for
+every enum field; articles in `src/modules/<module>/docs/<scope>/`; `signInDev` and the shared
+dev-host constants for dev-stack tests; one e2e smoke per module on the shared session. Phase 1 adds
+to the existing `organization` module. Two new reusable custom field types: `timeWindows` and
+`timezone`.
 
 **Tech Stack:** as phase 0.
 
@@ -51,10 +55,9 @@ tests). Two new reusable custom field types: `timeWindows` and `timezone`.
   `organization_settings`; `operations: { create: false, delete: false }`; `views.list.page: false`),
   `src/modules/organization/settings-page.ts` (custom page `organization-settings`, nav
   "Settings" in section `organization`, body block rendering `RecordScreen` for the current
-  organization id — reuse the phase-0 profile-page pattern), `src/modules/organization/docs/settings.en.md`
-  (article under the resource scope `organization_settings`)
-- Modify: `src/app/app-definition.ts`, `src/data/mapping.ts` registry
-- Test: `tests/modules/organization-settings.test.ts`, extend `tests/integration/schema-mapping.dev.test.ts` coverage automatically via `ITAP_TABLES`
+  organization id — reuse the phase-0 profile-page pattern), `src/modules/organization/docs/organization_settings/index.en.md`
+- Modify: `src/modules/organization/index.ts` (module object)
+- Test: `tests/modules/organization-settings.test.ts`, schema contract test covers new mappings automatically through the module object
 
 **Interfaces:**
 - Show/edit tree: panels `recognition` (recognition_threshold, enrollment_duplicate_threshold,
@@ -87,8 +90,8 @@ tests). Two new reusable custom field types: `timeWindows` and `timezone`.
   (pure `formatWindows(windows, locale): string`, `validateWindows(value): string | null`),
   `src/enums/organization.ts` (company kind/status enums),
   `src/modules/organization/companies.ts`, `src/modules/organization/work-schedules.ts`,
-  `src/modules/organization/docs/companies.en.md`
-- Modify: `src/fields/implementations.ts`, `src/app/app-definition.ts`, mapping registry, nav
+  `src/modules/organization/docs/company/index.en.md`
+- Modify: `src/fields/implementations.ts`, `src/modules/organization/index.ts`, nav
 - Test: `tests/fields/time-windows.test.ts`, `tests/fields/timezone.test.tsx`, `tests/modules/companies.test.ts`
 
 **Interfaces:**
@@ -114,8 +117,8 @@ tests). Two new reusable custom field types: `timeWindows` and `timezone`.
   is_active; `options` active only when data_type is a select kind (`when`), required then;
   key immutable after create (`write: 'create'`)), `src/modules/organization/preferences-page.ts`
   (user's own `user_settings`: locale, timezone via `timezone()`; only if org_admin can read/update
-  its own row per metadata — else defer and log), `src/modules/organization/docs/custom-attributes.en.md`
-- Modify: app definition, mapping, enums (entity, data type values from DB)
+  its own row per metadata — else defer and log), `src/modules/organization/docs/custom_attribute_definition/index.en.md`
+- Modify: `src/modules/organization/index.ts`, enums via `enumField` (entity, data type values from DB)
 - Test: `tests/modules/custom-attributes.test.ts`
 
 - [ ] **Step 1: Failing tests**: `options` inactive for `text`, active + required for select types;
