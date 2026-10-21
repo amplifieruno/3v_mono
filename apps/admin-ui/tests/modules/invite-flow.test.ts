@@ -1,7 +1,7 @@
 import { answer, runFlow } from '@burojs/testing';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { HASURA_OPERATIONS } from '../../src/data/operations';
+import { HASURA_OPERATIONS } from '../../src/modules';
 import { INVITATION_RESOURCE } from '../../src/modules/organization/invitations';
 
 /**

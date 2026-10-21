@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { ITAP_TABLES } from '../../src/data/mapping';
+import { ITAP_TABLES } from '../../src/modules';
 import { ENUM_TABLES } from '../../src/enums';
 import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
 

@@ -1,6 +1,7 @@
 import { f } from '@burojs/field-types';
 import { describe, expect, it } from 'vitest';
-import { ITAP_TABLES, hasuraTable, selectFieldsOf } from '../../src/data/mapping';
+import { hasuraTable, selectFieldsOf } from '../../src/data/mapping';
+import { ITAP_TABLES } from '../../src/modules';
 
 describe('hasuraTable', () => {
   it('should default to a uuid `id` primary key ordered by `created_at`', () => {

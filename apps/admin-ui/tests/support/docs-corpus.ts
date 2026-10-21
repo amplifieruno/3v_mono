@@ -1,4 +1,5 @@
 import type { DocSources } from '@burojs/core';
+import { parseArticlePath } from '../../src/docs';
 
 /**
  * The documentation corpus as plain data, and the integrity checks over it.
@@ -183,21 +184,18 @@ export function orphanArticleScopes(sources: DocSources, lookup: ResourceLookup)
 
 /**
  * A `.md` file (path relative to `src/modules`) that the docs map does not
- * reach: not shaped `<scope>/docs/<topic>.<locale>.md`, or absent from
- * `sources` under that scope, topic and locale.
+ * reach: not shaped `<module>/docs/<scope>/<topic>.<locale>.md`, or absent
+ * from `sources` under that scope, topic and locale.
  */
 export function unreachableArticles(files: readonly string[], sources: DocSources): string[] {
   const out: string[] = [];
   for (const file of files) {
-    const parts = file.split('/');
-    const name = parts.at(-1) ?? '';
-    const match = /^(.+)\.([a-z]{2}(?:-[A-Z]{2})?)\.md$/u.exec(name);
-    if (parts.length !== 3 || parts[1] !== 'docs' || match === null) {
-      out.push(`${file} (not <module>/docs/<topic>.<locale>.md)`);
+    const article = file.split('/').length === 4 ? parseArticlePath(file) : null;
+    if (article === null) {
+      out.push(`${file} (not <module>/docs/<scope>/<topic>.<locale>.md)`);
       continue;
     }
-    const [, topicId = '', locale = ''] = match;
-    if (sources[parts[0] ?? '']?.[topicId]?.bodies[locale] === undefined) out.push(file);
+    if (sources[article.scope]?.[article.topicId]?.bodies[article.locale] === undefined) out.push(file);
   }
   return out;
 }

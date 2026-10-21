@@ -1,5 +1,6 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { enumField } from '../../enums/field';
 import { ORG_LOGOS_BUCKET, storageFile } from '../../fields/storage-file';
 import { ORGANIZATION_STATUSES, ORGANIZATION_STATUS_ENUM } from '../../enums/tenancy';
 
@@ -11,7 +12,7 @@ const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 /** Fields the platform writes: read, never on the edit form. */
 const READ_ONLY_MODES = ['list', 'show'] as const;
 
-const statusField = f.enum(ORGANIZATION_STATUSES, {
+const statusField = enumField(ORGANIZATION_STATUSES, ORGANIZATION_STATUS_ENUM, {
   write: 'never',
   in: [...READ_ONLY_MODES],
   texts: {
@@ -21,12 +22,11 @@ const statusField = f.enum(ORGANIZATION_STATUSES, {
         'Set by the platform operator, not here. A suspended organization keeps its data but no member can switch into it.',
     },
   },
-  meta: { enumNamespace: ORGANIZATION_STATUS_ENUM },
 });
 
 /**
  * Columns of `itap.organizations` the `org_admin` role reads. Field names are
- * the column names; `mapping.ts` selects exactly these.
+ * the column names; the module's `index.ts` mapping selects exactly these.
  */
 export const organizationFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
@@ -85,7 +85,7 @@ export const organizationFields = {
       },
     },
   }),
-  status: { ...statusField, ui: { ...statusField.ui, enum: ORGANIZATION_STATUS_ENUM } },
+  status: statusField,
   created_at: f.dateTime({ system: true, in: [...READ_ONLY_MODES], texts: 'Created' }),
   updated_at: f.dateTime({ system: true, in: [...READ_ONLY_MODES], texts: 'Updated' }),
 };

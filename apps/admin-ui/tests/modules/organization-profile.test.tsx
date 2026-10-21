@@ -5,7 +5,6 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
 import type { ItapAuthProvider, ItapIdentity } from '../../src/auth';
-import { authProvider } from '../../src/auth/session';
 
 /**
  * The "Organization" page: the current organization's record screen in show
@@ -63,7 +62,6 @@ async function fakeGraphql(_input: RequestInfo | URL, init?: RequestInit): Promi
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(fakeGraphql));
-  vi.spyOn(authProvider, 'getToken').mockResolvedValue('org-token');
 });
 
 afterEach(() => {
@@ -87,7 +85,7 @@ function fakeAuth(): ItapAuthProvider {
     login: async () => ({ success: true }),
     logout: async () => ({ success: true }),
     onError: async (error) => ({ action: 'propagate', error }),
-    getToken: async () => 'org-token',
+    getToken: async () => 'fake-org-token',
     switchOrganization: async () => ({ success: true }),
   };
 }
@@ -108,6 +106,12 @@ describe('organization profile page', () => {
     expect(await screen.findByText('Nova Tower LLC')).toBeDefined();
     expect(screen.getByText('Regional settings')).toBeDefined();
     expect(screen.getByText('Europe/Moscow')).toBeDefined();
+    // Every read carried the token of the `auth` prop, the console's one token source.
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [, init] of calls) {
+      expect(new Headers(init?.headers).get('authorization')).toBe('Bearer fake-org-token');
+    }
 
     fireEvent.click(screen.getByRole('link', { name: /Edit/ }));
     expect(await screen.findByText(`/organization/${NOVA}/edit`, { selector: '[data-testid="location"]' })).toBeDefined();

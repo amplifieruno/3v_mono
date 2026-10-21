@@ -1,44 +1,39 @@
-import { defineAppDefinition } from '@burojs/core';
-import { authProvider } from '../auth/session';
+import { type AppRuntime, defineAppDefinition } from '@burojs/core';
 import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
-import { organizationInvitation } from '../modules/organization/invitations';
-import { inviteMember } from '../modules/organization/invite-member';
-import { organizationMember } from '../modules/organization/members';
-import { organization } from '../modules/organization/organization';
-import { organizationProfilePage } from '../modules/organization/profile-page';
-import { user } from '../modules/organization/user';
-import { dashboardKpis } from '../modules/overview/kpis';
-import { openFile } from '../fields/open-file';
-import { facility } from '../modules/places/facility';
-import { APP_BLOCKS } from './blocks';
+import { CONSOLE_MODULES } from '../modules';
+import { helpBlock } from './blocks';
 import { NAV_SECTIONS, organizationSection, overviewSection } from './nav';
-import { dashboardPage, helpPage } from './pages';
+import { helpPage } from './pages';
 
 /**
- * The single registration list of the console. Each later module adds its
- * `use(...)` lines here: sections, pages, blocks, enums, resources, operations.
+ * The console's registration list: the app's own sections, Help and enums,
+ * then one `use` per module (`../modules/index.ts`). A new module is added
+ * there, not here.
  */
 export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }) => {
   use(NAV_SECTIONS.overview, overviewSection);
   use(NAV_SECTIONS.organization, organizationSection);
-  use('dashboard', dashboardPage);
-  use('help', helpPage);
-  use('itap-blocks', ...APP_BLOCKS);
+  use('help', helpPage, helpBlock);
   use('itap-enums', ...ITAP_ENUMS);
-  use('itap-operations', dashboardKpis, inviteMember, openFile);
-  use('organization-profile-page', organizationProfilePage);
-  use('organization-module', organization, organizationMember, organizationInvitation, user);
-  use('places-module', facility);
+  for (const mod of CONSOLE_MODULES) use(mod.name, ...mod.uses);
 });
 
 /**
- * The runtime the shell and the tests read. The `hasura` provider is owned by
- * the runtime (rebuilt per data session) and sends the browser session's
- * organization token (`../auth/session.ts`), renewed when it is about to expire.
+ * A runtime of the console whose `hasura` provider (rebuilt per data session)
+ * sends the organization token `getToken` answers. `<AppRuntime>` builds one
+ * per mount from its `auth` prop, so the token has one source.
  */
-export const app = definition.createRuntime({
-  dataProviderFactories: {
-    [HASURA_PROVIDER]: () => createItapHasuraProvider(() => authProvider.getToken()),
-  },
-});
+export function createConsoleRuntime(getToken: () => Promise<string | null>): AppRuntime {
+  return definition.createRuntime({
+    dataProviderFactories: {
+      [HASURA_PROVIDER]: () => createItapHasuraProvider(getToken),
+    },
+  });
+}
+
+/**
+ * A runtime without a session, for what reads the registry only (route
+ * descriptors, checks, the docs corpus): its provider sends no token.
+ */
+export const app = createConsoleRuntime(() => Promise.resolve(null));

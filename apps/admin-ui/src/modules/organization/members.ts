@@ -1,5 +1,6 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { enumField } from '../../enums/field';
 import {
   MEMBER_ROLES,
   MEMBER_ROLE_ENUM,
@@ -11,16 +12,15 @@ import { USER_RESOURCE } from './user';
 
 export const MEMBER_RESOURCE = 'organization_member';
 
-const roleField = f.enum(MEMBER_ROLES, {
+const roleField = enumField(MEMBER_ROLES, MEMBER_ROLE_ENUM, {
   write: 'never',
   texts: {
     label: 'Role',
     doc: { summary: 'What the member may do in this organization.' },
   },
-  meta: { enumNamespace: MEMBER_ROLE_ENUM },
 });
 
-const statusField = f.enum(MEMBER_STATUSES, {
+const statusField = enumField(MEMBER_STATUSES, MEMBER_STATUS_ENUM, {
   write: 'never',
   texts: {
     label: 'Status',
@@ -29,11 +29,10 @@ const statusField = f.enum(MEMBER_STATUSES, {
         'Only an active member whose membership has not expired can sign in to the organization.',
     },
   },
-  meta: { enumNamespace: MEMBER_STATUS_ENUM },
 });
 
 /**
- * Columns of `itap.organization_members` this phase reads; `mapping.ts`
+ * Columns of `itap.organization_members` this phase reads; the module's `index.ts` mapping
  * selects the table's own columns, and the list reads the account's email
  * across the `user` relationship as the dotted column `user_id.email`.
  */
@@ -49,8 +48,8 @@ export const memberFields = {
       doc: { summary: 'The sign-in account of the member, shown by its name.' },
     },
   }),
-  role: { ...roleField, ui: { ...roleField.ui, enum: MEMBER_ROLE_ENUM } },
-  status: { ...statusField, ui: { ...statusField.ui, enum: MEMBER_STATUS_ENUM } },
+  role: roleField,
+  status: statusField,
   title: f.string({ nullable: true, write: 'never', texts: 'Job title' }),
   department: f.string({ nullable: true, write: 'never', texts: 'Department' }),
   joined_at: f.dateTime({

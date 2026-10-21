@@ -5,7 +5,7 @@ export const USER_RESOURCE = 'user';
 
 /**
  * Columns of `auth.users` the `org_admin` role reads (GraphQL names: the
- * Nhost auth table renames its columns to camelCase). `mapping.ts` selects
+ * Nhost auth table renames its columns to camelCase). The module's `index.ts` mapping selects
  * exactly these.
  */
 export const userFields = {

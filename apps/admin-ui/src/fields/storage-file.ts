@@ -1,7 +1,7 @@
 import type { FieldTexts } from '@burojs/core';
 import { f } from '@burojs/field-types';
 
-/** The field implementation id of {@link storageFile} (`./storage-file-impl.tsx`). */
+/** The field implementation id of {@link storageFile} (`./storage-file-impl.ts`). */
 export const STORAGE_FILE_FIELD = 'itap.storage-file';
 
 /** Shared bucket of organization logos (readable by `user` and `org_admin`). */

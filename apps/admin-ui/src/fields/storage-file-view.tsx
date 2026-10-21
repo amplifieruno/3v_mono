@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ExternalLink, FileLock } from 'lucide-react';
 import type * as React from 'react';
 import { openFile } from './open-file';
-import { presignStorageFile } from './storage-client';
+import { presignStorageFile, useStorageTarget } from './storage-client';
 import type { StorageFileMeta } from './storage-file-meta';
 
 export interface StorageFileViewProps {
@@ -44,9 +44,10 @@ function SensitiveFile({ fileId }: { readonly fileId: string }): React.ReactElem
 /** A non-sensitive file through its storage presigned URL: an image preview or a link. */
 function PresignedFile({ fileId, meta, presentation }: StorageFileViewProps): React.ReactElement {
   const t = useT();
+  const target = useStorageTarget();
   const presigned = useQuery({
     queryKey: ['itap', 'storage-presign', fileId],
-    queryFn: () => presignStorageFile(fileId),
+    queryFn: () => presignStorageFile(fileId, target),
     staleTime: (query) =>
       query.state.data ? Math.max(0, query.state.data.expiresAt - Date.now() - PRESIGN_MARGIN_MS) : 0,
   });

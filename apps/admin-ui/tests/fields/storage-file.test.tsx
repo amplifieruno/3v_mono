@@ -5,7 +5,6 @@ import type * as React from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRuntime } from '../../src/app/runtime';
 import type { ItapAuthProvider, ItapIdentity } from '../../src/auth';
-import { authProvider } from '../../src/auth/session';
 import { StorageFileDisplay } from '../../src/fields/storage-file-display';
 import { StorageFileInput } from '../../src/fields/storage-file-input';
 import type { StorageFileMeta } from '../../src/fields/storage-file-meta';
@@ -49,7 +48,6 @@ const fetchMock = vi.fn<typeof fetch>();
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
-  vi.spyOn(authProvider, 'getToken').mockResolvedValue('org-token');
 });
 
 afterEach(() => {
@@ -73,7 +71,7 @@ function fakeAuth(): ItapAuthProvider {
     login: async () => ({ success: true }),
     logout: async () => ({ success: true }),
     onError: async (error) => ({ action: 'propagate', error }),
-    getToken: async () => 'org-token',
+    getToken: async () => 'fake-org-token',
     switchOrganization: async () => ({ success: true }),
   };
 }
@@ -123,7 +121,7 @@ describe('storage file field', () => {
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(url).toBe('/storage/v1/files');
     expect(init?.method).toBe('POST');
-    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer org-token');
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-org-token');
     const body = init?.body as FormData;
     expect(body.get('bucket-id')).toBe('org-logos');
     expect(JSON.parse(String(body.get('metadata[]')))).toEqual({ name: 'logo.png', metadata: { kind: 'logo' } });

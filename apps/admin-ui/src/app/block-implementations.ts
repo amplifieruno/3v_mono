@@ -1,14 +1,10 @@
 import { composeBlockImplementations, implementBlock } from '@burojs/react';
-import { invitationTokenBlock } from '../modules/organization/invitation-token-block';
-import { InvitationTokenView } from '../modules/organization/invitation-token-view';
-import { OrganizationProfileView } from '../modules/organization/organization-profile-view';
-import { organizationProfileBlock } from '../modules/organization/profile-page';
+import { MODULE_VIEWS } from '../modules/views';
 import { helpBlock } from './blocks';
 import { HelpPage } from './help-page';
 
-/** The views of the app's own blocks, handed to `<BuroProvider blockImplementations>`. */
+/** The views of the app's and the modules' blocks, handed to `<BuroProvider blockImplementations>`. */
 export const appBlockImplementations = composeBlockImplementations(
   implementBlock(helpBlock, { component: HelpPage }),
-  implementBlock(invitationTokenBlock, { component: InvitationTokenView }),
-  implementBlock(organizationProfileBlock, { component: OrganizationProfileView }),
+  ...MODULE_VIEWS,
 );

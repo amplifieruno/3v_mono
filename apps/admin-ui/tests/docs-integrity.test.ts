@@ -139,10 +139,16 @@ describe('the checks find each defect', () => {
   });
 
   it('should find a .md file not reachable from docs.sources', () => {
-    const files = ['profiles/docs/lifecycle.en.md', 'profiles/docs/merge.en.md', 'profiles/x.md'];
+    const files = [
+      'people/docs/profiles/lifecycle.en.md',
+      'people/docs/profiles/merge.en.md',
+      'people/docs/lifecycle.en.md',
+      'people/x.md',
+    ];
     expect(unreachableArticles(files, sources)).toEqual([
-      'profiles/docs/merge.en.md',
-      'profiles/x.md (not <module>/docs/<topic>.<locale>.md)',
+      'people/docs/profiles/merge.en.md',
+      'people/docs/lifecycle.en.md (not <module>/docs/<scope>/<topic>.<locale>.md)',
+      'people/x.md (not <module>/docs/<scope>/<topic>.<locale>.md)',
     ]);
   });
 

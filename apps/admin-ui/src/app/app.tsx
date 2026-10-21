@@ -1,4 +1,4 @@
-import { generateRouteDescriptors, isCustomPageRoute } from '@burojs/react';
+import { generateRouteDescriptors, isCustomPageRoute, useApp } from '@burojs/react';
 import {
   AppShell,
   AppSidebar,
@@ -15,7 +15,6 @@ import { LoginPage } from '../auth/login-page';
 import { OrganizationPickerPage } from '../auth/organization-picker-page';
 import { LOGIN_PATH, ORGANIZATIONS_PATH, RequireAuth } from '../auth/require-auth';
 import { authProvider, tokenStore } from '../auth/session';
-import { app } from './app-definition';
 import { HOME_PATH, useConsoleBrand } from './brand';
 import { FacilityPicker } from './facility-picker';
 import { OrganizationSwitcher } from './organization-switcher';
@@ -60,7 +59,8 @@ function ConsoleShell(): React.ReactElement {
  * address gets the framework's not-found panel inside the shell.
  */
 function ConsoleRoutes(): React.ReactElement {
-  const descriptors = React.useMemo(() => generateRouteDescriptors(app), []);
+  const app = useApp();
+  const descriptors = React.useMemo(() => generateRouteDescriptors(app), [app]);
   return (
     <Routes>
       <Route path={LOGIN_PATH} element={<LoginPage />} />

@@ -1,10 +1,11 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
 
 export const FACILITY_RESOURCE = 'facility';
 
-const statusField = f.enum(FACILITY_STATUSES, {
+const statusField = enumField(FACILITY_STATUSES, FACILITY_STATUS_ENUM, {
   texts: {
     label: 'Status',
     doc: {
@@ -12,10 +13,9 @@ const statusField = f.enum(FACILITY_STATUSES, {
         'Whether the site is in operation. Under maintenance and inactive sites stay visible with their history.',
     },
   },
-  meta: { enumNamespace: FACILITY_STATUS_ENUM },
 });
 
-/** Columns of `itap.facilities` this phase reads; `mapping.ts` selects exactly these. */
+/** Columns of `itap.facilities` this phase reads; the module's `index.ts` mapping selects exactly these. */
 export const facilityFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
   code: f.string({
@@ -39,7 +39,7 @@ export const facilityFields = {
       },
     },
   }),
-  status: { ...statusField, ui: { ...statusField.ui, enum: FACILITY_STATUS_ENUM } },
+  status: statusField,
   created_at: f.dateTime({ system: true, texts: 'Created' }),
 };
 

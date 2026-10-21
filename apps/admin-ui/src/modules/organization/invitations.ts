@@ -7,6 +7,7 @@ import {
   ref,
 } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { enumField } from '../../enums/field';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { schema } from '../../data/schema';
 import {
@@ -26,20 +27,15 @@ const roleTexts = {
   doc: { summary: 'The role the invitee gets in this organization on accepting.' },
 };
 
-const roleField = f.enum(MEMBER_ROLES, {
-  write: 'never',
-  texts: roleTexts,
-  meta: { enumNamespace: MEMBER_ROLE_ENUM },
-});
+const roleField = enumField(MEMBER_ROLES, MEMBER_ROLE_ENUM, { write: 'never', texts: roleTexts });
 
-const inviteRoleField = f.enum(MEMBER_ROLES, {
+const inviteRoleField = enumField(MEMBER_ROLES, MEMBER_ROLE_ENUM, {
   required: true,
   default: 'admin',
   texts: roleTexts,
-  meta: { enumNamespace: MEMBER_ROLE_ENUM },
 });
 
-const statusField = f.enum(INVITATION_STATUSES, {
+const statusField = enumField(INVITATION_STATUSES, INVITATION_STATUS_ENUM, {
   write: 'never',
   texts: {
     label: 'Status',
@@ -48,7 +44,6 @@ const statusField = f.enum(INVITATION_STATUSES, {
         'Pending until the invitee accepts it, an administrator revokes it or it expires; only a pending invitation can be accepted.',
     },
   },
-  meta: { enumNamespace: INVITATION_STATUS_ENUM },
 });
 
 /** The invitation resource as a read target, without the handle defined below. */
@@ -73,7 +68,7 @@ const revokeApplied: FlowUnknownCheck = async ({ record, data }) => {
   }
 };
 
-/** Columns of `itap.organization_invitations` the `org_admin` role reads; `mapping.ts` selects these. */
+/** Columns of `itap.organization_invitations` the `org_admin` role reads; the module's `index.ts` mapping selects these. */
 export const invitationFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
   email: f.email({
@@ -83,8 +78,8 @@ export const invitationFields = {
       doc: { summary: 'The address the invitation was sent to; the invitee signs up with it.' },
     },
   }),
-  role: { ...roleField, ui: { ...roleField.ui, enum: MEMBER_ROLE_ENUM } },
-  status: { ...statusField, ui: { ...statusField.ui, enum: INVITATION_STATUS_ENUM } },
+  role: roleField,
+  status: statusField,
   expires_at: f.dateTime({
     write: 'never',
     texts: {
@@ -151,7 +146,7 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
               validate: schema(inviteMemberInput.shape.email),
               texts: 'Email',
             }),
-            role: { ...inviteRoleField, ui: { ...inviteRoleField.ui, enum: MEMBER_ROLE_ENUM } },
+            role: inviteRoleField,
           },
         },
         submit: {

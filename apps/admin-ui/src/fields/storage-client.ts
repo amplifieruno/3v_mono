@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { authProvider } from '../auth/session';
+import { useCallback, useMemo } from 'react';
+import { useConsole } from '../app/console-context';
 import { STORAGE_BASE } from '../data/endpoints';
 
 /** A refused or failed storage request: the HTTP status and the server's message, if any. */
@@ -14,19 +14,14 @@ export class StorageRequestError extends Error {
 }
 
 /**
- * Where storage requests go and which token they carry: the browser session
- * through the same-origin proxy by default; the dev-stack tests pass the
- * storage URL and their own session.
+ * Where storage requests go and which token they carry: in the console the
+ * same-origin proxy and the runtime's auth provider (`useStorageTarget`); the
+ * dev-stack tests pass the storage URL and their own session.
  */
 export interface StorageTarget {
   readonly base: string;
   readonly getToken: () => Promise<string | null>;
 }
-
-const SESSION_TARGET: StorageTarget = {
-  base: STORAGE_BASE,
-  getToken: () => authProvider.getToken(),
-};
 
 async function authHeaders(target: StorageTarget): Promise<Record<string, string>> {
   const token = await target.getToken();
@@ -52,7 +47,7 @@ async function errorOf(res: Response): Promise<StorageRequestError> {
 export async function uploadStorageFile(
   file: File,
   meta: { readonly bucket: string; readonly kind: string },
-  target: StorageTarget = SESSION_TARGET,
+  target: StorageTarget,
 ): Promise<{ id: string }> {
   const form = new FormData();
   form.append('bucket-id', meta.bucket);
@@ -73,7 +68,7 @@ export async function uploadStorageFile(
 /** A short-lived download URL of a non-sensitive file (`GET /v1/files/{id}/presignedurl`). */
 export async function presignStorageFile(
   fileId: string,
-  target: StorageTarget = SESSION_TARGET,
+  target: StorageTarget,
 ): Promise<{ url: string; expiresAt: number }> {
   const res = await fetch(`${target.base}/v1/files/${encodeURIComponent(fileId)}/presignedurl`, {
     headers: await authHeaders(target),
@@ -84,10 +79,17 @@ export async function presignStorageFile(
   return { url: json.url, expiresAt: Date.now() + (json.expiration ?? 60) * 1000 };
 }
 
+/** The console's storage target: the proxy path and the token of the `<AppRuntime>`'s auth provider. */
+export function useStorageTarget(): StorageTarget {
+  const { auth } = useConsole();
+  return useMemo(() => ({ base: STORAGE_BASE, getToken: () => auth.getToken() }), [auth]);
+}
+
 /** The upload function the storage file input uses; reads the organization token per call. */
 export function useStorageUpload(): (
   file: File,
   meta: { bucket: string; kind: string },
 ) => Promise<{ id: string }> {
-  return useCallback((file, meta) => uploadStorageFile(file, meta), []);
+  const target = useStorageTarget();
+  return useCallback((file, meta) => uploadStorageFile(file, meta, target), [target]);
 }

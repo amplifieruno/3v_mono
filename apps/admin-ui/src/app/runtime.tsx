@@ -1,4 +1,5 @@
 import { createResolver } from '@burojs/context';
+import type { AppRuntime as BuroAppRuntime } from '@burojs/core';
 import type { I18nFacade } from '@burojs/i18n-core';
 import {
   BuroProvider,
@@ -16,7 +17,7 @@ import { docs } from '../docs';
 import { itapFieldImplementations } from '../fields/implementations';
 import { LANGUAGE_STORAGE_KEY, createI18n } from '../i18n/create-i18n';
 import { buildLocaleRegistry } from '../i18n/registry';
-import { app } from './app-definition';
+import { createConsoleRuntime } from './app-definition';
 import { appBlockImplementations } from './block-implementations';
 import { ConsoleContext, type ItapResolver } from './console-context';
 import { itapContextSlices } from './context-slices';
@@ -28,12 +29,18 @@ import { SessionWatch } from './session-watch';
 const components: Record<string, unknown> = { ...defaultNavLayouts };
 
 interface Booted {
+  readonly app: BuroAppRuntime;
   readonly resolver: ItapResolver;
   readonly i18n: I18nFacade;
   readonly lease: DataRuntimeLease;
 }
 
-async function boot(organizationId: string | null): Promise<{ booted: Booted; dispose: () => Promise<void> }> {
+async function boot(
+  auth: ItapAuthProvider,
+  organizationId: string | null,
+): Promise<{ booted: Booted; dispose: () => Promise<void> }> {
+  // The data provider reads the token from this mount's `auth`, the console's one token source.
+  const app = createConsoleRuntime(() => auth.getToken());
   await app.ready;
   const resolver = createResolver(itapContextSlices());
   await resolver.boot();
@@ -46,7 +53,7 @@ async function boot(organizationId: string | null): Promise<{ booted: Booted; di
   const unregister = dataSession.registerParticipant(participant);
   const lease = await createDataRuntime({ app, queryClient, dataSession, transitionParticipant: participant });
   return {
-    booted: { resolver, i18n, lease },
+    booted: { app, resolver, i18n, lease },
     dispose: async () => {
       await lease.dispose();
       unregister();
@@ -79,11 +86,12 @@ export function AppRuntime({
 }: AppRuntimeProps): React.ReactElement | null {
   const [booted, setBooted] = React.useState<Booted | null>(null);
   const initialOrganization = React.useRef(initialOrganizationId);
+  const initialAuth = React.useRef(auth);
 
   React.useEffect(() => {
     let cancelled = false;
     let dispose: (() => Promise<void>) | undefined;
-    void boot(initialOrganization.current).then((result) => {
+    void boot(initialAuth.current, initialOrganization.current).then((result) => {
       dispose = result.dispose;
       if (cancelled) void result.dispose();
       else setBooted(result.booted);
@@ -104,7 +112,7 @@ export function AppRuntime({
   return (
     <ConsoleContext.Provider value={context}>
       <BuroProvider
-        app={app}
+        app={booted.app}
         dataRuntime={booted.lease}
         authProvider={auth}
         resolver={booted.resolver}

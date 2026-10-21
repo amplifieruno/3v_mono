@@ -73,8 +73,9 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   scope that is not a resource name (a module, `guide/<x>`, `page/<x>`) is never listed, though
   `DocSources` reserves `app`, `guide` and `page`. **[code]**
   Phase 0 evidence **[run]**: the members article had to move under resource scope `organization_member` to be listed on Help (`e2e/foundation.spec.ts`, `tests/docs-integrity.test.ts`).
-- **Workaround:** none needed yet. A module article must be filed under the resource it explains
-  (the directory name or a re-keyed entry in `src/docs.ts`); `tests/docs-integrity.test.ts` fails on
+- **Workaround:** none needed yet. A module article must be filed under the resource it explains:
+  `src/modules/<module>/docs/<resource-scope>/<topic>.<locale>.md`, read by the app's own
+  `articleSources` (`src/docs.ts`) instead of `docsFromGlob`; `tests/docs-integrity.test.ts` fails on
   an article scope that names no registered resource.
 - **Expected from a framework:** guide/page scopes listed by `<DocBrowser>` (with a title from the
   bundle), so an article about a workflow need not pretend to belong to one table.
