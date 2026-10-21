@@ -8,11 +8,12 @@ import {
   createDataRuntimeTransitionParticipant,
   createDataSession,
 } from '@burojs/react';
-import { Toaster, defaultNavLayouts, shadcnFieldImplementations, shadcnPresentationHosts } from '@burojs/ui-shadcn';
+import { Toaster, defaultNavLayouts, shadcnPresentationHosts } from '@burojs/ui-shadcn';
 import * as React from 'react';
 import type { ItapAuthProvider, TokenStore } from '../auth';
 import { createItapQueryClient } from '../data/query-client';
 import { docs } from '../docs';
+import { itapFieldImplementations } from '../fields/implementations';
 import { LANGUAGE_STORAGE_KEY, createI18n } from '../i18n/create-i18n';
 import { buildLocaleRegistry } from '../i18n/registry';
 import { app } from './app-definition';
@@ -73,7 +74,7 @@ export function AppRuntime({
   auth,
   initialOrganizationId,
   store,
-  fieldImplementations = shadcnFieldImplementations,
+  fieldImplementations = itapFieldImplementations,
   children,
 }: AppRuntimeProps): React.ReactElement | null {
   const [booted, setBooted] = React.useState<Booted | null>(null);

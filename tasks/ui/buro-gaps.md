@@ -21,12 +21,22 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   "secondary token" hook for tenant-scoped tokens.
 
 ### G2. `f.file` edit/create is not wired to the Hasura write path
-- **Framework:** display maps the raw column through `mapper.read`; the input seeds only from
+- **Status:** fixed upstream in PR #137 (REF-67, unreleased); thin local workaround in
+  `src/fields/storage-file*`.
+- **Framework (0.6.0):** display maps the raw column through `mapper.read`; the input seeds only from
   `FileRef[]` (an existing uuid column starts empty) and nothing calls `mapper.write` on submit, so
-  `FileRef[]` would reach a `uuid` column. Matches known gap `file-input-half-unwired`. **[code]**
-- **Workaround:** to be decided after a spike (custom field implementation storing the file id).
+  `FileRef[]` would reach a `uuid` column. Matches known gap `file-input-half-unwired`. `withFileStorage`
+  wraps the old provider shape (`create`/`update` with `args.variables`), not 0.6's
+  `mutations.updateOne(descriptor)`. **[code]** Not reproduced by a run: the buro maintainer
+  confirmed the gap and its fix (PR #137: the edit form seeds through `mapper.read`, submit writes
+  `mapper.write(next, prev)`, an untouched file field is left out of the update).
+- **Workaround:** one local field type, `storageFile(...)` (`uuid` column, `ui.input/display:
+  'itap.storage-file'`), whose input uploads to hasura-storage and writes the file id, and whose
+  display previews through the presigned URL (`open_file` for sensitive kinds). No provider wrapper.
+  Replaced by `f.file` + `nhostFileStorage` once PR #137 ships.
 
 ### G3. Hasura live socket keeps the old token after an organization switch
+- **Status:** fixed upstream in PR #139 (unreleased).
 - **Framework:** `connectionParams` are read once per socket; the live provider has no
   `dispose`/reconnect, and owned providers are rebuilt per rotation, leaking a socket each time. **[code]**
 - **Workaround:** polling (`views.list.refetchInterval`) for live lists until fixed.
@@ -116,3 +126,19 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   once, so even a confirmed invitation would need revoking and re-inviting; the unknown screen
   tells the administrator to check the Invitations list.
 - **Expected from a framework:** the submitted input (or the values) in the check context.
+
+### G13. No current-record screen: a one-row resource needs a custom page
+- **Need:** "Organization" in the sidebar opens the current organization (the id the organization
+  token is scoped to) in show mode, with Edit.
+- **Framework (0.6.0):** `ResourceConfig.singleton`/`recordId` were removed on purpose
+  (`docs/lists-guide.md` "One-row screens"): a constant id is wrong per tenant. The recommended
+  shapes are a list the server narrows to one row (here: a list page with one row, one click more)
+  or `defineCustomPage` plus your own read. No resource-level "current record from the identity /
+  scope" option, though here the id is known on the client (`identity.organizationId`). **[code]**
+- **Workaround:** custom page `organization-profile` whose block `itap:organization-profile`
+  (`src/modules/organization/organization-profile-view.tsx`) renders `<RecordScreen mode="show"
+  recordId={identity.organizationId}>`. Edit and Save use the resource's own routes
+  (`/organization/:id/edit`, then its show route), so after a save the user is on the resource's
+  show route, not on the page.
+- **Expected from a framework:** a resource view whose record id is a function of the session
+  (identity or scope), with its show/edit routes at the resource's base path.

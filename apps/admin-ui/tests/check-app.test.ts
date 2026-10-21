@@ -1,6 +1,7 @@
 import { checkApp } from '@burojs/testing';
 import { describe, expect, it } from 'vitest';
 import { app } from '../src/app/app-definition';
+import { itapFieldImplementations } from '../src/fields/implementations';
 import { buildLocaleRegistry } from '../src/i18n/registry';
 
 /**
@@ -17,7 +18,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
 describe('checkApp over the console and its bundles', () => {
   it('should report no diagnostics beyond the accepted ones', async () => {
     await app.ready;
-    const reported = await checkApp(app, { i18n: buildLocaleRegistry() });
+    const reported = await checkApp(app, {
+      i18n: buildLocaleRegistry(),
+      fieldImplementations: itapFieldImplementations,
+    });
     const unexpected = reported.filter(
       (d) => !ACCEPTED.some((a) => a.code === d.code && a.location === d.location),
     );
@@ -30,6 +34,7 @@ describe('checkApp over the console and its bundles', () => {
     const names = app.registry.customPages.list().map((page) => page.name);
     expect(names).toEqual(expect.arrayContaining(['dashboard', 'help']));
     expect(names[0]).toBe('dashboard');
+    expect(names).toContain('organization-profile');
     expect(names.at(-1)).toBe('help');
   });
 });

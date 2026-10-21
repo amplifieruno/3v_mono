@@ -1,6 +1,8 @@
 import { composeBlockImplementations, implementBlock } from '@burojs/react';
 import { invitationTokenBlock } from '../modules/organization/invitation-token-block';
 import { InvitationTokenView } from '../modules/organization/invitation-token-view';
+import { OrganizationProfileView } from '../modules/organization/organization-profile-view';
+import { organizationProfileBlock } from '../modules/organization/profile-page';
 import { helpBlock } from './blocks';
 import { HelpPage } from './help-page';
 
@@ -8,4 +10,5 @@ import { HelpPage } from './help-page';
 export const appBlockImplementations = composeBlockImplementations(
   implementBlock(helpBlock, { component: HelpPage }),
   implementBlock(invitationTokenBlock, { component: InvitationTokenView }),
+  implementBlock(organizationProfileBlock, { component: OrganizationProfileView }),
 );

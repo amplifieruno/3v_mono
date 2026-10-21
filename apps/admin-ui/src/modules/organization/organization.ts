@@ -1,11 +1,19 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { ORG_LOGOS_BUCKET, storageFile } from '../../fields/storage-file';
 import { ORGANIZATION_STATUSES, ORGANIZATION_STATUS_ENUM } from '../../enums/tenancy';
 
 export const ORGANIZATION_RESOURCE = 'organization';
 
+/** Largest logo the console uploads (2 MB). */
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Fields the platform writes: read, never on the edit form. */
+const READ_ONLY_MODES = ['list', 'show'] as const;
+
 const statusField = f.enum(ORGANIZATION_STATUSES, {
   write: 'never',
+  in: [...READ_ONLY_MODES],
   texts: {
     label: 'Status',
     doc: {
@@ -25,6 +33,7 @@ export const organizationFields = {
   name: f.string({ required: true, texts: 'Name' }),
   slug: f.string({
     write: 'never',
+    in: [...READ_ONLY_MODES],
     texts: {
       label: 'Slug',
       doc: {
@@ -42,14 +51,17 @@ export const organizationFields = {
       },
     },
   }),
-  logo_file_id: f.uuid({
-    nullable: true,
-    write: 'never',
+  logo_file_id: storageFile({
+    bucket: ORG_LOGOS_BUCKET,
+    kind: 'logo',
+    accept: 'image/png,image/jpeg,image/webp',
+    maxSize: LOGO_MAX_BYTES,
     texts: {
       label: 'Logo',
       doc: {
         summary:
-          'Storage file of the logo shown in the organization switcher (bucket `org-logos`).',
+          'Image shown next to the organization name in the organization switcher: PNG, JPEG or WebP up to 2 MB. ' +
+          'It is stored in the shared `org-logos` bucket, which every member can read; upload a new image to replace it.',
       },
     },
   }),
@@ -74,8 +86,8 @@ export const organizationFields = {
     },
   }),
   status: { ...statusField, ui: { ...statusField.ui, enum: ORGANIZATION_STATUS_ENUM } },
-  created_at: f.dateTime({ system: true, texts: 'Created' }),
-  updated_at: f.dateTime({ system: true, texts: 'Updated' }),
+  created_at: f.dateTime({ system: true, in: [...READ_ONLY_MODES], texts: 'Created' }),
+  updated_at: f.dateTime({ system: true, in: [...READ_ONLY_MODES], texts: 'Updated' }),
 };
 
 /**
@@ -100,5 +112,19 @@ export const organization = defineResource(ORGANIZATION_RESOURCE, {
   fields: organizationFields,
   views: {
     list: { page: false },
+    show: {
+      header: () => ['status'],
+      body: (l) => [
+        l.panel(['name', 'legal_name', 'slug', 'logo_file_id'], { key: 'profile', texts: 'Profile' }),
+        l.panel(['timezone', 'locale'], { key: 'regional', texts: 'Regional settings' }),
+        l.panel(['created_at', 'updated_at'], { key: 'record', texts: 'Record', collapse: 'closed' }),
+      ],
+    },
+    edit: {
+      body: (l) => [
+        l.panel(['name', 'legal_name', 'logo_file_id'], { key: 'profile', texts: 'Profile' }),
+        l.panel(['timezone', 'locale'], { key: 'regional', texts: 'Regional settings' }),
+      ],
+    },
   },
 });

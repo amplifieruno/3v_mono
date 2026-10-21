@@ -1,4 +1,5 @@
 import type { HasuraOperationRegistry } from '@burojs/hasura';
+import { FILES_BINDING } from '../fields/open-file';
 import { INVITATION_BINDING } from '../modules/organization/invite-member';
 import { OVERVIEW_BINDING } from '../modules/overview/kpis';
 
@@ -54,6 +55,20 @@ export const HASURA_OPERATIONS: HasuraOperationRegistry = {
         return { email, role };
       },
       mapResult: (data) => rootOf(data, 'invite_member'),
+    },
+  },
+  [FILES_BINDING]: {
+    /** The `open_file` action (`org_admin`): a short-lived URL; audits sensitive kinds. */
+    openFile: {
+      kind: 'mutation',
+      document: `mutation OpenFile($file_id: uuid!) {
+  open_file(file_id: $file_id) { url expires_at }
+}`,
+      variables: (input) => {
+        const { file_id } = input as { file_id: string };
+        return { file_id };
+      },
+      mapResult: (data) => rootOf(data, 'open_file'),
     },
   },
 };

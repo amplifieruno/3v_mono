@@ -19,6 +19,21 @@ export default {
       title: 'Could not load your organizations',
       body: 'The server could not be reached. Check the connection and try again.',
     },
+    /** The storage file field (`src/fields/storage-file-impl.tsx`). */
+    storageFile: {
+      upload: 'Upload',
+      replace: 'Replace',
+      remove: 'Remove',
+      uploading: 'Uploading…',
+      open: 'Open file',
+      preview: 'Preview',
+      accepts: 'Accepts {{accept}}',
+      tooLarge: 'The file is larger than {{max}}.',
+      wrongType: 'This file type is not accepted here.',
+      refused: 'Storage refused the file ({{status}}). {{message}}',
+      failed: 'The upload failed. Check the connection and try again.',
+      openFailed: 'The file could not be opened.',
+    },
     organizations: {
       title: 'Choose an organization',
       description: 'You are a member of several organizations. You can switch later from the sidebar.',

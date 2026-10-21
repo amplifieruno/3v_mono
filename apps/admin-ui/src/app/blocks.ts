@@ -1,5 +1,6 @@
 import { defineBlock } from '@burojs/core';
 import { invitationTokenBlock } from '../modules/organization/invitation-token-block';
+import { organizationProfileBlock } from '../modules/organization/profile-page';
 
 /*
  * The app's own blocks: custom page content (`./pages.ts`) and what flows open
@@ -11,4 +12,4 @@ import { invitationTokenBlock } from '../modules/organization/invitation-token-b
 export const helpBlock = defineBlock('itap:help', { texts: 'Help' });
 
 /** Every app block, registered under one contribution id. */
-export const APP_BLOCKS = [helpBlock, invitationTokenBlock] as const;
+export const APP_BLOCKS = [helpBlock, invitationTokenBlock, organizationProfileBlock] as const;
