@@ -16,6 +16,7 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Framework:** `AuthProvider` contract only (`getIdentity`, `check`, `login`, `logout`, `onError`).
   No adapter, no token store, no refresh scheduler. The example's `onError` matches HTTP 401, but
   Hasura answers an expired JWT with HTTP 200 + `invalid-jwt`. **[code]**
+  Phase 0 evidence **[run]**: our adapter written and exercised (`tests/integration/auth.dev.test.ts`, `e2e/auth.spec.ts`: sign-in, switch, rejected refresh ends in sign-out).
 - **Workaround:** our own `AuthProvider` + token store; `onError` matches `kind === 'auth'`.
 - **Expected from a framework:** an Nhost (or generic OIDC/refresh-token) auth adapter, and a
   "secondary token" hook for tenant-scoped tokens.
@@ -71,6 +72,7 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   emits only `concept/<term>` scopes, registered resources and their enum variants. An article
   scope that is not a resource name (a module, `guide/<x>`, `page/<x>`) is never listed, though
   `DocSources` reserves `app`, `guide` and `page`. **[code]**
+  Phase 0 evidence **[run]**: the members article had to move under resource scope `organization_member` to be listed on Help (`e2e/foundation.spec.ts`, `tests/docs-integrity.test.ts`).
 - **Workaround:** none needed yet. A module article must be filed under the resource it explains
   (the directory name or a re-keyed entry in `src/docs.ts`); `tests/docs-integrity.test.ts` fails on
   an article scope that names no registered resource.
@@ -82,6 +84,7 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   distinct from warning (an expired invitation).
 - **Framework (0.6.0):** `EnumColor` is the closed tuple `default | secondary | destructive |
   outline | success | warning | info`, validated at registration. **[code]**
+  Phase 0 evidence **[run]**: enums registered with these colours pass `checkApp` and render as badges in the invitations list.
 - **Workaround:** `secondary` stands for neutral, `warning` for caution
   (`src/enums/tenancy.ts`, `src/enums/places.ts`).
 - **Expected from a framework:** semantic tones (`neutral`, `caution`) mapped to theme tokens, or an
@@ -122,6 +125,7 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   `signal`, not the form values or the submitted input, so a resource-level flow that creates a
   row by a natural key has nothing to look it up by. Without a check, `checkApp` warns
   `flow.unknown-unhandled`. **[code]**
+  Phase 0 evidence **[run]**: `checkApp` reports the warning for `invite` (accepted in `tests/check-app.test.ts`).
 - **Workaround:** none: the warning is accepted in `tests/check-app.test.ts`. The token is shown
   once, so even a confirmed invitation would need revoking and re-inviting; the unknown screen
   tells the administrator to check the Invitations list.
@@ -135,6 +139,7 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   shapes are a list the server narrows to one row (here: a list page with one row, one click more)
   or `defineCustomPage` plus your own read. No resource-level "current record from the identity /
   scope" option, though here the id is known on the client (`identity.organizationId`). **[code]**
+  Phase 0 evidence **[run]**: custom page built and exercised (`tests/modules/organization-profile.test.tsx`, `e2e/foundation.spec.ts`: Save lands on the resource route).
 - **Workaround:** custom page `organization-profile` whose block `itap:organization-profile`
   (`src/modules/organization/organization-profile-view.tsx`) renders `<RecordScreen mode="show"
   recordId={identity.organizationId}>`. Edit and Save use the resource's own routes

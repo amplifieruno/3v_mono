@@ -42,7 +42,9 @@ test.describe.serial('foundation smoke', () => {
   test('should show the dashboard figures as numbers', async () => {
     for (const label of KPI_LABELS) {
       const tile = page.getByText(label, { exact: true }).locator('xpath=..');
-      await expect(tile).toContainText(/\d+/);
+      await expect(tile).toContainText(label);
+      // The value alone (tile text without its label) is a number, not a dash.
+      await expect.poll(async () => (await tile.innerText()).replace(label, '').trim()).toMatch(/^\d+$/);
     }
   });
 
@@ -58,13 +60,16 @@ test.describe.serial('foundation smoke', () => {
       buffer: PNG,
     });
     await expect(page.getByTestId('storage-file-preview')).toBeVisible();
+    await expect(page.getByTestId('storage-file-preview')).toHaveJSProperty('complete', true);
     await page.getByTestId('form-field-input:organization:edit:name').fill(editedName);
     await page.getByTestId('form-submit:organization:edit').click();
     await expect(page.getByText(editedName).first()).toBeVisible();
 
     await page.goto('/organization-profile');
     await expect(page.getByText(editedName).first()).toBeVisible();
-    await expect(page.getByTestId('storage-file-preview')).toBeVisible();
+    const logo = page.getByTestId('storage-file-preview');
+    await expect(logo).toBeVisible();
+    await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 
     // Restore the display name.
     await page.getByRole('link', { name: 'Edit' }).click();
@@ -90,7 +95,7 @@ test.describe.serial('foundation smoke', () => {
     await expect(token.getByRole('textbox')).toHaveValue(/\S{16,}/);
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('row', { name: new RegExp(email) })).toContainText('Pending');
+    await expect(page.getByRole('row', { name: new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toContainText('Pending');
   });
 
   test('should open Help and a field popover on the organization form', async () => {
@@ -101,7 +106,9 @@ test.describe.serial('foundation smoke', () => {
     await page.goto('/organization-profile');
     await page.getByRole('link', { name: 'Edit' }).click();
     await page.getByTestId('form-field:organization:edit:legal_name:info').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog')).toContainText(
+      'Registered company name for reports and exports, when it differs from the name.',
+    );
   });
 
   test('should find Members in the command palette', async () => {

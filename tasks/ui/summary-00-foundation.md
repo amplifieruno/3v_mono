@@ -88,7 +88,7 @@ Deferred minors from review (none blocks phase 1):
   unvalidated; coarse error mapping (refresh 429 -> logout); token-store write-failure fallback reads
   stale storage; login writes base and org separately; `onError` without org does not clear the store;
   concurrent `switchOrganization` is last-response-wins; renewal failure after a newer switch may
-  sign out; `SessionWatch` rotates outside `serializeLifecycle`; identity error state appears only
+  sign out; `SessionWatch` rotates outside `serializeLifecycle`; `check()` does a network refresh per generation (needs a comment); identity error state appears only
   after query retries.
 - Data: schema test honours `aggregate:false` but not `noAggregate:true`; `mapping.ts` imports module
   resources (cycle risk as modules grow, consider per-module registration).
