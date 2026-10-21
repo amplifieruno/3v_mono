@@ -416,8 +416,8 @@ services:
     networks:
       - internal
       - proxy
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    # No config mount: the image's own `apps/admin-ui/nginx.conf` (conf.d/default.conf) routes
+    # /v1/graphql, /auth/, /storage/ and /socket.io to the services on the internal network.
     labels:
       traefik.enable: "true"
       traefik.http.routers.frontend.entrypoints: web

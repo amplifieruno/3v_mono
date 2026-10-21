@@ -14,6 +14,7 @@ export const invitationTokenBlock = defineBlock('itap:invitation-token', {
     expires: 'Valid until {{expiresAt}}.',
     copy: 'Copy token',
     copied: 'Token copied',
+    copyFailed: 'Could not copy the token; select it in the field and copy it by hand.',
   },
   props: {
     token: prop(z.string()),

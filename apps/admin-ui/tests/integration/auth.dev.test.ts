@@ -5,8 +5,7 @@ import { createNhostClient } from '../../src/auth/nhost-client';
 import { createOrgClient } from '../../src/auth/org-client';
 import { createTokenStore } from '../../src/auth/token-store';
 
-const enabled = process.env.ITAP_DEV_STACK === '1';
-const GRAPHQL = 'http://localhost:8080/v1/graphql';
+import { ADMIN_EMAIL, DEV_AUTH, DEV_GRAPHQL as GRAPHQL, DEV_STACK_ENABLED as enabled, seedPassword } from '../support/dev-hosts';
 
 async function organizationsFor(token: string): Promise<string[]> {
   const response = await fetch(GRAPHQL, {
@@ -21,17 +20,16 @@ async function organizationsFor(token: string): Promise<string[]> {
 
 describe.skipIf(!enabled)('auth against the dev stack', () => {
   it('signs in, lists two memberships and scopes each organization token', async () => {
-    const password = process.env.SEED_PASSWORD;
-    expect(password).toBeTruthy();
+    const password = seedPassword();
     const store = createTokenStore(undefined);
     const provider = createItapAuthProvider({
       store,
-      nhost: createNhostClient({ baseUrl: 'http://localhost:4100/v1' }),
+      nhost: createNhostClient({ baseUrl: DEV_AUTH }),
       org: createOrgClient({ endpoint: GRAPHQL }),
     });
     const ctx = {} as AuthContext;
 
-    const result = await provider.login?.({ email: 'admin@itap.demo', password }, ctx);
+    const result = await provider.login?.({ email: ADMIN_EMAIL, password }, ctx);
     expect(result).toEqual({ success: true });
     const identity = await provider.getIdentity(ctx);
     expect(identity?.memberships).toHaveLength(2);

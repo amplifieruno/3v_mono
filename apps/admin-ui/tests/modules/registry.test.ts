@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { Kind, type OperationDefinitionNode, parse } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import { hasuraTable } from '../../src/data/mapping';
 import { hasuraOperation } from '../../src/data/operations';
@@ -38,6 +39,21 @@ describe('module registries', () => {
       .sort();
     expect(registered).toEqual(operations);
     expect(operations).toEqual(['organization_invitation.inviteMember', 'overview.dashboardKpis', 'storage_files.openFile']);
+  });
+
+  it('should parse every operation document as one operation of its declared kind', () => {
+    const problems: string[] = [];
+    for (const [binding, byName] of Object.entries(HASURA_OPERATIONS)) {
+      for (const [name, operation] of Object.entries(byName)) {
+        const definitions = parse(operation.document).definitions.filter(
+          (d): d is OperationDefinitionNode => d.kind === Kind.OPERATION_DEFINITION,
+        );
+        if (definitions.length !== 1 || definitions[0]?.operation !== operation.kind) {
+          problems.push(`${binding}.${name}`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
   });
 
   it('should give every module a distinct contribution id', () => {

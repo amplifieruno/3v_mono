@@ -10,8 +10,18 @@ export function InvitationTokenView({
   t,
 }: BlockViewProps<typeof invitationTokenBlock>): React.ReactElement {
   const expiresAt = new Date(props.expiresAt).toLocaleString();
+  // The Clipboard API exists only in a secure context (HTTPS or localhost); over plain HTTP the
+  // token stays selectable in the field and the button says it could not copy.
   const copy = (): void => {
-    void navigator.clipboard.writeText(props.token).then(() => toast.success(t('copied')));
+    const clipboard = typeof navigator === 'undefined' ? undefined : navigator.clipboard;
+    if (!clipboard) {
+      toast.error(t('copyFailed'));
+      return;
+    }
+    clipboard.writeText(props.token).then(
+      () => toast.success(t('copied')),
+      () => toast.error(t('copyFailed')),
+    );
   };
   return (
     <div data-testid="invitation-token" className="flex flex-col gap-3">

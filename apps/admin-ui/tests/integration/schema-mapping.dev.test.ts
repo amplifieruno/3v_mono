@@ -1,14 +1,17 @@
+import { type IntrospectionQuery, buildClientSchema, getIntrospectionQuery, parse, validate } from 'graphql';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { ITAP_TABLES } from '../../src/modules';
+import { HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
 import { ENUM_TABLES } from '../../src/enums';
-import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
+import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
 
 /**
- * The mapping contract against the live schema: every `ITAP_TABLES` entry and
- * every registered enum is checked by introspection as `org_admin` (the role
- * the console runs as), so a wrong `custom_name`, pk type, column or enum
- * value fails here rather than on a screen. Needs the dev stack and the seed.
+ * The mapping contract against the live schema: every `ITAP_TABLES` entry,
+ * every registered enum and every custom operation document is checked by
+ * introspection as `org_admin` (the role the console runs as), so a wrong
+ * `custom_name`, pk type, column, enum value, root field, selected field or
+ * variable type fails here rather than on a screen. Needs the dev stack and
+ * the seed.
  */
 
 interface TypeRef {
@@ -64,7 +67,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org
   }
 
   beforeAll(async () => {
-    const provider = await signInDev('admin@itap.demo');
+    const provider = await signInDev(ADMIN_EMAIL);
     token = (await provider.getToken()) ?? '';
     expect(token).toBeTruthy();
 
@@ -129,6 +132,23 @@ describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org
         );
       }
     }
+    expect(problems).toEqual([]);
+  });
+
+  it('should validate every custom operation document against the schema', async () => {
+    const introspection = await graphql<IntrospectionQuery>(token, getIntrospectionQuery());
+    const live = buildClientSchema(introspection);
+    const problems: string[] = [];
+    let checked = 0;
+    for (const [binding, byName] of Object.entries(HASURA_OPERATIONS)) {
+      for (const [name, operation] of Object.entries(byName)) {
+        checked += 1;
+        for (const error of validate(live, parse(operation.document))) {
+          problems.push(`${binding}.${name}: ${error.message}`);
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
     expect(problems).toEqual([]);
   });
 });

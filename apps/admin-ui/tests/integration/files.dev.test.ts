@@ -4,7 +4,7 @@ import type { ItapAuthProvider } from '../../src/auth';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { type StorageTarget, presignStorageFile, uploadStorageFile } from '../../src/fields/storage-client';
 import { ORGANIZATION_RESOURCE } from '../../src/modules/organization/organization';
-import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
+import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME, signInDev } from '../support/dev-stack';
 
 /**
  * The logo round trip against the dev stack (Nova Tower, `org_admin`): the
@@ -13,8 +13,6 @@ import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack'
  * The previous logo is restored at the end; the uploaded file stays in the
  * bucket (org_admin cannot delete `org-logos` files).
  */
-
-const DEV_STORAGE = 'http://local.storage.local.nhost.run';
 
 /** A 1x1 transparent PNG: hasura-storage detects the type from the bytes. */
 const PNG_1X1 = Uint8Array.from(
@@ -65,7 +63,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('storage files against the dev stack (Nova T
   }
 
   beforeAll(async () => {
-    auth = await signInDev('admin@itap.demo', 'Nova Tower Business Center');
+    auth = await signInDev(ADMIN_EMAIL, NOVA_NAME);
     provider = createItapHasuraProvider(() => auth.getToken(), DEV_GRAPHQL);
     target = { base: DEV_STORAGE, getToken: () => auth.getToken() };
     const identity = await auth.getIdentity({} as never);

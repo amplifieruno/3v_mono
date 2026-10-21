@@ -1,26 +1,22 @@
+import { ADMIN_EMAIL, DEV_AUTH, DEV_GRAPHQL, seedPassword } from '../tests/support/dev-hosts';
+
 /**
- * Direct calls to the dev stack, for test setup only: the seed's organization
- * ids and a known "last organization" for the seeded admin.
+ * Direct calls to the dev stack, for test setup only: a known "last
+ * organization" for the seeded admin. Hosts and seed constants are shared with
+ * the vitest dev-stack tests (`../tests/support/dev-hosts.ts`).
  */
-const AUTH = 'http://127.0.0.1:4100/v1';
-const GRAPHQL = 'http://127.0.0.1:8080/v1/graphql';
-
-export const ADMIN_EMAIL = 'admin@itap.demo';
-export const NOVA_NAME = 'Nova Tower Business Center';
-export const RIVERSIDE_NAME = 'Riverside Office Park';
-export const NOVA_FACILITY = 'Nova Tower';
-export const RIVERSIDE_FACILITY = 'Riverside Building A';
-
-export const devStackEnabled = process.env.ITAP_DEV_STACK === '1';
-
-export function seedPassword(): string {
-  const password = process.env.SEED_PASSWORD;
-  if (!password) throw new Error('SEED_PASSWORD is not set (see apps/backend/.env).');
-  return password;
-}
+export {
+  ADMIN_EMAIL,
+  DEV_STACK_ENABLED as devStackEnabled,
+  NOVA_FACILITY,
+  NOVA_NAME,
+  RIVERSIDE_FACILITY,
+  RIVERSIDE_NAME,
+  seedPassword,
+} from '../tests/support/dev-hosts';
 
 async function graphql(token: string, query: string, variables?: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const response = await fetch(GRAPHQL, {
+  const response = await fetch(DEV_GRAPHQL, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, 'x-hasura-role': 'user' },
     body: JSON.stringify({ query, variables }),
@@ -32,7 +28,7 @@ async function graphql(token: string, query: string, variables?: Record<string, 
 
 /** Makes the named organization the admin's last one, so sign-in opens it. */
 export async function rememberOrganization(name: string): Promise<void> {
-  const response = await fetch(`${AUTH}/signin/email-password`, {
+  const response = await fetch(`${DEV_AUTH}/signin/email-password`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: seedPassword() }),

@@ -9,7 +9,7 @@ import { createItapHasuraProvider } from '../../src/data/provider';
 import { INVITATION_RESOURCE } from '../../src/modules/organization/invitations';
 import { MEMBER_RESOURCE } from '../../src/modules/organization/members';
 import { OVERVIEW_BINDING, dashboardKpisOutput } from '../../src/modules/overview/kpis';
-import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
+import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
 
 /**
  * The custom operations and the organization resources through the console's
@@ -40,7 +40,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom operations against the dev stack (No
   let provider: DataProvider;
 
   beforeAll(async () => {
-    const auth = await signInDev('admin@itap.demo', 'Nova Tower Business Center');
+    const auth = await signInDev(ADMIN_EMAIL, NOVA_NAME);
     provider = createItapHasuraProvider(() => auth.getToken(), DEV_GRAPHQL);
   });
 
