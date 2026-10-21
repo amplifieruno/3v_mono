@@ -3,11 +3,25 @@ import { describe, expect, it } from 'vitest';
 import { app } from '../src/app/app-definition';
 import { buildLocaleRegistry } from '../src/i18n/registry';
 
+/**
+ * Diagnostics accepted on purpose, by code and location, each with its reason.
+ * Anything else reported fails the test.
+ */
+const ACCEPTED: readonly { code: string; location: string }[] = [
+  // `invite`: a lost answer of `invite_member` cannot be checked from the flow (the check sees no
+  // submitted values, `tasks/ui/buro-gaps.md` G12); the unknown screen sends the administrator to
+  // the Invitations list.
+  { code: 'flow.unknown-unhandled', location: 'organization_invitation toolbar.resource.0.submit' },
+];
+
 describe('checkApp over the console and its bundles', () => {
-  it('should report no diagnostics', async () => {
+  it('should report no diagnostics beyond the accepted ones', async () => {
     await app.ready;
     const reported = await checkApp(app, { i18n: buildLocaleRegistry() });
-    expect(reported).toEqual([]);
+    const unexpected = reported.filter(
+      (d) => !ACCEPTED.some((a) => a.code === d.code && a.location === d.location),
+    );
+    expect(unexpected).toEqual([]);
   });
 
   it('should register the dashboard first and the help page last', async () => {

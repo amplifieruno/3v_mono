@@ -11,12 +11,16 @@ export const HASURA_PROVIDER = 'hasura';
  * The console's one data provider. `getToken` returns the current organization
  * token per request; no role header is sent (`defaultRole: null`), so the role
  * comes from the token (`org_admin`). Organization isolation is the token's
- * job, never a client-side filter.
+ * job, never a client-side filter. `endpoint` defaults to the dev proxy path;
+ * the dev-stack tests pass Hasura's absolute URL.
  */
-export function createItapHasuraProvider(getToken: () => Promise<string | null>): DataProvider {
+export function createItapHasuraProvider(
+  getToken: () => Promise<string | null>,
+  endpoint: string = GRAPHQL_ENDPOINT,
+): DataProvider {
   return createHasuraDataProvider({
     getToken,
-    endpoint: GRAPHQL_ENDPOINT,
+    endpoint,
     defaultRole: null,
     resources: ITAP_TABLES,
     operations: HASURA_OPERATIONS,

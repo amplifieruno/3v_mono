@@ -1,7 +1,7 @@
 import { defineSection } from '@burojs/core';
 
 /**
- * Icon names for the navigation: lucide component names. Strings keep the
+ * Icon names for the navigation and the actions: lucide component names. Strings keep the
  * declarations serializable; `@burojs/ui-shadcn` resolves them through its
  * icon registry, and the names it does not ship are registered by
  * `./register-icons.ts`.
@@ -19,6 +19,10 @@ export const NAV_ICONS = {
   analytics: 'ChartBar',
   access: 'DoorOpen',
   compliance: 'ShieldCheck',
+  members: 'Users',
+  invitations: 'MailPlus',
+  invite: 'UserPlus',
+  revoke: 'Ban',
 } as const;
 
 /**

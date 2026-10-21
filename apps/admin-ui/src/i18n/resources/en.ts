@@ -7,4 +7,8 @@ import type { TranslationBundle } from '@burojs/i18n-core';
  * the declarations themselves (`texts`); translations of them go into the
  * other locales' files beside this one.
  */
-export default {} satisfies TranslationBundle;
+export default {
+  organization_member: {
+    doc: { topics: { members: 'Members and invitations' } },
+  },
+} satisfies TranslationBundle;

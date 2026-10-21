@@ -2,7 +2,12 @@ import { defineAppDefinition } from '@burojs/core';
 import { authProvider } from '../auth/session';
 import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
+import { organizationInvitation } from '../modules/organization/invitations';
+import { inviteMember } from '../modules/organization/invite-member';
+import { organizationMember } from '../modules/organization/members';
 import { organization } from '../modules/organization/organization';
+import { user } from '../modules/organization/user';
+import { dashboardKpis } from '../modules/overview/kpis';
 import { facility } from '../modules/places/facility';
 import { APP_BLOCKS } from './blocks';
 import { NAV_SECTIONS, organizationSection, overviewSection } from './nav';
@@ -19,7 +24,8 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use('help', helpPage);
   use('itap-blocks', ...APP_BLOCKS);
   use('itap-enums', ...ITAP_ENUMS);
-  use('organization-module', organization);
+  use('itap-operations', dashboardKpis, inviteMember);
+  use('organization-module', organization, organizationMember, organizationInvitation, user);
   use('places-module', facility);
 });
 

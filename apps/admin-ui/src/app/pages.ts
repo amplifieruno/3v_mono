@@ -1,8 +1,9 @@
 import { defineCustomPage } from '@burojs/core';
-import { dashboardBlock, helpBlock } from './blocks';
+import { dashboardBody } from '../modules/overview/dashboard';
+import { helpBlock } from './blocks';
 import { NAV_ICONS, NAV_SECTIONS } from './nav';
 
-/** The landing page. Its body is filled by the dashboard task. */
+/** The landing page: the organization's headline figures (`../modules/overview/dashboard.ts`). */
 export const dashboardPage = defineCustomPage({
   name: 'dashboard',
   icon: NAV_ICONS.dashboard,
@@ -10,7 +11,7 @@ export const dashboardPage = defineCustomPage({
   texts: 'Dashboard',
   section: NAV_SECTIONS.overview,
   order: 0,
-  body: (l) => [l.place(dashboardBlock, { key: 'dashboard' })],
+  body: dashboardBody,
 });
 
 /**

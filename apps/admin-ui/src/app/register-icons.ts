@@ -1,6 +1,7 @@
 import { hasIcon, type IconComponent, registerIcons } from '@burojs/ui-shadcn';
 import {
   Activity,
+  Ban,
   Bell,
   Building2,
   Cctv,
@@ -9,15 +10,18 @@ import {
   DoorOpen,
   Gauge,
   LayoutDashboard,
+  MailPlus,
   MapPin,
   ShieldCheck,
+  UserPlus,
   Users,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
-/** Every icon the navigation names, by its lucide name. */
+/** Every icon `NAV_ICONS` names, by its lucide name. */
 const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Activity,
+  Ban,
   Bell,
   Building2,
   Cctv,
@@ -26,8 +30,10 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   DoorOpen,
   Gauge,
   LayoutDashboard,
+  MailPlus,
   MapPin,
   ShieldCheck,
+  UserPlus,
   Users,
 };
 

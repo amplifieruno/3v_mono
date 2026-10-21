@@ -1,12 +1,8 @@
-import type { AuthContext } from '@burojs/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { createItapAuthProvider } from '../../src/auth/auth-provider';
-import { createNhostClient } from '../../src/auth/nhost-client';
-import { createOrgClient } from '../../src/auth/org-client';
-import { createTokenStore } from '../../src/auth/token-store';
 import { ITAP_TABLES } from '../../src/data/mapping';
 import { ENUM_TABLES } from '../../src/enums';
+import { DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
 
 /**
  * The mapping contract against the live schema: every `ITAP_TABLES` entry and
@@ -14,9 +10,6 @@ import { ENUM_TABLES } from '../../src/enums';
  * the console runs as), so a wrong `custom_name`, pk type, column or enum
  * value fails here rather than on a screen. Needs the dev stack and the seed.
  */
-
-const enabled = process.env.ITAP_DEV_STACK === '1';
-const GRAPHQL = 'http://localhost:8080/v1/graphql';
 
 interface TypeRef {
   readonly name: string | null;
@@ -36,7 +29,7 @@ interface IntrospectedType {
 const TYPE_REF = 'name kind ofType { name kind ofType { name kind ofType { name kind } } }';
 
 async function graphql<T>(token: string, query: string): Promise<T> {
-  const response = await fetch(GRAPHQL, {
+  const response = await fetch(DEV_GRAPHQL, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify({ query }),
@@ -58,7 +51,7 @@ function namedType(ref: TypeRef): string {
   return ref.ofType ? namedType(ref.ofType) : (ref.name ?? '?');
 }
 
-describe.skipIf(!enabled)('Hasura mapping against the live schema (org_admin)', () => {
+describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org_admin)', () => {
   let token = '';
   let roots: Map<string, IntrospectedField>;
 
@@ -71,18 +64,7 @@ describe.skipIf(!enabled)('Hasura mapping against the live schema (org_admin)', 
   }
 
   beforeAll(async () => {
-    const password = process.env.SEED_PASSWORD;
-    expect(password).toBeTruthy();
-    const provider = createItapAuthProvider({
-      store: createTokenStore(undefined),
-      nhost: createNhostClient({ baseUrl: 'http://localhost:4100/v1' }),
-      org: createOrgClient({ endpoint: GRAPHQL }),
-    });
-    const result = await provider.login?.(
-      { email: 'admin@itap.demo', password },
-      {} as AuthContext,
-    );
-    expect(result).toEqual({ success: true });
+    const provider = await signInDev('admin@itap.demo');
     token = (await provider.getToken()) ?? '';
     expect(token).toBeTruthy();
 
@@ -103,13 +85,19 @@ describe.skipIf(!enabled)('Hasura mapping against the live schema (org_admin)', 
         problems.push(`${where}: no root field`);
         continue;
       }
-      const byPk = roots.get(`${mapping.table}_by_pk`);
-      const pkArg = byPk?.args.find((arg) => arg.name === (mapping.pkField ?? 'id'));
-      if (!pkArg || spell(pkArg.type) !== `${mapping.pkType}!`) {
-        problems.push(`${where}: no ${mapping.table}_by_pk(id: ${mapping.pkType}!)`);
+      const byPkRoot = mapping.byPkRoot ?? `${mapping.table}_by_pk`;
+      if (byPkRoot !== false) {
+        const pkArg = roots
+          .get(byPkRoot)
+          ?.args.find((arg) => arg.name === (mapping.pkField ?? 'id'));
+        if (!pkArg || spell(pkArg.type) !== `${mapping.pkType}!`) {
+          problems.push(`${where}: no ${byPkRoot}(id: ${mapping.pkType}!)`);
+        }
       }
-      if (mapping.aggregate !== false && !roots.has(`${mapping.table}_aggregate`)) {
-        problems.push(`${where}: no ${mapping.table}_aggregate`);
+      const aggregateRoot =
+        typeof mapping.aggregate === 'string' ? mapping.aggregate : `${mapping.table}_aggregate`;
+      if (mapping.aggregate !== false && !roots.has(aggregateRoot)) {
+        problems.push(`${where}: no ${aggregateRoot}`);
       }
       const rowType = await typeOf(namedType(list.type));
       const columns = new Set((rowType?.fields ?? []).map((field) => field.name));

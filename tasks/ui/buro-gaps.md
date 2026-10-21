@@ -93,3 +93,26 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   `/login`.
 - **Expected from a framework:** the registry built over the runtime value that carries the auth
   controller (or the controller passed to `createDataRuntime`).
+
+### G11. A flow's form check ignores the field type's own format
+- **Need:** the `invite` flow refuses `not-an-email` in its `f.email` field before any request.
+- **Framework (0.6.0):** `createFlowFormPort` (`@burojs/core/flows`, also what `runFlow` uses)
+  validates each field as `type: 'unknown'` with only `required` and the field's `validate`; the
+  zod schema `f.email()` builds (`z.string().email()`) is never run. Measured with `runFlow`: the
+  flow submitted `not-an-email`. **[run]**
+- **Workaround:** the email field restates its format as `validate` (the mutation's own zod
+  schema, `src/modules/organization/invitations.ts`).
+- **Expected from a framework:** the flow form port validates with the field's declared schema and
+  format semantics, as the record form does.
+
+### G12. `onUnknown.check` cannot see what the flow submitted
+- **Need:** "Check again" for the `invite` flow when the answer of `invite_member` was lost: look
+  for a pending invitation to the address just typed.
+- **Framework (0.6.0):** `FlowUnknownCheckContext` carries `record`, `args`, `key`, `data` and
+  `signal`, not the form values or the submitted input, so a resource-level flow that creates a
+  row by a natural key has nothing to look it up by. Without a check, `checkApp` warns
+  `flow.unknown-unhandled`. **[code]**
+- **Workaround:** none: the warning is accepted in `tests/check-app.test.ts`. The token is shown
+  once, so even a confirmed invitation would need revoking and re-inviting; the unknown screen
+  tells the administrator to check the Invitations list.
+- **Expected from a framework:** the submitted input (or the values) in the check context.
