@@ -44,6 +44,8 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
   const renewBeforeMs = options.renewBeforeMs ?? 60_000;
 
   let memberships: readonly Membership[] | null = null;
+  /** Whose memberships are cached: another tab may sign in as someone else. */
+  let membershipsUser: string | null = null;
   let renewal: Promise<OrgSession | null> | null = null;
 
   let baseRefresh: Promise<BaseSession | null> | null = null;
@@ -102,9 +104,10 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
     return renewal;
   }
 
-  async function loadMemberships(baseToken: string) {
-    const loaded = await org.memberships(baseToken);
+  async function loadMemberships(base: BaseSession) {
+    const loaded = await org.memberships(base.accessToken);
     memberships = loaded.memberships;
+    membershipsUser = base.user.id;
     return loaded;
   }
 
@@ -136,11 +139,11 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
     async getIdentity() {
       const { base, org: orgSession } = store.snapshot();
       if (!base) return null;
-      if (memberships === null) {
+      if (memberships === null || membershipsUser !== base.user.id) {
         try {
-          const token = await freshBase();
-          if (!token) return null;
-          await loadMemberships(token.accessToken);
+          const fresh = await freshBase();
+          if (!fresh) return null;
+          await loadMemberships(fresh);
         } catch (error) {
           const dataError = toDataError(error);
           if (dataError.kind !== 'auth') throw dataError;
@@ -165,7 +168,7 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
         const base = await nhost.signIn(email, password);
         store.setBase(base);
         store.setOrg(null);
-        const loaded = await loadMemberships(base.accessToken);
+        const loaded = await loadMemberships(base);
         const explicit = organizationId !== undefined;
         const target = chooseOrganization(loaded.memberships, explicit ? organizationId : loaded.lastOrganizationId);
         if (target) {

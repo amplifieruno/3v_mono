@@ -21,6 +21,11 @@ interface WireSession {
   user?: { id?: unknown; email?: unknown; displayName?: unknown };
 }
 
+/** Statuses a retry may cure: a timeout, a rate limit, a server failure. */
+function isTransient(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
 function fail(kind: DataError['kind'], code: string, message: string, status?: number): DataError {
   return status === undefined ? { kind, code, message } : { kind, code, message, status };
 }
@@ -89,16 +94,21 @@ export function createNhostClient(options: NhostClientOptions): NhostClient {
     async signIn(email, password) {
       const { response, body } = await post('/signin/email-password', { email, password });
       if (!response.ok) {
-        const kind = response.status >= 500 ? 'transport' : 'auth';
-        throw fail(kind, 'invalid-credentials', errorMessage(body, 'Sign-in failed.'), response.status);
+        const transient = isTransient(response.status);
+        const code = transient ? 'sign-in-unavailable' : 'invalid-credentials';
+        throw fail(transient ? 'transport' : 'auth', code, errorMessage(body, 'Sign-in failed.'), response.status);
       }
       return toSession(body, clock());
     },
     async refresh(refreshToken) {
       const { response, body } = await post('/token', { refreshToken });
       if (!response.ok) {
-        const kind = response.status >= 500 ? 'transport' : 'auth';
-        throw fail(kind, 'refresh-rejected', errorMessage(body, 'The session has expired.'), response.status);
+        // Only a refused token ends the session; anything else (rate limit, outage) keeps it for a retry.
+        const rejected = response.status === 401 || response.status === 400;
+        if (!rejected) {
+          throw fail('transport', 'refresh-unavailable', errorMessage(body, 'Cannot renew the session now.'), response.status);
+        }
+        throw fail('auth', 'refresh-rejected', errorMessage(body, 'The session has expired.'), response.status);
       }
       return toSession(body, clock());
     },

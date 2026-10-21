@@ -51,3 +51,61 @@ describe('token store', () => {
     expect(store.snapshot()).toEqual({ base: null, org: null });
   });
 });
+
+describe('token store across tabs', () => {
+  /** A `storage` event as another tab's write delivers it (Node has no `StorageEvent`). */
+  function storageEvent(key: string | null, storageArea: Storage | null): Event {
+    return Object.assign(new Event('storage'), { key, storageArea });
+  }
+
+  it('notifies subscribers of another tab writing the session, as external', () => {
+    const storage = memoryStorage();
+    const events = new EventTarget();
+    const store = createTokenStore(storage, events);
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    const otherTab = createTokenStore(storage, new EventTarget());
+    otherTab.setBase(base);
+    otherTab.setOrg(org);
+    events.dispatchEvent(storageEvent(TOKEN_STORAGE_KEY, storage));
+    expect(listener).toHaveBeenCalledWith({ external: true });
+    expect(store.snapshot()).toEqual({ base, org });
+
+    store.setOrg(null);
+    expect(listener).toHaveBeenLastCalledWith({ external: false });
+  });
+
+  it('notifies on a cleared storage and ignores other keys and other storages', () => {
+    const storage = memoryStorage();
+    const events = new EventTarget();
+    const store = createTokenStore(storage, events);
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    events.dispatchEvent(storageEvent('itap:facility:x', storage));
+    events.dispatchEvent(storageEvent(TOKEN_STORAGE_KEY, memoryStorage()));
+    expect(listener).not.toHaveBeenCalled();
+    events.dispatchEvent(storageEvent(null, storage));
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops listening to other tabs once the last subscriber leaves', () => {
+    const storage = memoryStorage();
+    const events = new EventTarget();
+    const remove = vi.spyOn(events, 'removeEventListener');
+    const store = createTokenStore(storage, events);
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+    unsubscribe();
+    expect(remove).toHaveBeenCalledWith('storage', expect.any(Function));
+    events.dispatchEvent(storageEvent(TOKEN_STORAGE_KEY, storage));
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('reads a stored organization token with a non-finite expiry as no organization', () => {
+    const storage = memoryStorage();
+    storage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ base, org: { ...org, expiresAt: null } }));
+    expect(createTokenStore(storage).snapshot()).toEqual({ base, org: null });
+  });
+});

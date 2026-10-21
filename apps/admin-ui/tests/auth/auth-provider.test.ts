@@ -309,6 +309,25 @@ describe('ItapAuthProvider', () => {
     expect(identity?.memberships.map((m) => m.organizationId)).toEqual([NOVA, RIVER]);
   });
 
+  it('reloads the memberships when another tab signed in as someone else', async () => {
+    const { world, store, provider } = setup();
+    await provider.login?.(creds, ctx);
+    await provider.getIdentity(ctx);
+    const reads = () => world.calls.filter((url) => url.endsWith('/graphql')).length;
+    const before = reads();
+    await provider.getIdentity(ctx);
+    expect(reads()).toBe(before);
+
+    const other = store.snapshot().base;
+    if (!other) throw new Error('signed out');
+    store.setBase({ ...other, user: { id: 'user-2', email: 'other@itap.demo', displayName: 'Other' } });
+    world.members = [{ id: RIVER, status: 'active' }];
+    const identity = await provider.getIdentity(ctx);
+    expect(reads()).toBe(before + 1);
+    expect(identity).toMatchObject({ id: 'user-2', email: 'other@itap.demo' });
+    expect(identity?.memberships.map((m) => m.organizationId)).toEqual([RIVER]);
+  });
+
   it('signs out when the identity read finds the refresh token rejected', async () => {
     const { world, store, provider, make } = setup();
     await provider.login?.(creds, ctx);
