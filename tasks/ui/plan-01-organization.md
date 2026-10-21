@@ -71,6 +71,12 @@ to the existing `organization` module. Two new reusable custom field types: `tim
 - Check `lowRecognitionThreshold` (warning, edit): recognition threshold below 0.35 → "More people
   will be matched wrongly" (confirm gate).
 
+- [ ] **Step 0: Phase-0 carry-overs** (from `tasks/ui/rulings-00-foundation.md`): (a) `docker/docker-compose.prod.yml`
+  frontend gets `depends_on` graphql, auth, storage (and backend) plus `restart: always`; (b)
+  `src/auth/auth-provider.ts`: a base refresh rejected with 401 does not clear the store when the stored
+  refresh token changed since the refresh began (another tab rotated it) — re-read and use it; test
+  `keeps the session when another tab already rotated the refresh token`; (c) fix the stale deferred
+  line in `summary-00-foundation.md` ("org switch rotates then replaces scope" — now scope first).
 - [ ] **Step 1: Failing tests** (`describeScreen` / `runFlow`-free): the edit screen shows the four
   panels with exactly the writable fields active and the epoch fields read-only; a value outside its
   range yields the field's validation message containing the range; the low-threshold check fires.
