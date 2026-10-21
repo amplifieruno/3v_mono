@@ -6,7 +6,7 @@ and ends. Branch `feat/ui-console`.
 
 | # | Phase | Scope (data-layer tables / functions) | Depends on |
 |---|---|---|---|
-| 0 | Foundation | app skeleton, auth + org token, shell, org/facility switch, Hasura mapping + schema test, custom operations, enums, file field, i18n + docs + Help, organization profile, members + invitations | — |
+| 0 ✅ | Foundation | app skeleton, auth + org token, shell, org/facility switch, Hasura mapping + schema test, custom operations, enums, file field, i18n + docs + Help, organization profile, members + invitations | — (done, `summary-00-foundation.md`) |
 | 1 | Organization | organization settings, companies, work schedules, custom attribute definitions, user settings | 0 |
 | 2 | Places | facilities, areas (tree), floor plans (block), access points (+ devices binding), facility templates (`apply_facility_template`) | 1 |
 | 3 | Devices | devices, device areas, health metrics, device events, live camera block (stream-server + Socket.io detections), `recognition_start/stop/status` | 2 |

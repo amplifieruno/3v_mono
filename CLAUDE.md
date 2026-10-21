@@ -63,7 +63,7 @@ bd sync               # Sync with git
 - Uses **simple, lightweight solutions** instead of complex distributed systems
 - Prioritizes **visual demo** over backend scalability
 - Uses **Hasura for data layer** (CRUD, permissions, GraphQL) — no custom ORM logic
-- Uses **open-source face recognition** (Human library) for real demos, not fakes
+- Uses **open-source face recognition** (InsightFace, server-side) for real demos, not fakes
 
 **Decision framework:** If there are two ways to implement something, choose the one that:
 1. Gets to a working demo faster
@@ -407,8 +407,8 @@ See `.claude/skills/demo-record/SKILL.md` for the full recipe.
 
 Using proven open-source solutions for DEMO:
 
-1. **Human Library** (`@vladmandic/human`): Primary client-side face detection/recognition
-2. **InsightFace REST**: Docker-based face recognition service for server-side processing
-3. ~~face-api.js~~: removed in slice 2 (backend uses InsightFace REST only)
+1. **InsightFace REST**: Docker-based face recognition service; all detection, embedding and matching run server-side (backend + SQL `match_face`)
+2. **Webcam capture in the console**: `getUserMedia` in the browser (admin-ui, `apps/admin-ui/`) captures frames and sends them to the backend actions; there is no client-side recognition and no Human library in the new console
+3. ~~Human Library (`@vladmandic/human`)~~ and ~~face-api.js~~: removed (legacy admin UI and slice 2)
 
 Focus on real functionality with lightweight solutions, not fake demos.
