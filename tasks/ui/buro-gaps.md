@@ -66,3 +66,13 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   an article scope that names no registered resource.
 - **Expected from a framework:** guide/page scopes listed by `<DocBrowser>` (with a title from the
   bundle), so an article about a workflow need not pretend to belong to one table.
+
+### G9. Enum badge colours: seven fixed variants, no neutral or caution
+- **Need:** status palettes with a neutral tone (revoked, inactive, deactivated) and a caution tone
+  distinct from warning (an expired invitation).
+- **Framework (0.6.0):** `EnumColor` is the closed tuple `default | secondary | destructive |
+  outline | success | warning | info`, validated at registration. **[code]**
+- **Workaround:** `secondary` stands for neutral, `warning` for caution
+  (`src/enums/tenancy.ts`, `src/enums/places.ts`).
+- **Expected from a framework:** semantic tones (`neutral`, `caution`) mapped to theme tokens, or an
+  app-registered colour set.

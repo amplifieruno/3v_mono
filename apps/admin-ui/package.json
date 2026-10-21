@@ -16,6 +16,7 @@
     "@burojs/context": "0.6.0",
     "@burojs/core": "0.6.0",
     "@burojs/field-types": "0.6.0",
+    "@burojs/hasura": "0.6.0",
     "@burojs/i18n-core": "0.6.0",
     "@burojs/react": "0.6.0",
     "@burojs/ui-shadcn": "0.6.0",
