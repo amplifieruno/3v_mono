@@ -109,8 +109,23 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
   }
 
   return {
+    /**
+     * A stored session counts only while its refresh token still works: an expired base token is
+     * refreshed here, and a rejected refresh clears the store, so a stale session from storage
+     * lands on the sign-in page instead of a shell whose every request fails. A transient failure
+     * (network, 5xx) keeps the session.
+     */
     async check() {
-      return store.snapshot().base ? { authenticated: true } : { authenticated: false, reason: 'signed-out' };
+      if (!store.snapshot().base) return { authenticated: false, reason: 'signed-out' };
+      try {
+        const base = await freshBase();
+        return base ? { authenticated: true } : { authenticated: false, reason: 'signed-out' };
+      } catch (error) {
+        if (toDataError(error).kind !== 'auth') return { authenticated: true };
+        store.clear();
+        memberships = null;
+        return { authenticated: false, reason: 'session-expired' };
+      }
     },
 
     async getIdentity() {

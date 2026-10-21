@@ -265,4 +265,32 @@ describe('ItapAuthProvider', () => {
     expect(await provider.logout?.(undefined, ctx)).toEqual({ success: true });
     expect(store.snapshot()).toEqual({ base: null, org: null });
   });
+  it('reports signed out and clears a stored session whose refresh token is rejected', async () => {
+    const { provider, world, store } = setup();
+    await provider.login?.(creds, ctx);
+    world.now += 16 * 60_000;
+    world.refreshRejected = true;
+    expect(await provider.check(ctx)).toEqual({ authenticated: false, reason: 'session-expired' });
+    expect(store.snapshot()).toEqual({ base: null, org: null });
+  });
+
+  it('stays signed in when the refresh fails for a transient reason', async () => {
+    const { provider, world, store } = setup();
+    await provider.login?.(creds, ctx);
+    world.now += 16 * 60_000;
+    const offline = createItapAuthProvider({
+      store,
+      nhost: createNhostClient({
+        baseUrl: 'http://auth/v1',
+        fetch: async () => {
+          throw new TypeError('offline');
+        },
+        now: () => world.now,
+      }),
+      org: createOrgClient({ endpoint: 'http://hasura/v1/graphql', fetch: async () => json({}) }),
+      now: () => world.now,
+    });
+    expect(await offline.check(ctx)).toEqual({ authenticated: true });
+    expect(store.snapshot().base).not.toBeNull();
+  });
 });

@@ -1,4 +1,6 @@
 import { defineAppDefinition } from '@burojs/core';
+import { authProvider } from '../auth/session';
+import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
 import { organization } from '../modules/organization/organization';
 import { facility } from '../modules/places/facility';
@@ -21,5 +23,13 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use('places-module', facility);
 });
 
-/** The runtime the shell and the tests read. The `hasura` provider (`../data/provider.ts`) is wired where the runtime mounts. */
-export const app = definition.createRuntime();
+/**
+ * The runtime the shell and the tests read. The `hasura` provider is owned by
+ * the runtime (rebuilt per data session) and sends the browser session's
+ * organization token (`../auth/session.ts`), renewed when it is about to expire.
+ */
+export const app = definition.createRuntime({
+  dataProviderFactories: {
+    [HASURA_PROVIDER]: () => createItapHasuraProvider(() => authProvider.getToken()),
+  },
+});

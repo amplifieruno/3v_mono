@@ -76,3 +76,20 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   (`src/enums/tenancy.ts`, `src/enums/places.ts`).
 - **Expected from a framework:** semantic tones (`neutral`, `caution`) mapped to theme tokens, or an
   app-registered colour set.
+
+### G10. Reads through `useList` (live query registry) never run auth recovery
+- **Need:** an `auth` error on a read (expired or rejected token) goes through
+  `AuthProvider.onError`, so `refreshed` replays the read and `logout` ends the session.
+- **Framework (0.6.0):** `createDataRuntime` builds the live query registry over the lease
+  (`createLiveQueryRegistry(() => lease)`), and the lease carries no `authController`; only
+  `<AuthRuntimeProvider>`'s context copy has it. `useList`/`useOne` take their `queryFn` from that
+  registry, so `executeQuery` sees `runtime.authController === undefined` and rethrows the `auth`
+  error without calling `onError`. Measured: a stored session whose refresh token is rejected left
+  the shell on screen with a failed facility list and no sign-out. **[run]**
+- **Workaround:** `getToken()` renews the organization token before it expires (no expired token
+  is sent in the normal case); `check()` refreshes an expired base token and clears a rejected
+  session; `SessionWatch` (`src/app/session-watch.tsx`) rotates the data session
+  (`forced-sign-out`) when the token store loses its session, so the guard sends the user to
+  `/login`.
+- **Expected from a framework:** the registry built over the runtime value that carries the auth
+  controller (or the controller passed to `createDataRuntime`).
