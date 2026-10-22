@@ -3,6 +3,7 @@ import { shadcnFieldImplementations } from '@burojs/ui-shadcn';
 import { areaShapeImplementations } from './area-shape-impl';
 import { customFieldsImplementations } from './custom-fields-impl';
 import { imageSizeImplementations } from './image-size-impl';
+import { inlineFileImplementations } from './inline-file-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
 import { secretImplementations } from './secret-impl';
@@ -19,7 +20,8 @@ import { timezoneImplementations } from './timezone-impl';
  * values (`itap.custom-fields`), floor-plan shapes and points (`itap.area-shape`,
  * `itap.plan-position`), image sizes (`itap.image-size`), facility template trees
  * (`itap.template-structure`), relation selects read in a given record scope
- * (`itap.record-scoped-relation`) and write-only secrets (`itap.secret`). Handed to
+ * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`) and files sent inside an
+ * action's input (`itap.inline-file`). Handed to
  * `<BuroProvider fieldImplementations>` and to `checkApp`, which checks each literal `meta`
  * against its schema.
  */
@@ -36,4 +38,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   templateStructureImplementations,
   recordScopedRelationImplementations,
   secretImplementations,
+  inlineFileImplementations,
 );

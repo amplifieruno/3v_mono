@@ -493,3 +493,25 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   (not built) or a new profile.
 - **Expected from a framework:** an opt-in "change type" on edit that switches the screen to the
   new type's fields (and drops the old type's values or keeps them, as declared).
+
+### G31. `runFlow` reads only resources passed as real handles
+- **Need:** flow checks and Check-again reads that look up another resource by its registered name
+  (`resourceByName(...)`, used where importing the handle would make an import cycle).
+- **Framework (0.6.0):** the runtime's `data.one` accepts the name-only handle, but `runFlow`'s
+  in-memory data access looks rows up by `resource.ref.id`, which a name-only handle lacks, so the
+  check throws and the flow halts with "Couldn't check". **[run]** (`run-flow.ts` `data.one`).
+- **Workaround:** the merge flow's and the consent check's reads pass the imported `profile` handle
+  (`src/modules/people/merge-profiles-flow.ts`, `consent-record.ts`); no cycle there.
+- **Expected from a framework:** `runFlow` resolving a `{ kind: 'resource', ref: name }` handle like
+  the runtime does.
+
+### G32. An async check over the record does not decide a flow's button before the click
+- **Need:** "Merge profiles" should be disabled with its reason on a pair whose profile is erased or
+  restricted, as a synchronous record check would be.
+- **Framework (0.6.0):** the pre-click pass decides the button from record-only `error` checks, but an
+  async check that reads other rows (`data.one`) leaves the control `ready`; it blocks at submit with
+  its message. **[run]** (`tests/modules/profile-records-flows.test.ts`).
+- **Workaround:** the check blocks at submit (nothing is sent) and the comparison above the button
+  already says which profile is erased or restricted.
+- **Expected from a framework:** async record-only checks evaluated for the pre-click state (with a
+  pending state while they run).

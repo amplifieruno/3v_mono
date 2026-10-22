@@ -34,6 +34,14 @@ export default {
       failed: 'The upload failed. Check the connection and try again.',
       openFailed: 'The file could not be opened.',
     },
+    /** The file sent inside an action's input (`src/fields/inline-file-impl.ts`). */
+    inlineFile: {
+      choose: 'Choose file',
+      replace: 'Choose another file',
+      reading: 'Reading…',
+      limits: '{{accept}}, up to {{max}}',
+      unreadable: 'The file could not be read.',
+    },
     /** The time zone field (`src/fields/timezone-impl.ts`). */
     timezone: {
       placeholder: 'Select a time zone…',

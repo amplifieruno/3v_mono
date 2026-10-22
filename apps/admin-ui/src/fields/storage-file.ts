@@ -24,6 +24,11 @@ export interface StorageFileOptions {
   /** A sensitive file is opened only through the audited `open_file` action, never presigned. */
   readonly sensitive?: boolean;
   readonly nullable?: boolean;
+  /**
+   * Never written by a form (`write: 'never'`): the file is attached by something else, such as
+   * an action that stores it (profile documents). Display only.
+   */
+  readonly displayOnly?: boolean;
   readonly texts?: FieldTexts;
 }
 
@@ -38,6 +43,7 @@ export interface StorageFileOptions {
 export function storageFile(opts: StorageFileOptions) {
   const base = f.uuid({
     nullable: opts.nullable ?? true,
+    ...(opts.displayOnly === true ? { write: 'never' as const } : {}),
     ...(opts.texts === undefined ? {} : { texts: opts.texts }),
   });
   return {

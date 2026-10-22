@@ -61,4 +61,13 @@ export default {
       },
     },
   },
+  profile_document: {
+    doc: { topics: { index: 'Profile documents: upload and audited opening' } },
+  },
+  consent_record: {
+    doc: { topics: { index: 'Consent: recording, withdrawing and its effects' } },
+  },
+  profile_duplicate_candidate: {
+    doc: { topics: { index: 'Profile duplicates: comparing, merging, dismissing' } },
+  },
 } satisfies TranslationBundle;

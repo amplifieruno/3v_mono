@@ -2,7 +2,7 @@ import { type IntrospectionQuery, buildClientSchema, getIntrospectionQuery, pars
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
-import { ENUM_TABLES } from '../../src/enums';
+import { CONSOLE_ONLY_ENUMS, ENUM_TABLES } from '../../src/enums';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, signInDev } from '../support/dev-stack';
 
 /**
@@ -130,6 +130,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org
     const registered = app.registry.enums.list();
     expect(registered.length).toBeGreaterThan(0);
     for (const declared of registered) {
+      if (CONSOLE_ONLY_ENUMS.has(declared.name)) continue;
       const table = ENUM_TABLES[declared.name];
       if (table === undefined) {
         problems.push(`${declared.name}: no Hasura enum table named`);

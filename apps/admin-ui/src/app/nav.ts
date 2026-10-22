@@ -40,6 +40,14 @@ export const NAV_ICONS = {
   stopRecognition: 'CircleStop',
   liveWall: 'MonitorPlay',
   profiles: 'IdCard',
+  uploadDocument: 'FileUp',
+  restrictProcessing: 'ShieldBan',
+  liftRestriction: 'ShieldCheck',
+  withdrawConsent: 'CircleSlash',
+  profileDuplicates: 'CopyCheck',
+  mergeProfiles: 'Merge',
+  dismiss: 'X',
+  reopen: 'RotateCcw',
 } as const;
 
 /**

@@ -1,9 +1,13 @@
-import { type Check, defineResource, facts } from '@burojs/core';
+import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { PROFILE_RESOURCE } from '../../data/resource-names';
+import { resourceByName } from '../../data/resource-by-name';
+import { CONSENT_RECORD_RESOURCE, PROFILE_DOCUMENT_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
+import { uploadDocumentFlow } from './document-upload';
 import { PROFILE_ACTIVITY_ROWS, profileActivity } from './profile-activity';
 import { EMPLOYEE_FIELD_NAMES, profileFields } from './profile-fields';
+import { PROFILE_RULES } from './profile-rules';
 import { profileSavedViews } from './profile-views';
+import { liftRestrictionFlow, restrictProcessingFlow } from './restriction';
 
 /** `end_date >= start_date` (`profiles_dates_ordered`); dates are `YYYY-MM-DD`, so strings order them. */
 export const PROFILE_CHECKS: Check[] = [
@@ -26,7 +30,9 @@ export const PROFILE_CHECKS: Check[] = [
  * their company, schedule, clearance and the organization's own attributes. One record type per
  * `profile_type`: visitors carry no employment fields, contractors and VIPs only some. Profiles
  * are never deleted (no delete permission): their lifecycle is the status. Restricted and erased
- * profiles say so above their details; what they freeze is enforced by the database.
+ * profiles say so above their details; an erased profile's fields and flows are disabled with the
+ * reason (`./profile-rules.ts`), as the database refuses any change of it. Documents and consent
+ * decisions are tabs of the profile; restricting processing is a flow of its menu.
  */
 export const profile = defineResource(PROFILE_RESOURCE, {
   texts: {
@@ -49,6 +55,14 @@ export const profile = defineResource(PROFILE_RESOURCE, {
   prefill: { fromQuery: ['company_id', 'work_schedule_id'] },
   fields: profileFields,
   checks: PROFILE_CHECKS,
+  rules: PROFILE_RULES,
+  actions: (r) => ({
+    item: [
+      r.action.flow('upload_document', uploadDocumentFlow),
+      r.action.flow('restrict_processing', restrictProcessingFlow),
+      r.action.flow('lift_restriction', liftRestrictionFlow),
+    ],
+  }),
   types: {
     by: 'profile_type',
     items: (t) => ({
@@ -109,6 +123,31 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             ),
             // Task 3 places the linked identities here (relatedList of `identity`).
             l.panel([l.grid(['has_face', 'identities_count'])], { key: 'identities', texts: 'Identities' }),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(PROFILE_DOCUMENT_RESOURCE)), {
+                  key: 'profile-documents',
+                  props: {
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['title', 'kind', 'file_id', 'version', 'valid_until', 'created_at'],
+                  },
+                }),
+              ],
+              { key: 'documents', texts: 'Documents' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(CONSENT_RECORD_RESOURCE)), {
+                  key: 'profile-consents',
+                  props: {
+                    // Also seeds "+ Create": a new consent is recorded for this person.
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['purpose', 'status', 'method', 'granted_at', 'withdrawn_at'],
+                  },
+                }),
+              ],
+              { key: 'consent', texts: 'Consent' },
+            ),
             l.panel(
               [
                 l.place(facts, {

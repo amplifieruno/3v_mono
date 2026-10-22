@@ -54,22 +54,45 @@ decisions keep referring to them. End a person's access with the **Status**:
 A profile leaving active, or a lowered access level, narrows door access on the
 terminals at once.
 
-## Restricted and erased profiles
+## Restricting processing
 
-- A **processing restriction** (a data subject's right to restriction) is shown
-  in a yellow box above the details with when, by whom and why it was set.
-  While it holds, the person's faces are left out of recognition, face
-  authentication, search and dynamic segments, and identities cannot be linked
-  to or unlinked from the profile. Nothing is deleted.
-- An **erased** profile (a data subject's erasure request) is shown with a red
-  box. Its personal data is gone and it stays as a tombstone for the history
-  that points at it. The server refuses any change to it.
+**Restrict processing** in the profile's menu restricts the processing of the
+person's data (a data subject's right to restriction, for example while the
+accuracy of the data is contested). It asks for a **Reason**, which goes to the
+audit log and onto the profile, and a confirmation. While the restriction
+holds:
+
+- the person's faces are left out of recognition, face authentication, search
+  and dynamic segments;
+- their open tracking sessions and manual segment memberships are closed;
+- identities cannot be linked to or unlinked from the profile, and the profile
+  cannot be merged with another;
+- nothing is deleted, and the profile's own fields can still be corrected.
+
+The profile shows a yellow box above the details with when, by whom and why
+the restriction was set (a data subject request's restriction reads `dsr:` and
+the request code). **Lift restriction** ends it, again with a reason: the
+person is recognised, searched and segmented again, while the sessions and
+memberships the restriction closed stay closed.
+
+## Erased profiles
+
+An **erased** profile (a data subject's erasure request) is shown with a red
+box. Its personal data is gone and it stays as a tombstone for the history
+that points at it. The database refuses any change to it, so the console
+disables **Edit**, **Upload document**, the restriction flows and every field
+of the edit form, each with the reason. Its restriction is never lifted.
 
 ## The profile page
 
 - **Details**: the fields above, with the photo, the custom attributes and
   whether processing is restricted.
 - **Identities**: whether a face is linked and how many identities are.
+- **Documents**: the person's documents; **Upload document** adds one and
+  **Open file** opens it (audited). See *Profile documents*.
+- **Consent**: the person's consent decisions per purpose, recorded and
+  withdrawn there. Withdrawing biometric consent stops face matching for the
+  person. See *Consent*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,
@@ -77,7 +100,9 @@ terminals at once.
   seen has no figures yet; figures of a restricted person stop at the
   restriction.
 
-A company's page lists its people on its **People** tab.
+A company's page lists its people on its **People** tab. Possible duplicate
+profiles wait in **People → Profile duplicates**, where two profiles of the
+same person are merged.
 
 ## Saved views
 

@@ -25,6 +25,16 @@ import {
 } from './places';
 import { accessLevelEnum, PEOPLE_ENUM_TABLES, profileStatusEnum, profileTypeEnum } from './people';
 import {
+  candidateStatusEnum,
+  consentMethodEnum,
+  consentPurposeEnum,
+  consentStatusEnum,
+  documentKindEnum,
+  MERGE_KEEP_ENUM,
+  mergeKeepEnum,
+  PEOPLE_RECORD_ENUM_TABLES,
+} from './people-records';
+import {
   invitationStatusEnum,
   memberRoleEnum,
   memberStatusEnum,
@@ -56,11 +66,20 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   profileTypeEnum,
   profileStatusEnum,
   accessLevelEnum,
+  documentKindEnum,
+  consentPurposeEnum,
+  consentStatusEnum,
+  consentMethodEnum,
+  candidateStatusEnum,
+  mergeKeepEnum,
 ];
+
+/** Registered enums that are console-only choices of a form, with no Hasura enum table. */
+export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([MERGE_KEEP_ENUM]);
 
 /**
  * Registered enum name → the Hasura enum table holding its values. The schema
- * contract test fails for a registered enum missing here.
+ * contract test fails for a registered enum missing here (except `CONSOLE_ONLY_ENUMS`).
  */
 export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...TENANCY_ENUM_TABLES,
@@ -68,4 +87,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...PLACES_ENUM_TABLES,
   ...DEVICES_ENUM_TABLES,
   ...PEOPLE_ENUM_TABLES,
+  ...PEOPLE_RECORD_ENUM_TABLES,
 };

@@ -17,6 +17,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // (the check sees neither the chosen template nor the parent, G12), and resending would create
   // every area again; the unknown screen tells the user to look at the facility's areas first.
   { code: 'flow.unknown-unhandled', location: 'facility toolbar.item.0.submit' },
+  // `upload_document`: a lost answer of `upload_profile_document` cannot be checked from the flow
+  // (the check sees neither the title nor the file, G12), and resending would store a second copy;
+  // the unknown screen tells the user to look at the profile's Documents tab first.
+  { code: 'flow.unknown-unhandled', location: 'profile toolbar.item.0.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

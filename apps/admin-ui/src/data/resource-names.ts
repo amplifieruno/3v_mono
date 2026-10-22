@@ -20,3 +20,6 @@ export const COMPANY_RESOURCE = 'company';
 export const WORK_SCHEDULE_RESOURCE = 'work_schedule';
 export const USER_RESOURCE = 'user';
 export const PROFILE_RESOURCE = 'profile';
+export const PROFILE_DOCUMENT_RESOURCE = 'profile_document';
+export const CONSENT_RECORD_RESOURCE = 'consent_record';
+export const PROFILE_DUPLICATE_RESOURCE = 'profile_duplicate_candidate';
