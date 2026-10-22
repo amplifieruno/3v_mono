@@ -14,3 +14,5 @@ export const ACCESS_POINT_DEVICE_RESOURCE = 'access_point_device';
 export const FACILITY_TEMPLATE_RESOURCE = 'facility_template';
 export const DEVICE_RESOURCE = 'device';
 export const DEVICE_AREA_RESOURCE = 'device_area';
+export const DEVICE_HEALTH_METRIC_RESOURCE = 'device_health_metric';
+export const DEVICE_EVENT_RESOURCE = 'device_event';

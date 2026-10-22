@@ -42,9 +42,15 @@ export default {
     doc: { topics: { index: 'Facility templates and their structure' } },
   },
   device: {
-    doc: { topics: { index: 'Devices, credentials, health and coverage' } },
+    doc: { topics: { index: 'Devices, credentials, health, recognition and coverage' } },
   },
   device_area: {
     doc: { topics: { index: 'Areas a device also covers' } },
+  },
+  device_health_metric: {
+    doc: { topics: { index: 'Device health samples and the health chart' } },
+  },
+  device_event: {
+    doc: { topics: { index: 'Device events' } },
   },
 } satisfies TranslationBundle;

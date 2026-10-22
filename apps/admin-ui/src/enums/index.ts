@@ -1,6 +1,7 @@
 import type { EnumDef } from '@burojs/core';
 import {
   DEVICES_ENUM_TABLES,
+  deviceEventKindEnum,
   deviceHealthEnum,
   deviceStatusEnum,
   deviceTypeEnum,
@@ -50,6 +51,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   deviceTypeEnum,
   deviceStatusEnum,
   deviceHealthEnum,
+  deviceEventKindEnum,
 ];
 
 /**

@@ -2,6 +2,7 @@ import { f } from '@burojs/field-types';
 import { describe, expect, it } from 'vitest';
 import { hasuraTable, selectFieldsOf } from '../../src/data/mapping';
 import { secret } from '../../src/fields/secret';
+import { app } from '../../src/app/app-definition';
 import { ITAP_TABLES } from '../../src/modules';
 
 describe('hasuraTable', () => {
@@ -56,6 +57,40 @@ describe('selectFieldsOf', () => {
     ]);
     expect(ITAP_TABLES.device?.selectFields).not.toContain('password');
     expect(ITAP_TABLES.device?.selectFields).toContain('username');
+  });
+
+  it('should mark a secret sensitive, so a typed value never lands in a draft or an audit event', () => {
+    expect((secret() as { opts?: { sensitive?: unknown } }).opts?.sensitive).toBe(true);
+  });
+});
+
+describe('append-only logs', () => {
+  const LOGS = ['device_health_metric', 'device_event'];
+
+  it('should page the logs by cursor and count them only on demand', async () => {
+    await app.ready;
+    for (const name of LOGS) {
+      expect(ITAP_TABLES[name]?.noAggregate, name).toBe(true);
+      const def = app.registry.get(name) as {
+        operations?: Record<string, boolean>;
+        views?: { list?: { count?: string; pagination?: string } };
+      };
+      expect(def.views?.list?.count, name).toBe('manual');
+      expect(def.views?.list?.pagination, name).toBe('cursor');
+      expect(def.operations, name).toMatchObject({ create: false, edit: false, delete: false });
+      // Keyset cursors need the sort column and the key among the selected columns.
+      const mapping = ITAP_TABLES[name];
+      expect(mapping?.selectFields, name).toContain(mapping?.orderByField);
+      expect(mapping?.selectFields, name).toContain('id');
+    }
+  });
+
+  it('should leave the aggregate on for every table that is not a log', () => {
+    const noAggregate = Object.entries(ITAP_TABLES)
+      .filter(([, mapping]) => mapping.noAggregate)
+      .map(([name]) => name)
+      .sort();
+    expect(noAggregate).toEqual([...LOGS].sort());
   });
 });
 

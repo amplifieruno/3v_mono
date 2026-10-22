@@ -40,15 +40,36 @@ A camera also has its **Stream** settings:
 - **Resolution** and **Frame rate** describe the stream.
 - **Recognition rate**: frames per second analysed while recognition runs,
   from 1 to 5.
-- **Recognition on** shows whether face recognition is running on the camera.
-  It is not edited with the device: recognition is started and stopped on its
-  own.
+- **Recognition on** shows whether face recognition is switched on for the
+  camera. It is not edited with the device: use **Start recognition** and
+  **Stop recognition** (below).
 
 ### Access terminals
 
 A terminal receives the organization's access policies. Its **Access
 policies** tab shows the policy version it last confirmed, when, and the error
 of the last failed push. These are kept by the platform and not edited.
+
+## Recognition
+
+A camera's page offers **Start recognition** while recognition is off and
+**Stop recognition** while it is on; terminals and sensors offer neither.
+Starting needs an **active** camera with a **stream URL**: otherwise the
+action says what is missing and sends nothing. Once started, the platform
+analyses the camera's frames at its recognition rate and records the faces it
+finds as detections; stopping keeps the detections recorded so far.
+
+The camera's header shows the recognition status, read when the page opens
+and after each start or stop:
+
+- **Recognition**: whether it is switched on.
+- **Running now**: whether the platform is analysing the stream at this
+  moment. Switched on but not running means it is still starting, the camera
+  is not active, or the last frame failed.
+- **Frames analysed** and **Detections**: counted since the session started.
+- **Last frame** and **Last error**: when the last frame was analysed, and why
+  the last one failed (for example the stream or the face recognition service
+  being unreachable).
 
 ## Position and coverage
 
@@ -79,6 +100,10 @@ as a dashed outline.
   cameras: **healthy**, **warning** (reachable, but no frame), **offline**
   (unreachable) or **unknown** (not checked yet; terminals and sensors are not
   checked). **Last seen** is when the check last reached it.
+
+The **Health** tab charts the device's last 24 hours and lists its health
+samples (see Device health); the **Events** tab is the timeline of its device
+events (offline, back online, no frames, maintenance).
 
 The saved views **Offline** (health offline) and **Cameras** (the three camera
 types) are offered above the list.

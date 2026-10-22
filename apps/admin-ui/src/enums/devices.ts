@@ -103,9 +103,44 @@ export const deviceHealthEnum = defineEnum({
   },
 });
 
+export const DEVICE_EVENT_KIND_ENUM = 'device_event_kind';
+
+export const DEVICE_EVENT_KINDS = [
+  'online',
+  'offline',
+  'error',
+  'config_changed',
+  'reboot',
+  'firmware_update',
+] as const;
+
+export const deviceEventKindEnum = defineEnum({
+  name: DEVICE_EVENT_KIND_ENUM,
+  values: enumValues(DEVICE_EVENT_KINDS, {
+    online: 'success',
+    offline: 'destructive',
+    error: 'warning',
+    config_changed: 'info',
+    reboot: 'secondary',
+    firmware_update: 'info',
+  }),
+  texts: {
+    online: { label: 'Back online', doc: { summary: 'The health check reached the device again after an outage.' } },
+    offline: { label: 'Went offline', doc: { summary: 'The health check could not reach the device.' } },
+    error: {
+      label: 'No frames',
+      doc: { summary: 'The device answered the health check but delivered no video frame.' },
+    },
+    config_changed: { label: 'Configuration changed', doc: { summary: 'The device’s settings were changed.' } },
+    reboot: { label: 'Rebooted', doc: { summary: 'The device restarted.' } },
+    firmware_update: { label: 'Firmware updated', doc: { summary: 'New firmware was installed on the device.' } },
+  },
+});
+
 /** Each devices enum by the Hasura enum table (GraphQL `custom_name`) holding its values. */
 export const DEVICES_ENUM_TABLES: Readonly<Record<string, string>> = {
   [DEVICE_TYPE_ENUM]: 'device_types',
   [DEVICE_STATUS_ENUM]: 'device_statuses',
   [DEVICE_HEALTH_ENUM]: 'device_health_statuses',
+  [DEVICE_EVENT_KIND_ENUM]: 'device_event_kinds',
 };

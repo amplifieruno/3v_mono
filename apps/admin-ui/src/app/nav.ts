@@ -34,6 +34,10 @@ export const NAV_ICONS = {
   accessPoints: 'DoorOpen',
   facilityTemplates: 'LayoutTemplate',
   applyTemplate: 'ListTree',
+  deviceHealth: 'HeartPulse',
+  deviceEvents: 'History',
+  startRecognition: 'ScanFace',
+  stopRecognition: 'CircleStop',
 } as const;
 
 /**

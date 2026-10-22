@@ -41,6 +41,10 @@ describe('module registries', () => {
       .sort();
     expect(registered).toEqual(operations);
     expect(operations).toEqual([
+      'devices.recognitionStart',
+      'devices.recognitionStatus',
+      'devices.recognitionStop',
+      'health-chart.deviceHealthSeries',
       'organization_invitation.inviteMember',
       'overview.dashboardKpis',
       'places.applyFacilityTemplate',

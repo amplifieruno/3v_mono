@@ -1,14 +1,19 @@
-import { defineResource, relatedList } from '@burojs/core';
+import { defineResource, facts, relatedList } from '@burojs/core';
+import { healthChartBlock } from '../../blocks/health-chart/health-chart-block';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import {
   ACCESS_POINT_DEVICE_RESOURCE,
   DEVICE_AREA_RESOURCE,
+  DEVICE_EVENT_RESOURCE,
+  DEVICE_HEALTH_METRIC_RESOURCE,
   DEVICE_RESOURCE,
 } from '../../data/resource-names';
 import { CAMERA_DEVICE_TYPES } from '../../enums/devices';
 import { deviceFields } from './device-fields';
 import { CAMERA_FIELD_NAMES, TERMINAL_FIELD_NAMES } from './device-type-fields';
+import { RECOGNITION_STATUS_ROWS, recognitionStatus } from './recognition';
+import { startRecognitionFlow, stopRecognitionFlow } from './recognition-flows';
 
 /** How often the device list re-reads: the health check writes every minute. */
 export const DEVICE_LIST_REFETCH_MS = 30_000;
@@ -16,6 +21,8 @@ export const DEVICE_LIST_REFETCH_MS = 30_000;
 /** The keyed panels only one kind of device has (hidden from the others with `without.nodes`). */
 const STREAM_PANEL = 'stream';
 const POLICY_PANEL = 'policy';
+/** The recognition status facts on the header: cameras only (the action refuses the others). */
+const RECOGNITION_FACTS = 'recognition-status';
 
 /**
  * Devices: the cameras, access terminals and sensors of each facility, with their place on the
@@ -46,18 +53,26 @@ export const device = defineResource(DEVICE_RESOURCE, {
     items: (t) => {
       const camera = () =>
         t.type({ without: { fields: TERMINAL_FIELD_NAMES, nodes: [POLICY_PANEL] } });
+      const notCamera = [STREAM_PANEL, RECOGNITION_FACTS];
       return {
         ...Object.fromEntries(CAMERA_DEVICE_TYPES.map((type) => [type, camera()])),
-        access_terminal: t.type({ without: { fields: CAMERA_FIELD_NAMES, nodes: [STREAM_PANEL] } }),
+        access_terminal: t.type({ without: { fields: CAMERA_FIELD_NAMES, nodes: notCamera } }),
         sensor: t.type({
           without: {
             fields: [...CAMERA_FIELD_NAMES, ...TERMINAL_FIELD_NAMES],
-            nodes: [STREAM_PANEL, POLICY_PANEL],
+            nodes: [...notCamera, POLICY_PANEL],
           },
         }),
       };
     },
   },
+  // `when` keeps both off terminals and sensors and offers the one matching the camera's state.
+  actions: (r) => ({
+    item: [
+      r.action.flow('start_recognition', startRecognitionFlow),
+      r.action.flow('stop_recognition', stopRecognitionFlow),
+    ],
+  }),
   views: {
     list: {
       columns: ['code', 'name', 'device_type', 'facility_id', 'area_id', 'status', 'health_status', 'last_seen_at'],
@@ -80,7 +95,18 @@ export const device = defineResource(DEVICE_RESOURCE, {
       refetchInterval: DEVICE_LIST_REFETCH_MS,
     },
     show: {
-      header: (l) => [l.grid(['device_type', 'status', 'health_status', 'last_seen_at'])],
+      header: (l) => [
+        l.grid(['device_type', 'status', 'health_status', 'last_seen_at']),
+        l.place(facts, {
+          key: RECOGNITION_FACTS,
+          props: {
+            query: recognitionStatus,
+            input: { deviceId: l.ref('record', 'id') },
+            rows: [...RECOGNITION_STATUS_ROWS],
+            view: 'grid',
+          },
+        }),
+      ],
       body: (l) => [
         l.tabs(
           [
@@ -140,6 +166,36 @@ export const device = defineResource(DEVICE_RESOURCE, {
                 }),
               ],
               { key: 'access-points', texts: 'Access points' },
+            ),
+            l.panel(
+              [
+                l.place(healthChartBlock, {
+                  key: 'health-chart',
+                  props: { deviceId: l.ref('record', 'id') },
+                }),
+                l.place(relatedList(resourceByName(DEVICE_HEALTH_METRIC_RESOURCE)), {
+                  key: 'health-samples',
+                  props: {
+                    where: [{ field: 'device_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['recorded_at', 'network_latency_ms', 'error_count', 'cpu_usage', 'memory_usage'],
+                    open: 'none',
+                  },
+                }),
+              ],
+              { key: 'health', texts: 'Health' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(DEVICE_EVENT_RESOURCE)), {
+                  key: 'device-events',
+                  props: {
+                    view: 'timeline',
+                    where: [{ field: 'device_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['kind', 'message', 'occurred_at'],
+                  },
+                }),
+              ],
+              { key: 'events', texts: 'Events' },
             ),
           ],
           { key: 'sections' },

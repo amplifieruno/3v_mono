@@ -347,3 +347,17 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   sent; a typed one is).
 - **Expected from a framework:** `f.string({ writeOnly: true })` (or `read: 'never'`): never
   selected, absent from show and list, and in a payload only when the user entered a value.
+
+### G25. A block's `source.list` reads at most 100 rows
+- **Need:** the device health chart (`itap:health-chart`, plan 03 Task 2) draws one device's
+  last 24 h; the health check writes one sample per camera per minute (1440 a day).
+- **Framework (0.6.0):** `source.list` takes `limit` 1 to 100 (`LIST_SOURCE_MAX_LIMIT`,
+  `source.limit-range`) and has no paging or aggregation of its own. **[code]**
+- **Workaround:** a custom query (`deviceHealthSeries`, `src/blocks/health-chart/
+  health-series-query.ts`) reads the window straight from `device_health_metrics` (limit 2000,
+  window start computed in `variables` so the cached input stays the device id) and folds it into
+  15-minute points in `mapResult`; the block reads it with `source.query`. `reads` names the
+  health-sample resource so a refresh of the logs refreshes the chart.
+- **Expected from a framework:** a series source (`source.list` with a larger cap for blocks
+  that draw rather than list, or a provider-side bucketed read such as
+  `source.series(target, { where, x, bucket, measures })`).

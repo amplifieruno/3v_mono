@@ -14,12 +14,15 @@ export interface SecretOptions {
  * (`selectFieldsOf(fields, { writeOnly })`), so a form starts with no value; the input
  * is a password box that keeps an empty box out of the payload (it reports `undefined`,
  * which a payload omits), so saving a record without typing a new secret keeps the
- * stored one. It exists on the create and edit forms only: there is nothing to show.
+ * stored one. It exists on the create and edit forms only: there is nothing to show. It is
+ * `sensitive`, so a typed value never lands in a form draft or an audit event.
  */
 export function secret(opts: SecretOptions = {}) {
   const base = f.string({
     nullable: true,
     in: ['create', 'edit'],
+    // Kept out of form drafts and redacted in audit events: a typed secret is never stored.
+    sensitive: true,
     ...(opts.texts === undefined ? {} : { texts: opts.texts }),
   });
   return {

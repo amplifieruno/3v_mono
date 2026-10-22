@@ -54,6 +54,18 @@ function namedType(ref: TypeRef): string {
   return ref.ofType ? namedType(ref.ofType) : (ref.name ?? '?');
 }
 
+/**
+ * Whether the resource ever reads its table's aggregate root: never with `aggregate: false`;
+ * with `noAggregate` (an append-only log) only when its list still counts on demand
+ * (`views.list.count` other than `'off'`); otherwise on every list page.
+ */
+function countsWith(resource: string, mapping: { noAggregate?: boolean; aggregate?: false | string }): boolean {
+  if (mapping.aggregate === false) return false;
+  if (!mapping.noAggregate) return true;
+  const def = app.registry.get(resource) as { views?: { list?: { count?: string } } } | undefined;
+  return (def?.views?.list?.count ?? 'provided') !== 'off';
+}
+
 describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org_admin)', () => {
   let token = '';
   let roots: Map<string, IntrospectedField>;
@@ -99,7 +111,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org
       }
       const aggregateRoot =
         typeof mapping.aggregate === 'string' ? mapping.aggregate : `${mapping.table}_aggregate`;
-      if (mapping.aggregate !== false && !roots.has(aggregateRoot)) {
+      if (countsWith(resource, mapping) && !roots.has(aggregateRoot)) {
         problems.push(`${where}: no ${aggregateRoot}`);
       }
       const rowType = await typeOf(namedType(list.type));
