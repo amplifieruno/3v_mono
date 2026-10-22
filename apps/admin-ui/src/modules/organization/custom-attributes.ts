@@ -10,8 +10,7 @@ import {
 import { enumField } from '../../enums/field';
 import { rangeValidator } from '../../fields/bounded-number';
 import { stringList } from '../../fields/string-list';
-
-export const CUSTOM_ATTRIBUTE_RESOURCE = 'custom_attribute_definition';
+import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../data/resource-names';
 
 /** The data type whose values are picked from `options` (the database CHECK requires them there). */
 export const SELECT_TYPE = 'enum';

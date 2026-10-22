@@ -1,11 +1,7 @@
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import type { ConsoleModule } from '../module';
 import { COMPANY_RESOURCE, company, companyFields } from './companies';
-import {
-  CUSTOM_ATTRIBUTE_RESOURCE,
-  customAttributeDefinition,
-  customAttributeFields,
-} from './custom-attributes';
+import { customAttributeDefinition, customAttributeFields } from './custom-attributes';
 import { invitationTokenBlock } from './invitation-token-block';
 import { INVITATION_RESOURCE, invitationFields, organizationInvitation } from './invitations';
 import { inviteMember, inviteMemberOperation } from './invite-member';
@@ -18,6 +14,7 @@ import { organizationSettingsBlock, organizationSettingsPage } from './settings-
 import { USER_RESOURCE, user, userFields } from './user';
 import { USER_SETTINGS_RESOURCE, userSettings, userSettingsFields } from './user-settings';
 import { WORK_SCHEDULE_RESOURCE, workSchedule, workScheduleFields } from './work-schedules';
+import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../data/resource-names';
 
 /**
  * Organization: the profile and settings pages of the current organization, members,

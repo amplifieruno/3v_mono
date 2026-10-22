@@ -1,23 +1,23 @@
 import { floorPlanBlock } from '../../blocks/floor-plan/floor-plan-block';
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
-import type { ConsoleModule } from '../module';
-import { ACCESS_POINT_RESOURCE, accessPoint, accessPointFields } from './access-point';
 import {
   ACCESS_POINT_DEVICE_RESOURCE,
-  accessPointDevice,
-  accessPointDeviceFields,
-} from './access-point-device';
+  ACCESS_POINT_RESOURCE,
+  AREA_RESOURCE,
+  FACILITY_RESOURCE,
+  FACILITY_TEMPLATE_RESOURCE,
+  FLOOR_PLAN_RESOURCE,
+} from '../../data/resource-names';
+import type { ConsoleModule } from '../module';
+import { accessPoint, accessPointFields } from './access-point';
+import { accessPointDevice, accessPointDeviceFields } from './access-point-device';
 import { applyFacilityTemplate, applyFacilityTemplateOperation } from './apply-template';
-import { AREA_RESOURCE, area, areaFields } from './area';
+import { area, areaFields } from './area';
 import { areaParentGuardBlock } from './area-parent-guard-block';
 import { areaTreeBlock } from './area-tree-block';
-import { FACILITY_RESOURCE, facility, facilityFields } from './facility';
-import {
-  FACILITY_TEMPLATE_RESOURCE,
-  facilityTemplate,
-  facilityTemplateFields,
-} from './facility-template';
-import { FLOOR_PLAN_RESOURCE, floorPlan, floorPlanFields } from './floor-plan';
+import { facility, facilityFields } from './facility';
+import { facilityTemplate, facilityTemplateFields } from './facility-template';
+import { floorPlan, floorPlanFields } from './floor-plan';
 import { facilityOccupancyNow, facilityOccupancyNowOperation } from './occupancy';
 import { templateOverlapBlock } from './template-overlap-block';
 

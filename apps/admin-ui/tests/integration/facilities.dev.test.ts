@@ -10,8 +10,6 @@ import { validateCustomFields } from '../../src/fields/custom-fields-check';
 import { definitionOf } from '../../src/fields/custom-fields-definitions';
 import { validateWindows } from '../../src/fields/time-windows-format';
 import { isTimezone } from '../../src/fields/timezone-zones';
-import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../src/modules/organization/custom-attributes';
-import { FACILITY_RESOURCE } from '../../src/modules/places/facility';
 import { PLACES_BINDING, facilityOccupancyOutput } from '../../src/modules/places/occupancy';
 import {
   ADMIN_EMAIL,
@@ -20,6 +18,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { CUSTOM_ATTRIBUTE_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * Facilities of Nova Tower through the console's provider, as `org_admin`: seeded

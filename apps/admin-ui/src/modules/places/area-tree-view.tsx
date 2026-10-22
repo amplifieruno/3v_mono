@@ -4,10 +4,10 @@ import { type BlockViewProps, useApp } from '@burojs/react';
 import { Button, useLinkComponent } from '@burojs/ui-shadcn';
 import { Plus } from 'lucide-react';
 import * as React from 'react';
-import { AREA_RESOURCE } from './area';
 import { type AreaTreeRow as Row, branchIds, buildAreaTree, visibleNodes } from './area-tree';
 import type { areaTreeBlock } from './area-tree-block';
 import { AreaTreeRow } from './area-tree-row';
+import { AREA_RESOURCE } from '../../data/resource-names';
 
 /**
  * The facility's area tree (`itap:area-tree`): every level open at first; a branch's

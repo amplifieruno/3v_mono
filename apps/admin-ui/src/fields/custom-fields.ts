@@ -7,9 +7,6 @@ import { customFieldsSnapshot } from './custom-fields-registry';
 /** The field implementation id of {@link customFields} (`./custom-fields-impl.ts`). */
 export const CUSTOM_FIELDS_FIELD = 'itap.custom-fields';
 
-/** The resource of the definitions the input reads (`modules/organization/custom-attributes.ts`). */
-export const CUSTOM_ATTRIBUTE_DEFINITION_RESOURCE = 'custom_attribute_definition';
-
 export interface CustomFieldsOptions {
   /** The `custom_attribute_entities` value of the record: `profile`, `identity`, `facility`, `device`. */
   readonly entity: string;

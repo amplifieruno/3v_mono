@@ -2,9 +2,7 @@ import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { templateStructure } from '../../fields/template-structure';
-import { FACILITY_TEMPLATE_RESOURCE } from './resource-names';
-
-export { FACILITY_TEMPLATE_RESOURCE };
+import { FACILITY_TEMPLATE_RESOURCE } from '../../data/resource-names';
 
 /** Columns of `itap.facility_templates` the `org_admin` role reads. */
 export const facilityTemplateFields = {

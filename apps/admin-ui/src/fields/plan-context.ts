@@ -1,17 +1,7 @@
 import { useList } from '@burojs/react';
 import * as React from 'react';
-import {
-  FLOOR_PLAN_RESOURCE,
-  type FloorPlanRow,
-  PLAN_AREA_RESOURCE,
-  type PlanAreaRow,
-  areaChain,
-  areasOnPlan,
-  floorPlanOf,
-  planAreaOf,
-  planOfChain,
-  rowsOf,
-} from './plan-rows';
+import { type FloorPlanRow, type PlanAreaRow, areaChain, areasOnPlan, floorPlanOf, planAreaOf, planOfChain, rowsOf } from './plan-rows';
+import { AREA_RESOURCE, FLOOR_PLAN_RESOURCE } from '../data/resource-names';
 
 /** More floor plans and areas than one facility holds; one page of each is read. */
 const PLANS_PAGE_SIZE = 100;
@@ -56,7 +46,7 @@ export function usePlanContext({
     pagination: { kind: 'offset', page: 1, pageSize: PLANS_PAGE_SIZE },
     enabled,
   });
-  const areas = useList(PLAN_AREA_RESOURCE, {
+  const areas = useList(AREA_RESOURCE, {
     scope: 'none',
     filter: facilityFilter,
     pagination: { kind: 'offset', page: 1, pageSize: AREAS_PAGE_SIZE },

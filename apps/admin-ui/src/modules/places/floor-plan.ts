@@ -4,11 +4,8 @@ import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { floorPlanBlock } from '../../blocks/floor-plan/floor-plan-block';
 import { rangeValidator } from '../../fields/bounded-number';
 import { imageSize } from '../../fields/image-size';
-import { FLOOR_PLAN_RESOURCE, PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
 import { storageFile } from '../../fields/storage-file';
-import { FACILITY_RESOURCE } from './resource-names';
-
-export { FLOOR_PLAN_RESOURCE };
+import { AREA_RESOURCE, FACILITY_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
 
 /** Largest floor plan image the console uploads. */
 const FLOOR_PLAN_MAX_BYTES = 20 * 1024 * 1024;
@@ -32,7 +29,7 @@ export const floorPlanFields = {
   }),
   area_id: f.relation({
     // By name: the area resource places this resource's block on its page.
-    to: PLAN_AREA_RESOURCE,
+    to: AREA_RESOURCE,
     required: true,
     open: 'page',
     candidates: [{ field: 'facility_id', op: 'eq', value: ref('values', 'facility_id') }],

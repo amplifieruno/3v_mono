@@ -4,8 +4,8 @@ import { app } from '../../src/app/app-definition';
 import { templateNodesOf } from '../../src/fields/template-structure-format';
 import { HASURA_OPERATIONS } from '../../src/modules';
 import { summarizeApplied } from '../../src/modules/places/apply-template';
-import { FACILITY_RESOURCE } from '../../src/modules/places/facility';
 import { overlappingNames } from '../../src/modules/places/template-overlap';
+import { FACILITY_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * The facility's "Apply template" flow without the UI: it sends `apply_facility_template` with

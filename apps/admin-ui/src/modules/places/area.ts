@@ -14,11 +14,8 @@ import { floorPlanBlock } from '../../blocks/floor-plan/floor-plan-block';
 import { resourceByName } from '../../data/resource-by-name';
 import { areaShape } from '../../fields/area-shape';
 import { rangeValidator } from '../../fields/bounded-number';
-import { FLOOR_PLAN_RESOURCE } from '../../fields/plan-rows';
 import { areaParentGuardBlock } from './area-parent-guard-block';
-import { FACILITY_RESOURCE } from './resource-names';
-
-export const AREA_RESOURCE = 'area';
+import { AREA_RESOURCE, FACILITY_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
 
 /**
  * Columns of `itap.areas` (and its computed `current_occupancy`) the `org_admin` role reads;

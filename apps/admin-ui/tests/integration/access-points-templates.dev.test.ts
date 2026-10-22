@@ -8,12 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ItapAuthProvider } from '../../src/auth';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { validateTemplateStructure } from '../../src/fields/template-structure-format';
-import { ACCESS_POINT_RESOURCE } from '../../src/modules/places/access-point';
-import { ACCESS_POINT_DEVICE_RESOURCE } from '../../src/modules/places/access-point-device';
 import { applyFacilityTemplateOutput } from '../../src/modules/places/apply-template';
-import { AREA_RESOURCE } from '../../src/modules/places/area';
-import { FACILITY_RESOURCE } from '../../src/modules/places/facility';
-import { FACILITY_TEMPLATE_RESOURCE } from '../../src/modules/places/facility-template';
 import { PLACES_BINDING } from '../../src/modules/places/occupancy';
 import {
   ADMIN_EMAIL,
@@ -22,6 +17,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE, AREA_RESOURCE, FACILITY_RESOURCE, FACILITY_TEMPLATE_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * Access points, device bindings and facility templates against the dev stack (Nova Tower,

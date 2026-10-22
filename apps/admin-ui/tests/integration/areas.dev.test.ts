@@ -6,10 +6,9 @@ import {
 } from '@burojs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
-import { AREA_RESOURCE } from '../../src/modules/places/area';
 import { isInsideArea } from '../../src/modules/places/area-tree';
-import { FACILITY_RESOURCE } from '../../src/modules/places/facility';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { AREA_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * Areas of a facility created for the test in Nova Tower, through the console's provider as

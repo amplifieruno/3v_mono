@@ -16,9 +16,6 @@ import {
   rowsOf,
 } from '../../src/fields/plan-rows';
 import { presignStorageFile, uploadStorageFile } from '../../src/fields/storage-client';
-import { AREA_RESOURCE } from '../../src/modules/places/area';
-import { FACILITY_RESOURCE } from '../../src/modules/places/facility';
-import { FLOOR_PLAN_RESOURCE } from '../../src/modules/places/floor-plan';
 import {
   ADMIN_EMAIL,
   DEV_GRAPHQL,
@@ -27,6 +24,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { AREA_RESOURCE, FACILITY_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * A floor plan round trip against the dev stack (Nova Tower, `org_admin`), on a facility

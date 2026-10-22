@@ -3,11 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { CUSTOM_ATTRIBUTE_ENTITIES, CUSTOM_ATTRIBUTE_TYPES } from '../../src/enums/organization';
 import { ITAP_TABLES } from '../../src/modules';
-import {
-  CUSTOM_ATTRIBUTE_RESOURCE,
-  customAttributeDefinition,
-  customAttributeFields,
-} from '../../src/modules/organization/custom-attributes';
+import { customAttributeDefinition, customAttributeFields } from '../../src/modules/organization/custom-attributes';
 import { preferencesPage } from '../../src/modules/organization/preferences-page';
 import {
   USER_SETTINGS_RESOURCE,
@@ -15,6 +11,7 @@ import {
   userSettingsFields,
 } from '../../src/modules/organization/user-settings';
 import { issueText } from '../support/field-issues';
+import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * Custom attribute definitions (the schema of `custom_fields` per entity): options only

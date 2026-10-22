@@ -1,12 +1,11 @@
 import { type BlockViewProps, useList, useOne } from '@burojs/react';
 import { TriangleAlert } from 'lucide-react';
 import type * as React from 'react';
-import { PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
 import { countTemplateNodes, templateNodesOf } from '../../fields/template-structure-format';
 import { TemplateTree } from '../../fields/template-tree';
-import { FACILITY_TEMPLATE_RESOURCE } from './resource-names';
 import { type SiblingArea, overlappingNames } from './template-overlap';
 import type { templateOverlapBlock } from './template-overlap-block';
+import { AREA_RESOURCE, FACILITY_TEMPLATE_RESOURCE } from '../../data/resource-names';
 
 /** More areas than one facility holds; one page is read. */
 const AREAS_PAGE_SIZE = 500;
@@ -29,7 +28,7 @@ export function TemplateOverlapView({
     id: templateId ?? '',
     enabled: templateId !== null,
   });
-  const areas = useList(PLAN_AREA_RESOURCE, {
+  const areas = useList(AREA_RESOURCE, {
     scope: 'none',
     filter: { field: 'facility_id', op: 'eq', value: facilityId ?? '' },
     pagination: { kind: 'offset', page: 1, pageSize: AREAS_PAGE_SIZE },

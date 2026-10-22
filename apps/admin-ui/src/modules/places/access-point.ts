@@ -12,14 +12,7 @@ import {
   AREA_STATUS_ENUM,
 } from '../../enums/places';
 import { planPosition } from '../../fields/plan-position';
-import { AREA_RESOURCE } from './area';
-import {
-  ACCESS_POINT_DEVICE_RESOURCE,
-  ACCESS_POINT_RESOURCE,
-  FACILITY_RESOURCE,
-} from './resource-names';
-
-export { ACCESS_POINT_RESOURCE };
+import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE, AREA_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 
 /** `access_points_areas_differ`: an access point does not lead from an area into the same area. */
 export const checkFromArea = (value: unknown, ctx: { readonly values: Readonly<Record<string, unknown>> }) =>

@@ -2,8 +2,8 @@ import { defineMutation } from '@burojs/core';
 import { z } from 'zod';
 import { hasuraOperation, rootOf } from '../../data/operations';
 import { schema } from '../../data/schema';
-import { PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
 import { PLACES_BINDING } from './occupancy';
+import { AREA_RESOURCE } from '../../data/resource-names';
 
 export const applyFacilityTemplateInput = z.object({
   templateId: z.string().uuid(),
@@ -80,5 +80,5 @@ export const applyFacilityTemplate = defineMutation('itap:apply-facility-templat
   input: schema(applyFacilityTemplateInput),
   output: schema(applyFacilityTemplateOutput),
   // The area resource by name: the facility page (which imports this) is imported by `./area.ts`.
-  effects: [{ resource: PLAN_AREA_RESOURCE }],
+  effects: [{ resource: AREA_RESOURCE }],
 });

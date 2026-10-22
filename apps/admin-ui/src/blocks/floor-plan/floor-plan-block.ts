@@ -1,11 +1,7 @@
 import { absent, defineBlock, prop, source } from '@burojs/core';
 import { z } from 'zod';
 import { resourceByName } from '../../data/resource-by-name';
-import {
-  FLOOR_PLAN_RESOURCE,
-  PLAN_ACCESS_POINT_RESOURCE,
-  PLAN_AREA_RESOURCE,
-} from '../../fields/plan-rows';
+import { ACCESS_POINT_RESOURCE, AREA_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
 
 /** The most areas the plan reads at once (`source.list` allows 100); the count says when more exist. */
 export const FLOOR_PLAN_AREA_LIMIT = 100;
@@ -73,7 +69,7 @@ export const floorPlanBlock = defineBlock('itap:floor-plan', {
       const facility = facilityOf(data.plans);
       return facility === null
         ? absent()
-        : source.list(resourceByName(PLAN_AREA_RESOURCE), {
+        : source.list(resourceByName(AREA_RESOURCE), {
             where: [{ field: 'facility_id', op: 'eq', value: facility }],
             sort: [{ field: 'path', direction: 'asc' }],
             limit: FLOOR_PLAN_AREA_LIMIT,
@@ -84,7 +80,7 @@ export const floorPlanBlock = defineBlock('itap:floor-plan', {
       const facility = facilityOf(data.plans);
       return facility === null
         ? absent()
-        : source.list(resourceByName(PLAN_ACCESS_POINT_RESOURCE), {
+        : source.list(resourceByName(ACCESS_POINT_RESOURCE), {
             where: [
               { field: 'facility_id', op: 'eq', value: facility },
               { field: 'position', op: 'nnull', value: null },

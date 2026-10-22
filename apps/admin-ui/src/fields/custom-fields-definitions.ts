@@ -1,7 +1,7 @@
 import { useList } from '@burojs/react';
 import * as React from 'react';
 import type { AttributeDefinition } from './custom-fields-check';
-import { CUSTOM_ATTRIBUTE_DEFINITION_RESOURCE } from './custom-fields';
+import { CUSTOM_ATTRIBUTE_RESOURCE } from '../data/resource-names';
 
 /** More attributes than one organization defines for an entity; one page is read. */
 const DEFINITIONS_PAGE_SIZE = 500;
@@ -36,7 +36,7 @@ export function definitionOf(row: Readonly<Record<string, unknown>>): AttributeD
  * `modules/organization/custom-attributes.ts` and never narrowed by the facility picker.
  */
 export function useAttributeDefinitions(entity: string): DefinitionsState {
-  const list = useList(CUSTOM_ATTRIBUTE_DEFINITION_RESOURCE, {
+  const list = useList(CUSTOM_ATTRIBUTE_RESOURCE, {
     scope: 'none',
     filter: { field: 'entity', op: 'eq', value: entity },
     sort: [{ field: 'sort_order', direction: 'asc' }],

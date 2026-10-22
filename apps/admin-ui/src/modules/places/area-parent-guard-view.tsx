@@ -1,9 +1,9 @@
 import { type BlockViewProps, useOne } from '@burojs/react';
 import { CircleAlert } from 'lucide-react';
 import type * as React from 'react';
-import { AREA_RESOURCE } from './area';
 import type { areaParentGuardBlock } from './area-parent-guard-block';
 import { isInsideArea } from './area-tree';
+import { AREA_RESOURCE } from '../../data/resource-names';
 
 /** The cycle notice of the area form (`itap:area-parent-guard`); empty while the parent is fine. */
 export function AreaParentGuardView({

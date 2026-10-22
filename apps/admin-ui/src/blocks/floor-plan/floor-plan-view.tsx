@@ -1,18 +1,11 @@
 import { type InferBlockData, resourceShowHref } from '@burojs/core';
 import { type BlockViewProps, useApp } from '@burojs/react';
 import type * as React from 'react';
-import {
-  PLAN_AREA_RESOURCE,
-  accessPointsOnPlan,
-  areasOnPlan,
-  floorPlanOf,
-  planAccessPointOf,
-  planAreaOf,
-  rowsOf,
-} from '../../fields/plan-rows';
+import { accessPointsOnPlan, areasOnPlan, floorPlanOf, planAccessPointOf, planAreaOf, rowsOf } from '../../fields/plan-rows';
 import type { floorPlanBlock } from './floor-plan-block';
 import { FloorPlanFigure } from './floor-plan-figure';
 import { FloorPlanLegend } from './floor-plan-legend';
+import { AREA_RESOURCE } from '../../data/resource-names';
 
 /**
  * The floor plan block's view (`itap:floor-plan`): the drawing, its size and scale, and the
@@ -37,9 +30,9 @@ export function FloorPlanView({
     plan,
     facilityPlanRows,
   );
-  const def = app.registry.get(PLAN_AREA_RESOURCE);
+  const def = app.registry.get(AREA_RESOURCE);
   const hrefOf = (id: string): string =>
-    resourceShowHref(app.registry, def, PLAN_AREA_RESOURCE, id);
+    resourceShowHref(app.registry, def, AREA_RESOURCE, id);
   const total = typeof areas.total === 'number' ? areas.total : areas.rows.length;
   const scale = (plans?.rows[0] as Readonly<Record<string, unknown>> | undefined)?.scale_m_per_px;
 

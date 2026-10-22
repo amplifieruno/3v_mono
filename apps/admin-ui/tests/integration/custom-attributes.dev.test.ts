@@ -8,10 +8,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { validateStringList } from '../../src/fields/string-list-format';
-import {
-  CUSTOM_ATTRIBUTE_RESOURCE,
-  customAttributeFields,
-} from '../../src/modules/organization/custom-attributes';
+import { customAttributeFields } from '../../src/modules/organization/custom-attributes';
 import { USER_SETTINGS_RESOURCE, checkLocale } from '../../src/modules/organization/user-settings';
 import {
   ADMIN_EMAIL,
@@ -20,6 +17,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * Custom attribute definitions and the user's own preferences of Nova Tower through

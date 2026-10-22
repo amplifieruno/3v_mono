@@ -1,10 +1,9 @@
 import { type FlowConfig, type Layout, type ScreenRef, ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
-import { PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
 import { applyFacilityTemplate } from './apply-template';
-import { FACILITY_TEMPLATE_RESOURCE } from './resource-names';
 import { templateOverlapBlock } from './template-overlap-block';
+import { AREA_RESOURCE, FACILITY_TEMPLATE_RESOURCE } from '../../data/resource-names';
 
 /** The form of {@link applyTemplateFlow}. */
 const applyTemplateFields = {
@@ -14,7 +13,7 @@ const applyTemplateFields = {
     texts: { label: 'Template', doc: { summary: 'The facility template whose areas are created.' } },
   }),
   parent_area_id: f.relation({
-    to: PLAN_AREA_RESOURCE,
+    to: AREA_RESOURCE,
     nullable: true,
     candidates: [{ field: 'facility_id', op: 'eq', value: ref('record', 'id') }],
     texts: {

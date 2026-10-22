@@ -8,13 +8,9 @@ import {
 
 /**
  * Rows of the plan-space resources as the plan inputs and the floor-plan block read them,
- * parsed from untyped list rows. The resources are named here, not imported, because the
- * places module's resources import these fields.
+ * parsed from untyped list rows. The resources are read by name (`src/data/resource-names.ts`),
+ * not imported, because the places module's resources import these fields.
  */
-export const FLOOR_PLAN_RESOURCE = 'floor_plan';
-export const PLAN_AREA_RESOURCE = 'area';
-export const PLAN_ACCESS_POINT_RESOURCE = 'access_point';
-
 export interface FloorPlanRow {
   readonly id: string;
   readonly facility_id: string;

@@ -2,6 +2,7 @@ import { defineResource, facts, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
+import { ACCESS_POINT_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
 import { rangeValidator } from '../../fields/bounded-number';
@@ -11,9 +12,6 @@ import { timezone } from '../../fields/timezone';
 import { applyTemplateFlow } from './apply-template-flow';
 import { areaTreeBlock } from './area-tree-block';
 import { FACILITY_OCCUPANCY_ROWS, facilityOccupancyNow } from './occupancy';
-import { ACCESS_POINT_RESOURCE, FACILITY_RESOURCE } from './resource-names';
-
-export { FACILITY_RESOURCE };
 
 /** `facilities_contact_is_object`: the contact details are a JSON object (`{}` for none). */
 const checkContact = (value: unknown): string | null =>
