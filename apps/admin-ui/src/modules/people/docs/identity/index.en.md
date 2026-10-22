@@ -80,6 +80,9 @@ person or deleting a crop removes its original at once.
 - **Photos**: every face crop, newest first, with its kind (camera capture,
   enrollment, uploaded), the quality score the platform gave it, when it was
   taken and by which camera; the primary photo is marked.
+- **Detections** and **Sessions**: every time a camera recorded this face, and
+  the identity's stays in a facility with their paths. See *Detections* and
+  *Tracking sessions*.
 - **Timeline**, **Relationships**, **Verification** and **Merges**: see
   *Merging, splitting, verifying and relating identities*.
 

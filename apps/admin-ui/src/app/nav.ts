@@ -65,6 +65,11 @@ export const NAV_ICONS = {
   checkIn: 'LogIn',
   checkOut: 'LogOut',
   cancelVisit: 'CalendarX',
+  detections: 'Scan',
+  trackingSessions: 'Route',
+  identityLocations: 'Footprints',
+  whoIsWhere: 'UsersRound',
+  occupancyNow: 'MapPinned',
 } as const;
 
 /**

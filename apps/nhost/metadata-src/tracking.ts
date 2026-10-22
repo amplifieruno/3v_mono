@@ -13,6 +13,11 @@ export const trackingTables: TableSpec[] = [
     // so Hasura's at-least-once redelivery writes nothing twice).
     name: 'detections',
     profile: 'tenant_read',
+    // The person behind the detection's identity, for the console's person column, filters and erased note.
+    computedFields: [
+      { name: 'profile_id', function: 'detection_profile_id' },
+      { name: 'person_erased', function: 'detection_person_erased' },
+    ],
     // Retries span 2.5 minutes, so a short backend restart does not drop Stage B of a detection.
     eventTriggers: [
       {

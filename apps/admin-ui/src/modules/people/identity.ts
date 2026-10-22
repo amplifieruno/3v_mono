@@ -3,9 +3,11 @@ import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
 import { resourceByName } from '../../data/resource-by-name';
 import {
+  DETECTION_RESOURCE,
   IDENTITY_MERGE_RESOURCE,
   IDENTITY_MERGE_SOURCE_RESOURCE,
   IDENTITY_RESOURCE,
+  TRACKING_SESSION_RESOURCE,
   VERIFICATION_REQUEST_RESOURCE,
 } from '../../data/resource-names';
 import { IDENTITY_SETTABLE_STATUSES } from '../../enums/identities';
@@ -154,6 +156,32 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             l.panel(
               [l.place(identityTimelineBlock, { key: 'identity-timeline', props: { identityId: l.ref('record', 'id') } })],
               { key: 'timeline', texts: 'Timeline' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(DETECTION_RESOURCE)), {
+                  key: 'identity-detections',
+                  props: {
+                    where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['thumbnail_file_id', 'detected_at', 'device_id', 'area_id', 'facility_id', 'confidence'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'detections', texts: 'Detections' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(TRACKING_SESSION_RESOURCE)), {
+                  key: 'identity-sessions',
+                  props: {
+                    where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['started_at', 'facility_id', 'status', 'last_area_id', 'last_detected_at', 'duration_seconds'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'sessions', texts: 'Sessions' },
             ),
             l.panel(
               [

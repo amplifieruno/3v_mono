@@ -34,6 +34,16 @@ export default {
       failed: 'The upload failed. Check the connection and try again.',
       openFailed: 'The file could not be opened.',
     },
+    /** A detection's face (`src/fields/detection-face-impl.ts`). */
+    detectionFace: {
+      photo: 'Face seen by the camera',
+      erased: 'Erased',
+      erasedHint: 'The person’s data was erased or anonymized: the face and the identity are gone.',
+      unidentified: 'Unidentified',
+      unidentifiedHint: 'Neither matched nor good enough to create an identity.',
+      newIdentity: 'New identity',
+      none: 'No photo',
+    },
     /** The file sent inside an action's input (`src/fields/inline-file-impl.ts`). */
     inlineFile: {
       choose: 'Choose file',

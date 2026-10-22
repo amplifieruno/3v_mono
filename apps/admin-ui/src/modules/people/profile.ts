@@ -3,9 +3,11 @@ import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import {
   CONSENT_RECORD_RESOURCE,
+  DETECTION_RESOURCE,
   IDENTITY_RESOURCE,
   PROFILE_DOCUMENT_RESOURCE,
   PROFILE_RESOURCE,
+  TRACKING_SESSION_RESOURCE,
   VISIT_RESOURCE,
 } from '../../data/resource-names';
 import { uploadDocumentFlow } from './document-upload';
@@ -211,6 +213,34 @@ export const profile = defineResource(PROFILE_RESOURCE, {
                 ),
               ],
               { key: 'visits', texts: 'Visits' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(TRACKING_SESSION_RESOURCE)), {
+                  key: 'profile-sessions',
+                  props: {
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['started_at', 'facility_id', 'identity_id', 'status', 'last_area_id', 'duration_seconds'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'sessions', texts: 'Sessions' },
+            ),
+            l.panel(
+              [
+                // A detection's `profile_id` is computed from its identity: the detections of every identity
+                // linked to the person now.
+                l.place(relatedList(resourceByName(DETECTION_RESOURCE)), {
+                  key: 'profile-detections',
+                  props: {
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['thumbnail_file_id', 'detected_at', 'identity_id', 'device_id', 'area_id', 'confidence'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'detections', texts: 'Detections' },
             ),
             l.panel(
               [

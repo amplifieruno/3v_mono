@@ -55,6 +55,7 @@ import {
   organizationStatusEnum,
   TENANCY_ENUM_TABLES,
 } from './tenancy';
+import { MONITORING_ENUM_TABLES, movementTypeEnum, trackingSessionStatusEnum } from './monitoring';
 import { VISIT_ENUM_TABLES, visitStatusEnum } from './visits';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
@@ -95,6 +96,8 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   identityRelationEnum,
   identityMergeKeepEnum,
   visitStatusEnum,
+  trackingSessionStatusEnum,
+  movementTypeEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -114,4 +117,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...IDENTITY_ENUM_TABLES,
   ...IDENTITY_GOVERNANCE_ENUM_TABLES,
   ...VISIT_ENUM_TABLES,
+  ...MONITORING_ENUM_TABLES,
 };

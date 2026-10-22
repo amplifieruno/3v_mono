@@ -605,3 +605,38 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   Used by visits; earlier read-only timestamps (last seen, decided at, …) still show the date only.
 - **Expected from a framework:** `f.dateTime` with a date-and-time input and display (with the time
   zone of the instant made explicit).
+
+### G38. Cursor lists stay empty under React StrictMode
+- **Need:** the append-only logs (detections, tracking sessions, locations, device events; plan 03
+  and plan 05) are cursor lists (`pagination: 'cursor'`), and the console mounts in `<StrictMode>`.
+- **Framework (0.6.0):** `useInfiniteList` (`packages/react/src/hooks/data/use-infinite-list.ts`)
+  creates its `InfiniteListObserver` in `useMemo` and disposes it in an effect cleanup. StrictMode's
+  simulated unmount disposes the observer, the remount keeps the same (now inactive) instance, and
+  `acceptInitial` ignores every page (`if (!this.#active …) return`): the first page is fetched but
+  the list shows its empty state. Only in development (StrictMode double-invokes effects there only).
+  **[code]** **[run]** (the detection list under `<StrictMode>` in jsdom shows no row; the dev
+  server showed "No device events yet" with 8 events in the database).
+- **Workaround:** `src/main.tsx` no longer wraps the app in `<StrictMode>` (plan 05 Task 1).
+- **Expected from a framework:** an observer created (or re-activated) in the effect that disposes
+  it, so StrictMode's remount works.
+
+### G39. A related list cannot order its own rows
+- **Need:** a tracking session's Path tab (plan 05 Task 1) reads best oldest first (the order the
+  person walked), while the locations list itself is newest first.
+- **Framework (0.6.0):** `buro:related-list` takes `where`, `columns`, `pageSize`, `view`, `open`,
+  `scope`, `count` (`packages/core/src/blocks/builtin.ts`), no `sort`: the rows follow the target's
+  `views.list.defaultSort`. **[code]**
+- **Workaround:** the path is shown newest first (the article says so).
+- **Expected from a framework:** a `sort` prop on a related-list placement.
+
+### G40. A related list's `where` cannot cross a relation
+- **Need:** a person's Detections tab (plan 05 Task 1): detections carry the identity, the person is
+  the identity's profile (`identity_id.profile_id`).
+- **Framework (0.6.0):** a placement's `where` field must be a declared field of the target
+  (`block.prop-invalid where field "identity_id.profile_id" is not a declared field of detection`),
+  although the Hasura provider can translate dotted filter paths. A dotted leaf is refused in a show
+  body too. **[run]**
+- **Workaround:** a computed column on the table (`detections.profile_id`, function
+  `itap.detection_profile_id`, migration `1792365700274`), declared as a relation field: the tab
+  filters on it, and it doubles as the list's Person column and the known / unknown views.
+- **Expected from a framework:** dotted `where` paths across to-one relations in related lists.

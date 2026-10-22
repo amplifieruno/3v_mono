@@ -30,3 +30,7 @@ export const IDENTITY_DUPLICATE_RESOURCE = 'identity_duplicate_candidate';
 export const VERIFICATION_REQUEST_RESOURCE = 'verification_request';
 export const IDENTITY_RELATIONSHIP_RESOURCE = 'identity_relationship';
 export const VISIT_RESOURCE = 'visit';
+export const DETECTION_RESOURCE = 'detection';
+export const TRACKING_SESSION_RESOURCE = 'tracking_session';
+export const IDENTITY_LOCATION_RESOURCE = 'identity_location';
+export const AREA_OCCUPANCY_RESOURCE = 'area_occupancy';

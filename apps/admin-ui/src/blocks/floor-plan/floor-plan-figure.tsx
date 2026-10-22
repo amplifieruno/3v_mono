@@ -19,12 +19,16 @@ export interface FloorPlanFigureProps {
   readonly accessPoints: readonly PlanAccessPointRow[];
   /** The positioned devices on this plan; absent draws none. */
   readonly devices?: readonly PlanDeviceRow[];
+  /** How an area's shape is filled and outlined; by access level when absent. */
+  readonly shapeClassOf?: (area: PlanAreaRow) => string;
   readonly t: FloorPlanT;
 }
 
+const byAccessLevel = (area: PlanAreaRow): string => accessLevelStyle(area.access_level).shape;
+
 /**
  * The plan's image with its areas' shapes (outer ones under inner ones, coloured by access
- * level, outlined red when over capacity), each labelled with its name and occupancy, and
+ * level or as `shapeClassOf` says, outlined red when over capacity), each labelled with its name and occupancy, and
  * the access points and devices as icons at their positions.
  */
 export function FloorPlanFigure({
@@ -32,6 +36,7 @@ export function FloorPlanFigure({
   areas,
   accessPoints,
   devices = [],
+  shapeClassOf = byAccessLevel,
   t,
 }: FloorPlanFigureProps): React.ReactElement {
   const unit = Math.max(plan.size.width, plan.size.height);
@@ -50,7 +55,7 @@ export function FloorPlanFigure({
             key={area.id}
             shape={area.shape}
             title={`${area.name}: ${occupancyText(area, t)}`}
-            className={`${accessLevelStyle(area.access_level).shape} ${isOverCapacity(area) ? 'stroke-destructive stroke-[3]' : 'stroke-2'}`}
+            className={`${shapeClassOf(area)} ${isOverCapacity(area) ? 'stroke-destructive stroke-[3]' : 'stroke-2'}`}
           />
         ) : null,
       )}

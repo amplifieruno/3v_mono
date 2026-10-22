@@ -100,6 +100,9 @@ of the edit form, each with the reason. Its restriction is never lifted.
 - **Visits**: a visitor's visits, or, for anyone else, the visits they host,
   with the expected window, status and check-in time. **+ Create** schedules
   one for the person. See *Visits*.
+- **Sessions**: the person's tracking sessions (each stay in a facility), and
+  **Detections**: every face of the person's identities the cameras recorded.
+  See *Tracking sessions* and *Detections*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

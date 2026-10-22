@@ -93,4 +93,16 @@ export default {
   visit: {
     doc: { topics: { index: 'Visits: scheduling, check-in, check-out and cancelling' } },
   },
+  detection: {
+    doc: { topics: { index: 'Detections: faces, people and erased rows' } },
+  },
+  tracking_session: {
+    doc: { topics: { index: 'Tracking sessions and their paths' } },
+  },
+  identity_location: {
+    doc: { topics: { index: 'Locations: the steps of a path' } },
+  },
+  area_occupancy: {
+    doc: { topics: { index: 'Who is where and occupancy now' } },
+  },
 } satisfies TranslationBundle;

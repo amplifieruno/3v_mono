@@ -7,6 +7,7 @@ import { currentRecordFrame } from './current-record-frame';
 import {
   NAV_SECTIONS,
   devicesSection,
+  monitoringSection,
   organizationSection,
   overviewSection,
   peopleSection,
@@ -25,6 +26,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use(NAV_SECTIONS.places, placesSection);
   use(NAV_SECTIONS.devices, devicesSection);
   use(NAV_SECTIONS.people, peopleSection);
+  use(NAV_SECTIONS.monitoring, monitoringSection);
   use('help', helpPage, helpBlock);
   use('frames', currentRecordFrame);
   use('itap-enums', ...ITAP_ENUMS);

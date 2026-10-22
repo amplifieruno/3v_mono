@@ -47,6 +47,7 @@ describe('module registries', () => {
       'health-chart.deviceHealthSeries',
       'identity-timeline.identityTimeline',
       'identity-timeline.placeNames',
+      'monitoring.occupancyRows',
       'organization_invitation.inviteMember',
       'overview.dashboardKpis',
       'people.addIdentityPhotos',
