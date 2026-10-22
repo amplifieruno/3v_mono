@@ -21,11 +21,19 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           owner_id: user_id
+computed_fields:
+  - name: owned_by_me
+    definition:
+      function:
+        schema: itap
+        name: dashboard_owned_by_me
+      session_argument: hasura_session
 insert_permissions:
   - role: org_admin
     permission:
       columns:
         - description
+        - is_default
         - is_shared
         - layout
         - name
@@ -43,6 +51,7 @@ select_permissions:
         - created_at
         - description
         - id
+        - is_default
         - is_shared
         - layout
         - name
@@ -60,11 +69,14 @@ select_permissions:
               - is_shared:
                   _eq: true
       allow_aggregations: true
+      computed_fields:
+        - owned_by_me
 update_permissions:
   - role: org_admin
     permission:
       columns:
         - description
+        - is_default
         - is_shared
         - layout
         - name

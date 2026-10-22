@@ -7,7 +7,7 @@ const ownDashboard: BoolExp = { _and: [ownOrganizationRow, { owner_id: { _eq: SE
 const visibleDashboard: BoolExp = {
   _and: [ownOrganizationRow, { _or: [{ owner_id: { _eq: SESSION_USER } }, { is_shared: { _eq: true } }] }],
 };
-const DASHBOARD_INPUT = ['description', 'is_shared', 'layout', 'name', 'widgets'];
+const DASHBOARD_INPUT = ['description', 'is_default', 'is_shared', 'layout', 'name', 'widgets'];
 const DASHBOARD_COLUMNS = [...DASHBOARD_INPUT, 'created_at', 'id', 'organization_id', 'owner_id', 'updated_at'].sort();
 
 /** Row type of a query function: org_admin selects it only through the function (root fields hidden). */
@@ -56,9 +56,12 @@ export const analyticsTables: TableSpec[] = [
   {
     // Owner-managed (owner stamped from the session); shared dashboards are readable, never editable, by the
     // organization. Widgets are validated in SQL (itap.valid_dashboard_widgets; contract in the migration).
+    // is_default: the owner's landing dashboard (one per owner; setting it clears the previous one).
     name: 'dashboards',
     profile: 'tenant_crud',
     readOnlyColumns: ['owner_id'],
+    // Whether the session user owns it (the console offers editing only on the user's own dashboards).
+    computedFields: [{ name: 'owned_by_me', function: 'dashboard_owned_by_me', sessionArgument: 'hasura_session' }],
     extraPermissions: {
       insert_permissions: [
         {

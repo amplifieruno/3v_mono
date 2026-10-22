@@ -85,6 +85,40 @@ describe('dashboards permissions', () => {
   });
 });
 
+describe('dashboard console fields', () => {
+  const MINE = `query { dashboards(order_by: { name: asc }) { name owned_by_me is_default } }`;
+  const SET_DEFAULT = `
+    mutation ($id: uuid!) { update_dashboards_by_pk(pk_columns: { id: $id }, _set: { is_default: true }) { id } }
+  `;
+
+  it('should tell each member whether they own a dashboard', async () => {
+    const { a, c } = await world();
+    await create(a, { name: 'Shared', is_shared: true });
+    await create(c, { name: 'Own' });
+    expect((await a.request<{ dashboards: unknown[] }>(MINE)).dashboards).toEqual([
+      { name: 'Shared', owned_by_me: true, is_default: false },
+    ]);
+    expect((await c.request<{ dashboards: unknown[] }>(MINE)).dashboards).toEqual([
+      { name: 'Own', owned_by_me: true, is_default: false },
+      { name: 'Shared', owned_by_me: false, is_default: false },
+    ]);
+  });
+
+  it('should keep one default per owner and never let another member set it on a shared dashboard', async () => {
+    const { a, c } = await world();
+    const first = await create(a, { name: 'First', is_default: true, is_shared: true });
+    const second = await create(a, { name: 'Second' });
+    await a.request(SET_DEFAULT, { id: second });
+    const defaults = (await a.request<{ dashboards: { name: string; is_default: boolean }[] }>(MINE)).dashboards;
+    expect(defaults.filter((d) => d.is_default).map((d) => d.name)).toEqual(['Second']);
+    // Another member's default stays theirs: the shared dashboard is not editable for them.
+    expect((await c.request<{ update_dashboards_by_pk: unknown }>(SET_DEFAULT, { id: first })).update_dashboards_by_pk).toBeNull();
+    const own = await create(c, { name: 'Colleague', is_default: true });
+    expect(own).toBeTruthy();
+    expect((await a.request<{ dashboards: { name: string; is_default: boolean }[] }>(MINE)).dashboards.find((d) => d.name === 'Second')?.is_default).toBe(true);
+  });
+});
+
 describe('dashboard widget validation', () => {
   it('should accept every widget kind with its queries and an empty dashboard', async () => {
     const { a } = await world();

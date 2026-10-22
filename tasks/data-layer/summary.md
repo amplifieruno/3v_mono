@@ -67,6 +67,7 @@ Around it:
 - Activity stats, debounced re-evaluation (`segment_evaluation_requests` + `evaluate_segments_pending`), the hourly `evaluate_segments`.
 - Segment scopes in event rules and notification conditions (membership as of the event time); the dry run `test_notification_rule`.
 - Console computed fields (UI phase 7): `segment_members.opened_now` (the row was inserted by the current transaction, so `add_segment_members`' answer tells the memberships it opened from those already open; migration `1792365700283`) and `profiles.full_name` (`itap.profile_full_name`: first and last name joined, NULL when blank; what pickers, relation cells and record titles show and search; migration `1792365700284`).
+- Dashboard console fields (UI phase 8): `dashboards.owned_by_me` (`itap.dashboard_owned_by_me`, session: the console offers edit/delete only on the user's own dashboards) and `dashboards.is_default` (the owner's landing dashboard; one per owner in an organization, `dashboards_one_default_key`; setting it clears the previous default via `dashboards_single_default`); migration `1792365700285`.
 
 ### Analytics, reports, search, bulk, dashboards (slice 7, `summary-07-analytics.md`)
 - **Stats:** hourly / daily / transition tables (`aggregate_stats`, trailing window) and query functions (`facility_occupancy_now`, `occupancy_series`, `flow_matrix`, `dashboard_kpis`, `identity_timeline`), plus `abnormal_movement`.
