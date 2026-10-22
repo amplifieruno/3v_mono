@@ -94,7 +94,12 @@ new and unidentified.
 - Detections arrive over a live connection signed with your organization
   session. When the session is renewed the connection is reopened by itself;
   when you switch organization the old connection is closed at once, so no
-  face of the previous organization is shown.
+  face of the previous organization is shown. Every live view of your
+  session (this tab, the live wall, the operator workspace) shares that one
+  connection.
+- When the server refuses the session three times in a row, the detections
+  stop with a note and a **Reconnect** button: it opens the connection again
+  for every live view. Sign in again if it keeps refusing.
 
 ## Live wall
 

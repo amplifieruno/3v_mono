@@ -57,7 +57,14 @@ interface Harness {
   readonly deps: LiveCameraDeps;
   readonly attached: { url: string; events: StreamEvents; destroyed: boolean }[];
   /** The server side of the latest socket: accept the join, push detections. */
-  readonly server: { accept(ack?: unknown): void; push(payload: unknown): void; drop(reason: string): void };
+  readonly server: {
+    accept(ack?: unknown): void;
+    push(payload: unknown): void;
+    drop(reason: string): void;
+    refuse(message: string): void;
+  };
+  /** Connections opened, and the rooms joined on the latest one. */
+  readonly opened: { count: number; joins: string[] };
 }
 
 function harness(): Harness {
@@ -65,32 +72,44 @@ function harness(): Harness {
   let handlers: {
     connect?: () => void;
     detection?: (payload: unknown) => void;
-    ack?: (r: unknown) => void;
+    acks: ((r: unknown) => void)[];
     disconnect?: (reason: string) => void;
-  } = {};
+    error?: (message: string) => void;
+  } = { acks: [] };
+  const opened = { count: 0, joins: [] as string[] };
   const attach: StreamAttacher = async (_video, url, events) => {
     const entry = { url, events, destroyed: false };
     attached.push(entry);
     return { destroy: () => void (entry.destroyed = true) };
   };
   const socket = (): DetectionSocket => {
-    handlers = {};
+    handlers = { acks: [] };
+    opened.count += 1;
+    opened.joins = [];
     return {
       onConnect: (handler) => void (handlers.connect = handler),
-      onConnectError: () => undefined,
+      onConnectError: (handler) => void (handlers.error = handler),
       onDisconnect: (handler) => void (handlers.disconnect = handler),
       onDetection: (handler) => void (handlers.detection = handler),
-      join: (_deviceId, ack) => void (handlers.ack = ack),
+      join: (deviceId, ack) => {
+        opened.joins.push(deviceId);
+        handlers.acks.push(ack);
+      },
+      leave: () => undefined,
       close: () => undefined,
     };
   };
   return {
     attached,
+    opened,
     deps: { attach, loadSocket: async () => socket, getToken: async () => 'org-token' },
     server: {
       accept(ack = { ok: true }) {
         handlers.connect?.();
-        handlers.ack?.(ack);
+        for (const answer of handlers.acks) answer(ack);
+      },
+      refuse(message) {
+        handlers.error?.(message);
       },
       drop(reason) {
         handlers.disconnect?.(reason);
@@ -242,6 +261,46 @@ describe('live camera view', () => {
     act(() => h.server.accept({ ok: false, error: 'device_not_found' }));
     expect(screen.getByText('Detections stopped')).toBeDefined();
     expect(screen.getByText(LIVE_CAMERA_TEXTS['error_device-not-found'])).toBeDefined();
+  });
+
+  it('should offer Reconnect after repeated refusals, and connect again on it', async () => {
+    const h = harness();
+    render(<LiveCameraPanel device={DEVICE} deps={h.deps} t={t} />);
+    await flush();
+    expect(screen.queryByRole('button', { name: 'Reconnect' })).toBeNull();
+    act(() => h.server.refuse('unauthorized'));
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    act(() => h.server.refuse('unauthorized'));
+    await act(() => vi.advanceTimersByTimeAsync(1_000));
+    act(() => h.server.refuse('unauthorized'));
+    expect(h.opened.count).toBe(3);
+    expect(screen.getByText(LIVE_CAMERA_TEXTS.error_unauthorized)).toBeDefined();
+    expect(screen.getByText('Detections stopped')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    await flush();
+    expect(h.opened.count).toBe(4);
+    expect(screen.getByText('Detections connecting')).toBeDefined();
+    act(() => h.server.accept());
+    expect(screen.getByText('Detections live')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Reconnect' })).toBeNull();
+    expect(screen.queryByText(LIVE_CAMERA_TEXTS.error_unauthorized)).toBeNull();
+  });
+
+  it('should share one connection between the views of one session', async () => {
+    const h = harness();
+    const other = { ...DEVICE, id: '33333333-3333-4333-8333-333333333333', name: 'Lobby camera' };
+    render(
+      <>
+        <LiveCameraPanel device={DEVICE} deps={h.deps} t={t} />
+        <LiveCameraPanel device={other} deps={h.deps} t={t} />
+      </>,
+    );
+    await flush();
+    act(() => h.server.accept());
+    expect(h.opened.count).toBe(1);
+    expect(h.opened.joins).toEqual([DEVICE.id, other.id]);
+    expect(screen.getAllByText('Detections live')).toHaveLength(2);
   });
 
   it('should say that detections are unavailable when the socket client cannot be loaded', async () => {

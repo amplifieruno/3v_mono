@@ -36,6 +36,7 @@ const message = (more: Partial<DetectionMessage> = {}): DetectionMessage => ({
 /** One fake connection: records what the service asked and lets the test answer as the server. */
 class FakeSocket implements DetectionSocket {
   readonly joins: { deviceId: string; ack: (result: unknown) => void }[] = [];
+  readonly leaves: string[] = [];
   closed = false;
   private connectHandler: () => void = () => undefined;
   private errorHandler: (message: string) => void = () => undefined;
@@ -58,6 +59,9 @@ class FakeSocket implements DetectionSocket {
   }
   join(deviceId: string, ack: (result: unknown) => void): void {
     this.joins.push({ deviceId, ack });
+  }
+  leave(deviceId: string): void {
+    this.leaves.push(deviceId);
   }
   close(): void {
     this.closed = true;

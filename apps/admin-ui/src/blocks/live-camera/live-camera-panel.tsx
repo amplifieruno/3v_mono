@@ -93,7 +93,16 @@ export function LiveCameraPanel({ device, deps, t, heading }: LiveCameraPanelPro
           />
         ) : null}
       </div>
-      {failure ? <p className="text-sm text-destructive">{t(failure)}</p> : null}
+      {failure ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-destructive">{t(failure)}</p>
+          {failure === 'error_unauthorized' ? (
+            <Button size="sm" variant="outline" onClick={live.reconnect}>
+              {t('reconnect')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {device.recognition_enabled ? null : (
         <p className="text-sm text-muted-foreground">{t('recognitionOff')}</p>
       )}

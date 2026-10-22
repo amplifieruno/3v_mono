@@ -19,7 +19,9 @@ export const LIVE_CAMERA_TEXTS = {
   detections_failed: 'Detections stopped',
   detections_unavailable: 'Detections unavailable',
   'error_signed-out': 'Live detections stopped: no organization is selected.',
-  error_unauthorized: 'Live detections stopped: the server refused the session. Sign in again.',
+  error_unauthorized:
+    'Live detections stopped: the server refused the session three times in a row. Reconnect, or sign in again if it keeps refusing.',
+  reconnect: 'Reconnect',
   'error_device-not-found': 'Live detections stopped: this camera is not in the current organization.',
   'error_invalid-device': 'Live detections stopped: the camera id is not valid.',
   error_unavailable: 'Live detections could not be loaded. Reload the page to try again.',

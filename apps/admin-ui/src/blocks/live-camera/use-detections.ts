@@ -1,22 +1,15 @@
 import * as React from 'react';
-import type { TokenStore } from '../../auth/token-store';
-import {
-  type DetectionMessage,
-  type DetectionSocketFactory,
-  type DetectionStreamState,
-  openDetectionStream,
-} from '../../realtime/detections';
+import type { DetectionMessage, DetectionStreamState } from '../../realtime/detection-types';
+import { type DetectionHubSource, sharedDetectionHub } from '../../realtime/shared-hub';
 
 /** How long a detection's box stays on the video (it fades out over the last half second). */
 export const BOX_LIFETIME_MS = 2_000;
 
-/** What the live view needs to receive detections. */
-export interface DetectionDeps {
-  /** The Socket.io connection factory, loaded on demand. */
-  readonly loadSocket: () => Promise<DetectionSocketFactory>;
-  readonly getToken: () => Promise<string | null>;
-  readonly store?: Pick<TokenStore, 'snapshot' | 'subscribe'>;
-}
+/**
+ * What the live view needs to receive detections: the session's detection hub is built from it
+ * once, so every view given the same deps shares one connection.
+ */
+export type DetectionDeps = DetectionHubSource;
 
 /** The stream's state, or `unavailable` when the socket client itself could not be loaded. */
 export type LiveDetectionsState = DetectionStreamState | { readonly status: 'unavailable' };
@@ -65,13 +58,19 @@ export interface LiveDetections {
   /** The detections of the latest frame, for {@link BOX_LIFETIME_MS} at most, one per identity. */
   readonly boxes: readonly DetectionMessage[];
   readonly counters: DetectionCounters;
+  /** Starts the session's connection over (offered after repeated refusals). */
+  readonly reconnect: () => void;
 }
 
-/** The live detections of one camera while the view is mounted. */
+/**
+ * The live detections of one camera while the view is mounted, over the session's shared
+ * connection (`sharedDetectionHub`): the camera's room is joined while the view is mounted.
+ */
 export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetections {
   const [state, setState] = React.useState<LiveDetectionsState>({ status: 'connecting' });
   const [boxes, setBoxes] = React.useState<readonly DetectionMessage[]>([]);
   const [counters, setCounters] = React.useState<DetectionCounters>(NO_COUNTERS);
+  const hubRef = React.useRef<{ reconnect(): void } | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -91,14 +90,11 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
       timers.add(timer);
     };
 
-    deps.loadSocket().then(
-      (connect) => {
+    sharedDetectionHub(deps).then(
+      (hub) => {
         if (cancelled) return;
-        const stream = openDetectionStream({
-          deviceId,
-          getToken: deps.getToken,
-          store: deps.store,
-          connect,
+        hubRef.current = hub;
+        const subscription = hub.subscribe(deviceId, {
           onDetection,
           onState: (next) => {
             setState(next);
@@ -107,7 +103,7 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
             if (next.status !== 'live') setBoxes([]);
           },
         });
-        close = () => stream.close();
+        close = () => subscription.close();
       },
       () => {
         if (!cancelled) setState({ status: 'unavailable' });
@@ -116,10 +112,12 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
 
     return () => {
       cancelled = true;
+      hubRef.current = null;
       close?.();
       for (const timer of timers) clearTimeout(timer);
     };
   }, [deviceId, deps]);
 
-  return { state, boxes, counters };
+  const reconnect = React.useCallback(() => hubRef.current?.reconnect(), []);
+  return { state, boxes, counters, reconnect };
 }
