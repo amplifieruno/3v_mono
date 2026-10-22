@@ -92,11 +92,11 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
   }
   if (query.includes('profiles_by_pk')) {
     return hasuraResponse({
-      data: { item: { id: ANNA, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', status: 'active', erased_at: null, processing_restricted: false } },
+      data: { item: { id: ANNA, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', full_name: 'Anna Petrova', status: 'active', erased_at: null, processing_restricted: false } },
     });
   }
   if (/\bitems: profiles\(/.test(query)) {
-    return hasuraResponse({ data: { items: [{ id: ANNA, last_name: 'Petrova', first_name: 'Anna' }] } });
+    return hasuraResponse({ data: { items: [{ id: ANNA, last_name: 'Petrova', first_name: 'Anna', full_name: 'Anna Petrova' }] } });
   }
   if (/\bitems: devices\(/.test(query)) return hasuraResponse({ data: { items: [{ id: CAMERA, name: 'Lobby camera' }] } });
   if (/\bitems: areas\(/.test(query)) return hasuraResponse({ data: { items: [{ id: LOBBY, name: 'Lobby' }] } });
@@ -163,7 +163,7 @@ describe('detection list', () => {
     expect(screen.queryByText('The file could not be opened.')).toBeNull();
 
     // The person column names the known person.
-    expect(await within(rows[0] as HTMLElement).findByText('Petrova', {})).toBeDefined();
+    expect(await within(rows[0] as HTMLElement).findByText('Anna Petrova', {})).toBeDefined();
   });
 
   it('should show the first page of the log when mounted in StrictMode (G38, patched @burojs/react)', async () => {

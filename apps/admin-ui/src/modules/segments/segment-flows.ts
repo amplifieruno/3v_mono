@@ -115,7 +115,7 @@ function addMembersFlow(name: string, target: SegmentTarget) {
       input: ({ values, record }) => {
         const segmentId = String(record?.id ?? '');
         const subjectIds = Array.isArray(values.subject_ids) ? values.subject_ids.map(String) : [];
-        if (subjectIds[0] !== undefined) rememberSent(name, segmentId, { segmentId, subjectId: subjectIds[0], target });
+        rememberSent(name, segmentId, { segmentId, subjectIds, target });
         return { segmentId, subjectIds };
       },
       onUnknown: { check: addApplied(name) },

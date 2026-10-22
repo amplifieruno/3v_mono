@@ -4,8 +4,8 @@ import { z } from 'zod';
 export const SEGMENT_STATS_DAYS = 30;
 
 /**
- * How many days back the read reaches from the browser's date: the window plus a margin, so the
- * organization's 30 days are covered whatever the two time zones (at most a day apart).
+ * How many days back the read reaches from today's UTC date: the window plus a margin, so the
+ * organization's 30 calendar days are covered whatever its time zone (at most a day from UTC).
  */
 export const SEGMENT_STATS_READ_DAYS = SEGMENT_STATS_DAYS + 2;
 
@@ -62,7 +62,10 @@ export function addDays(day: string, offset: number): string {
   return new Date(Date.UTC(year, month - 1, date + offset)).toISOString().slice(0, 10);
 }
 
-/** The first day the read asks for: the browser's date, far enough back for any organization zone. */
+/**
+ * The first day the read asks for: today's UTC date moved back `SEGMENT_STATS_READ_DAYS`, a margin
+ * wide enough that the organization's calendar days shown by `dailyPoints` are covered in any zone.
+ */
 export function readStart(now: Date): string {
   return addDays(dayIn(now, 'UTC'), -SEGMENT_STATS_READ_DAYS);
 }

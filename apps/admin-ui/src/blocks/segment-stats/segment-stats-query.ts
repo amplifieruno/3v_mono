@@ -12,9 +12,9 @@ export const SEGMENT_STATS_BINDING = 'segment-stats';
 /**
  * The daily figures of one segment (`segment_daily_stats`, whose `day` is the organization's
  * calendar day) and the organization's time zone, read from a little over 30 days back so the
- * organization's window is covered whatever the browser's zone. The view folds them into one point
- * per organization day at the answer's time (one clock). The read's start is taken when the request
- * is made, so the cached input stays the segment id alone.
+ * organization's window is covered whatever its zone (the start is a UTC date). The view folds
+ * them into one point per organization day at the answer's time (one clock). The read's start is
+ * taken when the request is made, so the cached input stays the segment id alone.
  */
 export const segmentDailyStatsOperation = hasuraOperation(SEGMENT_STATS_BINDING, 'segmentDailyStats', {
   kind: 'query',

@@ -49,8 +49,8 @@ const person = {
 };
 
 const PROFILES = [
-  { ...person, id: HOST, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova' },
-  { ...person, id: GUEST, code: 'PROFILE-00002', profile_type: 'visitor', first_name: 'Olga', last_name: 'Guestova' },
+  { ...person, id: HOST, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', full_name: 'Anna Petrova' },
+  { ...person, id: GUEST, code: 'PROFILE-00002', profile_type: 'visitor', first_name: 'Olga', last_name: 'Guestova', full_name: 'Olga Guestova' },
 ];
 
 const visitRow = {

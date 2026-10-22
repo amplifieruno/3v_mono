@@ -63,7 +63,7 @@ export function addToSegmentFlow(target: SegmentTarget) {
       input: ({ values, record }) => {
         const subjectId = String(record?.id ?? '');
         const segmentId = String(values.segment_id ?? '');
-        rememberSent(ADD_TO_SEGMENT_FLOW, subjectId, { segmentId, subjectId, target });
+        rememberSent(ADD_TO_SEGMENT_FLOW, subjectId, { segmentId, subjectIds: [subjectId], target });
         return { segmentId, subjectIds: [subjectId] };
       },
       onUnknown: { check: addApplied(ADD_TO_SEGMENT_FLOW) },

@@ -12,7 +12,6 @@ import {
   PROFILE_DOCUMENT_RESOURCE,
   PROFILE_RESOURCE,
   TRACKING_SESSION_RESOURCE,
-  VISIT_RESOURCE,
   WATCH_LIST_PROFILE_ENTRY_RESOURCE,
 } from '../../data/resource-names';
 import { uploadDocumentFlow } from './document-upload';
@@ -20,6 +19,7 @@ import { enrollFaceFlow } from './enrollment-flows';
 import { PROFILE_ACTIVITY_ROWS, profileActivity } from './profile-activity';
 import { EMPLOYEE_FIELD_NAMES, profileFields } from './profile-fields';
 import { PROFILE_RULES } from './profile-rules';
+import { profileVisitsPanel } from './profile-visits-tab';
 import { profileSavedViews } from './profile-views';
 import { liftRestrictionFlow, restrictProcessingFlow } from './restriction';
 
@@ -62,8 +62,8 @@ export const profile = defineResource(PROFILE_RESOURCE, {
   section: NAV_SECTIONS.people,
   order: 10,
   icon: NAV_ICONS.profiles,
-  displayField: 'last_name',
-  recordTitle: (record) => `${record.first_name ?? ''} ${record.last_name ?? ''}`.trim() || null,
+  displayField: 'full_name',
+  recordTitle: (record) => (typeof record.full_name === 'string' && record.full_name !== '' ? record.full_name : null),
   data: { provider: 'hasura' },
   operations: { delete: false },
   builtinActions: { delete: false },
@@ -184,42 +184,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               ],
               { key: 'consent', texts: 'Consent' },
             ),
-            l.panel(
-              [
-                // A visitor's own visits; anyone else's are the visits they host (a visitor never hosts).
-                l.panel(
-                  [
-                    l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
-                      key: 'profile-visits',
-                      props: {
-                        // Also seeds "+ Create": a new visit is for this visitor.
-                        where: [{ field: 'visitor_profile_id', op: 'eq', value: l.ref('record', 'id') }],
-                        columns: ['code', 'expected_start', 'expected_end', 'host_profile_id', 'status', 'checked_in_at'],
-                      },
-                    }),
-                  ],
-                  { key: 'visits-as-visitor', when: l.equals(l.ref('record', 'profile_type'), 'visitor') },
-                ),
-                l.panel(
-                  [
-                    l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
-                      key: 'profile-hosted-visits',
-                      props: {
-                        // Also seeds "+ Create": a new visit is hosted by this person.
-                        where: [{ field: 'host_profile_id', op: 'eq', value: l.ref('record', 'id') }],
-                        columns: ['code', 'expected_start', 'expected_end', 'visitor_profile_id', 'status', 'checked_in_at'],
-                      },
-                    }),
-                  ],
-                  {
-                    key: 'visits-hosted',
-                    texts: { title: 'Hosted visits' },
-                    when: l.not(l.equals(l.ref('record', 'profile_type'), 'visitor')),
-                  },
-                ),
-              ],
-              { key: 'visits', texts: 'Visits' },
-            ),
+            profileVisitsPanel(l),
             l.panel(
               [
                 l.place(relatedList(resourceByName(TRACKING_SESSION_RESOURCE)), {

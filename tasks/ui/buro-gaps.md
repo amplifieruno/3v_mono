@@ -484,16 +484,18 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   'today' } }`), resolved when the view is applied.
 
 ### G29. A relation's label is one field; a person's name is two
+- **Status:** pickers closed by a data-layer computed field; framework wish stands.
 - **Need:** profiles are named by first and last name; relation pickers and relation cells of later
   resources (visits' visitor and host, identities' profile) should show both.
 - **Framework (0.6.0):** `recordTitle` builds the page heading and breadcrumb, but relation labels
   and pickers read `displayField` only (one field name). **[code]** (`types/resource.ts`
   `displayField` doc).
-- **Workaround:** `displayField: 'last_name'` plus `recordTitle` (first and last name) on the
-  profile; pickers show the last name only (search finds first names too). Task 5 kept the last
-  name for the visit's visitor and host pickers: it is what reception asks for; the code
-  (`PROFILE-00012`) is unique but nobody knows it. A `full_name` computed field in the data layer
-  would close it without a framework change.
+- **Workaround:** until phase 7, `displayField: 'last_name'` plus `recordTitle` (first and last
+  name); pickers showed the last name only. Phase 7 final wave: the computed field
+  `profiles.full_name` (`itap.profile_full_name`, migration `1792365700284`) is the profile's
+  `displayField` and its `recordTitle`, so pickers and relation cells show and search the whole
+  name (Hasura filters and sorts on the computed field). Any other multi-field label still needs
+  its own computed field.
 - **Expected from a framework:** relation labels and pickers that use `recordTitle` (or a declared
   label template over several fields).
 

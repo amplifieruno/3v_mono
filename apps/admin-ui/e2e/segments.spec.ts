@@ -207,8 +207,10 @@ test.describe.serial('segments smoke', () => {
     await page.getByTestId('form-action:segment:show:add_profiles').click();
     await dialogs().getByRole('combobox').first().click();
     await page.getByRole('combobox').last().fill(person.last_name);
-    // Namesakes are told apart by their id.
-    await page.getByRole('option').filter({ hasText: person.id }).first().click();
+    // The picker searches and shows the whole name (`full_name`, gap G29); namesakes are told apart by their id.
+    const option = page.getByRole('option').filter({ hasText: person.id }).first();
+    await expect(option).toContainText(`${person.first_name} ${person.last_name}`);
+    await option.click();
     await page.keyboard.press('Escape');
     await dialogs().getByRole('button', { name: 'Add members', exact: true }).click();
     await expect(page.getByText('Added by hand: 1.').first()).toBeVisible();

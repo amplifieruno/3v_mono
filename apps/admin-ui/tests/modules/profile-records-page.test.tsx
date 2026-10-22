@@ -48,8 +48,8 @@ const base = {
 };
 
 const PROFILES = [
-  { ...base, id: ANNA, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova' },
-  { ...base, id: IVAN, code: 'PROFILE-00002', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', email: 'anna@aurora.test' },
+  { ...base, id: ANNA, code: 'PROFILE-00001', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', full_name: 'Anna Petrova' },
+  { ...base, id: IVAN, code: 'PROFILE-00002', profile_type: 'employee', first_name: 'Anna', last_name: 'Petrova', full_name: 'Anna Petrova', email: 'anna@aurora.test' },
   {
     ...base,
     id: ERASED,

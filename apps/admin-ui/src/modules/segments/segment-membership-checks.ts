@@ -12,10 +12,10 @@ export const MEMBER_RESOURCE_OF = {
   identities: { resource: SEGMENT_IDENTITY_MEMBER_RESOURCE, subject: 'identity_id' },
 } as const satisfies Record<SegmentTarget, { readonly resource: string; readonly subject: string }>;
 
-/** One membership a flow asked for: the segment, a person or face of it, and the segment's target. */
+/** What one "add" flow asked for: the segment, the people or faces to add, and the segment's target. */
 export interface SentMembership {
   readonly segmentId: string;
-  readonly subjectId: string;
+  readonly subjectIds: readonly string[];
   readonly target: SegmentTarget;
 }
 
@@ -31,31 +31,39 @@ export function rememberSent(flow: string, recordId: string, membership: SentMem
   sent.set(`${flow}:${recordId}`, membership);
 }
 
-/** Whether `membership` is open now as a manual one; `null` when the read fails. */
+/**
+ * Whether every one `membership` sent is open now as a manual member; `null` when the read fails.
+ * A person or face has at most one open membership per segment, so the open manual rows among the
+ * ones sent number as many as were sent exactly when all of them are open.
+ */
 async function manualOpen(data: Parameters<FlowUnknownCheck>[0]['data'], membership: SentMembership): Promise<boolean | null> {
   const { resource, subject } = MEMBER_RESOURCE_OF[membership.target];
+  const ids = [...new Set(membership.subjectIds)];
+  if (ids.length === 0) return null;
   try {
     const { data: rows } = await data.list(resourceByName(resource) as never, {
       filter: {
         and: [
           { field: 'segment_id', op: 'eq', value: membership.segmentId },
-          { field: subject, op: 'eq', value: membership.subjectId },
+          { field: subject, op: 'in', value: ids },
           { field: 'removed_at', op: 'isNull' },
           { field: 'source', op: 'eq', value: 'manual' },
         ],
       },
-      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+      pagination: { kind: 'offset', page: 1, pageSize: ids.length },
     } as never);
-    return (rows as readonly unknown[]).length > 0;
+    const open = new Set((rows as readonly Readonly<Record<string, unknown>>[]).map((row) => row[subject] ?? row.id));
+    return open.size >= ids.length;
   } catch {
     return null;
   }
 }
 
 /**
- * Check again for an "add" flow: applied when the first person or face it sent is now a manual
- * member of the segment (the function adds all or nothing). Unknown when nothing was recorded (the
- * console was reloaded) or the read fails.
+ * Check again for an "add" flow: applied when every person or face it sent is now a manual member
+ * of the segment (the function adds all or nothing; someone added by hand by another user in the
+ * meantime counts too). Unknown when nothing was recorded (the console was reloaded) or the read
+ * fails.
  */
 export function addApplied(flow: string): FlowUnknownCheck {
   return async ({ record, data }) => {

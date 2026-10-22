@@ -8,7 +8,8 @@ import { catalogAnswer } from '../support/segment-conditions-fixture';
 
 /**
  * Segments and templates on screen: a manual segment's form shows no conditions, active window or
- * schedule and sends none (the database keeps `{}`), a dynamic one requires conditions; a refused delete says the database's
+ * schedule and sends none (the database keeps `{}`), also after switching back from dynamic with
+ * conditions built, a dynamic one requires conditions; a refused delete says the database's
  * reason and stays on the segment (Review Focus 5); a built-in template offers "Create segment",
  * which sends the template's target and conditions under the new name.
  */
@@ -156,6 +157,25 @@ describe('segment form', () => {
     fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
     await waitFor(() => expect(mutations()).toHaveLength(1));
     expect(JSON.stringify(mutations()[0]?.variables)).toContain('"conditions":{"field":"visits_last_30d","operator":"gte","value":8}');
+  });
+
+  it('should send no conditions when switched back to manual after conditions were built', async () => {
+    renderAt('/segments/create');
+    fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Regulars' } });
+    await chooseOption(/^Kind/, /^Dynamic/);
+    fireEvent.click(await screen.findByRole('button', { name: /^Add condition/ }));
+    await chooseOption(/^Field$/, /^Visits \(30 days\)/);
+    await chooseOption(/^Operator$/, /^is at least/);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Value' }), { target: { value: '8' } });
+    await chooseOption(/^Kind/, /^Manual/);
+    expect(screen.queryByText('No conditions yet.')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    const sent = JSON.stringify(mutations()[0]?.variables);
+    expect(sent).toContain('"kind":"manual"');
+    // segments_conditions_match_kind: the hidden conditions are not sent; the database keeps '{}'.
+    expect(sent).not.toContain('conditions');
+    expect(sent).not.toContain('visits_last_30d');
   });
 
   it('should not save a condition on a field the catalog no longer offers (Review Focus 1)', async () => {

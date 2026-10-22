@@ -6,6 +6,18 @@ import { dateTime } from '../../fields/date-time';
  * restriction function and the erasure job maintain. Never written by the console.
  */
 export const profileSystemFields = {
+  // Computed field `profile_full_name`: what pickers, relation cells and the record title show.
+  full_name: f.string({
+    system: true,
+    in: [],
+    texts: {
+      label: 'Full name',
+      doc: {
+        summary:
+          'The first and last name joined by a space, as the platform computes it from the two names. It is what pickers and links to the person show and search; it changes when either name is edited.',
+      },
+    },
+  }),
   has_face: f.boolean({
     system: true,
     in: ['list', 'show'],

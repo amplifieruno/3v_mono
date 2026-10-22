@@ -110,15 +110,22 @@ describe('add members', () => {
     (await flowOn(SEGMENT_RESOURCE, 'add_profiles', { ...manual, status: 'archived' }).open()).assertUnavailable();
   });
 
-  it('should check a lost answer by whether the first one sent is a manual member now', async () => {
-    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 1, kept: 0 })] }).open();
-    flow.fill({ subject_ids: [OTHER] });
+  it('should check a lost answer by whether every one sent is a manual member now', async () => {
+    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 2, kept: 0 })] }).open();
+    flow.fill({ subject_ids: [PERSON, OTHER] });
     await flow.submit();
     const filters: unknown[] = [];
-    const data = { list: async (_r: unknown, params: { filter: unknown }) => (filters.push(params.filter), { data: [{ id: MEMBERSHIP }] }) } as never;
-    expect(await addApplied('add_profiles')(checkContext(manual, data))).toBe('applied');
-    expect(JSON.stringify(filters[0])).toContain(OTHER);
+    const answering = (rows: readonly unknown[]) =>
+      ({ list: async (_r: unknown, params: { filter: unknown }) => (filters.push(params.filter), { data: rows }) }) as never;
+    const both = [
+      { id: MEMBERSHIP, profile_id: PERSON },
+      { id: 'm2', profile_id: OTHER },
+    ];
+    expect(await addApplied('add_profiles')(checkContext(manual, answering(both)))).toBe('applied');
+    expect(filters[0]).toMatchObject({ and: expect.arrayContaining([{ field: 'profile_id', op: 'in', value: [PERSON, OTHER] }]) });
     expect(JSON.stringify(filters[0])).toContain('"value":"manual"');
+    // Only the first one open: the call did not apply (it adds all or nothing).
+    expect(await addApplied('add_profiles')(checkContext(manual, answering([both[0]])))).toBe('not-applied');
     expect(await addApplied('add_profiles')(checkContext(manual, reading(null, [])))).toBe('not-applied');
     expect(await addApplied('add_profiles')(checkContext({ id: 'never-sent' }, reading(null, [])))).toBe('unknown');
   });

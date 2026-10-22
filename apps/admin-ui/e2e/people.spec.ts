@@ -172,6 +172,8 @@ test.describe.serial('people smoke', () => {
     await expect(page).toHaveURL(/\/profiles\/[0-9a-f-]{36}$/);
     profileId = page.url().split('/').pop() ?? '';
     await expect(page.getByText(VISITOR_LAST).first()).toBeVisible();
+    // The heading is the whole name (the computed `full_name`, gap G29).
+    await expect(page.getByRole('heading', { name: `Ada ${VISITOR_LAST}` }).first()).toBeVisible();
     for (const tab of ['Details', 'Identities', 'Documents', 'Visits']) {
       await expect(page.getByRole('tab', { name: tab })).toBeVisible();
     }
