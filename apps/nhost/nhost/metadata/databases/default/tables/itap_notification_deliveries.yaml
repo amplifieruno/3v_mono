@@ -85,6 +85,28 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: digested_into
+computed_fields:
+  - name: escalation_policy_id
+    definition:
+      function:
+        schema: itap
+        name: notification_delivery_escalation_policy_id
+  - name: origin
+    definition:
+      function:
+        schema: itap
+        name: notification_delivery_origin
+  - name: title
+    definition:
+      function:
+        schema: itap
+        name: notification_delivery_title
+  - name: to_me
+    definition:
+      function:
+        schema: itap
+        name: notification_delivery_to_me
+      session_argument: hasura_session
 select_permissions:
   - role: org_admin
     permission:
@@ -123,6 +145,11 @@ select_permissions:
               - recipient_user_id:
                   _eq: X-Hasura-User-Id
       allow_aggregations: true
+      computed_fields:
+        - escalation_policy_id
+        - origin
+        - title
+        - to_me
 event_triggers:
   - name: send_delivery
     definition:

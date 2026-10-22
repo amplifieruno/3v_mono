@@ -1,7 +1,7 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { EVENT_RESOURCE, INCIDENT_EVENT_HISTORY_RESOURCE } from '../../data/resource-names';
+import { EVENT_RESOURCE, INCIDENT_EVENT_HISTORY_RESOURCE, NOTIFICATION_DELIVERY_RESOURCE } from '../../data/resource-names';
 import { severitiesFrom } from '../../enums/events';
 import { eventFields } from './event-fields';
 
@@ -122,6 +122,19 @@ export const event = defineResource(EVENT_RESOURCE, {
             }),
           ],
           { key: 'incidents', texts: 'Incidents' },
+        ),
+        l.panel(
+          [
+            l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+              key: 'event-deliveries',
+              props: {
+                where: [{ field: 'event_id', op: 'eq', value: l.ref('record', 'id') }],
+                columns: ['created_at', 'origin', 'recipient_user_id', 'recipient_address', 'channel', 'status'],
+                open: 'page',
+              },
+            }),
+          ],
+          { key: 'deliveries', texts: 'Notifications' },
         ),
       ],
     },

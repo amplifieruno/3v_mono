@@ -10,6 +10,7 @@ import {
   INCIDENT_NOTE_HISTORY_RESOURCE,
   INCIDENT_NOTE_RESOURCE,
   INCIDENT_RESOURCE,
+  NOTIFICATION_DELIVERY_RESOURCE,
 } from '../../data/resource-names';
 import { severitiesFrom } from '../../enums/events';
 import { INCIDENT_ACTIVITY_COLUMNS } from './incident-activity';
@@ -27,6 +28,9 @@ import {
 import { INCIDENT_NOTE_COLUMNS } from './incident-notes';
 
 export { incidentFields };
+
+/** The columns of an incident's Notifications tab: who was told or paged about it, and how it went. */
+const DELIVERY_TAB_COLUMNS = ['created_at', 'origin', 'recipient_user_id', 'recipient_address', 'channel', 'status'] as const;
 
 /** How often the incident list reads again while open, in milliseconds. */
 export const INCIDENT_POLL_MS = 15_000;
@@ -202,6 +206,15 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
                 [INCIDENT_IDENTITY_RESOURCE, INCIDENT_IDENTITY_HISTORY_RESOURCE],
                 ['identity_id', 'role', 'created_at'],
                 'none',
+              ),
+              l.panel(
+                [
+                  l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                    key: 'incident-deliveries',
+                    props: { where: [...byIncident], columns: [...DELIVERY_TAB_COLUMNS], open: 'page' },
+                  }),
+                ],
+                { key: 'deliveries', texts: 'Notifications' },
               ),
             ],
             { key: 'sections' },

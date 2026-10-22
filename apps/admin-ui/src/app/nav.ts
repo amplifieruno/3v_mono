@@ -91,6 +91,9 @@ export const NAV_ICONS = {
   recipientGroups: 'Contact',
   escalationPolicies: 'Megaphone',
   onCallSchedules: 'CalendarClock',
+  subscriptions: 'BellPlus',
+  deliveries: 'MailCheck',
+  deliveryReport: 'ClipboardList',
 } as const;
 
 /**

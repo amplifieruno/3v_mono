@@ -815,3 +815,18 @@ migration `1792365700277`.
   without renumbering the others.
 - **Expected from a framework:** an ordered related list (`order: { field }`) with drag and
   move up / down that rewrites the order field of the moved rows in one batch.
+
+### G52. An enum picker lists the whole enum, not the field's values
+- **Need:** a field that takes a subset of an enum: the notification channel of a rule, an
+  escalation step, a template, a group member or a subscription is every channel but `webhook`
+  (DB CHECK `*_channel_not_webhook`); an external address takes email or SMS only.
+- **Framework (0.6.0):** `enumField(values, namespace)` keeps `values` for validation, but the
+  input of a field with `ui.enum` is `EnumPicker` (`ui-shadcn/src/fields/default-renderers.ts`),
+  which reads `useEnumValues(enumName)` and lists every registered value; the field's own values
+  are never consulted, so the webhook was offered (and only refused on save). **[run]**
+  (`tests/modules/notification-subscriptions-page.test.tsx` listed five options before the fix.)
+- **Workaround:** subset enums registered beside the full one, same values, colours and texts:
+  `notification_person_channel` (in-app, email, SMS, push) and `notification_address_channel`
+  (email, SMS), console-only (`CONSOLE_ONLY_ENUMS`); the channel fields bind them.
+- **Expected from a framework:** the picker offers the intersection of the enum and the field's
+  declared values (or an `options` filter on the field).

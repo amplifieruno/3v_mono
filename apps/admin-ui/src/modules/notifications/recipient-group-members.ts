@@ -7,7 +7,7 @@ import {
   USER_RESOURCE,
 } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
-import { NOTIFICATION_CHANNEL_ENUM, PERSON_CHANNELS } from '../../enums/notifications';
+import { ADDRESS_CHANNELS, ADDRESS_CHANNEL_ENUM, PERSON_CHANNELS, PERSON_CHANNEL_ENUM } from '../../enums/notifications';
 import { checkNotBlank } from '../../fields/not-blank';
 
 /*
@@ -30,8 +30,7 @@ const groupField = f.relation({
 const id = f.uuid({ system: true, texts: 'ID', in: [] });
 const created = f.dateTime({ system: true, texts: 'Added', in: ['list'] });
 
-/** The channels an external address can be reached on: its kind (`recipient_group_members_address_format`). */
-export const ADDRESS_CHANNELS = ['email', 'sms'] as const;
+export { ADDRESS_CHANNELS };
 
 /** Columns of `itap.recipient_group_members` for a member who is a person of the organization. */
 export const recipientGroupUserMemberFields = {
@@ -49,7 +48,7 @@ export const recipientGroupUserMemberFields = {
       },
     },
   }),
-  channel: enumField(PERSON_CHANNELS, NOTIFICATION_CHANNEL_ENUM, {
+  channel: enumField(PERSON_CHANNELS, PERSON_CHANNEL_ENUM, {
     required: true,
     default: 'in_app',
     texts: {
@@ -78,7 +77,7 @@ export const recipientGroupAddressMemberFields = {
       },
     },
   }),
-  channel: enumField(ADDRESS_CHANNELS, NOTIFICATION_CHANNEL_ENUM, {
+  channel: enumField(ADDRESS_CHANNELS, ADDRESS_CHANNEL_ENUM, {
     required: true,
     default: 'email',
     texts: {

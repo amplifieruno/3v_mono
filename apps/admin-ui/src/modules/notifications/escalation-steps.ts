@@ -8,7 +8,7 @@ import {
   RECIPIENT_GROUP_RESOURCE,
 } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
-import { NOTIFICATION_CHANNEL_ENUM, PERSON_CHANNELS } from '../../enums/notifications';
+import { PERSON_CHANNELS, PERSON_CHANNEL_ENUM } from '../../enums/notifications';
 import { rangeValidator } from '../../fields/bounded-number';
 
 /*
@@ -61,7 +61,7 @@ const common = {
       },
     },
   }),
-  channel: enumField(PERSON_CHANNELS, NOTIFICATION_CHANNEL_ENUM, {
+  channel: enumField(PERSON_CHANNELS, PERSON_CHANNEL_ENUM, {
     required: true,
     default: 'in_app',
     texts: {

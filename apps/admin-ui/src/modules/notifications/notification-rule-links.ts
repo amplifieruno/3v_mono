@@ -8,7 +8,7 @@ import {
 import { EVENT_TYPE_ENUM } from '../../enums/events';
 import { EVENT_TYPES } from '../../enums/event-types';
 import { enumField } from '../../enums/field';
-import { NOTIFICATION_CHANNEL_ENUM, PERSON_CHANNELS } from '../../enums/notifications';
+import { PERSON_CHANNELS, PERSON_CHANNEL_ENUM } from '../../enums/notifications';
 
 const ruleField = f.relation({
   to: NOTIFICATION_RULE_RESOURCE,
@@ -37,7 +37,7 @@ export const notificationRuleEventTypeFields = {
 export const notificationRuleChannelFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
   rule_id: ruleField,
-  channel: enumField(PERSON_CHANNELS, NOTIFICATION_CHANNEL_ENUM, {
+  channel: enumField(PERSON_CHANNELS, PERSON_CHANNEL_ENUM, {
     required: true,
     write: 'create',
     texts: {

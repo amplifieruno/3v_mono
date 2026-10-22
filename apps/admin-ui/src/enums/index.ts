@@ -74,10 +74,17 @@ import {
 } from './incidents';
 import { WATCH_LIST_ENUM_TABLES, watchListKindEnum } from './watch-lists';
 import {
+  ADDRESS_CHANNEL_ENUM,
+  NOTIFICATION_DELIVERY_ORIGIN_ENUM,
   NOTIFICATION_ENUM_TABLES,
+  PERSON_CHANNEL_ENUM,
+  addressChannelEnum,
   notificationChannelEnum,
+  notificationDeliveryOriginEnum,
+  notificationDeliveryStatusEnum,
   notificationDigestModeEnum,
   notificationPriorityEnum,
+  personChannelEnum,
 } from './notifications';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
@@ -133,10 +140,22 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   notificationChannelEnum,
   notificationPriorityEnum,
   notificationDigestModeEnum,
+  notificationDeliveryStatusEnum,
+  notificationDeliveryOriginEnum,
+  personChannelEnum,
+  addressChannelEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
-export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([MERGE_KEEP_ENUM, IDENTITY_MERGE_KEEP_ENUM]);
+export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
+  MERGE_KEEP_ENUM,
+  IDENTITY_MERGE_KEEP_ENUM,
+  // The computed `notification_deliveries.origin` (which origin column is set), not a table.
+  NOTIFICATION_DELIVERY_ORIGIN_ENUM,
+  // Subsets of notification_channels for the channel pickers (G52).
+  PERSON_CHANNEL_ENUM,
+  ADDRESS_CHANNEL_ENUM,
+]);
 
 /**
  * Registered enum name → the Hasura enum table holding its values. The schema

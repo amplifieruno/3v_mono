@@ -61,6 +61,8 @@ describe('module registries', () => {
       'monitoring.startInvestigation',
       'monitoring.workspaceOccupancyFacts',
       'notification-conditions.conditionReferences',
+      'notification-delivery-report.deliveryReport',
+      'notification-delivery-report.deliveryReportFacts',
       'notifications.testNotificationRule',
       'notifications.userNames',
       'organization_invitation.inviteMember',

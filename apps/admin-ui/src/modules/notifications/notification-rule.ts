@@ -3,6 +3,7 @@ import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { notificationRuleTestBlock } from '../../blocks/notification-rule-test/notification-rule-test-block';
 import { resourceByName } from '../../data/resource-by-name';
 import {
+  NOTIFICATION_DELIVERY_RESOURCE,
   NOTIFICATION_RULE_CHANNEL_RESOURCE,
   NOTIFICATION_RULE_EVENT_TYPE_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
@@ -125,6 +126,19 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
                   }),
                 ],
                 { key: 'channels', texts: 'Channels' },
+              ),
+              l.panel(
+                [
+                  l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                    key: 'rule-deliveries',
+                    props: {
+                      where: [...byRule],
+                      columns: ['created_at', 'title', 'recipient_user_id', 'recipient_address', 'channel', 'status'],
+                      open: 'page',
+                    },
+                  }),
+                ],
+                { key: 'deliveries', texts: 'Deliveries' },
               ),
             ],
             { key: 'sections' },

@@ -76,6 +76,9 @@ import {
   FlaskConical,
   Contact,
   Megaphone,
+  BellPlus,
+  MailCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -157,6 +160,9 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   FlaskConical,
   Contact,
   Megaphone,
+  BellPlus,
+  MailCheck,
+  ClipboardList,
 };
 
 /**

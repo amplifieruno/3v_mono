@@ -125,6 +125,14 @@ export const notificationTables: TableSpec[] = [
       notification_deliveries_digested_into_fkey: 'digest',
       'notification_deliveries_digested_into_fkey#array': 'digest_items',
     },
+    // For the console's delivery log: addressed to the session user ("Mine"), the origin kind, the rendered title
+    // and the policy of an escalation step.
+    computedFields: [
+      { name: 'to_me', function: 'notification_delivery_to_me', sessionArgument: 'hasura_session' },
+      { name: 'origin', function: 'notification_delivery_origin' },
+      { name: 'title', function: 'notification_delivery_title' },
+      { name: 'escalation_policy_id', function: 'notification_delivery_escalation_policy_id' },
+    ],
     eventTriggers: [
       {
         // Non in_app channels: stubbed providers (email log, sms/push delivered). The handler claims the row, so

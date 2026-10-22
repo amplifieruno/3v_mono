@@ -144,4 +144,10 @@ export default {
   on_call_schedule: {
     doc: { topics: { index: 'On-call schedules: the rotation and who is on call now' } },
   },
+  notification_subscription: {
+    doc: { topics: { index: 'My subscriptions: filters, channel and unsubscribing' } },
+  },
+  notification_delivery: {
+    doc: { topics: { index: 'Deliveries: origin, status, retries and the delivery report' } },
+  },
 } satisfies TranslationBundle;
