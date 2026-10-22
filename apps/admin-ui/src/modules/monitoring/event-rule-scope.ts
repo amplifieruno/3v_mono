@@ -43,6 +43,8 @@ export const eventRuleScopeFields = {
     nullable: true,
     write: 'create',
     open: 'page',
+    // Only active segments are offered: an inactive or archived one holds no rule members.
+    candidates: [{ field: 'status', op: 'eq', value: 'active' }],
     providerOptions: { relationship: 'segment' },
     texts: {
       label: 'Segment',

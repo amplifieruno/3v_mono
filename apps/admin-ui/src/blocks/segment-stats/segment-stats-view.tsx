@@ -4,6 +4,7 @@ import { SegmentChurnChart } from './segment-churn-chart';
 import { SegmentMembersChart } from './segment-members-chart';
 import type { segmentStatsBlock } from './segment-stats-block';
 import { segmentDailyStats } from './segment-stats-query';
+import { dailyPoints } from './segment-stats-series';
 
 /**
  * The segment trend block's view (`itap:segment-stats`): the member count and the churn over the
@@ -14,9 +15,10 @@ import { segmentDailyStats } from './segment-stats-query';
 export function SegmentStatsView({ props, t }: BlockViewProps<typeof segmentStatsBlock>): React.ReactElement {
   const segmentId = props.segmentId ?? null;
   const series = useCustomQuery(segmentDailyStats, { segmentId: segmentId ?? '' }, { enabled: segmentId !== null });
-  const points = series.data?.points ?? [];
+  // One clock: the organization's today at the moment the answer arrived.
+  const points = series.data ? dailyPoints(series.data, new Date(series.dataUpdatedAt)).points : [];
 
-  if (series.isError) {
+  if (series.isError || series.data === null) {
     return (
       <p data-testid="segment-stats" className="text-sm text-destructive">
         {t('failed')}

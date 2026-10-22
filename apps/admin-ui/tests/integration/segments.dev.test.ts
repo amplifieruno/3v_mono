@@ -8,7 +8,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ItapAuthProvider } from '../../src/auth';
 import { SEGMENT_STATS_BINDING } from '../../src/blocks/segment-stats/segment-stats-query';
-import { segmentStatSeries } from '../../src/blocks/segment-stats/segment-stats-series';
+import { dailyPoints, segmentStatRows } from '../../src/blocks/segment-stats/segment-stats-series';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { SEGMENTS_BINDING } from '../../src/modules/segments/segment-ops';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
@@ -176,7 +176,10 @@ describe.skipIf(!DEV_STACK_ENABLED)('segments against the dev stack', () => {
       ) as never,
       queryContext(),
     );
-    const series = segmentStatSeries.parse(answer);
+    const read = segmentStatRows.parse(answer);
+    // The organization's zone comes with the rows: the window is cut on its days.
+    expect(read.timezone).toEqual(expect.any(String));
+    const series = dailyPoints(read, new Date());
     expect(series.points).toHaveLength(30);
     expect(series.points.some((point) => point.members !== null)).toBe(true);
   });

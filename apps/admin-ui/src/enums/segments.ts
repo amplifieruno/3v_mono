@@ -51,7 +51,7 @@ export const segmentStatusEnum = defineEnum({
     },
     archived: {
       label: 'Archived',
-      doc: { summary: 'Retired: no members can be added, the membership history is kept.' },
+      doc: { summary: 'Retired: no members can be added, the membership history is kept; can be set back to active.' },
     },
   },
 });

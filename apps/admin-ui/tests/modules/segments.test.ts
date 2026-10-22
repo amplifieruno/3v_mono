@@ -1,7 +1,7 @@
 import type { Check, Rule } from '@burojs/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { dailyPoints, windowStart } from '../../src/blocks/segment-stats/segment-stats-series';
+import { dailyPoints, dayIn, readStart } from '../../src/blocks/segment-stats/segment-stats-series';
 import {
   EVENT_RULE_SCOPE_RESOURCE,
   SEGMENT_DAILY_STAT_RESOURCE,
@@ -92,6 +92,12 @@ describe('segments', () => {
     expect(await archive({ status: 'archived' }, [])).toBe(false);
     expect(await archive({ status: 'inactive' }, [{ id: 'scope' }])).toBe(false);
     expect(await archive({ status: 'archived' }, [{ id: 'scope' }], false)).toBe(false);
+    // The scopes cannot be read: a generic question instead of none.
+    const failing = { list: async () => Promise.reject(new Error('offline')) };
+    const ctx = { values: { status: 'archived' }, record: { id: 'seg' }, data: failing, changed: () => true };
+    expect(await run(SEGMENT_CHECKS, 'archiveScoped', ctx)).toBe(false);
+    expect(await run(SEGMENT_CHECKS, 'archiveUnchecked', ctx)).toBe(true);
+    expect(await run(SEGMENT_CHECKS, 'archiveUnchecked', { ...ctx, data: scoped([]) })).toBe(false);
   });
 
   it('should say why the database refuses a delete (Review Focus 5)', () => {
@@ -154,21 +160,37 @@ describe('segment daily figures', () => {
   });
 
   it('should give every day of the window a point and keep a day without a row as a gap', () => {
-    const today = new Date(2026, 9, 22, 15, 0);
-    expect(windowStart(today)).toBe('2026-09-23');
+    const now = new Date('2026-10-22T15:00:00Z');
     const series = dailyPoints(
-      [
-        { day: '2026-10-20', member_count: 4, added: 4, removed: 0 },
-        { day: '2026-10-22', member_count: 3, added: 0, removed: 1 },
-        { day: '2026-08-01', member_count: 9, added: 0, removed: 0 },
-      ],
-      today,
+      {
+        timezone: 'Europe/Berlin',
+        rows: [
+          { day: '2026-10-20', member_count: 4, added: 4, removed: 0 },
+          { day: '2026-10-22', member_count: 3, added: 0, removed: 1 },
+          { day: '2026-08-01', member_count: 9, added: 0, removed: 0 },
+        ],
+      },
+      now,
     );
     expect(series.points).toHaveLength(30);
     expect(series.points[0]?.day).toBe('2026-09-23');
     expect(series.points.at(-1)).toEqual({ day: '2026-10-22', members: 3, added: 0, removed: 1 });
     expect(series.points.at(-2)).toEqual({ day: '2026-10-21', members: null, added: null, removed: null });
     expect(series.points.at(-3)?.members).toBe(4);
+  });
+
+  it('should end the window on the organization’s day, not the browser’s (I1)', () => {
+    // 22:30 UTC on 22 October is already 23 October in Tokyo and still 22 October in New York.
+    const now = new Date('2026-10-22T22:30:00Z');
+    expect(dayIn(now, 'Asia/Tokyo')).toBe('2026-10-23');
+    expect(dayIn(now, 'America/New_York')).toBe('2026-10-22');
+    expect(dayIn(now, 'Not/AZone')).toBe('2026-10-22');
+    const rows = [{ day: '2026-10-23', member_count: 7, added: 1, removed: 0 }];
+    expect(dailyPoints({ timezone: 'Asia/Tokyo', rows }, now).points.at(-1)?.members).toBe(7);
+    expect(dailyPoints({ timezone: 'America/New_York', rows }, now).points.at(-1)?.day).toBe('2026-10-22');
+    // The read reaches past the window's first day in any zone.
+    expect(readStart(now)).toBe('2026-09-20');
+    expect(dailyPoints({ timezone: 'Asia/Tokyo', rows }, now).points[0]?.day).toBe('2026-09-24');
   });
 });
 
@@ -177,6 +199,8 @@ describe('event rule scopes', () => {
     const segment = field(EVENT_RULE_SCOPE_RESOURCE, 'segment_id');
     expect(segment?.kind).toBe('relation');
     expect(segment?.system).not.toBe(true);
+    // Only active segments are offered.
+    expect(JSON.stringify(segment)).toContain('"candidates":[{"field":"status","op":"eq","value":"active"}]');
     const check = (values: Record<string, unknown>) => run(EVENT_RULE_SCOPE_CHECKS, 'scopeExactlyOne', { values });
     expect(check({ segment_id: 'seg' })).toBe(false);
     expect(check({ facility_id: 'fac', segment_id: 'seg' })).toBe(true);

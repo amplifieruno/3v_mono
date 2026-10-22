@@ -23,7 +23,8 @@ segment**. The new segment starts with a copy of the template's conditions.
 
 Only an **Active** segment is evaluated. **Inactive** keeps the segment but
 closes its rule memberships until it is active again; **Archived** retires it
-for good, with its history. **Active from** and **Active until** bound when a
+with its history: no members can be added while it is archived. Setting the
+status back to active brings it back. **Active from** and **Active until** bound when a
 dynamic segment holds its rule members at all, and the **Schedule** narrows
 that to weekly hours in the organization's time zone (no windows = always).
 
@@ -52,4 +53,5 @@ is refused, with the reason, when:
 
 Archiving is always possible. Archiving a segment that event rules are scoped
 to asks first: archived, it gains no members, so those rules stop applying to
-the people it held.
+the people it held. The question covers event rule scopes only; notification
+rules, access policies and reports naming the segment are not checked.

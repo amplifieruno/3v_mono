@@ -18,13 +18,22 @@ const instant = (value: unknown): number | null => {
   return Number.isNaN(at) ? null : at;
 };
 
-/** Whether event rule versions are scoped to the segment (read-only rows; any status). */
-async function scopedByRules(data: CheckDI['data'], id: string): Promise<boolean> {
-  const { data: rows } = await data.list(resourceByName(EVENT_RULE_SCOPE_HISTORY_RESOURCE) as never, {
-    filter: { field: 'segment_id', op: 'eq', value: id },
-    pagination: { kind: 'offset', page: 1, pageSize: 1 },
-  } as never);
-  return (rows as readonly unknown[]).length > 0;
+/**
+ * Whether event rule versions (any status) are scoped to the segment being archived: `scoped`,
+ * `clear`, `unknown` when the read failed, or `null` when the edit does not archive it.
+ */
+async function archiveScope(di: CheckDI): Promise<'scoped' | 'clear' | 'unknown' | null> {
+  const id = di.record?.id;
+  if (di.values.status !== 'archived' || !di.changed('status') || typeof id !== 'string') return null;
+  try {
+    const { data: rows } = await di.data.list(resourceByName(EVENT_RULE_SCOPE_HISTORY_RESOURCE) as never, {
+      filter: { field: 'segment_id', op: 'eq', value: id },
+      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+    } as never);
+    return (rows as readonly unknown[]).length > 0 ? 'scoped' : 'clear';
+  } catch {
+    return 'unknown';
+  }
 }
 
 /**
@@ -33,7 +42,9 @@ async function scopedByRules(data: CheckDI['data'], id: string): Promise<boolean
  *   conditions (a manual one never shows the field, so it keeps `{}`);
  * - `segments_active_window_ordered`: the end of the active window is after its start;
  * - archiving a segment rule versions are scoped to is allowed (the server keeps the scope), but
- *   it is said first: an archived segment gains no members, so those rules stop matching anyone new.
+ *   it is said first: an archived segment gains no members, so those rules stop matching anyone new
+ *   (event rule scopes only; notification-rule conditions are jsonb, not readable by a filter).
+ *   When the scopes cannot be read, a generic confirm asks instead.
  */
 export const SEGMENT_CHECKS: Check[] = [
   {
@@ -64,15 +75,18 @@ export const SEGMENT_CHECKS: Check[] = [
     anchor: 'status',
     texts:
       'Event rules are scoped to this segment. Archived, it gains no members and a dynamic one loses its rule members, so those rules stop applying to the people it held. Archive it anyway?',
-    when: async ({ values, record, data, changed }) => {
-      const id = record?.id;
-      if (values.status !== 'archived' || !changed('status') || typeof id !== 'string') return false;
-      try {
-        return await scopedByRules(data, id);
-      } catch {
-        return false;
-      }
-    },
+    when: async (di) => (await archiveScope(di)) === 'scoped',
+  },
+  {
+    // The references could not be read: still ask, rather than archive without a word.
+    id: 'archiveUnchecked',
+    on: ['edit'],
+    severity: 'warning',
+    show: 'confirm',
+    anchor: 'status',
+    texts:
+      'Could not check whether event rules are scoped to this segment. Archived, it gains no members and a dynamic one loses its rule members. Archive it anyway?',
+    when: async (di) => (await archiveScope(di)) === 'unknown',
   },
 ];
 
