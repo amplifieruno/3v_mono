@@ -93,6 +93,13 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: report_id
+computed_fields:
+  - name: requested_by_me
+    definition:
+      function:
+        schema: itap
+        name: report_requested_by_me
+      session_argument: hasura_session
 insert_permissions:
   - role: org_admin
     permission:
@@ -142,6 +149,8 @@ select_permissions:
         - template_id
         - title
         - updated_at
+      computed_fields:
+        - requested_by_me
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

@@ -50,6 +50,8 @@ export const reportTables: TableSpec[] = [
     ],
     insertOnlyColumns: ['report_type', 'parameters', 'start_date', 'end_date', 'incident_id', 'format', 'template_id'],
     noDelete: true,
+    // Whether the session user requested it (the console's "Mine" view and its lost-answer check).
+    computedFields: [{ name: 'requested_by_me', function: 'report_requested_by_me', sessionArgument: 'hasura_session' }],
     eventTriggers: [
       {
         // Fires on insert and on status changes; the handler acts only on `queued` rows (new or requeued by
