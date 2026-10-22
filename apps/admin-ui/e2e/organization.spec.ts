@@ -1,5 +1,5 @@
 import { type Page, expect, test } from '@playwright/test';
-import { ADMIN_EMAIL, NOVA_NAME, devStackEnabled, rememberOrganization, seedPassword } from './dev-stack';
+import { devStackEnabled, openSignedIn } from './dev-stack';
 
 test.skip(!devStackEnabled, 'needs the dev stack and seed (ITAP_DEV_STACK=1)');
 
@@ -18,21 +18,15 @@ const SWEEP: Record<string, string> = {
 };
 
 /*
- * One browser session for the whole flow (hasura-auth allows ten sign-ins per
- * five minutes). Every row the run creates is deleted through the UI; the
+ * One browser page for the whole flow, opened from the run's shared admin session
+ * (`global-setup.ts`; hasura-auth allows ten sign-ins per five minutes). Every row the run creates is deleted through the UI; the
  * afterAll sweep removes what a failed step left behind.
  */
 test.describe.serial('organization smoke', () => {
   let page: Page;
 
   test.beforeAll(async ({ browser }) => {
-    await rememberOrganization(NOVA_NAME);
-    page = await browser.newPage();
-    await page.goto('/');
-    await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(seedPassword());
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    page = await openSignedIn(browser);
   });
 
   test.afterAll(async () => {
@@ -58,7 +52,7 @@ test.describe.serial('organization smoke', () => {
         { sweep: SWEEP, run: RUN, key: ATTRIBUTE_KEY },
       );
     } finally {
-      await page.close();
+      await page.context().close();
     }
   });
 

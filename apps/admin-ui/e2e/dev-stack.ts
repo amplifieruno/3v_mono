@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+import { type Browser, type Page, expect } from '@playwright/test';
 import { ADMIN_EMAIL, DEV_AUTH, DEV_GRAPHQL, seedPassword } from '../tests/support/dev-hosts';
 
 /**
@@ -44,4 +46,16 @@ export async function rememberOrganization(name: string): Promise<void> {
     'mutation ($id: uuid!) { switch_organization(organization_id: $id) { organization_id } }',
     { id: target.organization_id },
   );
+}
+
+/** The signed-in admin's browser state (Nova Tower), written once per run by `global-setup.ts`. */
+export const ADMIN_STATE = fileURLToPath(new URL('./.auth/admin.json', import.meta.url));
+
+/** A page of the shared admin session (Nova Tower), opened on the dashboard. */
+export async function openSignedIn(browser: Browser): Promise<Page> {
+  const context = await browser.newContext({ storageState: ADMIN_STATE });
+  const page = await context.newPage();
+  await page.goto('/dashboard');
+  await expect(page).toHaveURL(/\/dashboard$/);
+  return page;
 }

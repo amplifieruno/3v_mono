@@ -1,5 +1,5 @@
 import { type Page, expect, test } from '@playwright/test';
-import { ADMIN_EMAIL, NOVA_NAME, devStackEnabled, rememberOrganization, seedPassword } from './dev-stack';
+import { devStackEnabled, openSignedIn } from './dev-stack';
 
 test.skip(!devStackEnabled, 'needs the dev stack and seed (ITAP_DEV_STACK=1)');
 
@@ -15,8 +15,8 @@ const SEEDED_ROOM = 'Meeting Room 12A';
 const TEMPLATE = 'Standard office floor';
 
 /*
- * One browser session for the whole flow (hasura-auth allows ten sign-ins per five
- * minutes). The run creates a facility with areas and a custom attribute and removes all
+ * One browser page for the whole flow, opened from the run's shared admin session
+ * (`global-setup.ts`; hasura-auth allows ten sign-ins per five minutes). The run creates a facility with areas and a custom attribute and removes all
  * of it, leaf areas first (an area cannot be deleted while another sits inside it, and a
  * facility not while it has areas). The afterAll sweep repeats that for a failed step.
  */
@@ -25,20 +25,14 @@ test.describe.serial('places smoke', () => {
   let facilityId = '';
 
   test.beforeAll(async ({ browser }) => {
-    await rememberOrganization(NOVA_NAME);
-    page = await browser.newPage();
-    await page.goto('/');
-    await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(seedPassword());
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    page = await openSignedIn(browser);
   });
 
   test.afterAll(async () => {
     try {
       await sweep();
     } finally {
-      await page.close();
+      await page.context().close();
     }
   });
 
