@@ -78,7 +78,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('segment preview, evaluation and membership 
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { mode: 'offset', page: 1, perPage: 100 },
+        pagination: { kind: 'offset', page: 1, pageSize: 100 },
         filter,
       } as never) as never,
       context(),

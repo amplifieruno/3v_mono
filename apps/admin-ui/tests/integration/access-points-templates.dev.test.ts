@@ -76,7 +76,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { mode: 'offset', page: 1, perPage: 200 },
+        pagination: { kind: 'offset', page: 1, pageSize: 200 },
         filter,
       } as never) as never,
       context(),

@@ -53,7 +53,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('analytics against the dev stack (Nova Tower
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { mode: 'offset', page: 1, perPage: 20 },
+        pagination: { kind: 'offset', page: 1, pageSize: 20 },
         filter: { field: 'facility_id', op: 'eq', value: facility.id },
         sort: [{ field: sortField, direction: 'desc' }],
       } as never) as never,

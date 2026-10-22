@@ -65,7 +65,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom operations against the dev stack (No
       kind: 'list',
       ref: ref(MEMBER_RESOURCE),
       resource: MEMBER_RESOURCE,
-      pagination: { mode: 'offset', page: 1, perPage: 50 },
+      pagination: { kind: 'offset', page: 1, pageSize: 50 },
       paths: {
         user_id: { field: 'user_id', resource: 'user', providerOptions: { relationship: 'user' } },
       },

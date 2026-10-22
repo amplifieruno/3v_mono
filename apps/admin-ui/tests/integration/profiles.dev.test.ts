@@ -63,7 +63,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profiles against the dev stack', () => {
         kind: 'list',
         ref: ref(PROFILE_RESOURCE),
         resource: PROFILE_RESOURCE,
-        pagination: { mode: 'offset', page: 1, perPage: 100 },
+        pagination: { kind: 'offset', page: 1, pageSize: 100 },
         ...(filter === null ? {} : { filter }),
       } as never) as never,
       context(),

@@ -60,7 +60,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('monitoring against the dev stack (Nova Towe
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { mode: 'offset', page: 1, perPage },
+        pagination: { kind: 'offset', page: 1, pageSize: perPage },
         ...(filter === null ? {} : { filter }),
         sort,
       } as never) as never,

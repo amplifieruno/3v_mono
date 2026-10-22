@@ -73,7 +73,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('devices against the dev stack', () => {
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { mode: 'offset', page: 1, perPage: 50 },
+        pagination: { kind: 'offset', page: 1, pageSize: 50 },
         filter,
       } as never) as never,
       context(),

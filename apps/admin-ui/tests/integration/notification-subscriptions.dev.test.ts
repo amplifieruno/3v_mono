@@ -68,7 +68,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('subscriptions and deliveries against the de
         kind: 'list',
         ref: { namespace: 'default', id: resource },
         resource,
-        pagination: { mode: 'offset', page: 1, perPage },
+        pagination: { kind: 'offset', page: 1, pageSize: perPage },
         ...(filter === null ? {} : { filter }),
         sort: [{ field: 'created_at', direction: 'desc' }],
       } as never) as never,
