@@ -97,9 +97,9 @@ describe.skipIf(!DEV_STACK_ENABLED)('storage files against the dev stack (Nova T
     expect(new Uint8Array(await served.arrayBuffer())).toEqual(PNG_1X1);
   });
 
-  // Skipped: hasura-storage accepts it today (bd 3v_mono-ryj, data layer); each run would leave a
-  // sensitive file org_admin cannot delete. Enable once the storage check is fixed.
-  it.skip('should refuse a sensitive kind in the organization bucket', async () => {
+  // Refused by the storage.files sensitive-kind trigger (bd 3v_mono-ryj); hasura-storage leaves a
+  // non-uploaded row without metadata behind (not sensitive, visible to org_admin).
+  it('should refuse a sensitive kind in the organization bucket', async () => {
     const file = new File(['secret'], 'passport.txt', { type: 'text/plain' });
     await expect(
       uploadStorageFile(file, { bucket: organizationId, kind: 'profile_document' }, target),

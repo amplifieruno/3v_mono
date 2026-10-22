@@ -1,13 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { asAdmin, asOrgAdmin, asUser, orgAdminToken, userToken } from './support/clients.js';
+import { createStorageClient } from '../../src/storage/storageClient.js';
+import { asAdmin, asOrgAdmin, asUser, orgAdminToken, testEnv, userToken } from './support/clients.js';
+import { trackFile } from './support/registry.js';
 import { runSql } from './support/sql.js';
-import { createTestOrg, createTwoOrgs, expectDenied, PERMISSION_CHECK, uploadFile } from './support/fixtures.js';
+import { createTestOrg, createTwoOrgs, expectDenied, expectSensitiveKindRefused, uploadFile } from './support/fixtures.js';
 
 const BUCKET = `query B($id: String!) { bucket(id: $id) { id } }`;
 const FILE = `query F($id: uuid!) { file(id: $id) { id bucketId metadata } }`;
 const FILE_NO_META = `query F($id: uuid!) { file(id: $id) { id bucketId } }`;
 const FILES_IN = `query FS($b: String!) { files(where: { bucketId: { _eq: $b } }) { id } }`;
+const FILES_META_IN = `query FM($b: String!) { files(where: { bucketId: { _eq: $b } }) { id metadata } }`;
+const UPDATE_FILE_META = `
+  mutation U($id: uuid!, $metadata: jsonb!) { updateFile(pk_columns: { id: $id }, _set: { metadata: $metadata }) { id } }
+`;
 const ADMIN_INSERT_FILE = `
   mutation I($object: files_insert_input!) { insertFile(object: $object) { id } }
 `;
@@ -52,34 +58,54 @@ describe('per-organization storage', () => {
     expect(result).toEqual({ status: 403 });
   });
 
-  // hasura-storage 0.7 inserts the row WITHOUT metadata (as the caller) and then sets metadata + is_uploaded
-  // as admin, so the insert-permission check cannot reject sensitive kinds on the upload path (see task report).
-  // Sensitive kinds are enforced on direct GraphQL inserts, and hidden from org_admin on select.
-  it.each(['profile_document', 'dsr_export', 'auth_capture'])(
-    'should reject a direct %s file insert by an org admin',
-    async (kind) => {
-      const { orgA, user } = await createTwoOrgs();
-      await expectDenied(
-        asOrgAdmin(user.id, orgA.id).request(ADMIN_INSERT_FILE, {
-          object: { bucketId: orgA.id, name: 's.txt', size: 1, mimeType: 'text/plain', metadata: { kind } },
-        }),
-        PERMISSION_CHECK,
-      );
-    },
-  );
+  // Sensitive kinds are created only by backend actions (admin secret). hasura-storage 0.7 inserts the row WITHOUT
+  // metadata (as the caller) and then sets metadata + is_uploaded as admin, so the insert-permission check alone
+  // cannot reject them; the trigger itap.storage_files_sensitive_kind_guard does (bd 3v_mono-ryj).
+  const SENSITIVE = ['profile_document', 'dsr_export', 'auth_capture', 'export'];
 
-  it.each(['profile_document', 'dsr_export', 'auth_capture'])(
-    'should keep a %s file uploaded through storage invisible to the org admin',
-    async (kind) => {
-      const { orgA, user } = await createTwoOrgs();
-      const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id, { kind });
-      if (!('id' in result)) throw new Error(`expected the upload to succeed, got status ${result.status}`);
-      const raw = await asAdmin().request<{ file: { metadata: { kind: string } } | null }>(FILE, { id: result.id });
-      expect(raw.file?.metadata.kind).toBe(kind);
-      const seen = await asOrgAdmin(user.id, orgA.id).request<{ file: unknown }>(FILE, { id: result.id });
-      expect(seen.file).toBeNull();
-    },
-  );
+  it.each(SENSITIVE)('should reject a direct %s file insert by an org admin', async (kind) => {
+    const { orgA, user } = await createTwoOrgs();
+    await expectSensitiveKindRefused(
+      asOrgAdmin(user.id, orgA.id).request(ADMIN_INSERT_FILE, {
+        object: { bucketId: orgA.id, name: 's.txt', size: 1, mimeType: 'text/plain', metadata: { kind } },
+      }),
+      kind,
+    );
+  });
+
+  it.each(SENSITIVE)('should refuse a %s file uploaded by an org admin through storage', async (kind) => {
+    const { orgA, user } = await createTwoOrgs();
+    const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id, { kind });
+    expect(result).toEqual({ status: 403 });
+    const rows = await asAdmin().request<{ files: { metadata: { kind?: string } | null }[] }>(FILES_META_IN, { b: orgA.id });
+    expect(rows.files.filter((f) => f.metadata?.kind === kind)).toHaveLength(0);
+  });
+
+  it.each(SENSITIVE)('should accept a %s file uploaded with the admin secret (backend actions)', async (kind) => {
+    const { orgA, user } = await createTwoOrgs();
+    const { id } = await createStorageClient(testEnv()).upload({
+      bucketId: orgA.id,
+      name: `${kind}.txt`,
+      mimeType: 'text/plain',
+      data: Buffer.from('backend'),
+      metadata: { kind },
+    });
+    trackFile(id);
+    const raw = await asAdmin().request<{ file: { metadata: { kind: string } } | null }>(FILE, { id });
+    expect(raw.file?.metadata.kind).toBe(kind);
+    const seen = await asOrgAdmin(user.id, orgA.id).request<{ file: unknown }>(FILE, { id });
+    expect(seen.file).toBeNull();
+  });
+
+  it('should refuse turning a member-uploaded file into a sensitive kind, even with the admin secret', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    const result = await uploadFile(orgAdminToken(user.id, orgA.id), orgA.id, { kind: 'photo' });
+    if (!('id' in result)) throw new Error(`expected the upload to succeed, got status ${result.status}`);
+    await expectSensitiveKindRefused(
+      asAdmin().request(UPDATE_FILE_META, { id: result.id, metadata: { kind: 'profile_document' } }),
+      'profile_document',
+    );
+  });
 
   it('should hide sensitive files and other buckets from org admins on select', async () => {
     const { orgA, orgB, user } = await createTwoOrgs();

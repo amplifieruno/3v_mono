@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asOrgAdmin, asUser, orgAdminToken } from './support/clients.js';
-import { createTwoOrgs, expectDenied, expectError, PERMISSION_CHECK, uploadFile } from './support/fixtures.js';
+import { createTwoOrgs, expectError, expectSensitiveKindRefused, uploadFile } from './support/fixtures.js';
 
 const FILE_NO_META = `query F($id: uuid!) { file(id: $id) { id bucketId } }`;
 const ADMIN_INSERT_FILE = `mutation I($object: files_insert_input!) { insertFile(object: $object) { id } }`;
@@ -47,15 +47,15 @@ describe('shared org-logos bucket', () => {
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it.each(['profile_document', 'dsr_export', 'auth_capture'])(
+  it.each(['profile_document', 'dsr_export', 'auth_capture', 'export'])(
     'should reject a direct %s insert into org-logos by an org admin',
     async (kind) => {
       const { orgA, user } = await createTwoOrgs();
-      await expectDenied(
+      await expectSensitiveKindRefused(
         asOrgAdmin(user.id, orgA.id).request(ADMIN_INSERT_FILE, {
           object: { bucketId: 'org-logos', name: 'test-logo.png', size: 1, mimeType: 'image/png', metadata: { kind } },
         }),
-        PERMISSION_CHECK,
+        kind,
       );
     },
   );

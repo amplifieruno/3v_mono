@@ -68,6 +68,17 @@ export async function expectDenied(promise: Promise<unknown>, expected: string |
   return error;
 }
 
+/**
+ * Asserts a storage.files write was refused by the sensitive-kind trigger (`itap.storage_files_sensitive_kind_guard`,
+ * bd 3v_mono-ryj): Hasura reports the check violation as a `permission-error` naming the kind.
+ */
+export async function expectSensitiveKindRefused(promise: Promise<unknown>, kind: string): Promise<void> {
+  const rejection = await rejectionOf(promise, 'Expected a refused sensitive file kind');
+  expect(rejection).toBeInstanceOf(HasuraError);
+  expect((rejection as HasuraError).code).toBe('permission-error');
+  expect((rejection as HasuraError).message).toContain(`file_kind_sensitive:${kind}`);
+}
+
 export type MemberStatus = 'active' | 'suspended' | 'deactivated';
 
 const INSERT_ORG = `
