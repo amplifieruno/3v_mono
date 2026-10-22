@@ -6,6 +6,8 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# pnpm.patchedDependencies in the root package.json points here; install fails without it
+COPY patches ./patches
 COPY apps/admin-ui/package.json ./apps/admin-ui/
 RUN HUSKY=0 pnpm install --frozen-lockfile --prefer-offline --filter admin-ui...
 

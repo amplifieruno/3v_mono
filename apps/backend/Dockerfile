@@ -11,6 +11,8 @@ WORKDIR /app
 
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# pnpm.patchedDependencies in the root package.json points here; install fails without it
+COPY patches ./patches
 COPY apps/backend/package.json ./apps/backend/
 
 # Install dependencies for the specific workspace (skip all scripts)
@@ -70,6 +72,8 @@ WORKDIR /app
 
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# pnpm.patchedDependencies in the root package.json points here; install fails without it
+COPY patches ./patches
 COPY apps/backend/package.json ./apps/backend/
 RUN pnpm install --ignore-scripts --filter backend...
 
