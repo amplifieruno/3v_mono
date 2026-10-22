@@ -69,9 +69,10 @@ export function usePlanContext({
     if (plans.isError || areas.isError) return { status: 'error' };
     if (planRows === undefined || areaRows === undefined) return { status: 'pending' };
     const allAreas = rowsOf(areaRows, planAreaOf);
-    const plan = planOfChain(areaChain(selfId, startId, allAreas), rowsOf(planRows, floorPlanOf));
+    const allPlans = rowsOf(planRows, floorPlanOf);
+    const plan = planOfChain(areaChain(selfId, startId, allAreas), allPlans);
     if (plan === null) return { status: 'none' };
-    return { status: 'ready', plan, areas: areasOnPlan(allAreas, plan.area_id) };
+    return { status: 'ready', plan, areas: areasOnPlan(allAreas, plan, allPlans) };
   }, [enabled, plans.isError, areas.isError, planRows, areaRows, selfId, startId]);
 }
 

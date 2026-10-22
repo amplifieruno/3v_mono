@@ -119,7 +119,7 @@ export const areaFields = {
       description: 'Drawn on the floor plan of this area, or of the nearest area it lies inside.',
       doc: {
         summary:
-          'The area’s outline on its floor plan, a polygon or a circle in the plan’s pixels, shown on the floor plan with the area’s occupancy; a virtual zone (a geofence) is only its shape. An area with a floor plan of its own is drawn on that plan, any other area on the plan of the nearest area it lies inside. Every point must lie on the plan image.',
+          'The area’s outline on its floor plan, a polygon or a circle in the plan’s pixels, shown on the floor plan with the area’s occupancy; a virtual zone (a geofence) is only its shape. An area with a floor plan of its own is drawn on that plan, any other area on the plan of the nearest area it lies inside. The whole shape must lie on the plan image. Drawing needs a mouse, pen or touch; points cannot be typed in yet.',
       },
     },
   }),

@@ -36,8 +36,13 @@ Edit the area and use the **Shape** field:
 - **Circle**: click to place the centre, click again to set the radius.
 - Drag a point (or the centre) to move it. *Clear shape* removes the shape.
 
-Every point must lie **on the plan image**; the form refuses a shape with a
-point outside it, or with fewer than 3 points, before saving. The other
+Drawing needs a mouse, pen or touch: points cannot yet be typed in or moved
+with the keyboard (the tool buttons and *Clear shape* can be used with the
+keyboard).
+
+Every point, and the whole of a circle, must lie **on the plan image**; the
+form refuses a shape that reaches outside it, or a polygon with fewer than 3
+points, before saving. The other
 shapes on the plan are shown faintly to help you place the new one. On the
 area page the shape shows as a small preview.
 

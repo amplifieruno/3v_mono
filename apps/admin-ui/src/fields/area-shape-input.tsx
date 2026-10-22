@@ -80,7 +80,7 @@ export function AreaShapeInput(
       {locked ? null : (
         <div
           className="flex flex-wrap items-center gap-2"
-          role="toolbar"
+          role="group"
           aria-label={t('console.areaShape.tools')}
         >
           <Button

@@ -89,8 +89,16 @@ describe('shape validation (mirrors itap.valid_shape)', () => {
       );
     }
     const circle = validateShape({ type: 'Circle', center: [-5, 10], radius: 3 }, SIZE);
-    expect(circle?.code).toBe('areaShape.centerOutside');
-    if (circle) await expectTranslated(circle);
+    expect(circle?.code).toBe('areaShape.circleOutside');
+    // The whole disc must lie on the plan, not only its centre.
+    const edge = validateShape({ type: 'Circle', center: [1150, 400], radius: 60 }, SIZE);
+    expect(edge?.code).toBe('areaShape.circleOutside');
+    if (edge) {
+      expect(await expectTranslated(edge)).toBe(
+        'The circle (centre 1150, 400, radius 60) reaches outside the floor plan (1200 × 800 px).',
+      );
+    }
+    expect(validateShape({ type: 'Circle', center: [1140, 400], radius: 60 }, SIZE)).toBeNull();
     expect(validateShape(polygon([0, 0], [1200, 0], [1200, 800]), SIZE)).toBeNull();
   });
 

@@ -252,3 +252,10 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Related (G17 again):** the plan-space fields (`areaShape()`, `planPosition()`) keep points on
   the floor-plan image; the size comes from the plan the input resolved, so the input publishes it
   per field channel (`src/fields/plan-size-registry.ts`) for the validator.
+- **Related (handles by name):** `src/data/resource-by-name.ts` casts `{ kind: 'resource', ref: name }`
+  to a `RelationTarget` so a resource can place a block or related list that reads itself (or a
+  resource importing it) without an import cycle. It relies on buro internals reading only `kind`
+  and `ref` of a handle (`handleRef` in `blocks/schemas.ts` / `screens/builder.ts`, `targetRef` in
+  `screens/sources.ts`); a buro change there breaks it at `defineResource` time (covered by
+  `checkApp` and the area / floor plan screen tests). Expected: a public by-name target
+  (`resourceRef('area')`) for sources and related lists.

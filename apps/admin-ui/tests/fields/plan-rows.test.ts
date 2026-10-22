@@ -91,8 +91,24 @@ describe('which plan a place lies on', () => {
   });
 
   it('should list the shaped areas inside the plan’s area, the area included', () => {
-    expect(areasOnPlan(AREAS, 'floor').map((area) => area.id)).toEqual(['floor', 'room']);
+    const floor = plan('p-floor', 'floor');
+    expect(areasOnPlan(AREAS, floor, [floor]).map((area) => area.id)).toEqual(['floor', 'room']);
+    // The plan itself counts even when the facility's plans were not read.
+    expect(areasOnPlan(AREAS, floor, []).map((area) => area.id)).toEqual(['floor', 'room']);
     expect(AREAS).toHaveLength(5);
+  });
+
+  it('should draw an area only on its nearest plan when plans nest', () => {
+    const tower = plan('p-tower', 'tower');
+    const floor = plan('p-floor', 'floor');
+    const wing = plan('p-wing', 'wing');
+    const ids = (onPlan: readonly { id: string }[]) => onPlan.map((area) => area.id);
+    // The floor carries its own plan, the room lies on the floor's: the tower plan keeps "other".
+    expect(ids(areasOnPlan(AREAS, tower, [tower, floor]))).toEqual(['other']);
+    expect(ids(areasOnPlan(AREAS, floor, [tower, floor]))).toEqual(['floor', 'room']);
+    // A plan on the wing takes the room away from the floor.
+    expect(ids(areasOnPlan(AREAS, floor, [tower, floor, wing]))).toEqual(['floor']);
+    expect(ids(areasOnPlan(AREAS, wing, [tower, floor, wing]))).toEqual(['room']);
   });
 
   it('should refuse plan rows without a positive size', () => {

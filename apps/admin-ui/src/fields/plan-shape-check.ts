@@ -1,12 +1,12 @@
 import type { FieldProblem } from './field-issue';
-import { type PlanSize, isInsidePlan, parsePoint } from './plan-geometry';
+import { type PlanSize, isInsidePlan, parsePoint, shapeBounds } from './plan-geometry';
 
 /**
  * The checks of plan-space values, before any request. The structure mirrors the database
  * (`itap.valid_shape`, `itap.valid_point`, migrations `create_validation_helpers` and
  * `count_distinct_shape_points`): exactly the keys of the type, at least one ring, every point
  * two numbers, at least 3 distinct points per ring, a radius above 0. The console also keeps
- * every point on the floor-plan image when the plan is known (`size`); the database cannot,
+ * every point (and a circle's whole disc) on the floor-plan image when the plan is known (`size`); the database cannot,
  * as a shape does not name its plan.
  */
 
@@ -46,12 +46,15 @@ function checkCircle(
   if (typeof shape.radius !== 'number' || !(shape.radius > 0)) {
     return { code: 'areaShape.badRadius', text: 'A circle needs a radius greater than 0.' };
   }
-  if (size !== null && !isInsidePlan(center, size)) {
+  if (size === null) return null;
+  const radius = shape.radius;
+  const box = shapeBounds({ type: 'Circle', center, radius });
+  if (!isInsidePlan([box.minX, box.minY], size) || !isInsidePlan([box.maxX, box.maxY], size)) {
     const [x, y] = center;
     return {
-      code: 'areaShape.centerOutside',
-      text: `The circle’s centre (${x}, ${y}) lies outside the floor plan (${size.width} × ${size.height} px).`,
-      params: { x, y, ...sizeParams(size) },
+      code: 'areaShape.circleOutside',
+      text: `The circle (centre ${x}, ${y}, radius ${radius}) reaches outside the floor plan (${size.width} × ${size.height} px).`,
+      params: { x, y, radius, ...sizeParams(size) },
     };
   }
   return null;

@@ -205,6 +205,22 @@ describe('floor plan block', () => {
     expect(screen.queryByTestId(`floor-plan-access-point:${id(22)}`)).toBeNull();
   });
 
+  it('should leave out areas drawn on a nearer plan of their own', async () => {
+    // The server room carries its own plan: its shape is in that plan's pixels, not Floor 2's.
+    const roomPlan = { ...PLAN_ROW, id: 'room-plan', area_id: ROOM, name: 'Server room plan' };
+    await render({
+      plans: { rows: [PLAN_ROW] },
+      facilityPlans: { rows: [PLAN_ROW, roomPlan] },
+      areas: { rows: AREAS, total: AREAS.length },
+    });
+    const drawing = await screen.findByRole('img', { name: 'Floor plan Floor 2 with its areas' });
+    const titles = [...drawing.querySelectorAll('path > title, circle > title')].map(
+      (t) => t.textContent,
+    );
+    expect(titles).toEqual(['Floor 2: 0 inside', 'Lounge: 5 / 40']);
+    expect(screen.queryByTestId(`floor-plan-label:${ROOM}`)).toBeNull();
+  });
+
   it('should say when there is no plan, and when no area has a shape', async () => {
     const empty = await render({ plans: { rows: [] }, areas: { rows: [] } });
     expect(await screen.findByText('No floor plan.')).toBeDefined();

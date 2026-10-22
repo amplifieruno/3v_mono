@@ -165,8 +165,8 @@ export default {
         badPoint: 'Point {{index}} is not a pair of numbers.',
         tooFewPoints: 'A shape needs at least 3 different points; add more points or clear the shape.',
         outside: 'Point {{index}} ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
-        centerOutside:
-          'The circle’s centre ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
+        circleOutside:
+          'The circle (centre {{x}}, {{y}}, radius {{radius}}) reaches outside the floor plan ({{width}} × {{height}} px).',
       },
       planPosition: {
         notPoint: 'A position must be a point [x, y].',

@@ -23,10 +23,16 @@ export function FloorPlanView({
   t,
 }: BlockViewProps<typeof floorPlanBlock>): React.ReactElement {
   const app = useApp();
-  const { plans, areas } = data as InferBlockData<typeof floorPlanBlock>;
-  const plan = floorPlanOf(plans.rows[0]);
-  if (plan === null) return <p className="text-sm text-muted-foreground">{t('none')}</p>;
-  const onPlan = areasOnPlan(rowsOf(areas.rows, planAreaOf), plan.area_id);
+  const { plans, areas, facilityPlans } = data as Partial<InferBlockData<typeof floorPlanBlock>>;
+  const plan = floorPlanOf(plans?.rows[0]);
+  if (plan === null || areas === undefined) {
+    return <p className="text-sm text-muted-foreground">{t('none')}</p>;
+  }
+  const onPlan = areasOnPlan(
+    rowsOf(areas.rows, planAreaOf),
+    plan,
+    rowsOf(facilityPlans?.rows, floorPlanOf),
+  );
   const pointRows = (data as { readonly accessPoints?: { readonly rows?: unknown } }).accessPoints
     ?.rows;
   const accessPoints = rowsOf(pointRows, planAccessPointOf);
@@ -34,7 +40,7 @@ export function FloorPlanView({
   const hrefOf = (id: string): string =>
     resourceShowHref(app.registry, def, PLAN_AREA_RESOURCE, id);
   const total = typeof areas.total === 'number' ? areas.total : areas.rows.length;
-  const scale = (plans.rows[0] as Readonly<Record<string, unknown>> | undefined)?.scale_m_per_px;
+  const scale = (plans?.rows[0] as Readonly<Record<string, unknown>> | undefined)?.scale_m_per_px;
 
   return (
     <div data-testid="floor-plan" className="flex flex-col gap-3">

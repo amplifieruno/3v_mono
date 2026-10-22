@@ -107,11 +107,23 @@ export function rowsOf<T>(rows: unknown, parse: (row: Row) => T | null): T[] {
 }
 
 /**
- * The areas drawn on the plan of area `planAreaId`: that area and every area inside it
- * (its id on their path), the ones with a shape only.
+ * The areas drawn on `plan`: the shaped areas whose nearest plan outwards (the area's own
+ * first, `planOfChain`) is this one. An area inside the plan's area that carries a plan of its
+ * own, or lies inside a nearer one, is drawn in that plan's pixels and so is left out here.
+ * `plans` are the facility's plans (the plan itself counts even if missing from them).
  */
-export function areasOnPlan(areas: readonly PlanAreaRow[], planAreaId: string): PlanAreaRow[] {
-  return areas.filter((area) => area.shape !== null && area.path.includes(planAreaId));
+export function areasOnPlan(
+  areas: readonly PlanAreaRow[],
+  plan: FloorPlanRow,
+  plans: readonly FloorPlanRow[],
+): PlanAreaRow[] {
+  const known = plans.some((candidate) => candidate.id === plan.id) ? plans : [...plans, plan];
+  return areas.filter(
+    (area) =>
+      area.shape !== null &&
+      area.path.includes(plan.area_id) &&
+      planOfChain([...area.path].reverse(), known)?.id === plan.id,
+  );
 }
 
 /**
