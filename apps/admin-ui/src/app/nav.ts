@@ -38,6 +38,7 @@ export const NAV_ICONS = {
   deviceEvents: 'History',
   startRecognition: 'ScanFace',
   stopRecognition: 'CircleStop',
+  liveWall: 'MonitorPlay',
 } as const;
 
 /**

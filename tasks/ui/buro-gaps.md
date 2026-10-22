@@ -361,3 +361,16 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** a series source (`source.list` with a larger cap for blocks
   that draw rather than list, or a provider-side bucketed read such as
   `source.series(target, { where, x, bucket, measures })`).
+
+### G26. A `source.list` condition cannot take a list value (`in` over literals)
+- **Need:** the live wall (`itap:live-wall`, plan 03 Task 3) lists the cameras with recognition
+  on; the natural read also narrows by `device_type in [static_video_camera, ptz_camera,
+  thermal_camera]`.
+- **Framework (0.6.0):** a `where` value of `source.list` (and `related-list`) is a
+  `ScreenLiteral | PortableFieldRef`, and `ScreenLiteral` is `string | number | boolean | null`:
+  an array is a type error, so the `in` / `nin` operators the list filters support cannot be
+  used from a block or a related list. **[code]**
+- **Workaround:** the condition is left out (only cameras can have recognition on: the start
+  action refuses other devices).
+- **Expected from a framework:** list literals (`readonly ScreenLiteral[]`) for `in` / `nin`
+  conditions.

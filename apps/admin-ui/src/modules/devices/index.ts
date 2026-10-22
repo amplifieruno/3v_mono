@@ -1,4 +1,6 @@
 import { healthChartBlock } from '../../blocks/health-chart/health-chart-block';
+import { liveCameraBlock } from '../../blocks/live-camera/live-camera-block';
+import { liveWallBlock } from '../../blocks/live-camera/live-wall-block';
 import {
   deviceHealthSeries,
   deviceHealthSeriesOperation,
@@ -16,6 +18,7 @@ import { deviceArea, deviceAreaFields } from './device-area';
 import { deviceEvent, deviceEventFields } from './device-event';
 import { deviceFields } from './device-fields';
 import { deviceHealthMetric, deviceHealthMetricFields } from './device-health-metric';
+import { liveWallPage } from './live-wall-page';
 import {
   recognitionStart,
   recognitionStartOperation,
@@ -28,8 +31,9 @@ import {
 /**
  * Devices: the cameras, access terminals and sensors of each facility (one record type per
  * kind), with their health, credentials, coverage and the areas they also cover; the health
- * samples and device events (append-only logs: no count per page, keyset paging); and
- * recognition started, stopped and watched on each camera.
+ * samples and device events (append-only logs: no count per page, keyset paging); recognition
+ * started, stopped and watched on each camera; and the cameras live with the faces recognised
+ * on them, one per camera page and all together on the live wall.
  */
 export const devicesModule = {
   name: 'devices-module',
@@ -43,6 +47,9 @@ export const devicesModule = {
     recognitionStop,
     deviceHealthSeries,
     healthChartBlock,
+    liveCameraBlock,
+    liveWallBlock,
+    liveWallPage,
   ],
   tables: {
     [DEVICE_RESOURCE]: hasuraTable('devices', { selectFields: selectFieldsOf(deviceFields) }),

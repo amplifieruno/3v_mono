@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 /**
  * Dev endpoints go through this proxy so the console talks to one origin:
  * Hasura GraphQL (with websockets), Nhost auth and storage (prefix stripped),
- * and the backend's Socket.io.
+ * the backend's Socket.io, and the stream-server's HLS streams (`/streams/<id>/live.m3u8`).
  */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -33,6 +33,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         ws: true,
+      },
+      '/streams': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
       },
     },
   },

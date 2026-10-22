@@ -103,8 +103,8 @@ export function AppRuntime({
   }, []);
 
   const context = React.useMemo(
-    () => (booted ? { auth, resolver: booted.resolver } : null),
-    [auth, booted],
+    () => (booted ? { auth, resolver: booted.resolver, store } : null),
+    [auth, booted, store],
   );
 
   if (!booted || !context) return null;

@@ -71,6 +71,38 @@ and after each start or stop:
   the last one failed (for example the stream or the face recognition service
   being unreachable).
 
+## Live view
+
+A camera's **Live** tab plays its stream from the stream server (the stream id
+is the last part of the stream URL) and draws the faces recognised on it as
+they arrive: a box around each face, labelled with the person's name when the
+face matched a profile, **New** when it created a new identity, the identity
+code for a known identity without a profile, or "Unidentified face" for a face
+neither matched nor good enough to keep. Hover a box for the match
+confidence. Each box stays two seconds and then fades; a newer detection of the
+same person replaces it. Faces only appear while recognition runs on the
+camera.
+
+Two badges show where the view stands: the **stream** (connecting, live, down)
+and the **detections** (connecting, live, reconnecting, stopped). Under the
+picture the faces received since the view opened are counted: all, known,
+new and unidentified.
+
+- A camera whose stream does not answer shows **Stream unavailable** instead
+  of the picture, with **Try again**; the view also tries again by itself
+  every 20 seconds.
+- Detections arrive over a live connection signed with your organization
+  session. When the session is renewed the connection is reopened by itself;
+  when you switch organization the old connection is closed at once, so no
+  face of the previous organization is shown.
+
+## Live wall
+
+**Devices → Live wall** shows every camera running recognition in the facility
+chosen in the sidebar (all facilities when none is chosen), each live as on its
+own Live tab, with its name linking to the camera. Start recognition on a
+camera to put it on the wall.
+
 ## Position and coverage
 
 Edit the device and click on the floor plan of its area to place it under

@@ -1,5 +1,6 @@
 import { defineResource, facts, relatedList } from '@burojs/core';
 import { healthChartBlock } from '../../blocks/health-chart/health-chart-block';
+import { liveCameraBlock } from '../../blocks/live-camera/live-camera-block';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import {
@@ -20,6 +21,7 @@ export const DEVICE_LIST_REFETCH_MS = 30_000;
 
 /** The keyed panels only one kind of device has (hidden from the others with `without.nodes`). */
 const STREAM_PANEL = 'stream';
+const LIVE_PANEL = 'live';
 const POLICY_PANEL = 'policy';
 /** The recognition status facts on the header: cameras only (the action refuses the others). */
 const RECOGNITION_FACTS = 'recognition-status';
@@ -53,7 +55,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
     items: (t) => {
       const camera = () =>
         t.type({ without: { fields: TERMINAL_FIELD_NAMES, nodes: [POLICY_PANEL] } });
-      const notCamera = [STREAM_PANEL, RECOGNITION_FACTS];
+      const notCamera = [STREAM_PANEL, LIVE_PANEL, RECOGNITION_FACTS];
       return {
         ...Object.fromEntries(CAMERA_DEVICE_TYPES.map((type) => [type, camera()])),
         access_terminal: t.type({ without: { fields: CAMERA_FIELD_NAMES, nodes: notCamera } }),
@@ -122,6 +124,15 @@ export const device = defineResource(DEVICE_RESOURCE, {
                 l.grid(['created_at', 'updated_at']),
               ],
               { key: 'details', texts: 'Details' },
+            ),
+            l.panel(
+              [
+                l.place(liveCameraBlock, {
+                  key: 'live-camera',
+                  props: { deviceId: l.ref('record', 'id') },
+                }),
+              ],
+              { key: LIVE_PANEL, texts: 'Live' },
             ),
             l.panel(
               [

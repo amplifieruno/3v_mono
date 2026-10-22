@@ -21,11 +21,13 @@
     "@burojs/react": "0.6.0",
     "@burojs/ui-shadcn": "0.6.0",
     "@tanstack/react-query": "5.100.7",
+    "hls.js": "1.7.3",
     "i18next": "^25.0.0",
     "lucide-react": "1.48.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.6.0",
+    "socket.io-client": "4.8.4",
     "zod": "^3.24.3"
   },
   "devDependencies": {
