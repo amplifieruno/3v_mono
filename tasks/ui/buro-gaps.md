@@ -1054,3 +1054,49 @@ migration `1792365700277`.
 - **Workaround:** two item flows with the same label, each with its own `when` on the record's type
   (`run_again` with threshold, limit and fuzzy; `run_attributes_again` with the limit only).
 - **Expected from a framework:** `record` (and `with` sources) readable from a flow form's `when`s.
+
+### G66. A query's poll interval cannot follow its own answer
+- **Need:** the search results block (plan 09) reads a search request again while it is queued or
+  running, and stops once it finished.
+- **Framework (0.6.0):** `useCustomQuery` options type `refetchInterval` as `number | false`
+  (`NativeQueryOptions`), although `useQueryDescriptor` hands the option to TanStack Query
+  unchanged, whose `refetchInterval` also takes a function of the query (its latest data).
+  **[code]**
+- **Workaround:** `pollWhile(pending, ms)` (`src/data/poll-while.ts`) builds TanStack's function and
+  passes it through the declared type; the results block polls with it (no state or effect).
+  `itap:report-status` still keeps the last status in state.
+- **Expected from a framework:** `refetchInterval?: number | false | ((query) => number | false)`.
+
+### G67. A flow's warnings are not shown while its form is filled in
+- **Need:** editing a saved search says, as soon as the search itself is changed, that saving
+  resets its alert baseline (plan 09 Review Focus 5).
+- **Framework (0.6.0):** a flow evaluates its `checks` on submit: warnings appear on a last step
+  before sending (Back / Cancel / submit), never inline beside the form, whatever `trigger`
+  (`'always'`) or `anchor` says; a check's `record` is available there only. **[run]** (jsdom page
+  test: no warning after changing a field and leaving it; the warning step on submit).
+- **Workaround:** the baseline warning is a flow check (`savedSearchBaselineReset`, comparing the
+  record's definition with the form's) shown on that last step, so the reset is confirmed before
+  anything is sent; the form's "Schedule and alerts" panel also says it in its description, and the
+  saved search page shows "No alert baseline yet" from the row itself after saving.
+- **Expected from a framework:** a flow form running its checks live (debounced) as a record form
+  does, honouring `trigger` and `anchor`.
+
+### G68. A layout body cannot be shared by forms with different field maps
+- **Need:** the saved search form is the search form (`searchFormBody`) plus name, sharing,
+  schedule and alerts.
+- **Framework (0.6.0):** `Layout<F>` is typed by its own field map, and a body written for a smaller
+  map does not type-check inside a larger one, even generically (`Layout<F extends Search>`
+  narrows every key to `Extract<keyof F, string>`). **[run]** (typecheck)
+- **Workaround:** the saved search body calls `searchFormBody(l as unknown as Layout<SearchFields>)`;
+  the nodes name only search fields, which the larger form has too, and `checkApp` checks the result.
+- **Expected from a framework:** a layout of a superset map assignable to a subset's, or a typed
+  "fragment" helper.
+
+### G69. `runFlow` cannot script a flow's custom query sources
+- **Need:** unit tests of "New saved search" and "Edit" (both read `with` sources over custom
+  queries: the organization's default threshold, the saved search as form values).
+- **Framework (0.6.0):** `runFlow` scripts mutations and resource rows only; a custom query throws
+  "custom queries are not scripted". **[code]**
+- **Workaround:** both flows are tested on screen over a fake Hasura
+  (`tests/modules/saved-search-page.test.tsx`); Run now (no sources) is tested with `runFlow`.
+- **Expected from a framework:** `queries` scripts in `RunFlowOptions`, as `mutations`.

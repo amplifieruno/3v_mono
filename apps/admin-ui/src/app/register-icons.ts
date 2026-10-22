@@ -98,6 +98,9 @@ import {
   FilePlus,
   ScanSearch,
   RotateCw,
+  BookmarkCheck,
+  BookmarkPlus,
+  Play,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -201,6 +204,9 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   FilePlus,
   ScanSearch,
   RotateCw,
+  BookmarkCheck,
+  BookmarkPlus,
+  Play,
 };
 
 /**

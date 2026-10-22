@@ -15,6 +15,7 @@ import { notificationConditionsImplementations } from './notification-conditions
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
 import { reportParametersImplementations } from './report-parameters-impl';
+import { searchFiltersImplementations } from './search-filters-impl';
 import { secretImplementations } from './secret-impl';
 import { segmentConditionsImplementations } from './segment-conditions-impl';
 import { storageFileImplementations } from './storage-file-impl';
@@ -40,7 +41,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
  * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
  * (`itap.segment-conditions`) and a dashboard's widgets (`itap.dashboard-widgets`), a report schedule's cron with its sentence
- * (`itap.cron`) and a report's or template's parameters (`itap.report-parameters`).
+ * (`itap.cron`), a report's or template's parameters (`itap.report-parameters`) and a search's filters
+ * in words (`itap.search-filters`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -70,4 +72,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   dashboardWidgetsImplementations,
   cronImplementations,
   reportParametersImplementations,
+  searchFiltersImplementations,
 );

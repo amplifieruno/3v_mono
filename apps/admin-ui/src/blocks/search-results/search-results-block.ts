@@ -19,7 +19,7 @@ export const searchResultsBlock = defineBlock('itap:search-results', {
     photo_low_quality:
       'The face in the photo is too small, blurred, dark or turned away to compare, so nothing was searched. Use a sharper, frontal photo.',
     photo_invalid_image: 'The file could not be read as an image, so nothing was searched.',
-    error: 'The search failed: {{detail}}',
+    error: 'The search failed on the platform. Run it again; if it keeps failing, ask your administrator to check the search service.',
     severalFaces: 'The photo shows {{count}} faces; the largest one was searched.',
     none: 'Nobody matched. Lower the threshold, include fuzzy matches or loosen the filters to widen the search.',
     found: '{{count}} identities found, best match first.',

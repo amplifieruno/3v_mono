@@ -120,6 +120,10 @@ export const NAV_ICONS = {
   faceSearch: 'ScanSearch',
   searchHistory: 'History',
   runSearchAgain: 'RotateCw',
+  savedSearches: 'BookmarkCheck',
+  newSavedSearch: 'BookmarkPlus',
+  editSavedSearch: 'FilePen',
+  runSavedSearch: 'Play',
 } as const;
 
 /**

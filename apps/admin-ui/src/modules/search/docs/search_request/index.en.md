@@ -69,8 +69,10 @@ and the match type. The code opens the identity, the name opens the profile.
 
 ## Search history
 
-Your history lists every search you ran, by hand or through your saved
-searches, newest first. A search's page shows its outcome and results again,
+Your history lists every search you ran, by hand (Run now on a saved search
+included) or through the schedules of your saved searches, newest first. A
+scheduled run names its saved search; its filters are shown in words.
+A search's page shows its outcome and results again,
 and how it was run. **Run again** repeats it with the same photo and filters
 against today's identities; you can adjust the threshold, the number of results
 and fuzzy matches first. A face search whose photo was deleted cannot be run

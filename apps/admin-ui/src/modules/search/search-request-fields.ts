@@ -1,7 +1,9 @@
 import { f } from '@burojs/field-types';
+import { SAVED_SEARCH_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { SEARCH_STATUS_ENUM, SEARCH_STATUSES, SEARCH_TYPE_ENUM, SEARCH_TYPES } from '../../enums/search';
 import { dateTime } from '../../fields/date-time';
+import { searchFiltersField } from '../../fields/search-filters';
 import { storageFile } from '../../fields/storage-file';
 import { SEARCH_PHOTO_KIND } from './search-fields';
 
@@ -44,8 +46,7 @@ export const searchRequestFields = {
       doc: { summary: 'The photo searched with; only you can open it. Empty for an attribute search or once the photo was deleted.' },
     },
   }),
-  filters: f.json({
-    system: true,
+  filters: searchFiltersField({
     in: [...showOnly],
     texts: {
       label: 'Filters',
@@ -109,10 +110,22 @@ export const searchRequestFields = {
     in: [...showOnly],
     texts: { label: 'Duration (ms)', doc: { summary: 'How long the search took, in milliseconds.' } },
   }),
-  saved_search_id: f.uuid({
+  saved_search_id: f.relation({
+    to: SAVED_SEARCH_RESOURCE,
+    system: true,
+    nullable: true,
+    in: [...showOnly],
+    open: 'page',
+    providerOptions: { relationship: 'saved_search' },
+    texts: {
+      label: 'Saved search',
+      doc: { summary: 'The saved search whose scheduled run this was; empty for a search run by hand (Run now included).' },
+    },
+  }),
+  bulk_job_id: f.uuid({
     system: true,
     nullable: true,
     in: [],
-    texts: { label: 'Saved search', doc: { summary: 'The saved search whose run this was; empty for a search run by hand.' } },
+    texts: { label: 'Bulk job', doc: { summary: 'The bulk search job whose row this search was; empty for a search run by hand.' } },
   }),
 };

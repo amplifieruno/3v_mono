@@ -92,3 +92,4 @@ export const REPORT_FACILITY_RESOURCE = 'report_facility';
 export const REPORT_SEGMENT_RESOURCE = 'report_segment';
 export const SEARCH_REQUEST_RESOURCE = 'search_request';
 export const SEARCH_WORKSPACE_RESOURCE = 'search_workspace';
+export const SAVED_SEARCH_RESOURCE = 'saved_search';

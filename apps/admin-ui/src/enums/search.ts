@@ -14,12 +14,15 @@ export const SEARCH_MATCH_TYPE_ENUM = 'search_match_type';
 export const SEARCH_GENDER_ENUM = 'search_gender';
 /** `filters.linked`: whether the identity is linked to a profile. */
 export const SEARCH_LINKED_ENUM = 'search_linked';
+/** `saved_searches.last_run_status` (a CHECK, not a table): how a saved search's last scheduled run ended. */
+export const SAVED_SEARCH_RUN_STATUS_ENUM = 'saved_search_run_status';
 
 export const SEARCH_TYPES = ['facial', 'attribute', 'combined'] as const;
 export const SEARCH_STATUSES = ['queued', 'running', 'completed', 'failed'] as const;
 export const SEARCH_MATCH_TYPES = ['exact', 'partial', 'fuzzy'] as const;
 export const SEARCH_GENDERS = ['male', 'female'] as const;
 export const SEARCH_LINKED = ['linked', 'unlinked'] as const;
+export const SAVED_SEARCH_RUN_STATUSES = ['completed', 'failed', 'skipped'] as const;
 
 export type SearchType = (typeof SEARCH_TYPES)[number];
 export type SearchMatchType = (typeof SEARCH_MATCH_TYPES)[number];
@@ -88,6 +91,19 @@ export const searchLinkedEnum = defineEnum({
   texts: {
     linked: { label: 'Linked to a profile', doc: { summary: 'Only identities of known people (with a profile).' } },
     unlinked: { label: 'Without a profile', doc: { summary: 'Only unknown identities (no profile).' } },
+  },
+});
+
+export const savedSearchRunStatusEnum = defineEnum({
+  name: SAVED_SEARCH_RUN_STATUS_ENUM,
+  values: enumValues(SAVED_SEARCH_RUN_STATUSES, { completed: 'success', failed: 'destructive', skipped: 'secondary' }),
+  texts: {
+    completed: { label: 'Completed', doc: { summary: 'The scheduled run searched; its results are the last run’s results.' } },
+    failed: { label: 'Failed', doc: { summary: 'The scheduled run could not search (for example the photo was deleted); the error says why.' } },
+    skipped: {
+      label: 'Skipped',
+      doc: { summary: 'The owner is no longer an active member, so the run did not search; the saved search keeps its schedule.' },
+    },
   },
 });
 

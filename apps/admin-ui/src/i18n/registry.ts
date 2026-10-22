@@ -25,6 +25,10 @@ const dashboardsGlob = import.meta.glob('./dashboards/*.ts', {
 const reportsGlob = import.meta.glob('./reports/*.ts', {
   eager: true,
 }) as Record<string, LocaleGlobModule>;
+/* Search: the readable summary of a search's filters, merged into `common`. */
+const searchGlob = import.meta.glob('./search/*.ts', {
+  eager: true,
+}) as Record<string, LocaleGlobModule>;
 const enumGlob = import.meta.glob('./enums/*.ts', { eager: true }) as Record<
   string,
   LocaleGlobModule
@@ -42,7 +46,7 @@ const resourceGlob = import.meta.glob('./resources/*.ts', {
  *  - 0: the framework's `common` strings (`@burojs/react`'s `en`);
  *  - 10: app chrome in `common` (`./locales/*.ts`), with the segment
  *    conditions', the dashboard editor's and the reports' texts merged in (`./segment-conditions/*.ts`,
- *    `./dashboards/*.ts`, `./reports/*.ts`);
+ *    `./dashboards/*.ts`, `./reports/*.ts`, `./search/*.ts`);
  *  - 10: enum labels in `enums` (`./enums/*.ts`);
  *  - 10: per-resource docs and translations in `resources` (`./resources/*.ts`).
  */
@@ -62,6 +66,7 @@ export function buildLocaleRegistry(): LocaleRegistry {
     { glob: segmentConditionsGlob, source: 'app:segment-conditions', namespace: 'common' },
     { glob: dashboardsGlob, source: 'app:dashboards', namespace: 'common' },
     { glob: reportsGlob, source: 'app:reports', namespace: 'common' },
+    { glob: searchGlob, source: 'app:search', namespace: 'common' },
     { glob: enumGlob, source: 'app:enums', namespace: 'enums' },
     { glob: resourceGlob, source: 'app:resources', namespace: 'resources' },
   ] as const;

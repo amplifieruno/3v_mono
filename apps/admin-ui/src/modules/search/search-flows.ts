@@ -1,34 +1,10 @@
-import { type FlowConfig, type FlowUnknownCheck, type Layout, cond, ref, source } from '@burojs/core';
+import { type FlowConfig, type Layout, cond, ref, source } from '@burojs/core';
 import { NAV_ICONS } from '../../app/nav';
 import { searchResultsBlock } from '../../blocks/search-results/search-results-block';
-import { resourceByName } from '../../data/resource-by-name';
-import { SEARCH_REQUEST_RESOURCE } from '../../data/resource-names';
 import { SEARCH_RANGES, rangeReversed, rerunDefinitionOf, searchDefinitionOf } from './search-definition';
 import { searchFields, searchFormBody } from './search-fields';
 import { searchDefaults, searchFaces } from './search-ops';
-
-
-/** When the last search was sent, for "Check again" after a lost answer. */
-let lastSentAt: number | null = null;
-
-/** Applied when the member's newest search request was made after the last one was sent. */
-export const searchRan: FlowUnknownCheck = async ({ data }) => {
-  const sentAt = lastSentAt;
-  if (sentAt === null) return 'unknown';
-  try {
-    const { data: rows } = await data.list(resourceByName(SEARCH_REQUEST_RESOURCE) as never, {
-      // The history is the member's own (owner-only rows): the newest row is theirs.
-      sort: [{ field: 'created_at', direction: 'desc' }],
-      pagination: { kind: 'offset', page: 1, pageSize: 1 },
-    } as never);
-    const latest = (rows as readonly Readonly<Record<string, unknown>>[])[0];
-    const at = typeof latest?.created_at === 'string' ? Date.parse(latest.created_at) : Number.NaN;
-    // A minute of clock difference between the browser and the database is allowed.
-    return !Number.isNaN(at) && at >= sentAt - 60_000 ? 'applied' : 'not-applied';
-  } catch {
-    return 'unknown';
-  }
-};
+import { rememberSent, searchRan } from './search-sent';
 
 const RANGE_TEXTS = {
   age: 'The age range ends before it starts.',
@@ -38,7 +14,7 @@ const RANGE_TEXTS = {
 } as const;
 
 /** One error check per range the database refuses reversed (`itap.valid_search_filters`). */
-const rangeChecks = SEARCH_RANGES.map((range) => ({
+export const searchRangeChecks = SEARCH_RANGES.map((range) => ({
   id: `searchRange_${range.id}`,
   severity: 'error' as const,
   anchor: range.to,
@@ -75,14 +51,11 @@ export const searchFlow = {
     },
     body: searchFormBody,
   },
-  checks: rangeChecks,
+  checks: searchRangeChecks,
   submit: {
     mutation: searchFaces,
     retry: 'never',
-    input: ({ values }) => {
-      lastSentAt = Date.now();
-      return searchDefinitionOf(values);
-    },
+    input: ({ values }) => rememberSent(searchDefinitionOf(values)),
     onUnknown: { check: searchRan },
   },
   then: {
@@ -107,10 +80,8 @@ const RERUN_TEXTS = {
 const rerunSubmit = {
   mutation: searchFaces,
   retry: 'never' as const,
-  input: ({ values, record }: { readonly values: Readonly<Record<string, unknown>>; readonly record?: unknown }) => {
-    lastSentAt = Date.now();
-    return rerunDefinitionOf((record ?? {}) as Readonly<Record<string, unknown>>, values);
-  },
+  input: ({ values, record }: { readonly values: Readonly<Record<string, unknown>>; readonly record?: unknown }) =>
+    rememberSent(rerunDefinitionOf((record ?? {}) as Readonly<Record<string, unknown>>, values)),
   onUnknown: { check: searchRan },
 };
 

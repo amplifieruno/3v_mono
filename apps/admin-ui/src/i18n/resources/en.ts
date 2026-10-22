@@ -183,4 +183,7 @@ export default {
   search_request: {
     doc: { topics: { index: 'Face and attribute search: photos, filters, thresholds, match types and history' } },
   },
+  saved_search: {
+    doc: { topics: { index: 'Saved searches: Run now, schedules, alerts on new matches and the baseline' } },
+  },
 } satisfies TranslationBundle;

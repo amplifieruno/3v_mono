@@ -39,3 +39,7 @@ export const severalFaces = (faceCount: number | null): boolean => faceCount !==
 
 /** A similarity as a percentage with no decimals (`0.873` → `87%`). */
 export const confidenceText = (confidence: number): string => `${Math.round(confidence * 100)}%`;
+
+/** Whether a request as last read is still queued or running (the results block reads it again until not). */
+export const searchPending = (run: { readonly status: string } | null | undefined): boolean =>
+  run?.status === 'queued' || run?.status === 'running';

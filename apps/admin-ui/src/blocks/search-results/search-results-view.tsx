@@ -2,12 +2,13 @@ import { resourceShowHref } from '@burojs/core';
 import { type BlockViewProps, useApp, useCustomQuery } from '@burojs/react';
 import { cn, useLinkComponent } from '@burojs/ui-shadcn';
 import { CircleAlert, CircleCheck, LoaderCircle, SearchX } from 'lucide-react';
-import * as React from 'react';
+import type * as React from 'react';
+import { pollWhile } from '../../data/poll-while';
 import { SEARCH_REQUEST_RESOURCE } from '../../data/resource-names';
 import { PhotoThumb } from '../../fields/photo-thumb';
 import { BlockNote } from '../charts/block-note';
 import { SearchResultCard } from './search-result-card';
-import { type SearchOutcomeKind, searchOutcome, severalFaces } from './search-outcome';
+import { type SearchOutcomeKind, searchOutcome, searchPending, severalFaces } from './search-outcome';
 import type { searchResultsBlock } from './search-results-block';
 import { type SearchRun, searchRunQuery } from './search-results-query';
 
@@ -25,7 +26,8 @@ function outcomeText(outcome: SearchOutcomeKind, t: T): string {
     case 'photo':
       return t(`photo_${outcome.reason}`);
     case 'error':
-      return t('error', { params: { detail: outcome.detail } });
+      // The server's own words stay out of the console (they may name internals).
+      return t('error');
     case 'none':
       return t('none');
     case 'found':
@@ -82,16 +84,11 @@ export function SearchResultsView({ props, t }: BlockViewProps<typeof searchResu
   const app = useApp();
   const Link = useLinkComponent();
   const requestId = props.requestId ?? null;
-  const [pending, setPending] = React.useState(false);
   const run = useCustomQuery(
     searchRunQuery,
     { requestId: requestId ?? '' },
-    { enabled: requestId !== null, refetchInterval: pending ? SEARCH_POLL_MS : false },
+    { enabled: requestId !== null, refetchInterval: pollWhile<SearchRun | null>(searchPending, SEARCH_POLL_MS) },
   );
-  const status = run.data?.status ?? null;
-  React.useEffect(() => {
-    setPending(status === 'queued' || status === 'running');
-  }, [status]);
 
   if (requestId === null || run.isError || run.data === null) return <BlockNote testId={TEST_ID} tone="error">{t('unreadable')}</BlockNote>;
   if (run.data === undefined) return <BlockNote testId={TEST_ID}>{t('loading')}</BlockNote>;

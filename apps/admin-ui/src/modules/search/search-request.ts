@@ -55,7 +55,7 @@ export const searchRequest = defineResource(SEARCH_REQUEST_RESOURCE, {
       savedViews: SEARCH_SAVED_VIEWS,
     },
     show: {
-      header: (l) => [l.grid(['search_type', 'status', 'created_at'])],
+      header: (l) => [l.grid(['search_type', 'status', 'created_at', 'saved_search_id'])],
       body: (l) => [
         l.place(searchResultsBlock, { key: 'results', props: { requestId: l.ref('record', 'id') } }),
         l.panel(

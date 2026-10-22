@@ -104,10 +104,12 @@ import {
   reportTypeEnum,
 } from './reports';
 import {
+  SAVED_SEARCH_RUN_STATUS_ENUM,
   SEARCH_ENUM_TABLES,
   SEARCH_GENDER_ENUM,
   SEARCH_LINKED_ENUM,
   searchGenderEnum,
+  savedSearchRunStatusEnum,
   searchLinkedEnum,
   searchMatchTypeEnum,
   searchStatusEnum,
@@ -185,6 +187,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   searchMatchTypeEnum,
   searchGenderEnum,
   searchLinkedEnum,
+  savedSearchRunStatusEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -202,6 +205,8 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   // Keys of a search's filters (`itap.valid_search_filters`), not tables.
   SEARCH_GENDER_ENUM,
   SEARCH_LINKED_ENUM,
+  // `saved_searches.last_run_status` (a CHECK constraint).
+  SAVED_SEARCH_RUN_STATUS_ENUM,
 ]);
 
 /**

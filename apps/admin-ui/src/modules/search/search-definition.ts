@@ -142,7 +142,7 @@ const first = (value: unknown): string | null => (Array.isArray(value) ? text(va
 
 /**
  * The form's values for a stored definition (a saved search, a past request). A filter listing
- * several statuses or profile types keeps its first (the form picks one, `tasks/ui/buro-gaps.md` G63).
+ * several statuses or profile types keeps its first (the form picks one, `tasks/ui/buro-gaps.md` G64).
  */
 export function searchValuesOf(definition: Readonly<Record<string, unknown>>): SearchValues {
   const filters = (definition.filters ?? {}) as Readonly<Record<string, unknown>>;
@@ -210,3 +210,30 @@ export function rerunDefinitionOf(
     fuzzy: facial && values.fuzzy === true,
   };
 }
+
+/** A value with its object keys in a stable order, so two filter objects compare by content. */
+export function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (typeof value !== 'object' || value === null) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, canonical((value as Readonly<Record<string, unknown>>)[key])]),
+  );
+}
+
+/** Whether two definitions search the same: type, photo, filters, threshold, limit and fuzzy. */
+export function sameDefinition(a: SearchDefinition, b: SearchDefinition): boolean {
+  const sameThreshold = a.threshold === null || b.threshold === null ? a.threshold === b.threshold : Math.abs(a.threshold - b.threshold) < 1e-6;
+  return (
+    a.search_type === b.search_type &&
+    a.image_file_id === b.image_file_id &&
+    sameThreshold &&
+    a.max_results === b.max_results &&
+    a.fuzzy === b.fuzzy &&
+    JSON.stringify(canonical(a.filters)) === JSON.stringify(canonical(b.filters))
+  );
+}
+
+/** A stored definition (a saved search's columns) as the action's input, unchanged. */
+export const storedDefinitionOf = (record: Readonly<Record<string, unknown>>): SearchDefinition => rerunDefinitionOf(record, record);
