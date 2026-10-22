@@ -136,7 +136,10 @@ describe('facility page', () => {
 
   it('should hold the areas and access points tabs', async () => {
     renderAt(`/facilities/${FACILITY}?sections=areas`);
-    expect(await screen.findByText(/area tree \(floors, zones and rooms\)/)).toBeDefined();
+    expect(await screen.findByText('This facility has no areas yet.')).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Add area' }).getAttribute('href')).toBe(
+      `/areas/create?prefill.facility_id=${FACILITY}`,
+    );
     expect(screen.getByRole('tab', { name: 'Access points' })).toBeDefined();
     expect(screen.getByRole('tab', { name: 'Details' })).toBeDefined();
   });

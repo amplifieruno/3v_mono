@@ -29,6 +29,7 @@ export const NAV_ICONS = {
   customAttributes: 'ListPlus',
   preferences: 'UserCog',
   facilities: 'Building',
+  areas: 'Layers',
 } as const;
 
 /**

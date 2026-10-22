@@ -210,3 +210,25 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** a validator context carrying the record being edited (or initial
   values) and a way for a field implementation to declare an async validator with access to the
   data runtime, or to report issues from its input.
+
+### G18. A check on a record form cannot see which record is being edited
+- **Need:** the area form refuses, on the "Inside" field and before any request, a parent that
+  is the area itself or one of its own sub-areas (the database refuses it with `area_cycle`):
+  the check must compare the chosen parent's `path` with the edited area's id.
+- **Framework (0.6.0):** on the `create`/`edit` surfaces a check's `CheckDI` has `values` and
+  `saved`, which hold only the fields the user may edit (`id`, `path` and other system fields are
+  dropped from the form state), and `record` is populated on the action and delete surfaces only
+  (`docs/checks-guide.md` §5). A portable check may read `record` (the same saved values) and the
+  screen's `with` sources, but has no membership test against a source list (`in` takes literals
+  only). A relation's `candidates` cannot exclude a subtree either (no array operator; a `record`
+  ref offers nothing on create). A server refusal never reaches the field (G14): Hasura answers
+  the trigger's `check_violation` as `permission-error` "Check constraint violation. area_cycle",
+  the form shows its generic alert. **[run]** (`tests/integration/areas.dev.test.ts`; message
+  measured with a direct `org_admin` request).
+- **Workaround:** block `itap:area-parent-guard` (`src/modules/places/area-parent-guard-*`)
+  placed under the field in the area form: its props default to `ref('record', 'id')` and
+  `ref('values', 'parent_id')`, it reads the chosen parent and says at once when its path holds
+  the area. It does not block Save; the database guard refuses the write. Tested in
+  `tests/modules/areas-page.test.tsx`.
+- **Expected from a framework:** the record being edited (or at least its id) in a form check's
+  context, or a check `anchor` result fed from a server refusal (G14).

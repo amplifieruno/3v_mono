@@ -7,6 +7,7 @@ import { rangeValidator } from '../../fields/bounded-number';
 import { customFields } from '../../fields/custom-fields';
 import { timeWindows } from '../../fields/time-windows';
 import { timezone } from '../../fields/timezone';
+import { areaTreeBlock } from './area-tree-block';
 import { FACILITY_OCCUPANCY_ROWS, facilityOccupancyNow } from './occupancy';
 import { placesPlaceholderBlock } from './placeholder-block';
 
@@ -194,10 +195,10 @@ export const facility = defineResource(FACILITY_RESOURCE, {
               ],
               { key: 'details', texts: 'Details' },
             ),
-            l.panel(
-              [l.place(placesPlaceholderBlock, { key: 'areas-tree', props: { topic: 'areas' } })],
-              { key: 'areas', texts: 'Areas' },
-            ),
+            l.panel([l.place(areaTreeBlock, { key: 'area-tree' })], {
+              key: 'areas',
+              texts: 'Areas',
+            }),
             l.panel(
               [
                 l.place(placesPlaceholderBlock, {

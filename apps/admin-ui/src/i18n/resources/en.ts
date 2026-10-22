@@ -26,4 +26,7 @@ export default {
   facility: {
     doc: { topics: { index: 'Facilities, operating hours and custom attributes' } },
   },
+  area: {
+    doc: { topics: { index: 'Areas and the area tree' } },
+  },
 } satisfies TranslationBundle;

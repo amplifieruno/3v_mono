@@ -6,7 +6,13 @@ import {
   customAttributeTypeEnum,
   ORGANIZATION_ENUM_TABLES,
 } from './organization';
-import { facilityStatusEnum, PLACES_ENUM_TABLES } from './places';
+import {
+  areaAccessLevelEnum,
+  areaStatusEnum,
+  areaTypeEnum,
+  facilityStatusEnum,
+  PLACES_ENUM_TABLES,
+} from './places';
 import {
   invitationStatusEnum,
   memberRoleEnum,
@@ -26,6 +32,9 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   customAttributeEntityEnum,
   customAttributeTypeEnum,
   facilityStatusEnum,
+  areaTypeEnum,
+  areaAccessLevelEnum,
+  areaStatusEnum,
 ];
 
 /**
