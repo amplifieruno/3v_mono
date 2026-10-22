@@ -20,6 +20,8 @@ conventions, §6.4 custom attributes).
 ## Global Constraints
 
 - Everything in `plan-00-foundation.md` and `plan-01-organization.md` Global Constraints applies.
+- What an empty time-window list means is per column; pass `emptyText`. `facilities.operating_hours`
+  `[]` = always open (`itap.evaluate_detection` skips the after-hours check): `emptyText: 'Always open'`.
 - Columns, update permissions and enum values from metadata (`itap_facilities`, `itap_areas`,
   `itap_floor_plans`, `itap_access_points`, `itap_access_point_devices`, `itap_facility_templates`)
   and the dev DB. System columns (`code`, `number`, `path`, `depth`, `areas_count`,
@@ -51,7 +53,7 @@ conventions, §6.4 custom attributes).
 ### Task 1: Facilities (CRUD, occupancy facts) and the reusable `customFields` field type
 
 **Files:** `src/modules/places/facility.ts` (rewrite: full CRUD; name, code (system), address,
-latitude, longitude, timezone (`timezone()`), operating_hours (`timeWindows()`), contact (json),
+latitude, longitude, timezone (`timezone()`), operating_hours (`timeWindows({ emptyText: 'Always open' })`), contact (json),
 custom_fields (`customFields({ entity: 'facility' })`), status, areas_count, current_occupancy;
 show tree tabs `details`, `areas` (placeholder panel until Task 2), `access_points` (Task 4)),
 `src/modules/places/occupancy.ts` (`facilityOccupancyNow = defineQuery` over `facility_occupancy_now`,

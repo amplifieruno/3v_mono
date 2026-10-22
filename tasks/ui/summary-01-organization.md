@@ -20,8 +20,8 @@ organization module grew).
   center), kind/status filters and two saved views (tenants; contractors and vendors).
 - **Work schedules** (`organization/work-schedules.ts`): full CRUD with the two new field types below;
   the list and show read "Mon–Fri 22:00–06:00 (overnight)" and "Europe/Moscow (UTC+03:00)".
-- **Custom attribute definitions** (`organization/custom-attributes.ts`): entity, key and data type
-  fixed after create; select options appear only for the select type; reserved rules in a collapsed
+- **Custom attribute definitions** (`organization/custom-attributes.ts`): entity and key fixed after
+  create, data type editable (a changed select keeps its old options stored); select options appear only for the select type; reserved rules in a collapsed
   panel; sorted by entity and order.
 - **My preferences** (`preferences-page.ts`, `preferences-view.tsx`, `user-settings.ts`): language
   and time zone of the signed-in user; an edit of the row, or a create when the user has none.
@@ -32,8 +32,11 @@ organization module grew).
 
 - **`timezone({ required?, default?, texts? })`** (`src/fields/timezone*.ts`): searchable combobox over
   `Intl` zones with UTC offsets, an unknown stored zone shown flagged (never as UTC), display
-  `Zone (UTC±hh:mm)`. Phase 2 facilities and any `timezone` column.
-- **`timeWindows({ nullable?, texts? })`** (`src/fields/time-windows*.ts`, `time-window-row.tsx`):
+  `Zone (UTC±hh:mm)`; Clear for an optional zone. Only listed IANA names, `UTC` and their aliases are
+  accepted; offsets (`+03:00`, whose sign PostgreSQL reads the POSIX way) are refused. Phase 2 facilities and any `timezone` column.
+- **`timeWindows({ emptyText, nullable?, texts? })`** (`src/fields/time-windows*.ts`, `time-window-row.tsx`):
+  `emptyText` is required because an empty list means different things per column
+  (`work_schedules.windows` `[]` = never on shift, `facilities.operating_hours` `[]` = always open);
   rows of weekday toggles plus `HH:MM` from/to (`24:00` allowed), overnight hint; `validateWindows`
   mirrors `itap.valid_windows` and `formatWindows` gives the compact text. Reuse for access
   policies, notification quiet hours, shifts.
@@ -41,6 +44,11 @@ organization module grew).
   with add/remove; display as badges. For any `text[]`/`jsonb` list of strings.
 - **`boundedNumber({ min, max, integer })`** (`src/fields/bounded-number.ts`): `f.number` plus a
   `validate` naming the range, because the record form skips `min`/`max` (G14).
+- **Translatable field refusals** (`src/fields/field-issue.ts`): reusable validators return
+  `problemValidator(...)` issues with key `validation.itap.<field>.<reason>` and params (texts in
+  `src/i18n/locales/en.ts`), not English literals that buro would show as its generic text in another
+  locale. App-local validators (`checkKey`, `checkObject`, `checkLocale`, `checkEmail`) still return
+  English strings (later i18n pass).
 - **Settings current-record page pattern**: a custom page whose block renders `RecordScreen` for the
   record keyed by the identity (settings: `organization_id`, show; preferences: `user_id`, edit or
   create). Extends the phase 0 profile page (G13).
@@ -77,18 +85,23 @@ upgrade buro when 0.6.x/0.7 lands.
 - Company related lists (profiles, visits): phase 4.
 - Minors from review: `default_retention_days` is unused but still required and ranged; the
   server-refusal test checks only the generic alert (G14); the time-windows input drops unknown keys
-  of a stored window on edit; `isTimezone` via `Intl` accepts offset-style zones the server may refuse
-  and `supportedValuesOf` is missing in old browsers; field inputs ignore `presentation: 'plain'`
-  (displays are already plain); work-schedule article claims (30-minute grace, no windows = never on
-  shift, face-auth behaviour) are unverified against `itap.in_windows` and the design; validator
-  messages (`checkKey`, `checkObject`, `checkLocale`, string-list, `checkRange`) are English literals
-  instead of `texts.validation` codes (i18n follow-up across fields); the string-list row `aria-label`
-  is untranslated; the preferences view casts the rows; a duplicate (entity, key) shows only the
-  generic form alert; changing a select attribute to another type keeps its old options stored.
+  of a stored window on edit; where `Intl.supportedValuesOf` is missing (old browsers) `isTimezone`
+  only refuses offsets; field inputs ignore `presentation: 'plain'` (displays are already plain);
+  app-local validator messages (`checkKey`, `checkObject`, `checkLocale`, `checkEmail`) are English
+  literals; `timeWindows` `emptyText` and the string-list `item` noun are English texts in code; the
+  preferences view casts the rows; a duplicate (entity, key) shows only the generic form alert;
+  changing a select attribute to another type keeps its old options stored.
+- Residual cross-tab race: a 401 that arrives before another tab's token refresh has been written to
+  storage still signs this tab out.
 - Carried from phase 0 and still open: bd `3v_mono-ryj` (P1, `profile_document` upload by
   `org_admin`) before phase 4; the phase 0 deferred minors.
 - Dev runs leave audit rows (create and delete per run). The e2e removes every row it creates (a
   failed step is swept in `afterAll`); the settings and preferences steps restore their values.
+
+## Gates (after the final-review fixes)
+
+Unit/jsdom 178 passed (18 dev-stack skipped); with `ITAP_DEV_STACK=1` 195 passed (1 skipped); e2e 15
+passed (auth, foundation, organization). Lint, typecheck and build clean.
 
 ## How to run
 

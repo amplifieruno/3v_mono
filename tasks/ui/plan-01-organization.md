@@ -28,7 +28,8 @@ to the existing `organization` module. Two new reusable custom field types: `tim
 - `organization_settings` has primary key `organization_id` (no `id`): mapping `pkField:
   'organization_id'` and resource `data.idField: 'organization_id'`.
 - Time windows JSON shape (data-layer §6.0): `[{ days: number[] (1..7, ISO Monday=1), from: 'HH:MM', to: 'HH:MM' }]`;
-  `from > to` means the window crosses midnight; `[]`/null = no restriction where the column allows null.
+  `from > to` means the window crosses midnight. What an empty list means is per column (`work_schedules.windows`
+  `[]` = never on shift, `facilities.operating_hours` `[]` = always open): pass `emptyText` to `timeWindows()`.
 - Every settings field carries `texts.description` (unit + effect) and `texts.doc.summary` (what the
   system does with it, who reads it — from data-layer design §6–§8).
 - New framework gaps go to `tasks/ui/buro-gaps.md`; blockers are deferred and listed in the summary.
@@ -101,7 +102,7 @@ to the existing `organization` module. Two new reusable custom field types: `tim
 - Test: `tests/fields/time-windows.test.ts`, `tests/fields/timezone.test.tsx`, `tests/modules/companies.test.ts`
 
 **Interfaces:**
-- `timeWindows(opts?: { nullable?: boolean; texts?: FieldTexts }): FieldDeclaration`;
+- `timeWindows(opts: { emptyText: string; nullable?: boolean; texts?: FieldTexts }): FieldDeclaration`;
   `timezone(opts?: { texts?: FieldTexts; required?: boolean }): FieldDeclaration` — reused later by
   facilities, on-call schedules, report schedules, access policies, segments.
 - Companies: list columns name, kind, status, suite, contact_email; search name/contact_email/cost_center;
