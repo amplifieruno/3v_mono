@@ -62,7 +62,8 @@ const mean = (values: readonly number[]): number | null =>
   values.length === 0 ? null : values.reduce((sum, value) => sum + value, 0) / values.length;
 
 /**
- * The samples of the window ending at `until` folded into buckets of `bucketMinutes`: each
+ * The samples of the window ending at the first bucket boundary at or after `until` (so the
+ * buckets stay put between refetches) folded into buckets of `bucketMinutes`: each
  * bucket holds the mean of every measure over the samples that have it, so a camera (latency
  * only) and a terminal (host figures) chart the same way, and the errors summed. Samples outside
  * the window are ignored. A bucket without samples is kept, with nulls, so gaps stay visible.
@@ -75,7 +76,9 @@ export function bucketHealth(
 ): HealthSeries {
   const bucketMs = bucketMinutes * 60_000;
   const count = Math.ceil((hours * 60) / bucketMinutes);
-  const end = until.getTime();
+  // Aligned to the next bucket boundary, so a refetch within the same quarter-hour keeps the
+  // same buckets instead of shifting every point.
+  const end = Math.ceil(until.getTime() / bucketMs) * bucketMs;
   const start = end - count * bucketMs;
   const groups: HealthSample[][] = Array.from({ length: count }, () => []);
   for (const sample of samples) {
@@ -100,5 +103,5 @@ export function bucketHealth(
       frameRate: measure('frameRate'),
     };
   });
-  return { since: new Date(start).toISOString(), until: until.toISOString(), points };
+  return { since: new Date(start).toISOString(), until: new Date(end).toISOString(), points };
 }

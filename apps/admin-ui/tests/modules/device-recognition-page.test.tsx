@@ -75,11 +75,23 @@ const status = () => ({
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
-const SAMPLES = [
+const LIVE_SAMPLES = [
   { recorded_at: minutesAgo(90), cpu_usage: null, memory_usage: null, network_latency_ms: 20, frame_rate: null, error_count: 0 },
   { recorded_at: minutesAgo(30), cpu_usage: null, memory_usage: null, network_latency_ms: null, frame_rate: null, error_count: 1 },
   { recorded_at: minutesAgo(5), cpu_usage: null, memory_usage: null, network_latency_ms: 35, frame_rate: null, error_count: 0 },
 ];
+
+/** A camera offline all day: every check failed, none measured a latency. */
+const OFFLINE_SAMPLES = [90, 60, 30].map((minutes) => ({
+  recorded_at: minutesAgo(minutes),
+  cpu_usage: null,
+  memory_usage: null,
+  network_latency_ms: null,
+  frame_rate: null,
+  error_count: 1,
+}));
+
+let SAMPLES = LIVE_SAMPLES;
 
 const EVENTS = [
   {
@@ -143,6 +155,7 @@ beforeAll(installDomShims);
 
 beforeEach(() => {
   enabled = false;
+  SAMPLES = LIVE_SAMPLES;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -196,6 +209,19 @@ describe('device health and events tabs', () => {
     expect(screen.queryByTestId('health-chart:cpu')).toBeNull();
     expect(screen.getAllByTestId('health-chart-error')).toHaveLength(1);
     expect(await screen.findByRole('columnheader', { name: /Latency \(ms\)/ })).toBeDefined();
+  });
+
+  it('should show the failed checks, not an empty chart, for a camera offline all day', async () => {
+    SAMPLES = OFFLINE_SAMPLES;
+    renderAt(`/devices/${CAMERA}?sections=health`);
+    const strip = await screen.findByTestId('health-chart:errors');
+    expect(within(strip).getByText('Failed checks in the last 24 hours: 3')).toBeDefined();
+    expect(within(strip).getAllByTestId('health-chart-error').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('The device reported no measurements in the last 24 hours: every check failed.'),
+    ).toBeDefined();
+    expect(screen.queryByTestId('health-chart:latency')).toBeNull();
+    expect(screen.queryByText(/Red marks/)).toBeNull();
   });
 
   it('should list the device’s events as a timeline', async () => {

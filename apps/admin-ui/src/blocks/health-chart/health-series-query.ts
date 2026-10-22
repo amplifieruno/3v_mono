@@ -16,7 +16,7 @@ import {
 export const HEALTH_CHART_BINDING = 'health-chart';
 
 /**
- * The samples of one device over the last 24 h, oldest first, read straight from
+ * The samples of one device over the last 24 h, read newest first straight from
  * `device_health_metrics` (a `source.list` reads at most 100 rows, a camera writes 1440 a day)
  * and folded into 15-minute points when the answer arrives. The window starts when the request
  * is made, so the cached input stays the device id alone.
@@ -26,7 +26,7 @@ export const deviceHealthSeriesOperation = hasuraOperation(HEALTH_CHART_BINDING,
   document: `query DeviceHealthSeries($device: uuid!, $since: timestamptz!, $limit: Int!) {
   device_health_metrics(
     where: { device_id: { _eq: $device }, recorded_at: { _gte: $since } }
-    order_by: [{ recorded_at: asc }]
+    order_by: [{ recorded_at: desc }]
     limit: $limit
   ) {
     recorded_at
@@ -44,7 +44,8 @@ export const deviceHealthSeriesOperation = hasuraOperation(HEALTH_CHART_BINDING,
   }),
   mapResult: (data) => {
     const rows = z.array(healthSample).safeParse(rootOf(data, 'device_health_metrics'));
-    return rows.success ? bucketHealth(rows.data, new Date()) : null;
+    // Read newest first, so a window past the limit drops the oldest samples; bucketed oldest first.
+    return rows.success ? bucketHealth([...rows.data].reverse(), new Date()) : null;
   },
 });
 

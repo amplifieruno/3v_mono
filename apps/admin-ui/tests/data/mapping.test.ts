@@ -1,3 +1,4 @@
+import { fieldSensitivity } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { describe, expect, it } from 'vitest';
 import { hasuraTable, selectFieldsOf } from '../../src/data/mapping';
@@ -59,8 +60,12 @@ describe('selectFieldsOf', () => {
     expect(ITAP_TABLES.device?.selectFields).toContain('username');
   });
 
-  it('should mark a secret sensitive, so a typed value never lands in a draft or an audit event', () => {
-    expect((secret() as { opts?: { sensitive?: unknown } }).opts?.sensitive).toBe(true);
+  it('should mark a secret sensitive, so a typed value never lands in a draft or an audit event', async () => {
+    await app.ready;
+    // What buro's drafts and audit read off the registered field.
+    const device = app.registry.get('device') as { fields: Record<string, unknown> };
+    expect(fieldSensitivity(device.fields.password)).toBe(true);
+    expect(fieldSensitivity(device.fields.username)).toBeUndefined();
   });
 });
 
