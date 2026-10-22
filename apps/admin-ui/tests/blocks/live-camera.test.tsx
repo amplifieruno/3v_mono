@@ -268,6 +268,8 @@ describe('live camera view', () => {
     act(() => h.server.push(message({ detectionId: 'd-1' })));
     const first = screen.getByTestId('live-box');
     expect(first.getAttribute('class')).toBe(BOX_FADE);
+    // The fade is dropped for viewers who ask for reduced motion (the box is still removed after 2 s).
+    expect(BOX_FADE).toContain('motion-reduce:animate-none');
     // No SVG <animate>: its clock is the drawing's, so a box added after 2 s would start faded.
     expect(first.querySelector('animate')).toBeNull();
 
@@ -309,5 +311,21 @@ describe('live camera view', () => {
     await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS));
     expect(screen.getByText('Stream unavailable')).toBeDefined();
     expect(screen.getByText('Stream down')).toBeDefined();
+  });
+
+  it('should not flag a stream that reports `stalled` but keeps playing (progress clears the stall)', async () => {
+    const h = harness();
+    const video = await playing(h);
+    // A healthy HLS stream may fire `stalled` while it plays from its buffer: progress follows.
+    act(() => void video.dispatchEvent(new Event('stalled')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS - 1_000));
+    act(() => void video.dispatchEvent(new Event('timeupdate')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS));
+    expect(screen.getByText('Stream live')).toBeDefined();
+
+    // A later stall without progress still counts.
+    act(() => void video.dispatchEvent(new Event('waiting')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS));
+    expect(screen.getByText('Stream unavailable')).toBeDefined();
   });
 });

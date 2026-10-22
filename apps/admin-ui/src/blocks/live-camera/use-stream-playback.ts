@@ -22,7 +22,7 @@ export interface StreamPlaybackResult {
 /**
  * Plays the HLS playlist at `url` in the returned video element: `playing` once the element
  * plays frames, `unavailable` when the player gives up, no frame arrives in time, or playback stalls
- * for {@link STREAM_STALL_MS}. An
+ * for {@link STREAM_STALL_MS} without progress (a `timeupdate` clears a pending stall). An
  * unavailable stream is retried on `retry()` and on its own after a while.
  */
 export function useStreamPlayback(url: string | null, attach: StreamAttacher): StreamPlaybackResult {
@@ -53,7 +53,14 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
       if (!started || stall !== undefined) return;
       stall = setTimeout(unavailable, STREAM_STALL_MS);
     };
+    // Progress (`timeupdate`) clears it: a healthy HLS stream may report `stalled` (the network
+    // fetch paused) while it keeps playing from its buffer, and fires no `playing` afterwards.
+    const progressed = (): void => {
+      clearTimeout(stall);
+      stall = undefined;
+    };
     video.addEventListener('playing', playing);
+    video.addEventListener('timeupdate', progressed);
     video.addEventListener('waiting', waiting);
     video.addEventListener('stalled', waiting);
     const timeout = setTimeout(() => {
@@ -71,6 +78,7 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
       clearTimeout(timeout);
       clearTimeout(stall);
       video.removeEventListener('playing', playing);
+      video.removeEventListener('timeupdate', progressed);
       video.removeEventListener('waiting', waiting);
       video.removeEventListener('stalled', waiting);
       destroy?.();

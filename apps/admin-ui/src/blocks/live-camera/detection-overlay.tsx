@@ -7,9 +7,10 @@ import type { LiveCameraT } from './live-camera-texts';
 /**
  * Each box's own fade: a CSS animation (`@keyframes live-box-fade` in `src/styles.css`, opaque
  * for 1.5 s, then out over 0.5 s; its length is `BOX_LIFETIME_MS`) that starts when the box's
- * element is inserted, unlike an SVG `<animate>`, whose clock is the whole drawing's.
+ * element is inserted, unlike an SVG `<animate>`, whose clock is the whole drawing's. With
+ * `prefers-reduced-motion` the box does not fade: it stays opaque until it is removed after 2 s.
  */
-export const BOX_FADE = 'animate-[live-box-fade_2s_linear_forwards]';
+export const BOX_FADE = 'animate-[live-box-fade_2s_linear_forwards] motion-reduce:animate-none';
 
 export interface DetectionOverlayProps {
   readonly boxes: readonly DetectionMessage[];
