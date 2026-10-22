@@ -36,7 +36,7 @@ export function SearchFiltersDisplay(props: ScalarDisplayProps<unknown>): React.
     enumLabel,
     name: (kind, id) => {
       const rows = kind === 'company' ? names.data?.companies : names.data?.facilities;
-      return rows?.find((row) => row.id.toLowerCase() === id.toLowerCase())?.name ?? (names.data === undefined ? '…' : null);
+      return rows?.find((row) => row.id.toLowerCase() === id.toLowerCase())?.name ?? (names.data === undefined && !names.isError ? '…' : null);
     },
     dateTime: (iso) => {
       const at = instantOf(iso);

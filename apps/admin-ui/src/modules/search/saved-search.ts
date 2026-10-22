@@ -137,7 +137,11 @@ export const savedSearch = defineResource(SAVED_SEARCH_RESOURCE, {
             description:
               'The next scheduled run records what it finds and alerts nothing; later runs alert on identities new since the run before. This is so after saving a search and after changing the search itself.',
           },
-          when: l.all([l.equals(l.ref('record', 'alert_on_match'), true), l.not(l.present(l.ref('record', 'last_search_request_id')))]),
+          when: l.all([
+            l.equals(l.ref('record', 'alert_on_match'), true),
+            l.present(l.ref('record', 'schedule_cron')),
+            l.not(l.present(l.ref('record', 'last_search_request_id'))),
+          ]),
         }),
         l.panel(
           [l.place(searchResultsBlock, { key: 'last-results', props: { requestId: l.ref('record', 'last_search_request_id'), showHistoryLink: true } })],

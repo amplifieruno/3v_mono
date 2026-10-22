@@ -8,6 +8,7 @@ import { pollWhile } from '../../src/data/poll-while';
 import { SAVED_SEARCH_RESOURCE } from '../../src/data/resource-names';
 import { type SearchFilterNamer, searchFilterParts } from '../../src/fields/search-filters-format';
 import { ACTION_REFUSALS } from '../../src/modules';
+import { isSavedSearchOf } from '../../src/modules/search/saved-search-flows';
 import { SAVED_SEARCH_BINDING } from '../../src/modules/search/saved-search-ops';
 import {
   definitionChanged,
@@ -209,6 +210,20 @@ describe('Check again after a lost search answer', () => {
         ],
       },
     });
+  });
+});
+
+describe('Check again after a lost "New saved search" answer', () => {
+  it('should take a saved search of the same name for the one sent only when it is the same search', () => {
+    const sent = savedSearchInsertOf(savedSearchValuesOf(row()));
+    const stored = row({ filters: { company_id: COMPANY, status: ['verified', 'unverified'] } });
+    expect(isSavedSearchOf(stored, sent)).toBe(false); // the form keeps one status (G64): not the stored row
+    const own = { ...stored, filters: sent.filters };
+    expect(isSavedSearchOf(own, sent)).toBe(true);
+    expect(isSavedSearchOf({ ...own, is_shared: true }, sent)).toBe(false);
+    expect(isSavedSearchOf({ ...own, search_type: 'combined' }, sent)).toBe(false);
+    expect(isSavedSearchOf({ ...own, schedule_cron: null }, sent)).toBe(false);
+    expect(isSavedSearchOf({ ...own, max_results: 5 }, sent)).toBe(false);
   });
 });
 

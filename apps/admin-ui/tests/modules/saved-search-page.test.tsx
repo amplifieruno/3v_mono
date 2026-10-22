@@ -140,10 +140,26 @@ describe('saved search page', () => {
     expect(filters.textContent).not.toContain(COMPANY);
   });
 
+  it('should fall back to the unknown company when the names cannot be read', async () => {
+    const answer = vi.mocked(fetch).getMockImplementation() ?? serve;
+    vi.mocked(fetch).mockImplementation(async (input, init) =>
+      String(init?.body ?? '').includes('query SearchFilterNames') ? new Response('down', { status: 500 }) : answer(input, init),
+    );
+    renderAt(`/saved-searches/${SAVED}`);
+    expect(await (await main()).findByText(/a company that no longer exists/u, {}, { timeout: 8000 })).toBeDefined();
+  });
+
   it('should say there is no alert baseline yet while alerts are on (Review Focus 5)', async () => {
     renderAt(`/saved-searches/${SAVED}`);
     expect(await (await main()).findByText('No alert baseline yet')).toBeDefined();
     expect(screen.queryByText('Last scheduled run')).toBeNull();
+  });
+
+  it('should not speak of a baseline when the search has no schedule', async () => {
+    saved = row({ schedule_cron: null });
+    renderAt(`/saved-searches/${SAVED}`);
+    expect(await (await main()).findByText('What it searches')).toBeDefined();
+    expect(screen.queryByText('No alert baseline yet')).toBeNull();
   });
 
   it('should show the last scheduled run’s results with a link to it in the history', async () => {

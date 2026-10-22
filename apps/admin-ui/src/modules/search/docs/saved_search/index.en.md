@@ -17,6 +17,11 @@ the photo, the filters, the threshold, the number of results and fuzzy matches
   schedule in words. The scheduler looks for due saved searches every hour.
 - **Alert on new matches**: see below. Alerts come from scheduled runs only.
 
+The form picks one identity status and one profile type. A saved search whose
+stored filter lists several (made outside this form) opens in **Edit** with the
+first of them only: saving it with the search unchanged keeps them all, but
+saving a changed search keeps only that first value.
+
 ## Run now
 
 **Run now** runs the saved search once, as you, and opens the run in your

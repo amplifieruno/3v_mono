@@ -15,7 +15,7 @@ import { canonical } from './search-definition';
 import { type SearchFields, searchFormBody } from './search-fields';
 import { searchRangeChecks } from './search-flows';
 import { searchDefaults, searchFaces } from './search-ops';
-import { rememberSent, searchRan } from './search-sent';
+import { SENT_CLOCK_SKEW_MS, rememberSent, searchRan } from './search-sent';
 
 /** The sentence of Review Focus 5: a changed search starts a new alert baseline. */
 export const BASELINE_RESET_TEXT =
@@ -50,9 +50,24 @@ function savedSearchFormBody(l: Layout<SavedSearchFormFields>) {
 }
 
 /** What "New saved search" last sent, for "Check again" after a lost answer (a check sees no form values, G12). */
-let lastCreated: { readonly name: string; readonly at: number } | null = null;
+let lastCreated: { readonly row: SavedSearchColumns; readonly at: number } | null = null;
 
-/** Applied when a saved search of that name was created since shortly before it was sent. */
+/**
+ * Whether a stored saved search is the one `sent` created: the same name, type, sharing, schedule,
+ * filters and limit (a shared saved search of someone else's with the same name is not it).
+ */
+export function isSavedSearchOf(row: Readonly<Record<string, unknown>>, sent: SavedSearchColumns): boolean {
+  return (
+    row.name === sent.name &&
+    row.search_type === sent.search_type &&
+    (row.is_shared === true) === sent.is_shared &&
+    (row.schedule_cron ?? null) === sent.schedule_cron &&
+    row.max_results === sent.max_results &&
+    JSON.stringify(canonical(row.filters ?? {})) === JSON.stringify(canonical(sent.filters ?? {}))
+  );
+}
+
+/** Applied when a saved search like the one sent was created since shortly before it was sent. */
 export const savedSearchCreated: FlowUnknownCheck = async ({ data }) => {
   const sent = lastCreated;
   if (sent === null) return 'unknown';
@@ -60,13 +75,14 @@ export const savedSearchCreated: FlowUnknownCheck = async ({ data }) => {
     const { data: rows } = await data.list(resourceByName(SAVED_SEARCH_RESOURCE) as never, {
       filter: {
         and: [
-          { field: 'name', op: 'eq', value: sent.name },
-          { field: 'created_at', op: 'gte', value: new Date(sent.at - 15_000).toISOString() },
+          { field: 'name', op: 'eq', value: sent.row.name },
+          { field: 'created_at', op: 'gte', value: new Date(sent.at - SENT_CLOCK_SKEW_MS).toISOString() },
         ],
       },
-      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+      pagination: { kind: 'offset', page: 1, pageSize: 20 },
     } as never);
-    return (rows as readonly unknown[]).length > 0 ? 'applied' : 'not-applied';
+    const found = (rows as readonly Readonly<Record<string, unknown>>[]).some((row) => isSavedSearchOf(row, sent.row));
+    return found ? 'applied' : 'not-applied';
   } catch {
     return 'unknown';
   }
@@ -131,7 +147,7 @@ export const newSavedSearchFlow = {
     retry: 'never',
     input: ({ values }) => {
       const row = savedSearchInsertOf(values);
-      lastCreated = { name: row.name, at: Date.now() };
+      lastCreated = { row, at: Date.now() };
       return row;
     },
     onUnknown: { check: savedSearchCreated },
