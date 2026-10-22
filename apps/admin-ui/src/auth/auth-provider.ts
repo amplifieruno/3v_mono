@@ -52,16 +52,26 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
 
   /**
    * hasura-auth rotates refresh tokens, so the exchange must run once at a time. A result is
-   * discarded when the session it started from was replaced or ended meanwhile.
+   * discarded when the session it started from was replaced or ended meanwhile. A refusal is
+   * discarded the same way: another tab that exchanged the same refresh token first gets the
+   * rotated one and this tab's exchange is refused, but the shared storage already holds the
+   * other tab's session, which this tab then uses instead of signing out.
    */
   function refreshBase(started: BaseSession): Promise<BaseSession | null> {
+    const replaced = (): boolean => store.snapshot().base?.refreshToken !== started.refreshToken;
     baseRefresh ??= nhost
       .refresh(started.refreshToken)
-      .then((next) => {
-        if (store.snapshot().base?.refreshToken !== started.refreshToken) return store.snapshot().base;
-        store.setBase(next);
-        return next;
-      })
+      .then(
+        (next) => {
+          if (replaced()) return store.snapshot().base;
+          store.setBase(next);
+          return next;
+        },
+        (error: unknown) => {
+          if (replaced()) return store.snapshot().base;
+          throw error;
+        },
+      )
       .finally(() => {
         baseRefresh = null;
       });

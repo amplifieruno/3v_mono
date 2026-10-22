@@ -409,9 +409,18 @@ services:
       dockerfile: apps/admin-ui/Dockerfile
       target: production
     container_name: itap-frontend
+    # nginx resolves its upstreams at start: it waits for every service it proxies, and a
+    # crash on a cold start (an upstream not resolvable yet) is retried.
     depends_on:
+      graphql:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      storage:
+        condition: service_started
       backend:
         condition: service_healthy
+    restart: always
     ports: []
     networks:
       - internal

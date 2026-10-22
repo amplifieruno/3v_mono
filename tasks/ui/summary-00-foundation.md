@@ -121,8 +121,9 @@ Deferred minors from review (none blocks phase 1):
   sign out; `SessionWatch` rotates outside `serializeLifecycle`; `check()` does a network refresh per generation (needs a comment); identity error state appears only
   after query retries.
 - Data: schema test honours `aggregate:false` but not `noAggregate:true`.
-- Shell: org switch rotates then replaces scope (old facility briefly in scope; phase 2); e2e no-loop
-  check uses `waitForTimeout`.
+- Shell: e2e no-loop check uses `waitForTimeout`. (Fixed since: an organization switch replaces the
+  scope first, then rotates the session, so the old facility is never in scope for the new
+  organization's reads; `src/app/scope.ts` `performOrganizationSwitch`.)
 - Invitations: role default `admin`; `operations.dev` test
   leaks a pending invitation if its assertion fails; no test for token copy or the invalid-email
   message.

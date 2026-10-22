@@ -236,6 +236,29 @@ describe('ItapAuthProvider', () => {
     expect(await provider.check(ctx)).toEqual({ authenticated: false, reason: 'signed-out' });
   });
 
+  it('keeps the session when another tab already rotated the refresh token', async () => {
+    const { provider, world, store } = setup();
+    await provider.login?.(creds, ctx);
+    world.now += 16 * 60_000;
+    let release = (): void => undefined;
+    world.holdRefresh = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const renewing = provider.getToken();
+    await new Promise((r) => setTimeout(r, 0));
+    // Another tab exchanged the same refresh token first: hasura-auth rotated it, so this tab's
+    // exchange is refused, and the other tab's new session is already in the shared storage.
+    const before = store.snapshot().base;
+    if (!before) throw new Error('signed in expected');
+    const rotated = { ...before, accessToken: 'base-other-tab', refreshToken: 'refresh-other-tab', expiresAt: world.now + 15 * 60_000 };
+    store.setBase(rotated);
+    world.refreshRejected = true;
+    release();
+    expect(await renewing).toMatch(/^org-/);
+    expect(store.snapshot().base).toEqual(rotated);
+    expect(store.snapshot().org?.organizationId).toBe(NOVA);
+  });
+
   it('keeps the current organization when a switch is refused', async () => {
     const { provider, world, store } = setup();
     await provider.login?.(creds, ctx);
