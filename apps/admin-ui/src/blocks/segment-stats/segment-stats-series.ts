@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { addDays, dayIn } from '../charts/zoned-time';
+
+/** The organization-calendar helpers, shared with the analytics charts (`../charts/zoned-time.ts`). */
+export { addDays, dayIn };
 
 /** How many days the segment trend shows, today included. */
 export const SEGMENT_STATS_DAYS = 30;
@@ -40,27 +44,6 @@ export type SegmentStatPoint = z.infer<typeof segmentStatPoint>;
 export const segmentStatSeries = z.object({ points: z.array(segmentStatPoint) });
 
 export type SegmentStatSeries = z.infer<typeof segmentStatSeries>;
-
-/**
- * The calendar day (`YYYY-MM-DD`) of an instant in a time zone: the organization's for its daily
- * figures (`segment_daily_stats.day` is the organization-local day, `refresh_segment_daily_stats`).
- * An unknown or missing zone falls back to UTC.
- */
-export function dayIn(at: Date, timeZone: string | null): string {
-  const format = (zone: string) =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
-  try {
-    return format(timeZone ?? 'UTC');
-  } catch {
-    return format('UTC');
-  }
-}
-
-/** `day` moved by `offset` calendar days (pure date arithmetic, no time zone). */
-export function addDays(day: string, offset: number): string {
-  const [year = 1970, month = 1, date = 1] = day.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, date + offset)).toISOString().slice(0, 10);
-}
 
 /**
  * The first day the read asks for: today's UTC date moved back `SEGMENT_STATS_READ_DAYS`, a margin

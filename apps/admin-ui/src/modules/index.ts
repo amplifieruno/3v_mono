@@ -1,4 +1,5 @@
 import { filesModule } from '../fields/open-file';
+import { analyticsModule } from './analytics';
 import { devicesModule } from './devices';
 import { type ConsoleModule, collectOperations, collectRefusals, collectTables } from './module';
 import { monitoringModule } from './monitoring';
@@ -23,6 +24,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   monitoringModule,
   notificationsModule,
   segmentsModule,
+  analyticsModule,
   filesModule,
 ];
 

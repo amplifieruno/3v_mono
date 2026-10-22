@@ -88,6 +88,10 @@ import {
   CopyPlus,
   RefreshCw,
   UserMinus,
+  ChartLine,
+  Clock,
+  CalendarRange,
+  Shuffle,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -181,6 +185,10 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   CopyPlus,
   RefreshCw,
   UserMinus,
+  ChartLine,
+  Clock,
+  CalendarRange,
+  Shuffle,
 };
 
 /**

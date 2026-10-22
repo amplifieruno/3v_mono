@@ -10,17 +10,38 @@ export const OVERVIEW_BINDING = 'overview';
 /** The dependency tag a mutation names to refresh the dashboard figures. */
 export const DASHBOARD_TAG = 'dashboard';
 
-/** One row of `itap_results.dashboard_kpi_rows`: the figures the dashboard shows. */
+/** One entry of `segment_top_movers`: a segment whose member count changed most since yesterday. */
+export const segmentMover = z.object({
+  segment_id: z.string(),
+  code: z.string().nullable(),
+  name: z.string(),
+  member_count: z.number(),
+  previous_count: z.number(),
+  change: z.number(),
+});
+
+export type SegmentMover = z.infer<typeof segmentMover>;
+
+/** One row of `itap_results.dashboard_kpi_rows`: the figures the dashboard and the KPI block show. */
 export const dashboardKpisOutput = z
   .object({
+    as_of: z.string(),
+    local_date: z.string(),
     unique_visitors_today: z.number(),
     current_occupancy: z.number(),
     open_incidents: z.number(),
     open_incidents_critical: z.number(),
+    open_incidents_high: z.number(),
+    open_incidents_medium: z.number(),
+    open_incidents_low: z.number(),
+    open_incidents_info: z.number(),
     devices_offline: z.number(),
     deliveries_failed_24h: z.number(),
+    segment_top_movers: z.array(segmentMover),
   })
   .nullable();
+
+export type DashboardKpis = NonNullable<z.infer<typeof dashboardKpisOutput>>;
 
 /**
  * `dashboard_kpis(hasura_session)`: the session argument is filled by Hasura
@@ -31,12 +52,19 @@ export const dashboardKpisOperation = hasuraOperation(OVERVIEW_BINDING, 'dashboa
   kind: 'query',
   document: `query DashboardKpis {
   dashboard_kpis {
+    as_of
+    local_date
     unique_visitors_today
     current_occupancy
     open_incidents
     open_incidents_critical
+    open_incidents_high
+    open_incidents_medium
+    open_incidents_low
+    open_incidents_info
     devices_offline
     deliveries_failed_24h
+    segment_top_movers
   }
 }`,
   variables: () => undefined,
@@ -83,6 +111,18 @@ export const dashboardKpis = defineQuery('itap:dashboard-kpis', {
         label: 'Critical incidents',
         doc: { summary: 'Open incidents of critical severity.' },
       },
+    }),
+    open_incidents_high: f.number({
+      texts: { label: 'High incidents', doc: { summary: 'Open incidents of high severity.' } },
+    }),
+    open_incidents_medium: f.number({
+      texts: { label: 'Medium incidents', doc: { summary: 'Open incidents of medium severity.' } },
+    }),
+    open_incidents_low: f.number({
+      texts: { label: 'Low incidents', doc: { summary: 'Open incidents of low severity.' } },
+    }),
+    open_incidents_info: f.number({
+      texts: { label: 'Info incidents', doc: { summary: 'Open incidents of severity info: for the record only.' } },
     }),
     devices_offline: f.number({
       texts: {

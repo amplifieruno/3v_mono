@@ -81,3 +81,6 @@ export const SEGMENT_TEMPLATE_RESOURCE = 'segment_template';
 export const SEGMENT_DAILY_STAT_RESOURCE = 'segment_daily_stat';
 export const SEGMENT_PROFILE_MEMBER_RESOURCE = 'segment_profile_member';
 export const SEGMENT_IDENTITY_MEMBER_RESOURCE = 'segment_identity_member';
+export const AREA_HOURLY_STAT_RESOURCE = 'area_hourly_stat';
+export const FACILITY_DAILY_STAT_RESOURCE = 'facility_daily_stat';
+export const AREA_TRANSITION_RESOURCE = 'area_transition';

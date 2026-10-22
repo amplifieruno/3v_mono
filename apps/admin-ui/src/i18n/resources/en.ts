@@ -162,4 +162,13 @@ export default {
   segment_template: {
     doc: { topics: { index: 'Segment templates: built-in conditions and creating segments' } },
   },
+  facility_daily_stat: {
+    doc: { topics: { index: 'Analytics: the page, its charts, and facility days' } },
+  },
+  area_hourly_stat: {
+    doc: { topics: { index: 'Hourly figures: people, entries, exits, presence and peak' } },
+  },
+  area_transition: {
+    doc: { topics: { index: 'Moves between areas: the basis of the flow matrix' } },
+  },
 } satisfies TranslationBundle;

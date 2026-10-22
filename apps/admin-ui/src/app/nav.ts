@@ -106,6 +106,10 @@ export const NAV_ICONS = {
   addSegmentMembers: 'UserPlus',
   addToSegment: 'ListPlus',
   removeSegmentMember: 'UserMinus',
+  analyticsOverview: 'ChartLine',
+  hourlyStats: 'Clock',
+  dailyStats: 'CalendarRange',
+  areaTransitions: 'Shuffle',
 } as const;
 
 /**

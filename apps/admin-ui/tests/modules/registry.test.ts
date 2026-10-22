@@ -41,6 +41,13 @@ describe('module registries', () => {
       .sort();
     expect(registered).toEqual(operations);
     expect(operations).toEqual([
+      'analytics.deviceHealthSummary',
+      'analytics.facilityZone',
+      'analytics.flowMatrix',
+      'analytics.heatmapHours',
+      'analytics.incidentsList',
+      'analytics.occupancySeries',
+      'analytics.segmentTrend',
       'devices.recognitionStart',
       'devices.recognitionStatus',
       'devices.recognitionStop',

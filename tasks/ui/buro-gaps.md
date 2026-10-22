@@ -912,3 +912,44 @@ migration `1792365700277`.
 - **Expected from a framework:** the summary outside `SelectItemText` (Radix `ItemText` for the
   label only), so the trigger shows the label.
 
+
+### G57. A page has no control for its own parameters (a period picker)
+- **Need:** the Analytics page (plan 08 Task 1) shows its charts for one period chosen by the user
+  (last 24 hours, 7 or 30 days), kept in the address.
+- **Framework (0.6.0):** a page's `params` are read from the query string into the `route` source,
+  but nothing draws a control that sets them: no param picker in the page chrome and no block or
+  node that writes a page param. A keyed `tabs` node is the only built-in that keeps a choice in
+  the URL. **[code]** (`core/src/screens/page-screen.ts`, `docs/screens-guide.md` "Page bodies").
+- **Workaround:** the periods are keyed tabs (`?period=last-7d`); each tab places its own copy of
+  the period's blocks with literal `days` props (the placements are repeated per period; a closed
+  tab reads nothing).
+- **Expected from a framework:** a param control in the page chrome (enum params as a segmented
+  control or select), or a node that binds a control to a page param, so placements read
+  `l.ref('route', 'period')` once.
+
+### G58. A placement has no title, and a grid has no column count
+- **Need:** each analytic block on the Analytics page needs a heading ("Busy hours"); the open
+  incidents and the device health should sit side by side in two columns.
+- **Framework (0.6.0):** a `place` node draws the block's view only (no heading from the block's
+  `texts.label` or the placement's `texts`); `l.grid` takes no column count and lays its children in
+  the kit's fixed grid, so two long lists became three narrow columns with one empty. **[run]**
+  (`ui-shadcn/src/blocks/place-node.tsx`, `ui-shadcn/src/screen/nodes.tsx` `Layout`; seen in the
+  Task 1 screenshots).
+- **Workaround:** every placement is wrapped in a titled panel (`l.panel([l.place(...)], { texts })`),
+  and the two lists are stacked full width.
+- **Expected from a framework:** a placement heading (opt-in `texts.title`), and `l.grid(children,
+  { columns })`.
+
+### G59. A block view cannot read a query's field labels or an enum value's label as text
+- **Need:** the KPI tiles (`itap:kpis`) label the same `dashboard_kpis` figures the dashboard's facts
+  block labels from the query's declared `fields`; chart hover titles and legends name enum values
+  (severities, device health, channels) as plain strings inside SVG `<title>`.
+- **Framework (0.6.0):** a custom query handle exposes only `kind` and `ref` (`CustomQueryHandle`),
+  so a view cannot read its `fields` texts; enum labels are resolved inside `<EnumBadge>` (a React
+  element), with no hook returning the translated label string. **[code]**
+  (`core/src/data/custom-operation.ts`, `ui-shadcn/src/enum/enum-badge.tsx`).
+- **Workaround:** the KPI block repeats the six labels in its own `texts`; legends render
+  `<EnumBadge presentation="plain">`, and SVG hover titles use the humanized stored value
+  ("connection_error" → "Connection error").
+- **Expected from a framework:** a `useQueryFieldLabel(query, field)` / `useEnumLabel(enum, value)`
+  hook (or the field texts on the handle).
