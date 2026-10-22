@@ -53,7 +53,7 @@
   headers:
     - name: x-action-secret
       value_from_env: ACTION_SECRET
-  comment: Delete queued storage files (retention / erasure) through the storage API
+  comment: Queue stale face source uploads, then delete queued storage files (retention / erasure) through the storage API
 - name: dsr_maintenance
   webhook: "{{BACKEND_URL}}/hasura/events/dsr_maintenance"
   schedule: "*/10 * * * *"

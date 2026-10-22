@@ -258,4 +258,10 @@ export const complianceFunctions: FunctionSpec[] = [
     roles: [],
     unscopedReturnReason: 'admin-only: the storage deletion drain (retention_cleanup, drain_file_deletions crons)',
   },
+  {
+    name: 'enqueue_stale_face_sources',
+    exposedAs: 'mutation',
+    roles: [],
+    unscopedReturnReason: 'admin-only: the drain_file_deletions cron queues unused face_source uploads of every organization',
+  },
 ];

@@ -89,7 +89,7 @@ Around it:
 - **Seed:** 5 apps, 20 synthetic identities, 30 days of attempts.
 
 ### Compliance (slice 10, `summary-10-compliance.md`)
-- **Retention:** policies over 21 data classes, executed daily by `retention_cleanup` through one purge function per class. Purges are batched, resumable, FK-ordered, legal-hold aware, and bypass guards only under `itap.retention_context`. Files go through the `pending_file_deletions` queue; the dry-run planner is `retention_plan`.
+- **Retention:** policies over 21 data classes, executed daily by `retention_cleanup` through one purge function per class. Purges are batched, resumable, FK-ordered, legal-hold aware, and bypass guards only under `itap.retention_context`. Files go through the `pending_file_deletions` queue; the dry-run planner is `retention_plan`. Face source photos (kind `face_source`, uploaded by the console for the enrollment actions) are queued by the `drain_file_deletions` cron once older than an hour, whatever the outcome (`itap.enqueue_stale_face_sources`, UI phase 4 final wave), and with their crop (`metadata.source_file_id`) by `enqueue_unused_files` (retention, erasure).
 - **Legal holds:** on identities, profiles, incidents and facilities, following the person graph and merges.
 - **Restriction of processing:** excluded from matching, auth, search, segments and stats; suppressed in recognition and enrollment.
 - **Data subject requests** (`fulfil_dsr`, lease fenced):

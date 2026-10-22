@@ -98,12 +98,13 @@ export const crons: CronSpec[] = [
   {
     // Storage deletion queue (slice 10): files queued by retention / erasure are deleted through the storage API every
     // 10 minutes (itap.claim_file_deletions, at most 500 per run; apps/backend/src/retention/fileQueue.ts), besides the
-    // drain after the daily retention run.
+    // drain after the daily retention run. Each run first queues face_source uploads older than an hour
+    // (itap.enqueue_stale_face_sources: enrollment originals, whatever the outcome of their request).
     name: 'drain_file_deletions',
     schedule: '*/10 * * * *',
     toleranceSeconds: 600,
     includeInMetadata: true,
-    comment: 'Delete queued storage files (retention / erasure) through the storage API',
+    comment: 'Queue stale face source uploads, then delete queued storage files (retention / erasure) through the storage API',
   },
   {
     // Data subject requests (slice 10 task 3): requests the fulfil_dsr trigger left received for over a minute or

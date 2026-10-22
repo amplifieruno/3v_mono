@@ -1,0 +1,6 @@
+function:
+  schema: itap
+  name: enqueue_stale_face_sources
+configuration:
+  custom_name: enqueue_stale_face_sources
+  exposed_as: mutation

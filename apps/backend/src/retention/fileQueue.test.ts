@@ -17,6 +17,7 @@ function fakeAdmin(rows: PendingDeletion[]) {
     request: async (query: string, variables?: Record<string, unknown>) => {
       calls.push({ query, variables });
       if (query.includes('ClaimFileDeletions')) return { claim_file_deletions: rows };
+      if (query.includes('EnqueueStaleFaceSources')) return { enqueue_stale_face_sources: [{ id: 'q-face' }] };
       return {};
     },
   } as unknown as HasuraClient;
@@ -54,12 +55,22 @@ describe('drainFileDeletions', () => {
 });
 
 describe('drain_file_deletions cron', () => {
-  it('should drain at most 500 files per run', async () => {
+  it('should queue face sources older than an hour, then drain at most 500 files per run', async () => {
     const { drainFileDeletionsCron } = await import('./fileQueue.js');
     const { admin, calls } = fakeAdmin([]);
     const payload = { id: 'd', name: 'drain_file_deletions', scheduled_time: NOW.toISOString(), payload: {} };
     const env = { NHOST_STORAGE_URL: 'http://storage', GRAPHQL_ADMIN_SECRET: 'x' } as Env;
-    expect(await drainFileDeletionsCron.handle(payload, { env, admin, idempotencyKey: 'k' })).toEqual({ files_deleted: 0, files_failed: 0 });
-    expect(calls[0].variables).toEqual({ limit: 500 });
+    const before = Date.now();
+    expect(await drainFileDeletionsCron.handle(payload, { env, admin, idempotencyKey: 'k' })).toEqual({
+      face_sources_queued: 1,
+      files_deleted: 0,
+      files_failed: 0,
+    });
+    expect(calls[0].query).toContain('EnqueueStaleFaceSources');
+    const cutoff = Date.parse(String(calls[0].variables?.before));
+    expect(before - cutoff).toBeGreaterThanOrEqual(60 * 60 * 1000);
+    expect(before - cutoff).toBeLessThan(61 * 60 * 1000);
+    expect(calls[0].variables?.limit).toBe(500);
+    expect(calls[1].variables).toEqual({ limit: 500 });
   });
 });

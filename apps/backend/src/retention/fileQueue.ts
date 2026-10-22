@@ -17,6 +17,13 @@ export type DrainResult = { deleted: number; failed: number };
 /** Files per drain (daily retention run and the 10-minute cron). */
 export const DRAIN_LIMIT = 500;
 
+/**
+ * How long a face source photo (kind `face_source`, uploaded by the console for an enrollment action) is kept: the
+ * action stores its own crop, so the original is queued once this old whatever the outcome (accepted, refused or an
+ * abandoned form). The grace lets a refused form be sent again and its result show the refused photos.
+ */
+export const FACE_SOURCE_GRACE_MS = 60 * 60 * 1000;
+
 const CLAIM = `
   mutation ClaimFileDeletions($limit: Int!) {
     claim_file_deletions(args: { p_limit: $limit }) { id file_id attempts }
@@ -36,6 +43,22 @@ const FAIL = `
     ) { id }
   }
 `;
+
+const SWEEP_FACE_SOURCES = `
+  mutation EnqueueStaleFaceSources($before: timestamptz!, $limit: Int!) {
+    enqueue_stale_face_sources(args: { p_older_than: $before, p_limit: $limit }) { id }
+  }
+`;
+
+/** Queues unused face source photos older than the grace (all organizations); returns how many were queued. */
+export async function queueStaleFaceSources(admin: HasuraClient, now: Date, limit = DRAIN_LIMIT): Promise<number> {
+  const before = new Date(now.getTime() - FACE_SOURCE_GRACE_MS).toISOString();
+  const { enqueue_stale_face_sources: rows } = await admin.request<{ enqueue_stale_face_sources: { id: string }[] }>(
+    SWEEP_FACE_SOURCES,
+    { before, limit },
+  );
+  return rows.length;
+}
 
 function errorText(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
@@ -68,8 +91,13 @@ export async function drainFileDeletions(
   return result;
 }
 
-/** Cron `drain_file_deletions` (every 10 minutes): the queue between daily retention runs. */
+/**
+ * Cron `drain_file_deletions` (every 10 minutes): queues stale face source photos, then drains the queue between
+ * daily retention runs.
+ */
 export const drainFileDeletionsCron = defineCronHandler(async (_payload, ctx) => {
-  const files = await drainFileDeletions(ctx.admin, createStorageClient(ctx.env), new Date());
-  return { files_deleted: files.deleted, files_failed: files.failed };
+  const now = new Date();
+  const faceSources = await queueStaleFaceSources(ctx.admin, now);
+  const files = await drainFileDeletions(ctx.admin, createStorageClient(ctx.env), now);
+  return { face_sources_queued: faceSources, files_deleted: files.deleted, files_failed: files.failed };
 });
