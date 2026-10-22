@@ -88,6 +88,11 @@ describe('organization settings page', () => {
     expect(await screen.findByText('Recognition')).toBeDefined();
     expect(screen.getByText('Physical access')).toBeDefined();
     expect(screen.getByText('Urgent policy version')).toBeDefined();
+    // The current-record frame: the page heading only, no `#<id>` title (`tasks/ui/buro-gaps.md` G16).
+    expect(screen.queryAllByRole('heading', { level: 2 }).map((h) => h.textContent)).not.toContain(
+      NOVA,
+    );
+    expect(screen.queryByRole('button', { name: 'Copy ID' })).toBeNull();
 
     fireEvent.click(screen.getByRole('link', { name: /Edit/ }));
     expect(

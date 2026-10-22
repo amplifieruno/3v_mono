@@ -187,11 +187,10 @@ describe('user preferences', () => {
       expect(active(screen.fields), mode).toEqual(['locale', 'timezone']);
     }
     expect(userSettingsFields.timezone.ui).toMatchObject({ input: 'itap.timezone' });
-    const title = (
-      app.registry.get(USER_SETTINGS_RESOURCE) as { recordTitle: (r: unknown) => string }
-    ).recordTitle;
-    expect(title({ locale: 'de', timezone: 'Europe/Berlin' })).toBe('de · Europe/Berlin');
-    expect(title({ locale: null, timezone: null })).toBe('— · —');
+    // The preferences page draws no record title (current-record frame, `tasks/ui/buro-gaps.md` G16).
+    expect(
+      (app.registry.get(USER_SETTINGS_RESOURCE) as { recordTitle?: unknown }).recordTitle,
+    ).toBeUndefined();
   });
 
   it('should accept the locale shapes notification templates use', () => {

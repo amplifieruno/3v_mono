@@ -204,6 +204,16 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 
 ### G16. A current-record screen has no heading of its own
 - **buro answer (2026-10-22):** answer: a record frame without `<RecordTitle/>` lets the page draw its own heading — adopt in phase 4 Task 0b.
+- **Status (phase 4 Task 0b): resolved by the 0.6 pattern.** Frame `itap:current-record`
+  (`src/app/current-record-frame.ts`, view `current-record-frame-view.tsx`, registered with
+  `use('frames', …)` and `<BuroProvider frameImplementations>`): the built-in record frame without
+  `<RecordTitle/>` / `<CopyId/>`; in show mode it keeps the item actions (Edit) and the `header`
+  slot, in edit/create the form opens directly under the page heading. Used by the organization
+  profile, organization settings and preferences pages (`RecordScreen frame={currentRecordFrame}`);
+  `userSettings.recordTitle` is gone. Tested in `tests/modules/preferences-page.test.tsx`,
+  `organization-profile.test.tsx`, `organization-settings-page.test.tsx` (h1 = page title, no
+  record heading, no Copy ID). The text below is the history. The view-kind half (G13: a record id
+  from the identity or scope) stays open upstream.
 - **Need:** the "My preferences" page shows the signed-in user's `user_settings` row as a form;
   the record has no name, so its heading should be the page's ("My preferences") or none.
 - **Framework (0.6.0):** `<RecordScreen>` always draws the record title from `recordTitle(record)`
@@ -218,6 +228,32 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 
 ### G17. A field validator cannot read what its input loaded, nor the stored value
 - **buro answer (2026-10-22):** answer: resource-level async `validate(values, ctx)` (ctx.view, initialValues, dirty, signal) blocks Save — adopt in phase 4 Task 0b; reusable per-field form is an open question.
+- **Status (phase 4 Task 0b): checked against the 0.6.0 source, not adopted; the registry stays.**
+  What a resource `validate` gets (`react/src/forms/controller/pipeline.ts`
+  `ResourceValidateContext`): `values`, `resource`, `view`, `signal`, `dirty`, `initialValues`.
+  Three findings for the buro team:
+  1. **No data access.** Nothing in the context reaches the data runtime, the provider or the
+     query cache, and `defineQuery` has no imperative call outside React. The runtime is per
+     mount and rotates with the data session (organization switch), so reading the definitions
+     from a validator needs a module-level handle to the current runtime published by
+     `<AppRuntime>` — the same hand-wiring as today's snapshot registry, plus a second read of
+     what the input already loaded, outside the session's scope key. The sample's
+     `checkCustomFields(values.custom_fields, ctx.signal)` presumes such a fetch.
+  2. **`ctx.dirty` is not "changed".** It is "touched or a submit happened": on a submit
+     `use-form-controller.ts` marks every active field dirty before calling `validate`, so
+     `ctx.view === 'edit' && !ctx.dirty.custom_fields ? {} : …` never skips on Save. The skip the
+     trigger makes (unchanged value) needs `sameJson(values.custom_fields,
+     ctx.initialValues.custom_fields)`.
+  3. **Per resource, and a map result loses the code.** Each resource with `customFields` would
+     wire its `validate` (facility, device now; profile, identity in phase 4), composing with any
+     other cross-field rule; a returned `{ field: string }` map becomes `resource.invalid` with the
+     text as default, so the `validation.itap.customFields.*` keys survive only by returning
+     canonical `ValidationIssue`s.
+  The field-level validator already blocks Save and needs no per-resource wiring; with the stored
+  value read from the input's `record` it is equivalent to the resource form on the record screens
+  (the only place either runs). Kept as is. Wanted: a validator context with a data reader
+  (`ctx.read(resource, query)` / `ctx.query(defineQuery…)`) on the field or resource validator,
+  and a `changed` map beside `dirty`. The same holds for `plan-size-registry.ts` (G19 related).
 - **Need:** the reusable `customFields({ entity })` field checks a record's `custom_fields` against
   the organization's attribute definitions (required ones, value types) before any request, and,
   like the database trigger, skips the check on an edit that leaves the value unchanged.
@@ -236,6 +272,8 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 
 ### G18. A form check cannot test the chosen value against a list read for it
 - **buro answer (2026-10-22):** answer as G17 (resource-level async validate); declarative values-keyed source is an open question.
+- **Status (phase 4 Task 0b):** unchanged; the resource `validate` has no data access (G17 finding
+  1), so it cannot read the chosen parent's `path` without hand-wiring either.
 - **Need:** the area form refuses, on the "Inside" field and before any request, a parent that
   is the area itself or one of its own sub-areas (the database refuses it with `area_cycle`):
   the check must compare the chosen parent's `path` with the edited area's id.
@@ -263,6 +301,16 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 
 ### G19. A field input cannot set another field of the form
 - **buro answer (2026-10-22):** answer: `useFormControl().setValues` from @burojs/ui-shadcn on record screens (undocumented; null in flow forms) — adopt in phase 4 Task 0b.
+- **Status (phase 4 Task 0b): checked, not adopted; `imageSize()` stays.** `useFormControl()` is
+  real in 0.6.0 (`ui-shadcn/src/resource/form-context.tsx`, provided by `<RecordScreen>` only).
+  Moving the fill into the image input would (a) need a plan-only wrapper of the generic
+  `storageFile()` input (the organization logo uses it too) that decodes the image on upload;
+  (b) cover only the create path: on an edit the sizes are required and set, a replaced image must
+  *offer* its size, not overwrite it (areas and positions are in plan pixels), and an image
+  without a size of its own (SVG) needs the note at the size field; both live in the size input
+  and need the image there anyway. So `setValues` would add a second path without removing one.
+  Kept; `setValues` stays the answer for a future input that really derives siblings on a record
+  screen (with a fallback for flow forms, where it is `null`).
 - **Need:** a floor plan's `width_px` / `height_px` are filled from the uploaded image when empty;
   the upload happens in the `image_file_id` input.
 - **Framework (0.6.0):** a field input gets `onChange` for its own value only; `form` (the live

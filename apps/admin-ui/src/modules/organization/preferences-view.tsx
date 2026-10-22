@@ -1,6 +1,7 @@
 import { useIdentity, useList } from '@burojs/react';
 import { RecordScreen } from '@burojs/ui-shadcn';
 import type * as React from 'react';
+import { currentRecordFrame } from '../../app/current-record-frame';
 import type { ItapIdentity } from '../../auth';
 import { USER_SETTINGS_RESOURCE } from './user-settings';
 
@@ -19,11 +20,17 @@ export function PreferencesView(): React.ReactElement | null {
     (row) => row.user_id === userId,
   );
   return own === undefined ? (
-    <RecordScreen key={`${userId}:create`} resource={USER_SETTINGS_RESOURCE} mode="create" />
+    <RecordScreen
+      key={`${userId}:create`}
+      resource={USER_SETTINGS_RESOURCE}
+      frame={currentRecordFrame}
+      mode="create"
+    />
   ) : (
     <RecordScreen
       key={`${userId}:edit`}
       resource={USER_SETTINGS_RESOURCE}
+      frame={currentRecordFrame}
       mode="edit"
       recordId={userId}
     />

@@ -65,6 +65,11 @@ describe('organization profile page', () => {
     expect(await screen.findByText('Nova Tower LLC')).toBeDefined();
     expect(screen.getByText('Regional settings')).toBeDefined();
     expect(screen.getByText('Europe/Moscow')).toBeDefined();
+    // The current-record frame (`src/app/current-record-frame*`): the page's own heading, no record
+    // title or copyable id under it (`tasks/ui/buro-gaps.md` G16).
+    expect(screen.getByRole('heading', { level: 1, name: 'Organization' })).toBeDefined();
+    expect(screen.queryByRole('heading', { level: 2, name: ROW.name })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Copy ID' })).toBeNull();
     // Every read carried the token of the `auth` prop, the console's one token source.
     const calls = vi.mocked(fetch).mock.calls;
     expect(calls.length).toBeGreaterThan(0);

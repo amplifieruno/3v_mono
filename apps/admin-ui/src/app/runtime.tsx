@@ -21,6 +21,7 @@ import { createConsoleRuntime } from './app-definition';
 import { appBlockImplementations } from './block-implementations';
 import { ConsoleContext, type ItapResolver } from './console-context';
 import { itapContextSlices } from './context-slices';
+import { appFrameImplementations } from './frame-implementations';
 import { IdentitySync } from './identity-sync';
 import { initialScopeKey } from './scope';
 import { SessionWatch } from './session-watch';
@@ -123,6 +124,7 @@ export function AppRuntime({
         presentationHosts={shadcnPresentationHosts}
         fieldImplementations={fieldImplementations}
         blockImplementations={appBlockImplementations}
+        frameImplementations={appFrameImplementations}
       >
         <IdentitySync />
         {store ? <SessionWatch store={store} /> : null}

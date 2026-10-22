@@ -68,11 +68,6 @@ export const userSettings = defineResource(USER_SETTINGS_RESOURCE, {
         'Your personal settings, the same in every organization you belong to: the language of your notifications and your time zone.',
     },
   },
-  /**
-   * The page heading above the form: the values themselves (`de · Europe/Berlin`). The
-   * default would be the first text field alone (`de`); the page title names the screen.
-   */
-  recordTitle: (record) => `${record.locale || '—'} · ${record.timezone || '—'}`,
   operations: { delete: false },
   builtinActions: { delete: false },
   data: { provider: 'hasura', idField: 'user_id' },

@@ -1,6 +1,7 @@
 import { useIdentity } from '@burojs/react';
 import { RecordScreen } from '@burojs/ui-shadcn';
 import type * as React from 'react';
+import { currentRecordFrame } from '../../app/current-record-frame';
 import type { ItapIdentity } from '../../auth';
 import { SETTINGS_RESOURCE } from './settings';
 
@@ -16,6 +17,7 @@ export function OrganizationSettingsView(): React.ReactElement | null {
     <RecordScreen
       key={organizationId}
       resource={SETTINGS_RESOURCE}
+      frame={currentRecordFrame}
       mode="show"
       recordId={organizationId}
     />

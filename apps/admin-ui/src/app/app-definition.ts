@@ -3,6 +3,7 @@ import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
 import { CONSOLE_MODULES } from '../modules';
 import { helpBlock } from './blocks';
+import { currentRecordFrame } from './current-record-frame';
 import {
   NAV_SECTIONS,
   devicesSection,
@@ -23,6 +24,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use(NAV_SECTIONS.places, placesSection);
   use(NAV_SECTIONS.devices, devicesSection);
   use('help', helpPage, helpBlock);
+  use('frames', currentRecordFrame);
   use('itap-enums', ...ITAP_ENUMS);
   for (const mod of CONSOLE_MODULES) use(mod.name, ...mod.uses);
 });
