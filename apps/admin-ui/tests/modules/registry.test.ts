@@ -2,7 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { Kind, type OperationDefinitionNode, parse } from 'graphql';
 import { describe, expect, it } from 'vitest';
+import { app } from '../../src/app/app-definition';
 import { hasuraTable } from '../../src/data/mapping';
+import { FACILITY_RESOURCE } from '../../src/data/resource-names';
 import { hasuraOperation } from '../../src/data/operations';
 import { CONSOLE_MODULES, HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
 import { type ConsoleModule, collectOperations, collectTables } from '../../src/modules/module';
@@ -86,5 +88,21 @@ describe('module registries', () => {
       )
       .map((file) => relative(SRC, file));
     expect(offenders).toEqual([]);
+  });
+
+  it('should narrow every facility-bound resource by the sidebar facility', async () => {
+    // A resource with a facility_id the sidebar picker does not narrow lists every facility's rows.
+    await app.ready;
+    const bound = app.registry
+      .list()
+      .filter((resource) => resource.name !== FACILITY_RESOURCE)
+      .filter((resource) => Object.hasOwn(resource.fields ?? {}, 'facility_id'));
+    expect(bound.map((resource) => resource.name)).toEqual(
+      expect.arrayContaining(['area', 'floor_plan', 'access_point', 'access_point_device']),
+    );
+    const unscoped = bound
+      .filter((resource) => resource.data?.scope?.facility?.field !== 'facility_id')
+      .map((resource) => resource.name);
+    expect(unscoped).toEqual([]);
   });
 });
