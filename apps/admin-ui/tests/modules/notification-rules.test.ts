@@ -9,7 +9,6 @@ import {
   NOTIFICATION_RULE_EVENT_TYPE_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
   NOTIFICATION_TEMPLATE_RESOURCE,
-  RECIPIENT_GROUP_RESOURCE,
 } from '../../src/data/resource-names';
 import { NOTIFICATION_TEMPLATE_CHECKS, localeProblem, placeholderProblem } from '../../src/modules/notifications/notification-template-fields';
 import { expectTranslated } from '../support/field-issues';
@@ -58,12 +57,6 @@ describe('notification rules', () => {
   it('should offer "Test rule" as the dry-run block, not as a write', () => {
     const test = def(NOTIFICATION_RULE_RESOURCE).actions?.item?.find((action) => action.name === 'test');
     expect(test?.kind).toBe('modal');
-  });
-
-  it('should keep recipient groups and escalation policies read only for now', () => {
-    for (const name of [RECIPIENT_GROUP_RESOURCE, ESCALATION_POLICY_RESOURCE]) {
-      expect(def(name).operations).toMatchObject({ create: false, edit: false, delete: false });
-    }
   });
 
   it('should name the escalation policy of incidents and rule versions', () => {

@@ -48,5 +48,8 @@ export const notificationConditionReferences = defineQuery('itap:notification-co
   binding: conditionReferencesOperation.binding,
   input: schema(z.object({})),
   output: schema(conditionReferences),
+  // Segments are not a registered resource yet (their pages come with the segments phase), so a
+  // segment created or renamed elsewhere is not invalidated here: the choices refresh on the
+  // query's next fetch. Add the segment resource to `reads` when it exists.
   reads: [resourceByName(FACILITY_RESOURCE), resourceByName(AREA_RESOURCE)],
 });

@@ -7,19 +7,31 @@ import {
 } from '../../blocks/notification-rule-test/notification-rule-test-query';
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import {
+  ESCALATION_GROUP_STEP_RESOURCE,
+  ESCALATION_ON_CALL_STEP_RESOURCE,
   ESCALATION_POLICY_RESOURCE,
   NOTIFICATION_RULE_CHANNEL_RESOURCE,
   NOTIFICATION_RULE_EVENT_TYPE_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
   NOTIFICATION_TEMPLATE_RESOURCE,
+  ON_CALL_SCHEDULE_MEMBER_RESOURCE,
+  ON_CALL_SCHEDULE_RESOURCE,
+  RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE,
   RECIPIENT_GROUP_RESOURCE,
+  RECIPIENT_GROUP_USER_MEMBER_RESOURCE,
 } from '../../data/resource-names';
 import {
   conditionReferencesOperation,
   notificationConditionReferences,
 } from '../../fields/notification-conditions-query';
 import type { ConsoleModule } from '../module';
-import { escalationPolicy, escalationPolicyFields, recipientGroup, recipientGroupFields } from './notification-audiences';
+import { escalationPolicy, escalationPolicyFields } from './escalation-policy';
+import {
+  escalationGroupStep,
+  escalationGroupStepFields,
+  escalationOnCallStep,
+  escalationOnCallStepFields,
+} from './escalation-steps';
 import { notificationRule } from './notification-rule';
 import { notificationRuleFields } from './notification-rule-fields';
 import {
@@ -30,12 +42,21 @@ import {
 } from './notification-rule-links';
 import { notificationTemplate } from './notification-template';
 import { notificationTemplateFields } from './notification-template-fields';
+import { onCallScheduleMember, onCallScheduleMemberFields } from './on-call-members';
+import { onCallSchedule, onCallScheduleFields } from './on-call-schedule';
+import { recipientGroup, recipientGroupFields } from './recipient-group';
+import {
+  recipientGroupAddressMember,
+  recipientGroupAddressMemberFields,
+  recipientGroupUserMember,
+  recipientGroupUserMemberFields,
+} from './recipient-group-members';
 
 /**
  * Notifications: who is told what, how and when. Notification rules (event types, conditions,
  * channels, recipients, template, priority, digests) with their dry-run test, notification
- * templates, and read-only recipient groups and escalation policies for the relations (their
- * editing pages come later in the phase).
+ * templates, recipient groups (people and external addresses), escalation policies (group and
+ * on-call steps) and on-call schedules (rotation, who is on call now).
  */
 export const notificationsModule = {
   name: 'notifications-module',
@@ -45,7 +66,13 @@ export const notificationsModule = {
     notificationRuleChannel,
     notificationTemplate,
     recipientGroup,
+    recipientGroupUserMember,
+    recipientGroupAddressMember,
     escalationPolicy,
+    escalationGroupStep,
+    escalationOnCallStep,
+    onCallSchedule,
+    onCallScheduleMember,
     notificationConditionReferences,
     testNotificationRule,
     notificationUserNames,
@@ -63,7 +90,23 @@ export const notificationsModule = {
       selectFields: selectFieldsOf(notificationTemplateFields),
     }),
     [RECIPIENT_GROUP_RESOURCE]: hasuraTable('recipient_groups', { selectFields: selectFieldsOf(recipientGroupFields) }),
+    [RECIPIENT_GROUP_USER_MEMBER_RESOURCE]: hasuraTable('recipient_group_members', {
+      selectFields: selectFieldsOf(recipientGroupUserMemberFields),
+    }),
+    [RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE]: hasuraTable('recipient_group_members', {
+      selectFields: selectFieldsOf(recipientGroupAddressMemberFields),
+    }),
     [ESCALATION_POLICY_RESOURCE]: hasuraTable('escalation_policies', { selectFields: selectFieldsOf(escalationPolicyFields) }),
+    [ESCALATION_GROUP_STEP_RESOURCE]: hasuraTable('escalation_policy_steps', {
+      selectFields: selectFieldsOf(escalationGroupStepFields),
+    }),
+    [ESCALATION_ON_CALL_STEP_RESOURCE]: hasuraTable('escalation_policy_steps', {
+      selectFields: selectFieldsOf(escalationOnCallStepFields),
+    }),
+    [ON_CALL_SCHEDULE_RESOURCE]: hasuraTable('on_call_schedules', { selectFields: selectFieldsOf(onCallScheduleFields) }),
+    [ON_CALL_SCHEDULE_MEMBER_RESOURCE]: hasuraTable('on_call_schedule_members', {
+      selectFields: selectFieldsOf(onCallScheduleMemberFields),
+    }),
   },
   operations: [conditionReferencesOperation, testNotificationRuleOperation, userNamesOperation],
 } as const satisfies ConsoleModule;

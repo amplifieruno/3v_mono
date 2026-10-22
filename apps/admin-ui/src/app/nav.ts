@@ -88,6 +88,9 @@ export const NAV_ICONS = {
   notificationRules: 'BellRing',
   notificationTemplates: 'MessageSquareText',
   testRule: 'FlaskConical',
+  recipientGroups: 'Contact',
+  escalationPolicies: 'Megaphone',
+  onCallSchedules: 'CalendarClock',
 } as const;
 
 /**

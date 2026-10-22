@@ -9,6 +9,7 @@ import {
   areaChoices,
   conditionValue,
   issueNode,
+  sameId,
   validateConditions,
   withCondition,
   withFacility,
@@ -20,7 +21,7 @@ function choicesOf(key: ConditionKey, value: unknown, refs: ConditionReferences)
   if (key === 'segment_id') return refs.segments.map((row) => ({ value: row.id, label: row.name }));
   if (key === 'area_id') {
     const facilityChosen = conditionValue(value, 'facility_id') !== undefined;
-    const facilityName = (id: string) => refs.facilities.find((row) => row.id === id)?.name;
+    const facilityName = (id: string) => refs.facilities.find((row) => sameId(row.id, id))?.name;
     return areaChoices(value, refs).map((row) => {
       const facility = facilityChosen ? undefined : facilityName(row.facility_id);
       return { value: row.id, label: facility === undefined ? row.name : `${row.name} (${facility})` };
@@ -30,6 +31,17 @@ function choicesOf(key: ConditionKey, value: unknown, refs: ConditionReferences)
     value: severity,
     label: <EnumBadge enumName={EVENT_SEVERITY_ENUM} value={severity} presentation="plain" />,
   }));
+}
+
+/**
+ * How a stored value that is not among the row's choices reads: an area of another facility by
+ * its name, "not in the chosen facility" (as its problem says), anything else as unknown.
+ */
+function staleLabel(key: ConditionKey, id: string, refs: ConditionReferences, t: ReturnType<typeof useT>): string {
+  const area = key === 'area_id' ? refs.areas.find((row) => sameId(row.id, id)) : undefined;
+  return area === undefined
+    ? t('console.notificationConditions.unknown', { params: { id } })
+    : t('console.notificationConditions.outsideFacility', { params: { name: area.name } });
 }
 
 const ROWS: readonly { key: ConditionKey; label: string; any: string; hint: string }[] = [
@@ -81,7 +93,7 @@ export function NotificationConditionsInput(props: ScalarInputProps<unknown>): R
             hint={t(`console.notificationConditions.${hint}`)}
             current={conditionValue(value, row.key)}
             choices={choicesOf(row.key, value, data)}
-            unknownLabel={(id) => t('console.notificationConditions.unknown', { params: { id } })}
+            unknownLabel={(id) => staleLabel(row.key, id, data, t)}
             problem={own === null ? undefined : t(`validation.itap.${own.code}`, { params: own.params ?? {} })}
             invalid={own !== null || flagged.has(row.key)}
             disabled={locked}

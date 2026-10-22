@@ -135,4 +135,13 @@ export default {
   notification_template: {
     doc: { topics: { index: 'Notification templates: channels, languages and placeholders' } },
   },
+  recipient_group: {
+    doc: { topics: { index: 'Recipient groups: people, external addresses and channels' } },
+  },
+  escalation_policy: {
+    doc: { topics: { index: 'Escalation policies: steps, timing and repeats' } },
+  },
+  on_call_schedule: {
+    doc: { topics: { index: 'On-call schedules: the rotation and who is on call now' } },
+  },
 } satisfies TranslationBundle;

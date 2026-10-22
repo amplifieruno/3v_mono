@@ -151,6 +151,7 @@ export default {
       every: 'Every event of the rule’s event types.',
       allOf: 'An event must meet every condition set here; leave all on “any” to match every event of the rule’s event types.',
       unknown: 'Unknown: {{id}}',
+      outsideFacility: '{{name}} (not in the chosen facility)',
       loading: 'Reading the facilities, areas and segments…',
       failed: 'The facilities, areas and segments could not be read.',
       areaWithin: '{{name}}, and the areas inside it',

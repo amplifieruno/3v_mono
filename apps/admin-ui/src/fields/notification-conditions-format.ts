@@ -42,6 +42,11 @@ export interface ConditionReferences {
   readonly segments: readonly { readonly id: string; readonly name: string }[];
 }
 
+/** Whether two uuids name the same record (the database compares uuids, not their spelling). */
+export function sameId(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
 export const isPlainObject = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -73,23 +78,20 @@ export function withFacility(value: unknown, facilityId: string | undefined, ref
   const next = withCondition(value, 'facility_id', facilityId);
   const areaId = conditionValue(next, 'area_id');
   if (facilityId === undefined || areaId === undefined || refs === undefined) return next;
-  const area = refs.areas.find((row) => row.id === areaId);
-  return area === undefined || area.facility_id === facilityId ? next : withCondition(next, 'area_id', undefined);
+  const area = refs.areas.find((row) => sameId(row.id, areaId));
+  return area === undefined || sameId(area.facility_id, facilityId) ? next : withCondition(next, 'area_id', undefined);
 }
 
 /** The areas the editor offers: those of the chosen facility, or every area when none is chosen. */
 export function areaChoices(value: unknown, refs: ConditionReferences): ConditionReferences['areas'] {
   const facilityId = conditionValue(value, 'facility_id');
-  return facilityId === undefined ? refs.areas : refs.areas.filter((area) => area.facility_id === facilityId);
-}
-
-function sameId(a: string, b: string): boolean {
-  return a.toLowerCase() === b.toLowerCase();
+  return facilityId === undefined ? refs.areas : refs.areas.filter((area) => sameId(area.facility_id, facilityId));
 }
 
 /**
  * `null` when the conditions are what the database accepts, else the first problem, on its node.
- * Without `refs` the shape alone is checked (keys, strings, uuids, severities); with them, each
+ * `null` (nothing stored) is refused like any other non-object: the column is NOT NULL, `{}` is
+ * "every event". Without `refs` the shape alone is checked (keys, strings, uuids, severities); with them, each
  * id must name a record of the organization and the area must lie in the chosen facility.
  */
 export function validateConditions(value: unknown, refs?: ConditionReferences): ConditionProblem | null {

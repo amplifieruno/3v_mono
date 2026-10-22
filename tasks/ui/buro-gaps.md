@@ -802,3 +802,16 @@ migration `1792365700277`.
   loading and saving) still ends in the generic "Validation failed".
 - **Expected from a framework:** validators with read access (or async field checks bound to a
   query), and G48's server issues reaching record forms with a sub-path.
+
+### G51. A related list cannot reorder its rows
+- **Need:** escalation policy steps (`step_no`) and on-call rotation members (`position`) are
+  ordered children; people expect to drag a row up or down (or use move up / move down).
+- **Framework (0.6.0):** a related list sorts by a field and offers create, edit and delete per
+  row; nothing moves a row or renumbers its siblings, and a flow cannot read the neighbouring rows
+  to swap two numbers in one write. **[code]**
+- **Workaround:** the order is a number the person edits (step number, position), listed in
+  ascending order, bounded like the CHECKs (`step_no >= 1`, `position >= 0`); a number used twice
+  is refused by the unique constraint. The help suggests gaps (10, 20, 30) so a row can be inserted
+  without renumbering the others.
+- **Expected from a framework:** an ordered related list (`order: { field }`) with drag and
+  move up / down that rewrites the order field of the moved rows in one batch.

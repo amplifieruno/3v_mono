@@ -21,13 +21,14 @@ export function conditionIssue(problem: ConditionProblem) {
 }
 
 /**
- * {@link validateConditions} (shape: keys, strings, uuids, severities) as a field validator. The
+ * {@link validateConditions} (shape: keys, strings, uuids, severities) as a field validator; an
+ * empty value is refused too (the column is NOT NULL; "every event" is `{}`, the default). The
  * references (ids of the organization, the area in the facility) are checked by the editor
  * against the records it offers, and by the database on save.
  */
 export function checkNotificationConditions(): FieldValidator {
   const validate = (value: unknown) => {
-    const problem = validateConditions(value ?? {});
+    const problem = validateConditions(value);
     return problem === null ? null : conditionIssue(problem);
   };
   // buro's runner accepts an issue object from the function form (`./field-issue.ts`).

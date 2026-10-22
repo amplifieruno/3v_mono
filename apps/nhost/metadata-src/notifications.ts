@@ -63,7 +63,15 @@ export const notificationTables: TableSpec[] = [
   },
   { name: 'recipient_groups', profile: 'tenant_crud' },
   { name: 'recipient_group_members', profile: 'tenant_crud', insertOnlyColumns: ['group_id'] },
-  { name: 'on_call_schedules', profile: 'tenant_crud' },
+  {
+    name: 'on_call_schedules',
+    profile: 'tenant_crud',
+    // Who is on call now (as the escalation cron picks them) and when that shift ends, for the console.
+    computedFields: [
+      { name: 'on_call_user_id', function: 'on_call_schedule_on_call_user_id' },
+      { name: 'shift_ends_at', function: 'on_call_schedule_shift_ends_at' },
+    ],
+  },
   { name: 'on_call_schedule_members', profile: 'tenant_crud', insertOnlyColumns: ['schedule_id'] },
   { name: 'escalation_policies', profile: 'tenant_crud' },
   { name: 'escalation_policy_steps', profile: 'tenant_crud', insertOnlyColumns: ['policy_id'] },

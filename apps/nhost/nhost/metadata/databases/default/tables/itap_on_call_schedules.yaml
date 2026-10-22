@@ -31,6 +31,17 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: schedule_id
+computed_fields:
+  - name: on_call_user_id
+    definition:
+      function:
+        schema: itap
+        name: on_call_schedule_on_call_user_id
+  - name: shift_ends_at
+    definition:
+      function:
+        schema: itap
+        name: on_call_schedule_shift_ends_at
 insert_permissions:
   - role: org_admin
     permission:
@@ -58,6 +69,9 @@ select_permissions:
         - shift_length_hours
         - timezone
         - updated_at
+      computed_fields:
+        - on_call_user_id
+        - shift_ends_at
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

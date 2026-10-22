@@ -131,10 +131,19 @@ describe('the condition language', () => {
     expect(withCondition({ min_severity: 'high' }, 'min_severity', undefined)).toEqual({});
   });
 
+  it('should compare ids whatever their spelling, as the database compares uuids', () => {
+    expect(areaChoices({ facility_id: ANNEX.toUpperCase() }, REFS).map((area) => area.name)).toEqual(['Loading dock']);
+    expect(withFacility({ area_id: DOCK.toUpperCase() }, ANNEX, REFS)).toEqual({ area_id: DOCK.toUpperCase(), facility_id: ANNEX });
+    expect(withFacility({ area_id: DOCK }, ANNEX.toUpperCase(), REFS)).toEqual({ area_id: DOCK, facility_id: ANNEX.toUpperCase() });
+  });
+
   it('should answer the validator with a translatable issue on the condition’s path', async () => {
     const validate = checkNotificationConditions();
     expect(await validatorResult(validate, { facility_id: TOWER })).toBeNull();
-    expect(await validatorResult(validate, null)).toBeNull();
+    // The column is NOT NULL: nothing stored is refused, "every event" is `{}`.
+    expect(await validatorResult(validate, {})).toBeNull();
+    expect(await validatorResult(validate, null)).toMatchObject({ path: [] });
+    expect(validateConditions(null)?.code).toBe('notificationConditions.notObject');
     const problem = validateConditions({ min_severity: 'urgent' });
     if (problem === null) throw new Error('expected a problem');
     expect(await validatorResult(validate, { min_severity: 'urgent' })).toEqual(conditionIssue(problem));
@@ -170,6 +179,9 @@ describe('the conditions editor', () => {
       'The area is not in the chosen facility: choose one of its areas or clear the area.',
     );
     expect(area.getAttribute('data-invalid')).toBe('true');
+    // The row names the stored area the way its problem reads, not as unknown.
+    expect(area.textContent).toContain('Loading dock (not in the chosen facility)');
+    expect(area.textContent).not.toContain('Unknown');
     expect(screen.getByTestId('condition-conditions-facility_id').getAttribute('data-invalid')).toBeNull();
     cleanup();
 

@@ -1,5 +1,6 @@
 import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@burojs/ui-shadcn';
 import type * as React from 'react';
+import { sameId } from './notification-conditions-format';
 
 /** The select's value for "any" (Radix refuses an empty item value). */
 export const ANY = '__any';
@@ -31,13 +32,15 @@ export interface ConditionRowProps {
 /** One condition of a notification rule: its label, "any" or a choice, a hint and its problem. */
 export function ConditionRow(props: ConditionRowProps): React.ReactElement {
   const { id, current, choices, invalid, problem } = props;
-  const stale = current !== undefined && !choices.some((choice) => choice.value === current);
+  // A stored id matches its choice whatever its spelling (uuids compare case-insensitively).
+  const matched = current === undefined ? undefined : choices.find((choice) => sameId(choice.value, current))?.value;
+  const stale = current !== undefined && matched === undefined;
   const problemId = `${id}-problem`;
   return (
     <div className="flex flex-col gap-1" data-testid={`condition-${id}`} data-invalid={invalid || undefined}>
       <Label htmlFor={id}>{props.label}</Label>
       <Select
-        value={current ?? ANY}
+        value={matched ?? current ?? ANY}
         disabled={props.disabled}
         onValueChange={(next) => props.onChange(next === ANY ? undefined : next)}
         {...(props.onBlur === undefined ? {} : { onOpenChange: (open: boolean) => (open ? undefined : props.onBlur?.()) })}

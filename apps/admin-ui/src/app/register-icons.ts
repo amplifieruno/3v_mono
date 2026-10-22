@@ -74,6 +74,8 @@ import {
   BellRing,
   MessageSquareText,
   FlaskConical,
+  Contact,
+  Megaphone,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -153,6 +155,8 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   BellRing,
   MessageSquareText,
   FlaskConical,
+  Contact,
+  Megaphone,
 };
 
 /**
