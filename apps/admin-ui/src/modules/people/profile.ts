@@ -1,6 +1,7 @@
 import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
+import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import {
   CONSENT_RECORD_RESOURCE,
   DETECTION_RESOURCE,
@@ -262,7 +263,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
                 l.place(relatedList(resourceByName(WATCH_LIST_PROFILE_ENTRY_RESOURCE)), {
                   key: 'profile-watch-lists',
                   // Also seeds "+ Create": the new entry is for this profile; the form asks for the list.
-                  props: { where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['watch_list_id', 'reason', 'expires_at', 'active', 'added_by'], open: 'none' },
+                  props: { where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...SUBJECT_ENTRY_COLUMNS], open: 'none' },
                 }),
               ],
               { key: 'watch-lists', texts: 'Watch lists' },

@@ -1,7 +1,8 @@
 import { type FlowConfig, type FlowUnknownCheck, type Rule, cond, ref } from '@burojs/core';
 import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { SHIFT_HANDOVER_INCIDENT_RESOURCE, SHIFT_HANDOVER_RESOURCE } from '../../data/resource-names';
+import { INCIDENT_RESOURCE, SHIFT_HANDOVER_INCIDENT_RESOURCE, SHIFT_HANDOVER_RESOURCE } from '../../data/resource-names';
+import { ACTIVE_STATUSES } from './incident-flows';
 import { acknowledgeShiftHandover, addOpenIncidentsToHandover } from './shift-handover-ops';
 
 type HandoverRow = Readonly<Record<string, unknown>> | undefined;
@@ -61,16 +62,28 @@ const acknowledgedNow: FlowUnknownCheck = async ({ record, data }) => {
   }
 };
 
-/** Check again after a lost answer: any linked incident means the call went through. */
+/**
+ * Check again after a lost answer: the call went through when every incident still being handled
+ * is linked to the handover now (the flow has no link count from before the call to compare, and
+ * links that existed before must not read as "applied"). Some still unlinked: not applied.
+ */
 const incidentsLinked: FlowUnknownCheck = async ({ record, data }) => {
   const id = record?.id;
   if (typeof id !== 'string' || id === '') return 'unknown';
+  const page = { kind: 'offset', page: 1, pageSize: 500 } as const;
   try {
-    const { data: rows } = await data.list(resourceByName(SHIFT_HANDOVER_INCIDENT_RESOURCE) as never, {
-      filter: { field: 'handover_id', op: 'eq', value: id },
-      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+    const open = await data.list(resourceByName(INCIDENT_RESOURCE) as never, {
+      filter: { field: 'status', op: 'in', value: [...ACTIVE_STATUSES] },
+      pagination: page,
     } as never);
-    return Array.isArray(rows) && rows.length > 0 ? 'applied' : 'unknown';
+    const linked = await data.list(resourceByName(SHIFT_HANDOVER_INCIDENT_RESOURCE) as never, {
+      filter: { field: 'handover_id', op: 'eq', value: id },
+      pagination: page,
+    } as never);
+    const openIds = (open.data as readonly { id?: unknown }[]).map((row) => row.id);
+    const linkedIds = new Set((linked.data as readonly { incident_id?: unknown }[]).map((row) => row.incident_id));
+    if (openIds.length >= 500 || linkedIds.size >= 500) return 'unknown';
+    return openIds.every((incident) => linkedIds.has(incident)) ? 'applied' : 'not-applied';
   } catch {
     return 'unknown';
   }

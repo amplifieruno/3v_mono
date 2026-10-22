@@ -56,6 +56,15 @@ describe('workspace layout', () => {
     expect(workspacePanels({ panels: ['events', 'nope', 'events', 'cameras'] })).toEqual(['events', 'cameras']);
   });
 
+  it('should read the seeded layouts, whose panels are { type } objects', () => {
+    const seeded = {
+      panels: [{ type: 'camera', title: 'Lobby' }, { type: 'camera', title: 'Dock' }, { type: 'event_feed' }, { type: 'bogus' }],
+      columns: 2,
+    };
+    expect(workspacePanels(seeded)).toEqual(['cameras', 'events']);
+    expect(workspacePanels({ panels: [{ type: 'incident_queue' }, { type: 'occupancy' }] })).toEqual(['incidents', 'occupancy']);
+  });
+
   it('should hide, show and move panels, keeping other keys', () => {
     const layout = { panels: ['cameras', 'incidents'], theme: 'dark' };
     expect(togglePanel(layout, 'cameras', false)).toEqual({ panels: ['incidents'], theme: 'dark' });

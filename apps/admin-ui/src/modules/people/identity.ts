@@ -1,6 +1,7 @@
 import { type Check, type CheckDI, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
+import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import { resourceByName } from '../../data/resource-by-name';
 import {
   DETECTION_RESOURCE,
@@ -217,7 +218,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                 l.place(relatedList(resourceByName(WATCH_LIST_IDENTITY_ENTRY_RESOURCE)), {
                   key: 'identity-watch-lists',
                   // Also seeds "+ Create": the new entry is for this identity; the form asks for the list.
-                  props: { where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['watch_list_id', 'reason', 'expires_at', 'active', 'added_by'], open: 'none' },
+                  props: { where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...SUBJECT_ENTRY_COLUMNS], open: 'none' },
                 }),
               ],
               { key: 'watch-lists', texts: 'Watch lists' },

@@ -20,6 +20,21 @@ export const WORKSPACE_PANEL_LABELS: Readonly<Record<WorkspacePanel, string>> = 
 const isPanel = (value: unknown): value is WorkspacePanel =>
   typeof value === 'string' && (WORKSPACE_PANELS as readonly string[]).includes(value);
 
+/** The seed writes panels as `{ type: 'camera' | 'incident_queue' | 'event_feed' | 'occupancy', … }` objects. */
+const SEEDED_TYPES: Readonly<Record<string, WorkspacePanel>> = {
+  camera: 'cameras',
+  incident_queue: 'incidents',
+  event_feed: 'events',
+  occupancy: 'occupancy',
+};
+
+/** The panel an entry of the stored list names: a panel name, or a seeded `{ type }` object. */
+function panelOf(entry: unknown): WorkspacePanel | undefined {
+  if (isPanel(entry)) return entry;
+  const type = entry !== null && typeof entry === 'object' ? (entry as { readonly type?: unknown }).type : undefined;
+  return typeof type === 'string' ? SEEDED_TYPES[type] : undefined;
+}
+
 /**
  * The panels shown, in order: the stored list without unknown or repeated names. A layout with no
  * `panels` list (`{}`, the column's default) shows every panel in the default order; an empty list
@@ -29,7 +44,10 @@ export function workspacePanels(layout: unknown): WorkspacePanel[] {
   const panels = layout !== null && typeof layout === 'object' ? (layout as { readonly panels?: unknown }).panels : undefined;
   if (!Array.isArray(panels)) return [...WORKSPACE_PANELS];
   const shown: WorkspacePanel[] = [];
-  for (const panel of panels) if (isPanel(panel) && !shown.includes(panel)) shown.push(panel);
+  for (const entry of panels) {
+    const panel = panelOf(entry);
+    if (panel !== undefined && !shown.includes(panel)) shown.push(panel);
+  }
   return shown;
 }
 
