@@ -4,7 +4,7 @@ import { Kind, type OperationDefinitionNode, parse } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { hasuraTable } from '../../src/data/mapping';
-import { FACILITY_RESOURCE } from '../../src/data/resource-names';
+import { FACILITY_RESOURCE, NOTIFICATION_SUBSCRIPTION_RESOURCE } from '../../src/data/resource-names';
 import { hasuraOperation } from '../../src/data/operations';
 import { CONSOLE_MODULES, HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
 import { type ConsoleModule, collectOperations, collectTables } from '../../src/modules/module';
@@ -66,7 +66,6 @@ describe('module registries', () => {
       'monitoring.workspaceOccupancyFacts',
       'notification-conditions.conditionReferences',
       'notification-delivery-report.deliveryReport',
-      'notification-delivery-report.deliveryReportFacts',
       'notifications.testNotificationRule',
       'notifications.userNames',
       'organization_invitation.inviteMember',
@@ -150,7 +149,10 @@ describe('module registries', () => {
     expect(bound.map((resource) => resource.name)).toEqual(
       expect.arrayContaining(['area', 'floor_plan', 'access_point', 'access_point_device', 'device', 'device_area']),
     );
+    // Personal lists show all of the member's own rows: a facility there is a filter, not a place.
+    const personal = new Set([NOTIFICATION_SUBSCRIPTION_RESOURCE]);
     const unscoped = bound
+      .filter((resource) => !personal.has(resource.name))
       .filter((resource) => resource.data?.scope?.facility?.field !== 'facility_id')
       .map((resource) => resource.name);
     expect(unscoped).toEqual([]);

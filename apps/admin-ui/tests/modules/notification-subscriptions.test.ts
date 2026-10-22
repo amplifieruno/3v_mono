@@ -86,8 +86,8 @@ describe('my subscriptions', () => {
     expect(when({ values: { watch_list_id: 'w' } })).toBe(false);
   });
 
-  it('should show a facility subscription under its facility and one without under every facility', () => {
-    expect(def(NOTIFICATION_SUBSCRIPTION_RESOURCE).data?.scope?.facility).toEqual({ field: 'facility_id', empty: 'shared' });
+  it('should list all of the member’s own subscriptions, whatever the sidebar facility (a personal list)', () => {
+    expect(def(NOTIFICATION_SUBSCRIPTION_RESOURCE).data?.scope?.facility).toBeUndefined();
   });
 });
 

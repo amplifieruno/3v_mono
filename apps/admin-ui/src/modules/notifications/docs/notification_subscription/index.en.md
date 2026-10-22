@@ -2,7 +2,9 @@
 
 A **subscription** is your own standing order to be told about events. Only
 you see your subscriptions; every member keeps their own under **My
-subscriptions**.
+subscriptions**. The list always shows all of them, whichever facility the
+sidebar is set to; filter by **Facility** to see the ones that follow a
+facility.
 
 ## What it follows
 

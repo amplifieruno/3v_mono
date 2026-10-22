@@ -1,7 +1,7 @@
 import { defineCustomPage, facts } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { deliveryReportBlock } from '../../blocks/delivery-report/delivery-report-block';
-import { REPORT_FACT_ROWS, type ReportPeriod, deliveryReportFacts } from '../../blocks/delivery-report/delivery-report-query';
+import { REPORT_FACT_ROWS, type ReportPeriod, deliveryReport } from '../../blocks/delivery-report/delivery-report-query';
 
 /** The periods as the page's tabs, the default (last 7 days) first. */
 const PERIOD_TABS: readonly { readonly period: ReportPeriod; readonly title: string }[] = [
@@ -13,7 +13,7 @@ const PERIOD_TABS: readonly { readonly period: ReportPeriod; readonly title: str
 /**
  * "Delivery report": how notifications fared over a period (`delivery_report`), chosen as a tab
  * (kept in the URL): the headline figures over every channel (facts block) and the table per
- * channel. A period's figures are read when its tab opens, up to that moment.
+ * channel, both from one read of the period (`itap:delivery-report`), made when its tab opens.
  */
 export const deliveryReportPage = defineCustomPage({
   name: 'delivery-report',
@@ -29,7 +29,7 @@ export const deliveryReportPage = defineCustomPage({
           [
             l.place(facts, {
               key: `facts-${period}`,
-              props: { query: deliveryReportFacts, input: { period }, rows: [...REPORT_FACT_ROWS], view: 'grid' },
+              props: { query: deliveryReport, input: { period }, rows: [...REPORT_FACT_ROWS], view: 'grid' },
             }),
             l.place(deliveryReportBlock, { key: `channels-${period}`, props: { period } }),
           ],

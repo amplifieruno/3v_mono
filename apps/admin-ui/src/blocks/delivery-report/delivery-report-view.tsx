@@ -35,7 +35,7 @@ export function DeliveryReportView({ props, t }: Props): React.ReactElement {
   const report = useCustomQuery(deliveryReport, { period: props.period });
   if (report.isError) return <p className="text-sm text-destructive">{t('failed')}</p>;
   if (report.data === undefined) return <p className="text-sm text-muted-foreground">{t('loading')}</p>;
-  const rows = report.data;
+  const rows = report.data.channels;
   return (
     <section className="flex flex-col gap-2" data-testid="delivery-report" aria-label={t('label')}>
       <div className="overflow-x-auto rounded-md border">

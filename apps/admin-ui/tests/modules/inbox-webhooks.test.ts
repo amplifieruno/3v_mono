@@ -19,6 +19,7 @@ import {
 } from '../../src/modules/notifications/inbox-ops';
 import { secretLengthProblem } from '../../src/modules/notifications/webhook-subscription-fields';
 import { webhookUrlProblem } from '../../src/modules/notifications/webhook-url';
+import en from '../../src/i18n/locales/en';
 
 /**
  * The inbox and webhooks without the UI: the inbox operations (mark read with one id, mark all
@@ -110,6 +111,12 @@ describe('webhook address', () => {
     for (const url of ['http://2130706433/', 'http://0x7f.1/', 'http://[::ffff:7f00:1]/', 'http://[::ffff:10.0.0.1]/']) {
       expect(webhookUrlProblem(url)?.code, url).toBe('webhookUrl.private');
     }
+    // The sender (sendWebhook.ts, finish_webhook_delivery) fails such a delivery at once, not retryable.
+    const text = webhookUrlProblem('http://10.1.2.3/')?.text ?? '';
+    expect(text).toContain('fails at once');
+    expect(text).toContain('blocked_address: <address>');
+    expect(text).toContain('without retries');
+    expect((en as { validation: { itap: { webhookUrl: { private: string } } } }).validation.itap.webhookUrl.private).toBe(text);
     // 172.32.x is public; a host name is only resolved by the sender.
     expect(webhookUrlProblem('http://172.32.0.1/')).toBeNull();
     expect(webhookUrlProblem('http://backend:3001/hasura/events/webhook-sink')).toBeNull();

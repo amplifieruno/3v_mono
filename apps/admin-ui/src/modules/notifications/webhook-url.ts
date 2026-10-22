@@ -110,7 +110,7 @@ export function webhookUrlProblem(value: unknown): WebhookUrlProblem | null {
     return {
       severity: 'warning',
       code: 'webhookUrl.private',
-      text: 'A loopback or private network address: the platform calls it only where private targets are allowed (development). Elsewhere each delivery fails with “blocked_address” and is not retried.',
+      text: 'A loopback or private network address: the platform calls it only where private targets are allowed (development). Elsewhere each delivery fails at once with “blocked_address: <address>”, without retries.',
     };
   }
   return null;

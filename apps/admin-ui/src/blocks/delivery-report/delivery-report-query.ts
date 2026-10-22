@@ -104,18 +104,22 @@ export function factsOf(rows: readonly ReportRow[]): z.infer<typeof reportFacts>
   };
 }
 
+/** The report of a period: the headline figures and, under `channels`, the per-channel rows. */
+export const report = reportFacts.extend({ channels: z.array(reportRow) });
+
+export type Report = z.infer<typeof report>;
+
+/** One read of `delivery_report` serves both the facts block and the table, so they agree. */
+export function reportOf(data: unknown): Report {
+  const channels = rowsOf(data);
+  return { ...factsOf(channels), channels };
+}
+
 export const deliveryReportOperation = hasuraOperation(DELIVERY_REPORT_BINDING, 'deliveryReport', {
   kind: 'query',
   document: REPORT_DOCUMENT,
   variables,
-  mapResult: rowsOf,
-});
-
-export const deliveryReportFactsOperation = hasuraOperation(DELIVERY_REPORT_BINDING, 'deliveryReportFacts', {
-  kind: 'query',
-  document: REPORT_DOCUMENT,
-  variables,
-  mapResult: (data) => factsOf(rowsOf(data)),
+  mapResult: reportOf,
 });
 
 const reads = [resourceByName(NOTIFICATION_DELIVERY_RESOURCE)];
@@ -127,19 +131,14 @@ const reads = [resourceByName(NOTIFICATION_DELIVERY_RESOURCE)];
  * (`webhook_deliveries`), which the delivery log does not list (they have a log of their own). Digest items
  * are not in the totals (each is carried by its digest). Other members' subscription deliveries
  * are not counted, as the log does not list them.
+ *
+ * One query feeds the page's facts block (its declared `fields`, the headline figures over every
+ * channel) and the per-channel table (`channels`), so a period is read once and both agree.
  */
 export const deliveryReport = defineQuery('itap:delivery-report', {
   binding: deliveryReportOperation.binding,
   input: schema(reportInput),
-  output: schema(z.array(reportRow)),
-  reads,
-});
-
-/** The report's headline figures (`itap:delivery-report-facts`), for the facts block. */
-export const deliveryReportFacts = defineQuery('itap:delivery-report-facts', {
-  binding: deliveryReportFactsOperation.binding,
-  input: schema(reportInput),
-  output: schema(reportFacts),
+  output: schema(report),
   reads,
   fields: {
     total: f.number({ texts: { label: 'Notifications', doc: { summary: 'Deliveries created in the period, every channel (digest items counted once, in their digest).' } } }),
@@ -161,4 +160,4 @@ export const deliveryReportFacts = defineQuery('itap:delivery-report-facts', {
 export const REPORT_FACT_ROWS = ['total', 'delivered', 'waiting', 'failed', 'dead_letter', 'ack_rate', 'avg_response', 'escalations'] as const;
 
 /** The report's operations, for the module's registry. */
-export const DELIVERY_REPORT_OPERATIONS = [deliveryReportOperation, deliveryReportFactsOperation];
+export const DELIVERY_REPORT_OPERATIONS = [deliveryReportOperation];

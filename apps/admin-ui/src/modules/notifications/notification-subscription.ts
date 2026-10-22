@@ -22,8 +22,9 @@ const FORM_ROWS = [
  * changes only their own (the database filters by the session user). A subscription tells its
  * member about the events its filters let through, on one channel. Unsubscribing switches it off
  * (`is_active`) rather than deleting it: a delete would also remove its deliveries from the log
- * (`notification_deliveries_subscription_fkey` cascades), so the console offers no delete. A
- * subscription with a facility shows under that facility, one without under every facility.
+ * (`notification_deliveries_subscription_fkey` cascades), so the console offers no delete. The list
+ * is personal and short, so the sidebar facility does not narrow it: every own subscription shows,
+ * its facility (if any) is a column and a filter (exempt from the facility-scope guard test).
  */
 export const notificationSubscription = defineResource(NOTIFICATION_SUBSCRIPTION_RESOURCE, {
   texts: {
@@ -39,7 +40,7 @@ export const notificationSubscription = defineResource(NOTIFICATION_SUBSCRIPTION
   order: 60,
   icon: NAV_ICONS.subscriptions,
   displayField: 'event_type',
-  data: { provider: 'hasura', scope: { facility: { field: 'facility_id', empty: 'shared' } } },
+  data: { provider: 'hasura' },
   operations: { delete: false },
   builtinActions: { delete: false },
   fields: notificationSubscriptionFields,

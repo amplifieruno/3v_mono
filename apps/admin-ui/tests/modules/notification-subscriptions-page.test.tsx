@@ -121,6 +121,8 @@ describe('delivery report page', () => {
       return Date.parse(to) - Date.parse(from);
     };
     expect(reports().every((body) => span(body) === 7 * 24 * 3_600_000)).toBe(true);
+    // The figures and the table share one read: they cannot disagree about "now".
+    expect(reports()).toHaveLength(1);
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Last 24 hours' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Last 24 hours' }));

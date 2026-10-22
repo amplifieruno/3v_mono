@@ -303,7 +303,7 @@ export default {
         blocked:
           'Link-local and cloud metadata addresses (169.254.x.x, fe80::, 0.0.0.0) are never called: enter the receiving system’s address.',
         private:
-          'A loopback or private network address: the platform calls it only where private targets are allowed (development). Elsewhere each delivery fails with “blocked_address” and is not retried.',
+          'A loopback or private network address: the platform calls it only where private targets are allowed (development). Elsewhere each delivery fails at once with “blocked_address: <address>”, without retries.',
       },
       color: {
         hex: 'Enter a colour as #rrggbb, such as #d97706.',
