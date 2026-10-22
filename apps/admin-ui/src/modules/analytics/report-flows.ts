@@ -67,13 +67,19 @@ const periodRefused =
 /** What "New report" last sent, for "Check again" after a lost answer (a check sees no form values, G12). */
 let lastSent: { readonly report: NewReport; readonly at: number } | null = null;
 
-/** Applied when a report with the title sent was requested after the sending started. */
-const reportCreated: FlowUnknownCheck = async ({ data }) => {
+/** Applied when the member requested a report with the title sent after the sending started. */
+export const reportCreated: FlowUnknownCheck = async ({ data }) => {
   const sent = lastSent;
   if (sent === null) return 'unknown';
   try {
     const { data: rows } = await data.list(resourceByName(REPORT_RESOURCE) as never, {
-      filter: { field: 'title', op: 'eq', value: sent.report.title },
+      // The member's own reports only (`requested_by_me`): someone else's report of the same title is not this one.
+      filter: {
+        and: [
+          { field: 'title', op: 'eq', value: sent.report.title },
+          { field: 'requested_by_me', op: 'eq', value: true },
+        ],
+      },
       sort: [{ field: 'created_at', direction: 'desc' }],
       pagination: { kind: 'offset', page: 1, pageSize: 1 },
     } as never);

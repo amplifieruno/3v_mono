@@ -1,10 +1,11 @@
 import { type DataError, defineDataProvider, defineMutationHandler } from '@burojs/core';
 import { answer, runFlow } from '@burojs/testing';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { withActionRefusals } from '../../src/data/action-refusals';
 import { REPORT_RESOURCE } from '../../src/data/resource-names';
 import { ACTION_REFUSALS } from '../../src/modules';
+import { newReportFlow, reportCreated } from '../../src/modules/analytics/report-flows';
 import { REPORTS_BINDING, reportInsertObject } from '../../src/modules/analytics/report-ops';
 import {
   MAX_REPORT_SPAN_DAYS,
@@ -244,5 +245,16 @@ describe('report refusals', () => {
       details: { issues: [{ message: { default: expect.stringMatching(/no longer failed/) } }] },
     });
     await expect(refused('retryReport', 'Check constraint violation. report_not_found')).rejects.toMatchObject({ code: 'report_not_found' });
+  });
+});
+
+describe('new report after a lost answer', () => {
+  it('should look only at the member’s own reports of the title sent', async () => {
+    newReportFlow.submit.input({ values: { report_type: 'compliance', title: 'Mine', format: 'pdf' } } as never);
+    const list = vi.fn(async () => ({ data: [{ id: REPORT, created_at: new Date().toISOString() }] }));
+    expect(await reportCreated({ data: { list } } as never)).toBe('applied');
+    expect(JSON.stringify(list.mock.calls[0])).toContain('"field":"requested_by_me","op":"eq","value":true');
+    list.mockResolvedValueOnce({ data: [] });
+    expect(await reportCreated({ data: { list } } as never)).toBe('not-applied');
   });
 });

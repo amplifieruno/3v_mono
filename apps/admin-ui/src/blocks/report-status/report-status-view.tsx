@@ -1,8 +1,8 @@
-import { type BlockViewProps, useCustomQuery } from '@burojs/react';
+import { type BlockViewProps, useCustomQuery, useDispatcher } from '@burojs/react';
 import { cn } from '@burojs/ui-shadcn';
-import { useQueryClient } from '@tanstack/react-query';
 import { Check, CircleDashed, Clock, LoaderCircle, X } from 'lucide-react';
 import * as React from 'react';
+import { REPORT_RESOURCE } from '../../data/resource-names';
 import { formatDateTime, instantOf } from '../../fields/date-time-format';
 import { reportProgressQuery } from '../../modules/analytics/report-ops';
 import type { reportStatusBlock } from './report-status-block';
@@ -47,30 +47,31 @@ function StepItem({ step, t }: { readonly step: ReportStep; readonly t: T }): Re
 
 /**
  * The report's progress as steps. Polls while the report is queued or generating; once it has moved
- * on from the status the page shows, every read of this report is refreshed so the page's file,
- * error and Retry follow (a record page does not poll its record, `tasks/ui/buro-gaps.md` G61).
+ * on from the status the page shows, the reports are read again through the dispatcher's `refetch`
+ * effect so the page's file, error and Retry follow (a record page does not poll its record,
+ * `tasks/ui/buro-gaps.md` G61).
  */
 export function ReportStatusView({ props, t }: BlockViewProps<typeof reportStatusBlock>): React.ReactElement {
   const reportId = props.reportId ?? null;
-  // A hook's own result cannot feed its options before it runs: the last read status decides the next poll.
-  const last = React.useRef<string | null>(null);
-  const pending = PENDING_STATUSES.has(last.current ?? props.status ?? '');
+  // The last status read decides whether to read again (a query's own answer cannot set its options).
+  const [lastRead, setLastRead] = React.useState<string | null>(null);
+  const pending = PENDING_STATUSES.has(lastRead ?? props.status ?? '');
   const progress = useCustomQuery(
     reportProgressQuery,
     { reportId: reportId ?? '' },
     { enabled: reportId !== null, refetchInterval: pending ? REPORT_POLL_MS : false },
   );
-  const queryClient = useQueryClient();
+  const dispatcher = useDispatcher();
   const read = progress.data?.status ?? null;
-  last.current = read ?? last.current;
 
   React.useEffect(() => {
     if (read === null) return;
-    if (reportId !== null && props.status !== null && read !== props.status) {
-      // The page's record (and its lists) still show the old status: read every query about this report again.
-      void queryClient.invalidateQueries({ predicate: (query) => JSON.stringify(query.queryKey).includes(reportId) });
+    setLastRead(read);
+    if (props.status !== null && read !== props.status) {
+      // The page's record still shows the old status: read the reports again (as a mutation's effects do).
+      void dispatcher.effects.refetch?.([REPORT_RESOURCE]);
     }
-  }, [read, props.status, reportId, queryClient]);
+  }, [read, props.status, dispatcher]);
 
   if (progress.isError || progress.data === null) {
     return <p className="text-sm text-destructive" data-testid="report-status">{t('unreadable')}</p>;

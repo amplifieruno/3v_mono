@@ -154,6 +154,11 @@ export const reportFields = {
     open: 'none',
     texts: { label: 'Requested by', doc: { summary: 'Who requested the report; empty for a scheduled report.' } },
   }),
+  requested_by_me: f.boolean({
+    system: true,
+    in: [],
+    texts: { label: 'Mine', doc: { summary: 'Whether you requested the report.' } },
+  }),
   created_at: f.dateTime({ system: true, texts: 'Requested', in: [...shown] }),
   updated_at: f.dateTime({ system: true, texts: 'Updated', in: [...showOnly] }),
 };

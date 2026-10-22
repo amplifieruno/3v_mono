@@ -66,7 +66,8 @@ function parseField(text: string, [min, max]: readonly [number, number], weekday
 /** The cron read field by field, or `null` when `itap.valid_cron` refuses it. */
 export function parseCron(expression: unknown): Cron | null {
   if (typeof expression !== 'string') return null;
-  const parts = expression.trim().split(/\s+/u);
+  // `btrim` removes spaces only: a tab or newline at either end is refused, as by the database.
+  const parts = expression.replace(/^ +| +$/gu, '').split(/\s+/u);
   if (parts.length !== 5 || parts[0] === '') return null;
   const fields = parts.map((part, i) => parseField(part, BOUNDS[i] ?? [0, 0], i === 4));
   const [minute, hour, day, month, weekday] = fields;

@@ -11,6 +11,7 @@ export const REPORT_LIST_POLL_MS = 10_000;
 
 /** The reports list's views. */
 export const REPORT_SAVED_VIEWS = [
+  { id: 'mine', texts: 'Mine', state: { filters: [{ field: 'requested_by_me', op: 'eq', value: true }] } },
   { id: 'failed', texts: 'Failed', state: { filters: [{ field: 'status', op: 'eq', value: 'failed' }] } },
   { id: 'scheduled', texts: 'Scheduled', state: { filters: [{ field: 'schedule_id', op: 'nnull', value: true }] } },
   { id: 'incidents', texts: 'Incident reports', state: { filters: [{ field: 'report_type', op: 'eq', value: 'incident' }] } },
@@ -54,7 +55,7 @@ export const report = defineResource(REPORT_RESOURCE, {
       search: { fields: ['code', { field: 'title', op: 'contains' }] },
       filters: {
         pinned: ['status', 'report_type'],
-        fields: ['status', 'report_type', 'format', 'schedule_id', 'incident_id', 'created_by', 'created_at'],
+        fields: ['status', 'report_type', 'format', 'schedule_id', 'incident_id', 'created_by', 'requested_by_me', 'created_at'],
       },
       savedViews: REPORT_SAVED_VIEWS,
     },

@@ -987,18 +987,18 @@ migration `1792365700277`.
 - **Need:** a report's page (plan 08 Task 3) shows queued → generating → completed or failed as the
   platform generates it (seconds), then its file link, or its error and Retry.
 - **Framework (0.6.0):** `refetchInterval` is a list option only (`views.list.refetchInterval`); the
-  show screen reads its record once (and again after a mutation's effects), push invalidation needs
-  a provider live channel (`ResourceMapping.live`, not set up for Hasura here), and there is no
-  public hook to invalidate a resource's reads from a block. **[code]**
+  show screen reads its record once (and again after a mutation's effects), and push invalidation
+  needs a provider live channel (`ResourceMapping.live`, not set up for Hasura here). A block can
+  ask for a re-read through the public `useDispatcher().effects.refetch([resource])` (the path of a
+  mutation's effects), but nothing polls the record by itself. **[code]**
   (`core/src/types/resource.ts` `refetchInterval`, `core/src/data/push-invalidation.ts`,
-  `react/src/index.ts`).
+  `react/src/dispatch/dispatcher-context.tsx`).
 - **Workaround:** the progress block `itap:report-status` reads the report itself
   (`reportProgress`, polling every 3 s while queued or generating) and, once the read status differs
-  from the status the page shows, invalidates every TanStack query whose key mentions the report id
-  (`useQueryClient`, the console's own client), so the record, its file panel, error panel and Retry
-  are read again.
+  from the status the page shows, calls `useDispatcher().effects.refetch([report])`, so the record,
+  its file panel, error panel and Retry are read again.
 - **Expected from a framework:** `views.show.refetchInterval` (a number or a function of the record,
-  e.g. while its status is pending), or a `useInvalidate(resource, id)` hook for blocks.
+  e.g. while its status is pending).
 
 ### G62. A link cannot be written with its record (targets frozen at insert)
 - **Need:** a report's facilities and segments (`report_facilities` / `report_segments`) must exist

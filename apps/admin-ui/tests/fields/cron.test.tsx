@@ -68,6 +68,7 @@ describe('cron grammar (itap.valid_cron)', () => {
     '1-10/3 * * * *',
     '5/10 * * * *',
     '0 7 30 2 *',
+    '0\t7 * * *',
   ])('should accept %j', (cron) => {
     expect(parseCron(cron)).not.toBeNull();
     expect(checkCron(cron)).toBeNull();
@@ -92,6 +93,8 @@ describe('cron grammar (itap.valid_cron)', () => {
     ['0 7 1,,2 * *', 'an empty list item'],
     ['100 7 * * *', 'three digits'],
     ['*-5 * * * *', 'a star range'],
+    ['0 7 * * *\t', 'a trailing tab (btrim removes spaces only)'],
+    ['\n0 7 * * *', 'a leading newline'],
   ])('should refuse %j (%s)', (cron) => {
     expect(parseCron(cron)).toBeNull();
     expect(cronSummary(cron)).toBeNull();

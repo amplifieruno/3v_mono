@@ -21,7 +21,7 @@ import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME, de
  * opens through a presigned link; Retry is refused on a report that has not failed; the server
  * refuses the period the form refuses; a schedule is saved with its cron, refused on an incident
  * template, and deleted; seeded report deliveries reach their report. The report is removed
- * afterwards with the admin secret (with its `report_generated` event and file).
+ * afterwards with the admin secret (with its `report_generated` event, what it fanned out, and its file).
  */
 
 const IDENTITY = { providerId: 'hasura', sessionKey: 'reports-dev-test', scopeKey: null, bindingRevision: '1' } as const;
@@ -116,7 +116,16 @@ describe.skipIf(!DEV_STACK_ENABLED)('reports against the dev stack (Nova Tower)'
       });
       const fileId = ((await rows.json()) as { data?: { reports_by_pk?: { file_id: string | null } } }).data?.reports_by_pk?.file_id;
       // Reports and events are history for every role; the retention context is the one way to remove them.
-      const sql = `select set_config('itap.retention_context', 'on', true); delete from itap.events where dedup_key = 'report:${id}:report_generated'; delete from itap.reports where id = '${id}';`;
+      // What the report's `report_generated` event fanned out (deliveries, inbox rows, webhook deliveries) goes first.
+      const event = `(select e.id from itap.events e where e.dedup_key = 'report:${id}:report_generated')`;
+      const sql = [
+        "select set_config('itap.retention_context', 'on', true)",
+        `delete from itap.notification_deliveries where report_id = '${id}' or event_id in ${event}`,
+        `delete from itap.user_notifications where event_id in ${event}`,
+        `delete from itap.webhook_deliveries where event_id in ${event}`,
+        `delete from itap.events where dedup_key = 'report:${id}:report_generated'`,
+        `delete from itap.reports where id = '${id}'`,
+      ].join('; ');
       const removed = await fetch(DEV_GRAPHQL.replace('/v1/graphql', '/v2/query'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...secret },
@@ -144,7 +153,13 @@ describe.skipIf(!DEV_STACK_ENABLED)('reports against the dev stack (Nova Tower)'
     expect(progress?.status, JSON.stringify(progress)).toBe('completed');
 
     const [report] = await list(REPORT_RESOURCE, { field: 'id', op: 'eq', value: created.id });
-    expect(report).toMatchObject({ status: 'completed', report_type: 'occupancy', format: 'csv', parameters: { timezone: 'UTC' } });
+    expect(report).toMatchObject({
+      status: 'completed',
+      report_type: 'occupancy',
+      format: 'csv',
+      parameters: { timezone: 'UTC' },
+      requested_by_me: true,
+    });
     const { url } = await presignStorageFile(String(report?.file_id), { base: DEV_STORAGE, getToken: token });
     const file = await fetch(url);
     expect(file.status).toBe(200);
