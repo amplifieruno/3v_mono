@@ -24,6 +24,7 @@ import {
   FACILITY_RESOURCE,
   FACILITY_TEMPLATE_RESOURCE,
 } from '../../src/data/resource-names';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Access points, device bindings and facility templates against the dev stack (Nova Tower,
@@ -76,7 +77,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 200 },
+        pagination: offsetPage(1, 200),
         filter,
       } as never) as never,
       context(),

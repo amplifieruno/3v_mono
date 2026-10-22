@@ -15,6 +15,7 @@ import {
 import { PEOPLE_BINDING } from '../../src/modules/people/profile-activity';
 import { profilePairOutput } from '../../src/modules/people/profile-pair';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Documents, consent, restriction and merge against the dev stack (Nova, `org_admin`, a seeded
@@ -69,7 +70,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profile documents, consent, restriction and
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 100 },
+        pagination: offsetPage(1, 100),
         filter,
       } as never) as never,
       context(),

@@ -10,6 +10,7 @@ import { INVITATION_RESOURCE } from '../../src/modules/organization/invitations'
 import { MEMBER_RESOURCE } from '../../src/modules/organization/members';
 import { OVERVIEW_BINDING, dashboardKpisOutput } from '../../src/modules/overview/kpis';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * The custom operations and the organization resources through the console's
@@ -65,7 +66,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom operations against the dev stack (No
       kind: 'list',
       ref: ref(MEMBER_RESOURCE),
       resource: MEMBER_RESOURCE,
-      pagination: { kind: 'offset', page: 1, pageSize: 50 },
+      pagination: offsetPage(1, 50),
       paths: {
         user_id: { field: 'user_id', resource: 'user', providerOptions: { relationship: 'user' } },
       },

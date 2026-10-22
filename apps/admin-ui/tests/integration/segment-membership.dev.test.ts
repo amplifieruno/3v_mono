@@ -11,6 +11,7 @@ import { PROFILE_RESOURCE, SEGMENT_PROFILE_MEMBER_RESOURCE } from '../../src/dat
 import { evaluationResult, previewResult } from '../../src/modules/segments/segment-evaluation-ops';
 import { SEGMENTS_BINDING } from '../../src/modules/segments/segment-ops';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Preview, evaluation and membership against the dev stack (Nova, `org_admin`), on two segments
@@ -78,7 +79,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('segment preview, evaluation and membership 
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 100 },
+        pagination: offsetPage(1, 100),
         filter,
       } as never) as never,
       context(),

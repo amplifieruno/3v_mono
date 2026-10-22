@@ -13,6 +13,7 @@ import {
 import { OVERVIEW_BINDING, dashboardKpisOutput } from '../../src/modules/overview/kpis';
 import { NOVA_FACILITY } from '../support/dev-hosts';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * The analytics reads against the dev stack (Nova, `org_admin`, the seeded 30-day history) through
@@ -53,7 +54,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('analytics against the dev stack (Nova Tower
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 20 },
+        pagination: offsetPage(1, 20),
         filter: { field: 'facility_id', op: 'eq', value: facility.id },
         sort: [{ field: sortField, direction: 'desc' }],
       } as never) as never,

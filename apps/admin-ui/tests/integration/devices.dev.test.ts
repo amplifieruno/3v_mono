@@ -21,6 +21,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Devices against the dev stack (Nova, `org_admin`), on a facility created for the test: a
@@ -73,7 +74,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('devices against the dev stack', () => {
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 50 },
+        pagination: offsetPage(1, 50),
         filter,
       } as never) as never,
       context(),

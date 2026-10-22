@@ -11,6 +11,7 @@ import { periodBounds } from '../../src/blocks/delivery-report/delivery-report-q
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { NOTIFICATION_DELIVERY_RESOURCE, NOTIFICATION_SUBSCRIPTION_RESOURCE } from '../../src/data/resource-names';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, devAdminSecret, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * My subscriptions and the delivery log against the dev stack (Nova, `org_admin`, the seeded
@@ -68,7 +69,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('subscriptions and deliveries against the de
         kind: 'list',
         ref: { namespace: 'default', id: resource },
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: perPage },
+        pagination: offsetPage(1, perPage),
         ...(filter === null ? {} : { filter }),
         sort: [{ field: 'created_at', direction: 'desc' }],
       } as never) as never,

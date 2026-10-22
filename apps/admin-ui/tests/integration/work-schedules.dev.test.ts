@@ -16,6 +16,7 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
+import { offsetPage, type TestQueryInput } from '../support/pagination';
 
 /**
  * Work schedules of Nova Tower through the console's provider, as `org_admin`: every
@@ -64,7 +65,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('work schedules against the dev stack (Nova 
       context(),
     );
 
-  const query = (input: Record<string, unknown>) =>
+  const query = (input: TestQueryInput) =>
     provider.queries?.[input.kind as 'one']?.(
       createQueryDescriptor({
         ...IDENTITY,
@@ -85,7 +86,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('work schedules against the dev stack (Nova 
   });
 
   it('should accept every seeded schedule', async () => {
-    const { data } = (await query({ kind: 'list', pagination: { page: 1, pageSize: 100 } })) as {
+    const { data } = (await query({ kind: 'list', pagination: offsetPage(1, 100) })) as {
       data: readonly Record<string, unknown>[];
     };
     expect(data.length).toBeGreaterThan(0);

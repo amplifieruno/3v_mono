@@ -9,6 +9,7 @@ import { createItapHasuraProvider } from '../../src/data/provider';
 import { PROFILE_RESOURCE } from '../../src/data/resource-names';
 import { PEOPLE_BINDING, profileActivityOutput } from '../../src/modules/people/profile-activity';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Profiles against the dev stack (Nova, `org_admin`, seeded people). Profiles cannot be deleted,
@@ -63,7 +64,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profiles against the dev stack', () => {
         kind: 'list',
         ref: ref(PROFILE_RESOURCE),
         resource: PROFILE_RESOURCE,
-        pagination: { kind: 'offset', page: 1, pageSize: 100 },
+        pagination: offsetPage(1, 100),
         ...(filter === null ? {} : { filter }),
       } as never) as never,
       context(),

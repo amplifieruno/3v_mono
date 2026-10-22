@@ -15,6 +15,7 @@ import {
   signInDev,
 } from '../support/dev-stack';
 import { AREA_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
+import { offsetPage, type TestQueryInput } from '../support/pagination';
 
 /**
  * Areas of a facility created for the test in Nova Tower, through the console's provider as
@@ -65,7 +66,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('areas against the dev stack (Nova Tower)', 
       context(),
     ) as Promise<{ record: Record<string, unknown> }>;
 
-  const query = (resource: string, input: Record<string, unknown>) =>
+  const query = (resource: string, input: TestQueryInput) =>
     provider.queries?.[input.kind as 'one']?.(
       createQueryDescriptor({
         ...IDENTITY,
@@ -87,7 +88,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('areas against the dev stack (Nova Tower)', 
   const listAreas = async (scope: ReturnType<typeof facilityScope>) => {
     const { data } = await query(AREA_RESOURCE, {
       kind: 'list',
-      pagination: { page: 1, pageSize: 500 },
+      pagination: offsetPage(1, 500),
       readScope: scope,
     });
     return data as readonly Record<string, unknown>[];

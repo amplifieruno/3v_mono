@@ -14,6 +14,7 @@ import {
 import { presignStorageFile } from '../../src/fields/storage-client';
 import { planAreaOf, rowsOf } from '../../src/fields/plan-rows';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Monitoring reads against the dev stack (Nova, `org_admin`, the seeded history) through the
@@ -60,7 +61,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('monitoring against the dev stack (Nova Towe
         kind: 'list',
         ref: ref(resource),
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: perPage },
+        pagination: offsetPage(1, perPage),
         ...(filter === null ? {} : { filter }),
         sort,
       } as never) as never,

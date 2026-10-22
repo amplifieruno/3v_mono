@@ -29,6 +29,7 @@ import {
   FACILITY_RESOURCE,
   FLOOR_PLAN_RESOURCE,
 } from '../../src/data/resource-names';
+import { offsetPage } from '../support/pagination';
 
 /**
  * A floor plan round trip against the dev stack (Nova Tower, `org_admin`), on a facility
@@ -96,7 +97,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('floor plans against the dev stack (Nova Tow
         kind: 'list',
         ref: { namespace: 'default', id: resource },
         resource,
-        pagination: { page: 1, pageSize: 100 },
+        pagination: offsetPage(1, 100),
         readScope: facilityScope(facilityId),
       } as never) as never,
       context(),

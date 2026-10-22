@@ -14,6 +14,7 @@ import { REPORTS_BINDING } from '../../src/modules/analytics/report-ops';
 import { reportPeriodProblem } from '../../src/modules/analytics/report-shape';
 import { NOVA_FACILITY } from '../support/dev-hosts';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME, devAdminSecret, signInDev } from '../support/dev-stack';
+import { offsetPage } from '../support/pagination';
 
 /**
  * Reports of Nova through the console's provider, as `org_admin`: a small report requested with its
@@ -59,7 +60,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('reports against the dev stack (Nova Tower)'
         kind: 'list',
         ref: { namespace: 'default', id: resource },
         resource,
-        pagination: { kind: 'offset', page: 1, pageSize: 50 },
+        pagination: offsetPage(1, 50),
         filter,
       } as never) as never,
       queryContext(),

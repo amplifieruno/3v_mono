@@ -14,6 +14,7 @@ import { DASHBOARD_WIDGET_QUERIES } from '../../src/modules/analytics/widget-blo
 import { OVERVIEW_BINDING } from '../../src/modules/overview/kpis';
 import { NOVA_FACILITY } from '../support/dev-hosts';
 import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import { offsetPage, type TestQueryInput } from '../support/pagination';
 
 /**
  * Dashboards of Nova through the console's provider, as `org_admin`: a dashboard with a widget of
@@ -58,7 +59,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
       createMutationDescriptor({ ...IDENTITY, ref, resource: DASHBOARD_RESOURCE, idField: 'id', ...input } as never) as never,
       mutationContext(),
     );
-  const query = (input: Row) =>
+  const query = (input: TestQueryInput) =>
     provider.queries?.[input.kind as 'one']?.(
       createQueryDescriptor({ ...IDENTITY, ref, resource: DASHBOARD_RESOURCE, ...input } as never) as never,
       queryContext(),
@@ -71,7 +72,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
   const mine = async (): Promise<Row[]> => {
     const { data } = (await query({
       kind: 'list',
-      pagination: { kind: 'offset', page: 1, pageSize: 100 },
+      pagination: offsetPage(1, 100),
       filter: { field: 'owned_by_me', op: 'eq', value: true },
     })) as { data: Row[] };
     return data;
@@ -123,7 +124,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
   });
 
   it('should pass the console’s checks for every seeded dashboard the member sees', async () => {
-    const { data } = (await query({ kind: 'list', pagination: { kind: 'offset', page: 1, pageSize: 100 } })) as { data: Row[] };
+    const { data } = (await query({ kind: 'list', pagination: offsetPage(1, 100) })) as { data: Row[] };
     const seeded = data.filter((row) => !String(row.name).startsWith('dev-test'));
     expect(seeded.map((row) => row.name)).toContain('Security overview');
     for (const row of seeded) expect(dashboardProblems(row.widgets), String(row.name)).toEqual([]);

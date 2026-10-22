@@ -18,6 +18,7 @@ import {
   signInDev,
 } from '../support/dev-stack';
 import { CUSTOM_ATTRIBUTE_RESOURCE } from '../../src/data/resource-names';
+import { offsetPage, type TestQueryInput } from '../support/pagination';
 
 /**
  * Custom attribute definitions and the user's own preferences of Nova Tower through
@@ -64,7 +65,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom attributes and preferences (Nova Tow
       context(),
     );
 
-  const query = (resource: string, input: Record<string, unknown>) =>
+  const query = (resource: string, input: TestQueryInput) =>
     provider.queries?.[input.kind as 'one']?.(
       createQueryDescriptor({
         ...IDENTITY,
@@ -77,7 +78,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom attributes and preferences (Nova Tow
 
   const list = async (resource: string) =>
     (
-      (await query(resource, { kind: 'list', pagination: { page: 1, pageSize: 100 } })) as {
+      (await query(resource, { kind: 'list', pagination: offsetPage(1, 100) })) as {
         data: readonly Record<string, unknown>[];
       }
     ).data;

@@ -19,6 +19,7 @@ import {
   signInDev,
 } from '../support/dev-stack';
 import { CUSTOM_ATTRIBUTE_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
+import { offsetPage, type TestQueryInput } from '../support/pagination';
 
 /**
  * Facilities of Nova Tower through the console's provider, as `org_admin`: seeded
@@ -68,7 +69,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
       context(),
     ) as Promise<{ record: Record<string, unknown> }>;
 
-  const query = (resource: string, input: Record<string, unknown>) =>
+  const query = (resource: string, input: TestQueryInput) =>
     provider.queries?.[input.kind as 'one']?.(
       createQueryDescriptor({
         ...IDENTITY,
@@ -92,7 +93,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
   it('should accept every seeded facility', async () => {
     const { data } = await query(FACILITY_RESOURCE, {
       kind: 'list',
-      pagination: { page: 1, pageSize: 200 },
+      pagination: offsetPage(1, 200),
     });
     const rows = data as readonly Record<string, unknown>[];
     expect(rows.some((row) => row.name === 'Nova Tower')).toBe(true);
@@ -107,7 +108,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
   it('should read the occupancy now of the seeded facility', async () => {
     const { data } = await query(FACILITY_RESOURCE, {
       kind: 'list',
-      pagination: { page: 1, pageSize: 200 },
+      pagination: offsetPage(1, 200),
     });
     const nova = (data as readonly Record<string, unknown>[]).find((row) => row.name === 'Nova Tower');
     const descriptor = createQueryDescriptor({
@@ -168,7 +169,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
     definitions.push(String(definition.record.id));
     const { data } = await query(CUSTOM_ATTRIBUTE_RESOURCE, {
       kind: 'list',
-      pagination: { page: 1, pageSize: 500 },
+      pagination: offsetPage(1, 500),
       filter: { field: 'entity', op: 'eq', value: 'facility' },
     });
     const defs = (data as readonly Record<string, unknown>[]).map(definitionOf);

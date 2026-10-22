@@ -1,4 +1,6 @@
 import { type Page, expect, test } from '@playwright/test';
+import { eventTypeEnum } from '../src/enums/event-types';
+import { EVENT_SEVERITIES, type EventSeverity, eventSeverityEnum } from '../src/enums/events';
 import { DEV_GRAPHQL } from '../tests/support/dev-hosts';
 import { devStackEnabled, openSignedIn } from './dev-stack';
 
@@ -7,6 +9,41 @@ test.skip(!devStackEnabled, 'needs the dev stack and seed (ITAP_DEV_STACK=1)');
 const RUN = `e2e-${Date.now()}`;
 
 type Row = Record<string, unknown>;
+
+/** The latest events a rule test dry-runs (`itap.test_notification_rule`, limit 100), in its order. */
+const RULE_TEST_WINDOW =
+  '{ events(order_by: [{occurred_at: desc}, {id: desc}], limit: 100) { event_type severity } }';
+
+type WindowEvent = { event_type: string; severity: EventSeverity };
+
+const rank = (severity: string): number => EVENT_SEVERITIES.indexOf(severity as EventSeverity);
+
+/** The label an enum picker shows for a value (the enum's own text). */
+function enumLabel(def: { texts?: unknown }, value: string): string {
+  const texts = (def.texts ?? {}) as Record<string, { label?: unknown } | undefined>;
+  const label = texts[value]?.label;
+  if (typeof label !== 'string') throw new Error(`no label for ${value}`);
+  return label;
+}
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The (type, minimum severity) the rule is built from: the most frequent pair in the window the
+ * test will dry-run, so it has matches whatever the run before left there; After hours + Medium
+ * when the window is empty.
+ */
+function pickRuleTarget(window: readonly WindowEvent[]): { type: string; severity: EventSeverity } {
+  const counts = new Map<string, number>();
+  for (const event of window) {
+    const key = `${event.event_type}|${event.severity}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (best === undefined) return { type: 'after_hours', severity: 'medium' };
+  const [type = 'after_hours', severity = 'medium'] = best.split('|');
+  return { type, severity: severity as EventSeverity };
+}
 
 /*
  * One browser page for the whole flow, opened from the run's shared admin session. Everything the
@@ -98,12 +135,17 @@ test.describe.serial('notifications smoke', () => {
   }
 
   test('should create a notification rule with a condition, an event type and a channel, and test it without creating a delivery', async () => {
+    // Built from what the dry run will read: earlier test runs fill the window with their own events.
+    const before = await graphql<{ events: WindowEvent[] }>(RULE_TEST_WINDOW);
+    const target = pickRuleTarget(before.events);
+    const isMatch = (event: { type?: string | null; severity?: string | null }): boolean =>
+      event.type === target.type && rank(event.severity ?? '') >= rank(target.severity);
     await page.goto('/notification-rules/create');
     await page.getByTestId('form-field-input:notification_rule:create:name').fill(`${RUN} rule`);
     // Switched off, so the live fan-out never uses it while the run lasts; a test works all the same.
     await page.getByTestId('form-field-input:notification_rule:create:is_active').click();
     await page.getByRole('combobox', { name: 'Minimum severity' }).click();
-    await page.getByRole('option', { name: 'High', exact: true }).click();
+    await page.getByRole('option', { name: enumLabel(eventSeverityEnum, target.severity), exact: true }).click();
     await page.getByTestId('form-submit:notification_rule:create').click();
     await expect(page).toHaveURL(/\/notification-rules\/[0-9a-f-]{36}$/);
     const id = page.url().split('/').pop() ?? '';
@@ -120,12 +162,14 @@ test.describe.serial('notifications smoke', () => {
     ).notification_rules_by_pk;
     expect(rule.name).toBe(`${RUN} rule`);
     expect(rule.is_active).toBe(false);
-    expect(rule.conditions).toEqual({ min_severity: 'high' });
+    expect(rule.conditions).toEqual({ min_severity: target.severity });
 
     await page.getByRole('tab', { name: 'Event types' }).click();
     await page.getByTestId('list-create:notification_rule_event_type').click();
     await page.getByTestId('form-field-input:notification_rule_event_type:create:event_type').click();
-    await page.getByRole('option', { name: /^Restricted area entry\b/ }).click();
+    await page
+      .getByRole('option', { name: new RegExp(`^${escapeRegExp(enumLabel(eventTypeEnum, target.type))}\\b`) })
+      .click();
     await page.getByTestId('form-submit:notification_rule_event_type:create').click();
     await page.getByRole('tab', { name: 'Channels' }).click();
     await page.getByTestId('list-create:notification_rule_channel').click();
@@ -140,9 +184,12 @@ test.describe.serial('notifications smoke', () => {
         );
         return [data.notification_rule_event_types.map((r) => r.event_type), data.notification_rule_channels.map((r) => r.channel)];
       })
-      .toEqual([['restricted_area_entry'], ['in_app']]);
+      .toEqual([[target.type], ['in_app']]);
 
     await page.goto(`/notification-rules/${id}`);
+    // The window again right before the dry run, so the expected count is the one it reads.
+    const window = await graphql<{ events: WindowEvent[] }>(RULE_TEST_WINDOW);
+    const expected = window.events.filter((event) => isMatch({ type: event.event_type, severity: event.severity })).length;
     await page.getByTestId('form-action:notification_rule:show:test').click();
     await expect(page.getByTestId('rule-test-summary')).toBeVisible();
     await page.locator('#rule-test-limit').click();
@@ -157,15 +204,12 @@ test.describe.serial('notifications smoke', () => {
         severity: el.querySelector('[data-testid^="enum-badge:event_severity:"]')?.getAttribute('data-testid')?.split(':').pop(),
       })),
     );
-    // A match is an entry to a restricted area at least as severe as the condition; the rest says why not.
+    // A match is an event of the rule's type at least as severe as the condition; the rest says why not.
     const matches = results.filter((row) => row.reason === 'match');
-    expect(matches.length).toBeGreaterThan(0);
-    for (const row of matches) {
-      expect(row.type).toBe('restricted_area_entry');
-      expect(['high', 'critical']).toContain(row.severity);
-    }
+    expect(matches.length).toBe(expected);
+    for (const row of matches) expect(isMatch(row), JSON.stringify(row)).toBe(true);
     for (const row of results.filter((r) => r.reason !== 'match')) {
-      expect(row.reason).toBe(row.type === 'restricted_area_entry' ? 'condition_mismatch' : 'event_type_mismatch');
+      expect(row.reason).toBe(row.type === target.type ? 'condition_mismatch' : 'event_type_mismatch');
     }
     await expect(page.getByTestId('rule-test-summary')).toContainText(String(matches.length));
     await page.keyboard.press('Escape');
