@@ -6,6 +6,7 @@ import {
   IDENTITY_RESOURCE,
   PROFILE_DOCUMENT_RESOURCE,
   PROFILE_RESOURCE,
+  VISIT_RESOURCE,
 } from '../../data/resource-names';
 import { uploadDocumentFlow } from './document-upload';
 import { enrollFaceFlow } from './enrollment-flows';
@@ -37,9 +38,9 @@ export const PROFILE_CHECKS: Check[] = [
  * `profile_type`: visitors carry no employment fields, contractors and VIPs only some. Profiles
  * are never deleted (no delete permission): their lifecycle is the status. Restricted and erased
  * profiles say so above their details; an erased profile's fields and flows are disabled with the
- * reason (`./profile-rules.ts`), as the database refuses any change of it. Identities, documents
- * and consent decisions are tabs of the profile; enrolling a face and restricting processing are
- * flows of its header and menu.
+ * reason (`./profile-rules.ts`), as the database refuses any change of it. Identities, documents,
+ * consent decisions and visits (a visitor's own, or those a person hosts) are tabs of the profile;
+ * enrolling a face and restricting processing are flows of its header and menu.
  */
 export const profile = defineResource(PROFILE_RESOURCE, {
   texts: {
@@ -174,6 +175,42 @@ export const profile = defineResource(PROFILE_RESOURCE, {
                 }),
               ],
               { key: 'consent', texts: 'Consent' },
+            ),
+            l.panel(
+              [
+                // A visitor's own visits; anyone else's are the visits they host (a visitor never hosts).
+                l.panel(
+                  [
+                    l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+                      key: 'profile-visits',
+                      props: {
+                        // Also seeds "+ Create": a new visit is for this visitor.
+                        where: [{ field: 'visitor_profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                        columns: ['code', 'expected_start', 'expected_end', 'host_profile_id', 'status', 'checked_in_at'],
+                      },
+                    }),
+                  ],
+                  { key: 'visits-as-visitor', when: l.equals(l.ref('record', 'profile_type'), 'visitor') },
+                ),
+                l.panel(
+                  [
+                    l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+                      key: 'profile-hosted-visits',
+                      props: {
+                        // Also seeds "+ Create": a new visit is hosted by this person.
+                        where: [{ field: 'host_profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                        columns: ['code', 'expected_start', 'expected_end', 'visitor_profile_id', 'status', 'checked_in_at'],
+                      },
+                    }),
+                  ],
+                  {
+                    key: 'visits-hosted',
+                    texts: { title: 'Hosted visits' },
+                    when: l.not(l.equals(l.ref('record', 'profile_type'), 'visitor')),
+                  },
+                ),
+              ],
+              { key: 'visits', texts: 'Visits' },
             ),
             l.panel(
               [

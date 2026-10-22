@@ -1,12 +1,17 @@
 # Companies
 
 **Companies** in the Organization section lists the companies people belong
-to. A person's profile names their company, and a visit can name the company
-the visitor comes from.
+to. A person's profile names their company, and a visit names the company it
+is for (usually the host's).
 
-A company's page has two tabs: **Details**, and **People**, the profiles that
-belong to the company (code, name, type, status and whether a face is linked).
-**+ Create** there starts a new profile already set to this company.
+A company's page has three tabs:
+
+- **Details**.
+- **People**: the profiles that belong to the company (code, name, type,
+  status and whether a face is linked). **+ Create** there starts a new
+  profile already set to this company.
+- **Visits**: the visits for the company (visitor, host, expected start and
+  status). **+ Create** there schedules a visit for this company.
 
 ## Kinds
 

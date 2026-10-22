@@ -61,6 +61,10 @@ export const NAV_ICONS = {
   verification: 'BadgeCheck',
   approve: 'Check',
   reject: 'CircleX',
+  visits: 'CalendarDays',
+  checkIn: 'LogIn',
+  checkOut: 'LogOut',
+  cancelVisit: 'CalendarX',
 } as const;
 
 /**

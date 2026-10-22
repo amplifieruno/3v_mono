@@ -97,6 +97,9 @@ of the edit form, each with the reason. Its restriction is never lifted.
 - **Consent**: the person's consent decisions per purpose, recorded and
   withdrawn there. Withdrawing biometric consent stops face matching for the
   person. See *Consent*.
+- **Visits**: a visitor's visits, or, for anyone else, the visits they host,
+  with the expected window, status and check-in time. **+ Create** schedules
+  one for the person. See *Visits*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

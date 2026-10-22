@@ -2,6 +2,7 @@ import { composeFieldImplementations } from '@burojs/react';
 import { shadcnFieldImplementations } from '@burojs/ui-shadcn';
 import { areaShapeImplementations } from './area-shape-impl';
 import { customFieldsImplementations } from './custom-fields-impl';
+import { dateTimeImplementations } from './date-time-impl';
 import { facePhotosImplementations } from './face-photos-impl';
 import { imageSizeImplementations } from './image-size-impl';
 import { inlineFileImplementations } from './inline-file-impl';
@@ -22,11 +23,11 @@ import { timezoneImplementations } from './timezone-impl';
  * values (`itap.custom-fields`), floor-plan shapes and points (`itap.area-shape`,
  * `itap.plan-position`), image sizes (`itap.image-size`), facility template trees
  * (`itap.template-structure`), relation selects read in a given record scope
- * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`) and files sent inside an
- * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`)
- * and the photos to split off an identity (`itap.split-photos`). Handed to
- * `<BuroProvider fieldImplementations>` and to `checkApp`, which checks each literal `meta`
- * against its schema.
+ * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`), files sent inside an
+ * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`),
+ * the photos to split off an identity (`itap.split-photos`) and timestamps with their time of day
+ * (`itap.date-time`). Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
+ * checks each literal `meta` against its schema.
  */
 export const itapFieldImplementations = composeFieldImplementations(
   shadcnFieldImplementations,
@@ -44,4 +45,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   inlineFileImplementations,
   facePhotosImplementations,
   splitPhotosImplementations,
+  dateTimeImplementations,
 );

@@ -19,6 +19,7 @@ import {
   PROFILE_DUPLICATE_RESOURCE,
   PROFILE_RESOURCE,
   VERIFICATION_REQUEST_RESOURCE,
+  VISIT_RESOURCE,
 } from '../../data/resource-names';
 import { identitySplitParts, splitPartsOperation } from '../../fields/split-photos-query';
 import type { ConsoleModule } from '../module';
@@ -70,6 +71,16 @@ import {
   rejectVerificationOperation,
 } from './verification-ops';
 import { verificationRequest, verificationRequestFields } from './verification-request';
+import { visit } from './visit';
+import { visitFields } from './visit-fields';
+import {
+  cancelVisit,
+  cancelVisitOperation,
+  checkInVisit,
+  checkInVisitOperation,
+  checkOutVisit,
+  checkOutVisitOperation,
+} from './visit-ops';
 
 /**
  * People: the profiles of known people (employees, visitors, contractors, VIPs) with their
@@ -77,7 +88,7 @@ import { verificationRequest, verificationRequestFields } from './verification-r
  * processing, and the review queue of possible duplicate profiles; identities (tracked faces)
  * with their photos, created and enrolled from uploaded or camera photos, and their governance:
  * merges and rollbacks, splits, the duplicate queue, verification requests, relationships and
- * the timeline. A later task adds visits.
+ * the timeline; visits with check-in, check-out and cancelling.
  */
 export const peopleModule = {
   name: 'people-module',
@@ -120,6 +131,10 @@ export const peopleModule = {
     mergeRollbackReviewBlock,
     identityRelationshipsBlock,
     identityTimelineBlock,
+    visit,
+    checkInVisit,
+    checkOutVisit,
+    cancelVisit,
   ],
   tables: {
     [PROFILE_RESOURCE]: hasuraTable('profiles', { selectFields: selectFieldsOf(profileFields) }),
@@ -146,6 +161,7 @@ export const peopleModule = {
     [IDENTITY_RELATIONSHIP_RESOURCE]: hasuraTable('identity_relationships', {
       selectFields: selectFieldsOf(identityRelationshipFields),
     }),
+    [VISIT_RESOURCE]: hasuraTable('visits', { selectFields: selectFieldsOf(visitFields) }),
   },
   operations: [
     profileActivityOperation,
@@ -169,5 +185,8 @@ export const peopleModule = {
     identityTimelineOperation,
     placeNamesOperation,
     splitPartsOperation,
+    checkInVisitOperation,
+    checkOutVisitOperation,
+    cancelVisitOperation,
   ],
 } as const satisfies ConsoleModule;

@@ -29,3 +29,4 @@ export const IDENTITY_MERGE_SOURCE_RESOURCE = 'identity_merge_source';
 export const IDENTITY_DUPLICATE_RESOURCE = 'identity_duplicate_candidate';
 export const VERIFICATION_REQUEST_RESOURCE = 'verification_request';
 export const IDENTITY_RELATIONSHIP_RESOURCE = 'identity_relationship';
+export const VISIT_RESOURCE = 'visit';

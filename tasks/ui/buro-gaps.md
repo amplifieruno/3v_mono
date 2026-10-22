@@ -148,6 +148,9 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Also (phase 2):** the facility's `apply_template` flow: a lost answer of
   `apply_facility_template` cannot be checked (the chosen template and parent are not in the
   context), and a resend would create every area again; accepted the same way.
+- **Also (phase 4):** `merge_into` (Merge into this identity) works around it: its `submit.input`
+  function remembers the first identity it sends, by the kept identity's id, in a module-level map,
+  and the check reads that identity back (`merged` = applied). Unknown after a reload of the console.
 - **Expected from a framework:** the submitted input (or the values) in the check context.
 
 ### G13. No current-record screen: a one-row resource needs a custom page
@@ -470,6 +473,9 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Workaround:** `profileSavedViews(now)` (`src/modules/people/profile-views.ts`) writes the
   day the console was loaded; the view goes stale past midnight until a reload (the article says
   so).
+- **Also (Task 5):** the visit list's "Today" and "Expected now" (`visitSavedViews(now)`,
+  `src/modules/people/visit-views.ts`) carry the load day and the load moment; "Expected now" is
+  the one that ages fastest (a visit due an hour after loading is missing until a reload).
 - **Expected from a framework:** relative date values in filters (`{ op: 'lte', value: { relative:
   'today' } }`), resolved when the view is applied.
 
@@ -480,7 +486,10 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   and pickers read `displayField` only (one field name). **[code]** (`types/resource.ts`
   `displayField` doc).
 - **Workaround:** `displayField: 'last_name'` plus `recordTitle` (first and last name) on the
-  profile; pickers show the last name only (search finds first names too).
+  profile; pickers show the last name only (search finds first names too). Task 5 kept the last
+  name for the visit's visitor and host pickers: it is what reception asks for; the code
+  (`PROFILE-00012`) is unique but nobody knows it. A `full_name` computed field in the data layer
+  would close it without a framework change.
 - **Expected from a framework:** relation labels and pickers that use `recordTitle` (or a declared
   label template over several fields).
 
@@ -582,3 +591,17 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   the pair in its mutation.
 - **Expected from a framework:** `or` groups in a related list's locked filter, and a create hook
   that can normalise the input (here: order the pair).
+
+### G37. A date-time field is entered and shown as a date
+- **Need:** a visit's expected window (`expected_start` / `expected_end`, `timestamptz`) entered with
+  its time of day, and check-in/out times shown with it.
+- **Framework (0.6.0):** `f.dateTime` renders the kit's `DateInput` (`<input type="date">`, the value
+  cut to `YYYY-MM-DD`) and `DateDisplay` (`formatDate`: year, month, day), the same as `f.date`
+  (`ui-shadcn/src/fields/default-renderers.ts` `dateTime: scalar(date)`). The filter builder alone
+  uses `datetime-local`. **[code]** **[run]** (`tests/modules/visits-page.test.tsx`: the input was
+  `type="date"` before the workaround).
+- **Workaround:** the field `itap.date-time` (`src/fields/date-time*.ts(x)`): a `datetime-local`
+  input in local time sending an ISO instant, and a date-and-time display in the console's locale.
+  Used by visits; earlier read-only timestamps (last seen, decided at, …) still show the date only.
+- **Expected from a framework:** `f.dateTime` with a date-and-time input and display (with the time
+  zone of the instant made explicit).

@@ -90,4 +90,7 @@ export default {
   profile_duplicate_candidate: {
     doc: { topics: { index: 'Profile duplicates: comparing, merging, dismissing' } },
   },
+  visit: {
+    doc: { topics: { index: 'Visits: scheduling, check-in, check-out and cancelling' } },
+  },
 } satisfies TranslationBundle;

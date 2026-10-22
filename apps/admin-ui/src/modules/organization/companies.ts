@@ -10,7 +10,7 @@ import {
   COMPANY_STATUS_ENUM,
 } from '../../enums/organization';
 import { resourceByName } from '../../data/resource-by-name';
-import { COMPANY_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
+import { COMPANY_RESOURCE, PROFILE_RESOURCE, VISIT_RESOURCE } from '../../data/resource-names';
 
 export { COMPANY_RESOURCE };
 
@@ -66,7 +66,7 @@ export const companyFields = {
 /**
  * The companies people belong to: tenants of the business center, contractors and
  * vendors, service providers and visitor organizations. Profiles and visits point at
- * a company; its page lists its people (profiles of the people module).
+ * a company; its page lists its people and its visits (of the people module).
  */
 export const company = defineResource(COMPANY_RESOURCE, {
   texts: {
@@ -131,6 +131,19 @@ export const company = defineResource(COMPANY_RESOURCE, {
                 }),
               ],
               { key: 'people', texts: 'People' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+                  key: 'company-visits',
+                  props: {
+                    // Also seeds "+ Create": a new visit is for this company.
+                    where: [{ field: 'company_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['code', 'visitor_profile_id', 'host_profile_id', 'expected_start', 'status'],
+                  },
+                }),
+              ],
+              { key: 'visits', texts: 'Visits' },
             ),
           ],
           { key: 'sections' },
