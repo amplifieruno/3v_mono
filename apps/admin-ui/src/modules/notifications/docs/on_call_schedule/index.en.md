@@ -25,10 +25,12 @@ move.
 
 ## Who is on call now
 
-**On call now** and **Shift ends** are computed by the server the way the
-escalation job picks the person, so they show exactly whom an on-call step
-would page at this moment. They are empty when nobody in the rotation is
-active. A person on vacation is paged through their delegate.
+**On call now** is the person whose shift it is, computed by the server the
+way the escalation job picks them (the next active member when the shift's
+owner is deactivated or expired). It is empty when nobody in the rotation is
+active, and **Shift ends** is then not shown. A vacation delegate, if the
+person has one, is applied when a page is sent: the page goes to the
+delegate, while this page still names the person on call.
 
 The **Escalation steps paging it** tab lists the steps that use the schedule.
 A schedule a step uses cannot be deleted until that step pages someone else.

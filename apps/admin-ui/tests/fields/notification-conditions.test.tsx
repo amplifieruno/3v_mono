@@ -191,6 +191,20 @@ describe('the conditions editor', () => {
     expect(within(segment).getByRole('alert').textContent).toContain('no longer exists');
   });
 
+  it('should select the choice of a stored id whatever its spelling', async () => {
+    render(<NotificationConditionsInput {...baseProps({ facility_id: TOWER.toUpperCase(), area_id: LOBBY.toUpperCase() })} />, {
+      wrapper: Wrapper,
+    });
+    const facility = await screen.findByTestId('condition-conditions-facility_id');
+    expect(facility.textContent).toContain('Nova Tower');
+    expect(facility.textContent).not.toContain('Unknown');
+    const area = screen.getByTestId('condition-conditions-area_id');
+    expect(area.textContent).toContain('Lobby');
+    expect(area.textContent).not.toContain('Unknown');
+    expect(area.textContent).not.toContain('not in the chosen facility');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('should mark the row a validation issue names', async () => {
     const issue = { ...conditionIssue({ code: 'notificationConditions.badSeverity', text: 'x', node: 'min_severity' }), path: ['conditions', 'min_severity'] };
     render(<NotificationConditionsInput {...baseProps({ min_severity: 'urgent' }, [issue])} />, { wrapper: Wrapper });

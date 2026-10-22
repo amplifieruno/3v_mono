@@ -4,6 +4,7 @@ import type { ItapAuthProvider } from '../../src/auth';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import {
   ESCALATION_GROUP_STEP_RESOURCE,
+  ESCALATION_POLICY_RESOURCE,
   ON_CALL_SCHEDULE_MEMBER_RESOURCE,
   RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE,
   RECIPIENT_GROUP_USER_MEMBER_RESOURCE,
@@ -60,6 +61,12 @@ describe.skipIf(!DEV_STACK_ENABLED)('recipient groups, escalation and on-call ag
   const create = (resource: string, input: Row) =>
     provider.mutations?.createOne?.(
       createMutationDescriptor({ ...IDENTITY, ref: { namespace: 'default', id: resource }, resource, idField: 'id', kind: 'createOne', input } as never) as never,
+      context(),
+    ) as Promise<{ record: Row }>;
+
+  const update = (resource: string, id: string, input: Row) =>
+    provider.mutations?.updateOne?.(
+      createMutationDescriptor({ ...IDENTITY, ref: { namespace: 'default', id: resource }, resource, idField: 'id', kind: 'updateOne', id, input } as never) as never,
       context(),
     ) as Promise<{ record: Row }>;
 
@@ -133,6 +140,15 @@ describe.skipIf(!DEV_STACK_ENABLED)('recipient groups, escalation and on-call ag
     expect(JSON.stringify(webhook.errors)).toContain('escalation_policy_steps_channel_not_webhook');
     const step = await create(ESCALATION_GROUP_STEP_RESOURCE, { policy_id: policyId, step_no: 10, after_minutes: 5, recipient_group_id: groupId, channel: 'in_app' });
     expect(step.record).toMatchObject({ step_no: 10, after_minutes: 5, recipient_group_id: groupId });
+  });
+
+  it('should clear the number of passes when the policy stops repeating, as the form sends it', async () => {
+    const before = await graphql('query ($id: uuid!) { escalation_policies_by_pk(id: $id) { repeat max_cycles } }', { id: policyId });
+    expect(before.escalation_policies_by_pk).toEqual({ repeat: true, max_cycles: 2 });
+    // The edit form writes only the fields it shows: no max_cycles once Repeat is off.
+    await update(ESCALATION_POLICY_RESOURCE, policyId, { repeat: false });
+    const after = await graphql('query ($id: uuid!) { escalation_policies_by_pk(id: $id) { repeat max_cycles } }', { id: policyId });
+    expect(after.escalation_policies_by_pk).toEqual({ repeat: false, max_cycles: null });
   });
 
   it('should say who is on call now as the escalation cron computes it', async () => {

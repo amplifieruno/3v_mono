@@ -44,7 +44,7 @@ export const escalationPolicyFields = {
       label: 'Passes at most',
       doc: {
         summary:
-          'For a repeating policy: how many passes through the steps in all, the first included (3 = the first pass and two repeats). Empty: repeat until someone acknowledges.',
+          'For a repeating policy: how many passes through the steps in all, the first included (3 = the first pass and two repeats). Empty: repeat until someone acknowledges. Switching Repeat off clears it.',
       },
     },
   }),
@@ -54,7 +54,11 @@ export const escalationPolicyFields = {
 
 type Fields = typeof escalationPolicyFields;
 
-/** The repeat settings: the number of passes only while the policy repeats (read from `values` or `record`). */
+/**
+ * The repeat settings: the number of passes only while the policy repeats (read from `values` or
+ * `record`). The form writes only the fields it shows, so switching Repeat off sends no
+ * `max_cycles`; the database clears it then (trigger `escalation_policies_clear_max_cycles`).
+ */
 const repeatGrid = (l: Layout<Fields>, source: 'values' | 'record') =>
   l.grid(['repeat', l.field('max_cycles', { when: l.equals(l.ref(source, 'repeat'), true) })]);
 

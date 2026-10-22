@@ -38,6 +38,8 @@ const ROTATION = [
   { id: 'm1', schedule_id: SCHEDULE, position: 0, user_id: ANNA, created_at: stamps.created_at },
   { id: 'm2', schedule_id: SCHEDULE, position: 10, user_id: BORIS, created_at: stamps.created_at },
 ];
+const POLICY = '77777777-7777-4777-8777-000000000002';
+const POLICY_ROW = { ...stamps, id: POLICY, name: 'Critical incidents', description: null, repeat: true, max_cycles: 3 };
 const GROUP_ROW = { ...stamps, id: GROUP, name: 'Security team', description: null };
 const PEOPLE = [{ id: 'p1', group_id: GROUP, user_id: ANNA, channel: 'email', created_at: stamps.created_at }];
 const ADDRESSES = [{ id: 'a1', group_id: GROUP, external_address: '+441632960123', channel: 'sms', created_at: stamps.created_at }];
@@ -55,13 +57,16 @@ const bodies = (): GraphqlBody[] =>
 
 const mutations = (): GraphqlBody[] => bodies().filter((body) => body.query.trimStart().startsWith('mutation'));
 
+let scheduleRow: Record<string, unknown> = SCHEDULE_ROW;
+
 async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
   if (query.trimStart().startsWith('mutation')) {
     return hasuraResponse({ data: { item: { ...stamps, id: '77777777-7777-4777-8777-000000000001', name: 'P', description: null, repeat: false, max_cycles: null } } });
   }
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 2 } } } });
-  if (query.includes('on_call_schedules_by_pk')) return hasuraResponse({ data: { item: SCHEDULE_ROW } });
+  if (query.includes('on_call_schedules_by_pk')) return hasuraResponse({ data: { item: scheduleRow } });
+  if (query.includes('escalation_policies_by_pk')) return hasuraResponse({ data: { item: POLICY_ROW } });
   if (query.includes('recipient_groups_by_pk')) return hasuraResponse({ data: { item: GROUP_ROW } });
   if (/\bitems: on_call_schedule_members\(/.test(query)) return hasuraResponse({ data: { items: ROTATION } });
   if (/\bitems: recipient_group_members\(/.test(query)) {
@@ -81,6 +86,7 @@ const renderAt = (path: string) =>
 beforeAll(installDomShims);
 
 beforeEach(() => {
+  scheduleRow = SCHEDULE_ROW;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -95,7 +101,7 @@ afterEach(() => {
 describe('escalation policy form', () => {
   it('should offer the number of passes only while the policy repeats', async () => {
     renderAt('/escalation-policies/create');
-    const repeat = await screen.findByRole('switch', { name: /^Repeat/ }).catch(() => screen.findByRole('checkbox', { name: /^Repeat/ }));
+    const repeat = await screen.findByRole('checkbox', { name: /^Repeat/ });
     expect(screen.queryByLabelText(/^Passes at most/)).toBeNull();
     fireEvent.click(repeat);
     expect(await screen.findByLabelText(/^Passes at most/)).toBeDefined();
@@ -103,14 +109,35 @@ describe('escalation policy form', () => {
     await waitFor(() => expect(screen.queryByLabelText(/^Passes at most/)).toBeNull());
   });
 
-  it('should not send the number of passes for a policy that does not repeat', async () => {
-    renderAt('/escalation-policies/create');
-    fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Night escalation' } });
-    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
-    await waitFor(() => expect(mutations().length).toBe(1));
-    const sent = JSON.stringify(mutations()[0]?.variables);
-    expect(sent).toContain('Night escalation');
+  it('should leave no number of passes on a policy switched to not repeat', async () => {
+    renderAt(`/escalation-policies/${POLICY}/edit`);
+    const passes = await screen.findByLabelText(/^Passes at most/);
+    await waitFor(() => expect((passes as HTMLInputElement).value).toBe('3'));
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Repeat/ }));
+    await waitFor(() => expect(screen.queryByLabelText(/^Passes at most/)).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: /^Save/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    const update = mutations()[0];
+    expect(update?.query).toContain('update_escalation_policies_by_pk');
+    const sent = JSON.stringify(update?.variables);
+    expect(sent).toContain('"repeat":false');
+    // The hidden field is not written (nothing the CHECK could refuse); the database clears the
+    // stored 3 when repeat turns off (trigger escalation_policies_clear_max_cycles, dev-stack test).
     expect(sent).not.toContain('max_cycles');
+  });
+});
+
+describe('notification rule form', () => {
+  it('should save an untouched rule with no conditions as every event', async () => {
+    renderAt('/notification-rules/create');
+    fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Night watch' } });
+    // The conditions editor is ready (its choices read) and left untouched.
+    expect((await screen.findAllByText('Any facility')).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    const sent = JSON.stringify(mutations()[0]?.variables);
+    expect(sent).toContain('Night watch');
+    expect(sent).toContain('"conditions":{}');
   });
 });
 
@@ -124,6 +151,14 @@ describe('on-call schedule page', () => {
     const read = bodies().find((body) => /\bitems: on_call_schedule_members\(/.test(body.query));
     expect(`${read?.query ?? ''} ${JSON.stringify(read?.variables)}`).toMatch(/position["\s:]*asc/);
   });
+
+  it('should show no shift end while nobody is on call', async () => {
+    scheduleRow = { ...SCHEDULE_ROW, on_call_user_id: null };
+    renderAt(`/on-call-schedules/${SCHEDULE}`);
+    expect(await screen.findByText('On call now')).toBeDefined();
+    expect(await screen.findByRole('tab', { name: /Rotation/ })).toBeDefined();
+    expect(screen.queryByText('Shift ends')).toBeNull();
+  });
 });
 
 describe('recipient group page', () => {
@@ -133,7 +168,11 @@ describe('recipient group page', () => {
     expect(screen.getByRole('tab', { name: /External addresses/ })).toBeDefined();
     expect(await screen.findByText('Anna Petrova')).toBeDefined();
     // Each tab asks for its own kind of member only.
-    const reads = bodies().filter((body) => /\bitems: recipient_group_members\(/.test(body.query));
-    expect(reads.some((body) => JSON.stringify(body.variables).includes('user_id'))).toBe(true);
+    const memberReads = () => bodies().filter((body) => /\bitems: recipient_group_members\(/.test(body.query));
+    expect(memberReads().some((body) => JSON.stringify(body.variables).includes('user_id'))).toBe(true);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /External addresses/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /External addresses/ }));
+    expect(await screen.findByText('+441632960123')).toBeDefined();
+    expect(memberReads().some((body) => JSON.stringify(body.variables).includes('external_address'))).toBe(true);
   });
 });

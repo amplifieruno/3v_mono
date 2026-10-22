@@ -28,4 +28,4 @@ Without **Repeat** the policy stops after its last step. With it, the steps
 start again from the first while nobody acknowledges. **Passes at most**
 limits the repeats: the number of passes through the steps in all, the first
 included (3 means the first pass and two repeats). Leave it empty to repeat
-until someone acknowledges.
+until someone acknowledges. Switching **Repeat** off clears it.

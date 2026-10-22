@@ -21,7 +21,7 @@ const SHIFT_HOURS = { min: 1, integer: true } as const;
 /**
  * Columns of `itap.on_call_schedules` the `org_admin` role reads. Who is on call now and until when
  * are computed fields over `itap.on_call_member(schedule, now())`, the function the escalation
- * cron pages with, so the page shows exactly whom a step would page now.
+ * cron picks the person with; a vacation delegate is applied by the cron when it sends, not here.
  */
 export const onCallScheduleFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
@@ -73,14 +73,17 @@ export const onCallScheduleFields = {
       label: 'On call now',
       doc: {
         summary:
-          'Who an on-call step of an escalation policy pages right now: the person whose shift it is, or the next active one when they are deactivated. Empty when nobody in the rotation is active.',
+          'The person whose shift it is now (the next active member when they are deactivated or expired), as the escalation job picks them. A vacation delegate, if they have one, is applied when a page is sent and is not shown here. Empty when nobody in the rotation is active.',
       },
     },
   }),
   shift_ends_at: dateTime({
     system: true,
-    in: ['list', 'show'],
-    texts: { label: 'Shift ends', doc: { summary: 'When the current shift ends and the next person in the rotation takes over.' } },
+    in: ['show'],
+    texts: {
+      label: 'Shift ends',
+      doc: { summary: 'When the current shift ends and the next person in the rotation takes over; shown while someone is on call.' },
+    },
   }),
   created_at: f.dateTime({ system: true, texts: 'Created', in: ['show'] }),
   updated_at: f.dateTime({ system: true, texts: 'Updated', in: ['show'] }),
@@ -110,12 +113,13 @@ export const onCallSchedule = defineResource(ON_CALL_SCHEDULE_RESOURCE, {
   fields: onCallScheduleFields,
   views: {
     list: {
-      columns: ['name', 'on_call_user_id', 'shift_ends_at', 'shift_length_hours', 'timezone'],
+      columns: ['name', 'on_call_user_id', 'shift_length_hours', 'timezone'],
       defaultSort: [{ field: 'name', direction: 'asc' }],
       search: { fields: [{ field: 'name', op: 'contains' }] },
     },
     show: {
-      header: (l) => [l.grid(['on_call_user_id', 'shift_ends_at'])],
+      // The shift end means nothing while nobody is on call (no members, nobody active).
+      header: (l) => [l.grid(['on_call_user_id', l.field('shift_ends_at', { when: l.present(l.ref('record', 'on_call_user_id')) })])],
       body: (l) => [
         'name',
         'description',
