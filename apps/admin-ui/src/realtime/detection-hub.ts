@@ -135,8 +135,14 @@ export function createDetectionHub(options: DetectionHubOptions): DetectionHub {
   function join(connection: ReturnType<DetectionSocketFactory>, gen: number, deviceId: string): void {
     rooms.set(deviceId, 'joining');
     connection.join(deviceId, (result) => {
-      if (gen !== generation || rooms.get(deviceId) !== 'joining') return;
+      if (gen !== generation) return;
       const parsed = ackResult.safeParse(result);
+      if (rooms.get(deviceId) !== 'joining') {
+        // The last view of the camera closed while the join was on its way: the server joined
+        // the room anyway, so leave it.
+        if (parsed.success && parsed.data.ok && !devices().has(deviceId)) connection.leave(deviceId);
+        return;
+      }
       if (parsed.success && parsed.data.ok) {
         attempt = 0;
         unauthorized = 0;

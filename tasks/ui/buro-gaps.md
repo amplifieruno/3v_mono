@@ -616,9 +616,26 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   the list shows its empty state. Only in development (StrictMode double-invokes effects there only).
   **[code]** **[run]** (the detection list under `<StrictMode>` in jsdom shows no row; the dev
   server showed "No device events yet" with 8 events in the database).
-- **Workaround:** `src/main.tsx` no longer wraps the app in `<StrictMode>` (plan 05 Task 1).
-- **Expected from a framework:** an observer created (or re-activated) in the effect that disposes
-  it, so StrictMode's remount works.
+- **Workaround:** a `pnpm patch` of `@burojs/react@0.6.0` (`patches/@burojs__react@0.6.0.patch`,
+  root `package.json` `pnpm.patchedDependencies`), applied to `dist/index.js` and `dist/index.cjs`;
+  the console keeps `<StrictMode>`. Test: `tests/modules/monitoring-page.test.tsx` "should show the
+  first page of the log when mounted in StrictMode".
+- **Fix for buro (exactly what the patch does):** `InfiniteListObserver` gets
+  ```ts
+  activate(): void { this.#active = true; }
+  ```
+  and `useInfiniteList` re-activates the memoized observer in the effect that disposes it:
+  ```ts
+  useEffect(() => {
+    observer.activate();
+    return () => observer.dispose();
+  }, [observer]);
+  ```
+  The effect runs before the `acceptInitial` effect and before `useSyncExternalStore` subscribes,
+  so after StrictMode's remount the first page is accepted and the listener is registered again.
+  (Creating the observer inside the effect would work too but needs state for the first render.)
+- **Expected from a framework:** the fix above (or an observer created in the effect that disposes
+  it), so StrictMode's remount works.
 
 ### G39. A related list cannot order its own rows
 - **Need:** a tracking session's Path tab (plan 05 Task 1) reads best oldest first (the order the
@@ -638,5 +655,8 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   body too. **[run]**
 - **Workaround:** a computed column on the table (`detections.profile_id`, function
   `itap.detection_profile_id`, migration `1792365700274`), declared as a relation field: the tab
-  filters on it, and it doubles as the list's Person column and the known / unknown views.
+  filters on it, and it doubles as the list's Person column and the known / unknown views. Known
+  limit: a filter on a computed column uses no index (about 110 ms over Nova's 22k detections; it
+  grows with the organization's detections). A relation filter (`identity: { profile_id }`) would use
+  the `identity_id` index, which is what the dotted `where` would send.
 - **Expected from a framework:** dotted `where` paths across to-one relations in related lists.

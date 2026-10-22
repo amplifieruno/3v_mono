@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, configure, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
@@ -163,6 +164,17 @@ describe('detection list', () => {
 
     // The person column names the known person.
     expect(await within(rows[0] as HTMLElement).findByText('Petrova', {})).toBeDefined();
+  });
+
+  it('should show the first page of the log when mounted in StrictMode (G38, patched @burojs/react)', async () => {
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/detections']}>
+          <ConsoleApp auth={fakeAdminAuth(NOVA, 'Nova Tower Business Center')} />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    expect(await screen.findAllByRole('link', { name: 'IDENTITY-00002' })).not.toHaveLength(0);
   });
 
   it('should read the log newest first by keyset, without a count query', async () => {

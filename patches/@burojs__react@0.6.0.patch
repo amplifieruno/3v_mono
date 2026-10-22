@@ -1,0 +1,54 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index a253d8d04e326cbe69301bdbecc4261caf3423e0..c29256445461ad8f07ec1572915385f179fc3c37 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -1530,6 +1530,10 @@ var InfiniteListObserver = class {
+ 		this.#tailPromise = request;
+ 		return request;
+ 	};
++	/** Re-activates after `dispose()`: React StrictMode's simulated remount reuses the memoized observer. */
++	activate() {
++		this.#active = true;
++	}
+ 	dispose() {
+ 		if (!this.#active) return;
+ 		this.#active = false;
+@@ -1565,7 +1569,10 @@ function useInfiniteList(resource, options) {
+ 		descriptor: (0, _burojs_core.isDataError)(descriptor) ? void 0 : descriptor,
+ 		runtime
+ 	}), [identity, runtime]);
+-	(0, react.useEffect)(() => () => observer.dispose(), [observer]);
++	(0, react.useEffect)(() => {
++		observer.activate();
++		return () => observer.dispose();
++	}, [observer]);
+ 	(0, react.useEffect)(() => {
+ 		observer.acceptInitial(initial.data, initial.isCurrentData);
+ 	}, [
+diff --git a/dist/index.js b/dist/index.js
+index 65fdc188ed186db3465ee1a2fb9f10e58fa69b38..cf3021c627f584befc2f38a062c0c4eef1c28aa0 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1529,6 +1529,10 @@ var InfiniteListObserver = class {
+ 		this.#tailPromise = request;
+ 		return request;
+ 	};
++	/** Re-activates after `dispose()`: React StrictMode's simulated remount reuses the memoized observer. */
++	activate() {
++		this.#active = true;
++	}
+ 	dispose() {
+ 		if (!this.#active) return;
+ 		this.#active = false;
+@@ -1564,7 +1568,10 @@ function useInfiniteList(resource, options) {
+ 		descriptor: isDataError(descriptor) ? void 0 : descriptor,
+ 		runtime
+ 	}), [identity, runtime]);
+-	useEffect(() => () => observer.dispose(), [observer]);
++	useEffect(() => {
++		observer.activate();
++		return () => observer.dispose();
++	}, [observer]);
+ 	useEffect(() => {
+ 		observer.acceptInitial(initial.data, initial.isCurrentData);
+ 	}, [

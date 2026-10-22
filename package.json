@@ -53,5 +53,10 @@
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@burojs/react@0.6.0": "patches/@burojs__react@0.6.0.patch"
+    }
   }
 }

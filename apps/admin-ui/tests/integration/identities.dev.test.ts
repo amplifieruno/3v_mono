@@ -61,6 +61,8 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
   let target: StorageTarget;
   let organizationId = '';
   let seeded: Seeded | undefined;
+  /** Seeded identities with a primary photo; the first is `seeded`. */
+  let candidates: readonly Seeded[] = [];
   const uploaded: string[] = [];
   const startedAt = new Date().toISOString();
 
@@ -89,9 +91,9 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
   const fixture = (file: string, type = 'image/jpeg') =>
     upload(`dev-test-${file}`, new Uint8Array(readFileSync(resolve(FACES, file))), type);
 
-  /** A copy of the seeded identity's own primary crop, uploaded as a new face photo. */
-  const seededFace = async (): Promise<string> => {
-    const { url } = await presignStorageFile(String(seeded?.primary_photo_file_id), target);
+  /** A copy of a seeded identity's own primary crop, uploaded as a new face photo. */
+  const seededFace = async (of: Seeded | undefined = seeded): Promise<string> => {
+    const { url } = await presignStorageFile(String(of?.primary_photo_file_id), target);
     const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
     return upload('dev-test-seeded-face.jpg', bytes, 'image/jpeg');
   };
@@ -108,10 +110,11 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
           status: { _in: [unverified, verified] }, profile: { processing_restricted: { _eq: false } }
         }
         order_by: { number: asc }
-        limit: 1
+        limit: 8
       ) { id code primary_photo_file_id }
     }`);
-    seeded = (data.identities as Seeded[])[0];
+    candidates = data.identities as Seeded[];
+    seeded = candidates[0];
   }, 60_000);
 
   afterAll(async () => {
@@ -153,42 +156,55 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
   }, 60_000);
 
   it('should add the good photo and answer the refused one with its reason', async () => {
-    const identityId = String(seeded?.id);
-    const face = await seededFace();
-    const noFace = await fixture('no-face.jpg');
-    try {
-      const result = enrollmentResult.parse(await mutate('addIdentityPhotos', { identityId, fileIds: [face, noFace] }));
-      expect(result).toMatchObject({
-        identity_id: identityId,
-        identity_code: seeded?.code,
-        photos_added: 1,
-        rejected: [{ file_id: noFace, reason: 'no_face' }],
-      });
-      const gallery = galleryPhotos.parse(
-        await provider.queries?.custom?.(
-          createQueryDescriptor({
-            ...IDENTITY,
-            kind: 'custom',
-            ref: ref('identityPhotos'),
-            resource: PHOTO_GALLERY_BINDING,
-            operation: 'identityPhotos',
-            input: { identityId },
-          } as never) as never,
-          context(),
-        ),
-      );
-      expect(gallery.photos.some((photo) => photo.kind === 'manual' && photo.created_at >= startedAt)).toBe(true);
-    } finally {
-      // Remove what the request added: the embedding, the photo row and the crop file.
-      const added = await graphql(
-        'query ($i: uuid!, $t: timestamptz!) { identity_photos(where: { identity_id: { _eq: $i }, created_at: { _gte: $t } }) { id file_id } }',
-        { i: identityId, t: startedAt },
-      );
-      for (const photo of added.identity_photos as { id: string; file_id: string }[]) {
-        await graphql('mutation ($f: uuid!) { delete_identity_embeddings(where: { photo_file_id: { _eq: $f } }) { affected_rows } }', { f: photo.file_id });
-        await graphql('mutation ($id: uuid!) { delete_identity_photos_by_pk(id: $id) { id } }', { id: photo.id });
-        uploaded.push(photo.file_id);
+    // Live recognition runs on the dev stack create camera identities; one of them may hold the
+    // same face as a seeded identity, and the action then refuses the copy as conflicting. Such a
+    // refusal adds nothing: try the next seeded identity.
+    let done = false;
+    for (const candidate of candidates) {
+      const identityId = candidate.id;
+      const face = await seededFace(candidate);
+      const noFace = await fixture('no-face.jpg');
+      try {
+        const result = enrollmentResult.parse(await mutate('addIdentityPhotos', { identityId, fileIds: [face, noFace] }));
+        if (result.rejected.some((entry) => entry.file_id === face && entry.reason === 'conflicting_identity')) {
+          expect(result.photos_added).toBe(0);
+          continue;
+        }
+        expect(result).toMatchObject({
+          identity_id: identityId,
+          identity_code: candidate.code,
+          photos_added: 1,
+          rejected: [{ file_id: noFace, reason: 'no_face' }],
+        });
+        const gallery = galleryPhotos.parse(
+          await provider.queries?.custom?.(
+            createQueryDescriptor({
+              ...IDENTITY,
+              kind: 'custom',
+              ref: ref('identityPhotos'),
+              resource: PHOTO_GALLERY_BINDING,
+              operation: 'identityPhotos',
+              input: { identityId },
+            } as never) as never,
+            context(),
+          ),
+        );
+        expect(gallery.photos.some((photo) => photo.kind === 'manual' && photo.created_at >= startedAt)).toBe(true);
+        done = true;
+        break;
+      } finally {
+        // Remove what the request added: the embedding, the photo row and the crop file.
+        const added = await graphql(
+          'query ($i: uuid!, $t: timestamptz!) { identity_photos(where: { identity_id: { _eq: $i }, created_at: { _gte: $t } }) { id file_id } }',
+          { i: identityId, t: startedAt },
+        );
+        for (const photo of added.identity_photos as { id: string; file_id: string }[]) {
+          await graphql('mutation ($f: uuid!) { delete_identity_embeddings(where: { photo_file_id: { _eq: $f } }) { affected_rows } }', { f: photo.file_id });
+          await graphql('mutation ($id: uuid!) { delete_identity_photos_by_pk(id: $id) { id } }', { id: photo.id });
+          uploaded.push(photo.file_id);
+        }
       }
     }
+    expect(done, 'a seeded identity whose own face no camera identity holds').toBe(true);
   }, 120_000);
 });

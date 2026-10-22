@@ -110,6 +110,22 @@ describe('detection hub', () => {
     expect(h.store.listenerCount).toBe(0);
   });
 
+  it('should leave a room whose join is accepted after its last view closed', async () => {
+    const h = harness();
+    h.view(A);
+    const b = h.view(B);
+    await settle();
+    h.socket(0).connect();
+    h.socket(0).answer(A);
+    b.close();
+    expect(h.socket(0).leaves).toEqual([]);
+    // The server joined the room anyway: the hub leaves it at once.
+    h.socket(0).answer(B);
+    expect(h.socket(0).leaves).toEqual([B]);
+    expect(b.states.at(-1)).toEqual({ status: 'connecting' });
+    h.hub.close();
+  });
+
   it('should join a camera added while connected on the same socket', async () => {
     const h = harness();
     h.view(A);
