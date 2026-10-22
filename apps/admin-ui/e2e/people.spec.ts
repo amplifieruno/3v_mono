@@ -47,32 +47,51 @@ test.describe.serial('people smoke', () => {
 
   test.afterAll(async () => {
     if (!opened) return;
+    /** Runs one cleanup step; a failure is reported (a leftover of the run), never swallowed. */
+    const step = async (name: string, run: () => Promise<unknown>): Promise<void> => {
+      try {
+        await run();
+      } catch (error: unknown) {
+        const description = `${name}: ${error instanceof Error ? error.message : String(error)}`;
+        console.warn(`people smoke cleanup failed: ${description}`);
+        test.info().annotations.push({ type: 'cleanup-failed', description });
+      }
+    };
     try {
       if (mergeId !== '') {
-        await graphql('mutation ($id: uuid!) { rollback_merge(merge_id: $id) { merge_id } }', { id: mergeId }).catch(
-          () => undefined,
+        await step(`roll back merge ${mergeId}`, () =>
+          graphql('mutation ($id: uuid!) { rollback_merge(args: {p_merge_id: $id}) { id } }', { id: mergeId }),
         );
       }
       for (const id of visitIds) {
-        await graphql('mutation ($id: uuid!) { cancel_visit(args: {p_visit: $id, p_reason: "e2e cleanup"}) { id } }', { id }).catch(
-          () => undefined,
-        );
+        // The run's visits end checked out or cancelled; only one a failed step left scheduled is cancelled.
+        await step(`cancel visit ${id}`, async () => {
+          if ((await visitRow(id)).status !== 'scheduled') return;
+          await graphql('mutation ($id: uuid!) { cancel_visit(args: {p_visit: $id, p_reason: "e2e cleanup"}) { id } }', { id });
+        });
       }
       if (profileId !== '') {
-        await graphql('mutation ($id: uuid!) { update_profiles_by_pk(pk_columns: {id: $id}, _set: {status: inactive}) { id } }', {
-          id: profileId,
-        }).catch(() => undefined);
+        await step(`deactivate profile ${profileId}`, () =>
+          graphql('mutation ($id: uuid!) { update_profiles_by_pk(pk_columns: {id: $id}, _set: {status: inactive}) { id } }', {
+            id: profileId,
+          }),
+        );
       }
       if (verifiedSeed) {
-        await graphql('mutation ($id: uuid!, $s: identity_statuses_enum!) { update_identities_by_pk(pk_columns: {id: $id}, _set: {status: $s}) { id } }', {
-          id: verifiedSeed.id,
-          s: verifiedSeed.status,
-        }).catch(() => undefined);
+        const seed = verifiedSeed;
+        await step(`restore identity ${seed.id}`, () =>
+          graphql('mutation ($id: uuid!, $s: identity_statuses_enum!) { update_identities_by_pk(pk_columns: {id: $id}, _set: {status: $s}) { id } }', {
+            id: seed.id,
+            s: seed.status,
+          }),
+        );
       }
       if (identityId !== '') {
-        await graphql('mutation ($id: uuid!) { update_identities_by_pk(pk_columns: {id: $id}, _set: {status: archived}) { id } }', {
-          id: identityId,
-        }).catch(() => undefined);
+        await step(`archive identity ${identityId}`, () =>
+          graphql('mutation ($id: uuid!) { update_identities_by_pk(pk_columns: {id: $id}, _set: {status: archived}) { id } }', {
+            id: identityId,
+          }),
+        );
       }
     } finally {
       await page.context().close();
@@ -227,19 +246,28 @@ test.describe.serial('people smoke', () => {
     }
   });
 
-  /** Submits the "Create identity from photos" form with one photo; resolves to the result block or the form's refusal. */
-  async function createIdentityFrom(photo: string): Promise<{ created: boolean; refusal: string }> {
+  /**
+   * Submits the "Create identity from photos" form with one photo; resolves to the created
+   * identity's id (from the action's answer) or the form's refusal.
+   */
+  async function createIdentityFrom(photo: string): Promise<{ identityId: string; refusal: string }> {
     await page.goto('/identities');
     await page.getByTestId('list-flow:identity:create_from_photos').click();
     await dialogs().locator('input[type=file]').first().setInputFiles(photo);
+    const answered = page.waitForResponse(
+      (response) => response.url().includes('/v1/graphql') && (response.request().postData() ?? '').includes('create_identity_from_photos'),
+      { timeout: 60_000 },
+    );
     await dialogs().getByTestId('flow-submit:default:identity/actions/create_from_photos').click();
+    const body = (await (await answered).json()) as { data?: { create_identity_from_photos?: { identity_id?: string } } };
     const result = page.getByTestId('enrollment-result');
     const refusal = dialogs().getByText(/already belongs to IDENTITY-\d+|No photo/).first();
     await expect(result.or(refusal)).toBeVisible({ timeout: 60_000 });
-    if (await result.isVisible()) return { created: true, refusal: '' };
+    const created = body.data?.create_identity_from_photos?.identity_id ?? '';
+    if (created !== '') return { identityId: created, refusal: '' };
     const text = (await refusal.textContent()) ?? '';
     await page.keyboard.press('Escape');
-    return { created: false, refusal: text };
+    return { identityId: '', refusal: text };
   }
 
   test('should refuse a known face, then create an identity from a new one with its per-photo result', async () => {
@@ -247,48 +275,43 @@ test.describe.serial('people smoke', () => {
     // A crop of a seeded "unknown" person (backend/seed-assets/faces), already an identity.
     const known = new URL('../../backend/seed-assets/faces/person-10/1.jpg', import.meta.url).pathname;
     const refused = await createIdentityFrom(known);
-    expect(refused.created).toBe(false);
+    expect(refused.identityId).toBe('');
     expect(refused.refusal).toMatch(/already belongs to IDENTITY-\d+/);
 
-    // Faces the seed does not enrol. An identity cannot be deleted, so each run that creates one
-    // uses up its face (the identity is archived but still matches); when all are used the step
-    // is noted and skipped.
-    const fresh = [
-      '../../backend/tests/fixtures/faces/person-a-1.jpg',
-      '../../backend/tests/fixtures/faces/person-b.jpg',
-      '../../../libs/InsightFace-REST/misc/test_images/Stallone.jpg',
-      '../../../libs/InsightFace-REST/misc/test_images/lumia.jpg',
-    ].map((path) => new URL(path, import.meta.url).pathname);
+    // Faces the seed does not enrol (two distinct people; the run archives the identity it
+    // creates, and archived identities no longer match, so the next run can reuse the face).
+    // A face is skipped only when an active identity holds it: a run that failed before its
+    // cleanup, or another test that created one.
+    const fresh = ['../../backend/tests/fixtures/faces/person-a-1.jpg', '../../backend/tests/fixtures/faces/person-b.jpg'].map(
+      (path) => new URL(path, import.meta.url).pathname,
+    );
     for (const photo of fresh) {
       const attempt = await createIdentityFrom(photo);
-      if (!attempt.created) continue;
-      const created = await graphql<{ identities: { id: string; created_at: string }[] }>(
-        '{ identities(order_by: {created_at: desc}, limit: 1) { id created_at } }',
-      );
-      expect(Date.now() - new Date(created.identities[0]?.created_at ?? 0).getTime()).toBeLessThan(5 * 60_000);
-      identityId = created.identities[0]?.id ?? '';
+      if (attempt.identityId === '') continue;
+      identityId = attempt.identityId;
       await page.goto(`/identities/${identityId}`);
       await expect(page.getByText(/IDENTITY-\d+/).first()).toBeVisible();
       return;
     }
     test.info().annotations.push({
       type: 'note',
-      description: 'every spare face already belongs to an identity of an earlier run: creation step skipped',
+      description: 'both spare faces belong to an active identity (a failed earlier run?): creation step skipped',
     });
   });
 
-  /** The status, profile link and photo count of the identities, to compare after a rollback. */
+  /** The status, profile link and photo ids of the identities, to compare after a rollback. */
   async function identityStates(ids: string[]): Promise<string> {
     const data = await graphql<{
       identities: { id: string; status: string; profile_id: string | null }[];
-      identity_photos: { identity_id: string }[];
+      identity_photos: { id: string; identity_id: string }[];
     }>(
       `query ($ids: [uuid!]!) {
         identities(where: {id: {_in: $ids}}, order_by: {code: asc}) { id status profile_id }
-        identity_photos(where: {identity_id: {_in: $ids}}) { identity_id } }`,
+        identity_photos(where: {identity_id: {_in: $ids}}, order_by: {id: asc}) { id identity_id } }`,
       { ids },
     );
-    const photos = (id: string): number => data.identity_photos.filter((row) => row.identity_id === id).length;
+    // The exact photos of each identity: a rollback must give back the very rows the merge moved.
+    const photos = (id: string): string[] => data.identity_photos.filter((row) => row.identity_id === id).map((row) => row.id);
     return JSON.stringify(data.identities.map((row) => [row.id, row.status, row.profile_id, photos(row.id)]));
   }
 
