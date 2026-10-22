@@ -26,6 +26,8 @@ export const flowMatrixBlock = defineBlock('itap:flow-matrix', {
     top: 'Most frequent moves',
     move: '{{from}} → {{to}}',
     unknownArea: 'Removed area',
+    corner: 'From (row), to (column)',
+    summary: 'most frequent {{from}} → {{to}}, {{count}} moves of {{total}}',
   },
   props: {
     facilityId: prop(z.string().nullable().optional()).default(null),

@@ -1,5 +1,6 @@
 import type * as React from 'react';
-import { CHART_HEIGHT as HEIGHT, CHART_WIDTH as WIDTH, formatFigure, runsOf, scaleMax } from './chart-scale';
+import { CHART_HEIGHT as HEIGHT, CHART_WIDTH as WIDTH, chartLabel, formatFigure, runsOf, scaleMax } from './chart-scale';
+import { ChartTable } from './chart-table';
 
 /** One point of a series: its key, how it is named on hover, and its value (`null` = no figure). */
 export interface ChartPoint {
@@ -14,8 +15,10 @@ export interface LineChartProps {
   readonly title: string;
   /** Written beside the caption (latest value, range, total). */
   readonly summary?: string;
-  /** What the drawing shows, for assistive technology. */
+  /** What the drawing shows; its accessible name adds the axis ends and the summary. */
   readonly ariaLabel: string;
+  /** The header of the period column of the chart's data table ("Day", "Hour"). */
+  readonly axisLabel: string;
   /** The ends of the time axis, written under the drawing. */
   readonly start?: string;
   readonly end?: string;
@@ -32,6 +35,7 @@ export function LineChart({
   title,
   summary,
   ariaLabel,
+  axisLabel,
   start,
   end,
   format = formatFigure,
@@ -53,7 +57,7 @@ export function LineChart({
         preserveAspectRatio="none"
         className="h-20 w-full overflow-visible"
         role="img"
-        aria-label={ariaLabel}
+        aria-label={chartLabel(ariaLabel, start, end, summary)}
       >
         <line x1={0} x2={WIDTH} y1={HEIGHT} y2={HEIGHT} className="stroke-border" vectorEffect="non-scaling-stroke" />
         {runsOf(values).map((run) => {
@@ -90,6 +94,16 @@ export function LineChart({
           </rect>
         ))}
       </svg>
+      <ChartTable
+        testId={testId === undefined ? undefined : `${testId}-table`}
+        caption={ariaLabel}
+        columns={[axisLabel, title]}
+        rows={points.map((point) => ({
+          key: point.key,
+          header: point.label,
+          cells: [point.value === null ? '—' : format(point.value)],
+        }))}
+      />
       {start || end ? (
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{start}</span>

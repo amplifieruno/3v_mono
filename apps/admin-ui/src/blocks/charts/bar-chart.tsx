@@ -1,9 +1,12 @@
 import type * as React from 'react';
-import { CHART_HEIGHT as HEIGHT, CHART_WIDTH as WIDTH } from './chart-scale';
+import { CHART_HEIGHT as HEIGHT, CHART_WIDTH as WIDTH, chartLabel } from './chart-scale';
+import { ChartTable } from './chart-table';
 
 /** One column: its key, the value drawn up and (on a two-sided chart) the value drawn down. */
 export interface BarPoint {
   readonly key: string;
+  /** How the column is named in the data table. */
+  readonly label: string;
   readonly up: number;
   readonly down?: number;
 }
@@ -13,6 +16,10 @@ export interface BarChartProps {
   readonly title: string;
   readonly summary?: string;
   readonly ariaLabel: string;
+  /** The data table's headers: the period column, the `up` figures and (two-sided) the `down` figures. */
+  readonly axisLabel: string;
+  readonly upLabel: string;
+  readonly downLabel?: string;
   /** The hover title of a column. */
   readonly describe: (point: BarPoint) => string;
   readonly start?: string;
@@ -25,7 +32,19 @@ export interface BarChartProps {
  * two-sided: `up` above the middle line, `down` below it, on one scale (the larger maximum), as
  * the segment churn chart draws additions and removals. A hover title per column.
  */
-export function BarChart({ points, title, summary, ariaLabel, describe, start, end, testId }: BarChartProps): React.ReactElement {
+export function BarChart({
+  points,
+  title,
+  summary,
+  ariaLabel,
+  axisLabel,
+  upLabel,
+  downLabel,
+  describe,
+  start,
+  end,
+  testId,
+}: BarChartProps): React.ReactElement {
   const twoSided = points.some((point) => (point.down ?? 0) > 0);
   const base = twoSided ? HEIGHT / 2 : HEIGHT;
   const max = Math.max(...points.map((point) => Math.max(point.up, point.down ?? 0)), 0) || 1;
@@ -43,7 +62,7 @@ export function BarChart({ points, title, summary, ariaLabel, describe, start, e
         preserveAspectRatio="none"
         className="h-20 w-full overflow-visible"
         role="img"
-        aria-label={ariaLabel}
+        aria-label={chartLabel(ariaLabel, start, end, summary)}
       >
         <line x1={0} x2={WIDTH} y1={base} y2={base} className="stroke-border" vectorEffect="non-scaling-stroke" />
         {points.map((point, index) => {
@@ -63,6 +82,16 @@ export function BarChart({ points, title, summary, ariaLabel, describe, start, e
           );
         })}
       </svg>
+      <ChartTable
+        testId={`${testId}-table`}
+        caption={ariaLabel}
+        columns={twoSided && downLabel ? [axisLabel, upLabel, downLabel] : [axisLabel, upLabel]}
+        rows={points.map((point) => ({
+          key: point.key,
+          header: point.label,
+          cells: twoSided && downLabel ? [String(point.up), String(point.down ?? 0)] : [String(point.up)],
+        }))}
+      />
       {start || end ? (
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{start}</span>

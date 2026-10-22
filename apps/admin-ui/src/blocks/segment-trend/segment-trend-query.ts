@@ -7,7 +7,7 @@ import { schema } from '../../data/schema';
 import { ANALYTICS_BINDING } from '../facility-period/analytics-binding';
 import { trendRead, trendReadStart, trendRow } from './segment-trend-shape';
 
-/** The most daily rows one read takes (segments × days). */
+/** The most daily rows one read takes (segments × days), newest first: past it the oldest days are cut and `truncated` says so. */
 export const SEGMENT_TREND_ROW_LIMIT = 10_000;
 
 const trendInput = z.object({ segmentId: z.string().uuid().nullable(), days: z.number().int().min(1) });
@@ -24,7 +24,7 @@ export const segmentTrendOperation = hasuraOperation(ANALYTICS_BINDING, 'segment
   organizations(limit: 1) {
     timezone
   }
-  segment_daily_stats(where: $where, order_by: [{ day: asc }], limit: ${SEGMENT_TREND_ROW_LIMIT}) {
+  segment_daily_stats(where: $where, order_by: [{ day: desc }, { segment_id: asc }], limit: ${SEGMENT_TREND_ROW_LIMIT}) {
     segment_id
     day
     member_count
@@ -42,7 +42,11 @@ export const segmentTrendOperation = hasuraOperation(ANALYTICS_BINDING, 'segment
     const rows = z.array(trendRow).safeParse(rootOf(data, 'segment_daily_stats'));
     const organization = z.array(z.object({ timezone: z.string().nullable() })).safeParse(rootOf(data, 'organizations'));
     if (!rows.success) return null;
-    return { timezone: organization.success ? (organization.data[0]?.timezone ?? null) : null, rows: rows.data };
+    return {
+      timezone: organization.success ? (organization.data[0]?.timezone ?? null) : null,
+      rows: rows.data,
+      truncated: rows.data.length >= SEGMENT_TREND_ROW_LIMIT,
+    };
   },
 });
 

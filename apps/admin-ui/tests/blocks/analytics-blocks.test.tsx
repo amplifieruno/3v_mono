@@ -9,6 +9,7 @@ import { deviceHealthSummaryView } from '../../src/blocks/device-health-summary/
 import { flowMatrixBlock } from '../../src/blocks/flow-matrix/flow-matrix-block';
 import { flowMatrixView } from '../../src/blocks/flow-matrix/views';
 import { heatmapBlock } from '../../src/blocks/heatmap/heatmap-block';
+import { HEATMAP_ROW_LIMIT } from '../../src/blocks/heatmap/heatmap-query';
 import { heatmapView } from '../../src/blocks/heatmap/views';
 import { incidentsListBlock } from '../../src/blocks/incidents-list/incidents-list-block';
 import { incidentsListView } from '../../src/blocks/incidents-list/views';
@@ -104,6 +105,35 @@ describe('the analytic blocks', () => {
     expect(cells).toHaveLength(24);
     expect(cells.filter((cell) => cell.getAttribute('data-level') !== '0')).toHaveLength(1);
     expect(sent().find((request) => request.operation === 'HeatmapHours')?.variables).toMatchObject({ total: false });
+    // The figures behind the drawing, as a table and in the accessible name.
+    const table = screen.getByTestId('heatmap:grid-table');
+    expect(table.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(table.textContent).toContain('Lobby');
+    expect(screen.getByRole('img', { name: /busiest Lobby at 09:00/ })).toBeDefined();
+    expect(screen.queryByTestId('heatmap:truncated')).toBeNull();
+  });
+
+  it('should say when the hourly read was cut at its limit', async () => {
+    const rows = Array.from({ length: HEATMAP_ROW_LIMIT }, (_, index) => ({
+      area_id: 'a',
+      hour: new Date(Date.parse('2026-10-21T06:00:00Z') - (index % 100) * 3_600_000).toISOString(),
+      dwell_seconds: 60,
+    }));
+    answers.HeatmapHours = { area_hourly_stats: rows, areas: AREAS };
+    await renderBlock(heatmapView, { props: { facilityId: FACILITY, days: 7 }, wrapper: Wrapper, messages: messagesOf(heatmapBlock) });
+    expect((await screen.findByTestId('heatmap:truncated')).textContent).toContain('oldest hours');
+  });
+
+  it('should read a series heatmap from the hourly occupancy series, by weekday', async () => {
+    answers.OccupancySeries = {
+      occupancy_series: [
+        { bucket_start: '2026-10-21T06:00:00+00:00', day: null, unique_identities: 2, entries: 2, exits: 0, dwell_seconds: 7200, avg_dwell_seconds: 3600, peak_occupancy: 2 },
+      ],
+    };
+    await renderBlock(heatmapView, { props: { facilityId: FACILITY, days: 7, source: 'series' }, wrapper: Wrapper, messages: messagesOf(heatmapBlock) });
+    expect((await screen.findByLabelText('Busy hours')).getAttribute('data-by')).toBe('weekday');
+    expect(sent().find((request) => request.operation === 'OccupancySeries')?.variables).toMatchObject({ bucket: 'hour' });
+    expect(sent().some((request) => request.operation === 'HeatmapHours')).toBe(false);
   });
 
   it('should list the newest open incidents of the facility with links', async () => {
@@ -153,6 +183,11 @@ describe('the analytic blocks', () => {
     expect((await screen.findByTestId('deliveries:problems')).textContent).toContain('1');
     expect(screen.getByTestId('deliveries:email')).toBeDefined();
     expect(screen.queryByTestId('deliveries:sms')).toBeNull();
+    // The legend carries the figures and is read out; the bar is named by the channel's label.
+    const legend = screen.getByRole('list', { name: 'Outcomes over every channel' });
+    expect(legend.textContent).toContain('Delivered3');
+    expect(legend.textContent).toContain('Given up1');
+    expect(screen.getByRole('img', { name: /Deliveries of Email by outcome: Delivered 3/ })).toBeDefined();
   });
 
   it('should draw the segments’ member counts over the organization’s days', async () => {
@@ -166,5 +201,7 @@ describe('the analytic blocks', () => {
     await renderBlock(segmentTrendView, { props: { days: 7 }, wrapper: Wrapper, messages: messagesOf(segmentTrendBlock) });
     expect((await screen.findByTestId('segment-trend:s1')).textContent).toContain('now 5 · +2 over the period');
     expect(sent().find((request) => request.operation === 'SegmentTrend')?.variables).toEqual({ where: { day: { _gte: '2026-10-14' } } });
+    expect(screen.getByTestId('segment-trend:s1-table').textContent).toContain('5');
+    expect(screen.queryByTestId('segment-trend:truncated')).toBeNull();
   });
 });

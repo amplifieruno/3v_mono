@@ -7,10 +7,11 @@ export const hourRow = z.object({ area_id: z.string().nullable(), hour: z.string
 
 export type HourRow = z.infer<typeof hourRow>;
 
-/** What the read answers: the hourly rows of the period and the facility's area names. */
+/** What the read answers: the hourly rows of the period, the facility's area names, and whether the read was cut. */
 export const heatRead = z.object({
   rows: z.array(hourRow),
   areas: z.array(z.object({ id: z.string(), name: z.string() })),
+  truncated: z.boolean(),
 });
 
 export type HeatRead = z.infer<typeof heatRead>;
@@ -96,4 +97,26 @@ export function heatByWeekday(read: HeatRead, days: readonly string[], timeZone:
       return hours.map((seconds) => (count === 0 ? null : seconds / (3600 * count)));
     }),
   };
+}
+
+/** The facility's hourly series as heatmap rows (facility totals, no area), for a heatmap read from `occupancy_series`. */
+export function seriesHours(rows: readonly { bucket_start: string; dwell_seconds: number }[]): HeatRead {
+  return {
+    rows: rows.map((row) => ({ area_id: null, hour: row.bucket_start, dwell_seconds: row.dwell_seconds })),
+    areas: [],
+    truncated: false,
+  };
+}
+
+/** The busiest cell of a heatmap, or `null` when every cell is empty. */
+export function busiestCell(heat: HeatData): { row: string; column: string; value: number } | null {
+  let best: { row: string; column: string; value: number } | null = null;
+  heat.cells.forEach((line, rowIndex) =>
+    line.forEach((value, columnIndex) => {
+      if (value !== null && value > 0 && (best === null || value > best.value)) {
+        best = { row: heat.rows[rowIndex]?.label ?? '', column: heat.columns[columnIndex]?.label ?? '', value };
+      }
+    }),
+  );
+  return best;
 }

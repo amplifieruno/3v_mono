@@ -44,6 +44,12 @@ export function FlowMatrixView({ props, t }: BlockViewProps<typeof flowMatrixBlo
         slantColumns
         showValues
         ariaLabel={t('matrix')}
+        cornerLabel={t('corner')}
+        summary={
+          grid.top[0] === undefined
+            ? undefined
+            : t('summary', { params: { from: grid.top[0].from, to: grid.top[0].to, count: grid.top[0].count, total: grid.total } })
+        }
         describe={(from, to, value) => t('cell', { params: { from: from.label, to: to.label, count: value ?? 0 } })}
       />
       {grid.hidden > 0 ? <p className="text-xs text-muted-foreground">{t('others', { params: { count: grid.hidden } })}</p> : null}

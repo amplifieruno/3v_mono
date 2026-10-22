@@ -19,7 +19,13 @@ export function SegmentTrendView({ props, t }: BlockViewProps<typeof segmentTren
   const trends = segmentTrends(read.data, new Date(read.dataUpdatedAt), props.days, props.limit);
   if (trends.length === 0) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
   return (
-    <section data-testid={TEST_ID} className="grid gap-4 md:grid-cols-2" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-2" aria-label={t('label')}>
+      {read.data.truncated ? (
+        <p className="text-xs text-warning-emphasis" role="note" data-testid={`${TEST_ID}:truncated`}>
+          {t('truncated')}
+        </p>
+      ) : null}
+      <div className="grid gap-4 md:grid-cols-2">
       {trends.map((trend) => (
         <LineChart
           key={trend.id}
@@ -30,10 +36,12 @@ export function SegmentTrendView({ props, t }: BlockViewProps<typeof segmentTren
             params: { value: trend.latest ?? '—', change: trend.change > 0 ? `+${trend.change}` : String(trend.change) },
           })}
           ariaLabel={t('chart', { params: { name: trend.name } })}
+          axisLabel={t('day')}
           start={trend.points[0]?.label}
           end={t('today')}
         />
       ))}
+      </div>
     </section>
   );
 }

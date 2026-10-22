@@ -18,6 +18,7 @@ export const deliveriesBlock = defineBlock('itap:deliveries', {
     problems: 'Failed or given up',
     ackRate: 'Acknowledged in-app',
     channelChart: 'Deliveries of {{channel}} by outcome',
+    legend: 'Outcomes over every channel',
     outcome_delivered: 'Delivered',
     outcome_sent: 'Sent, not confirmed',
     outcome_pending: 'Waiting',

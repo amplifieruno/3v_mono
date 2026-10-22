@@ -4,14 +4,32 @@ import { deliveriesBlock } from '../../blocks/deliveries/deliveries-block';
 import { REPORT_PERIODS } from '../../blocks/delivery-report/delivery-report-query';
 import { DEVICE_PROBLEMS_MAX, deviceHealthSummaryBlock } from '../../blocks/device-health-summary/device-health-summary-block';
 import { FLOW_MAX_AREAS, flowMatrixBlock } from '../../blocks/flow-matrix/flow-matrix-block';
-import { HEATMAP_MAX_AREAS, HEATMAP_ROWS, heatmapBlock } from '../../blocks/heatmap/heatmap-block';
-import { identityTimelineBlock } from '../../blocks/identity-timeline/identity-timeline-block';
+import { healthChartBlock } from '../../blocks/health-chart/health-chart-block';
+import { HEATMAP_MAX_AREAS, HEATMAP_MAX_DAYS, HEATMAP_ROWS, heatmapBlock } from '../../blocks/heatmap/heatmap-block';
 import { INCIDENT_LIST_MAX, INCIDENT_LIST_STATES, incidentsListBlock } from '../../blocks/incidents-list/incidents-list-block';
-import { KPI_FIGURES, kpisBlock } from '../../blocks/kpis/kpis-block';
+import { kpiFigures, kpisBlock } from '../../blocks/kpis/kpis-block';
 import { occupancyNowBlock } from '../../blocks/occupancy-now/occupancy-now-block';
 import { occupancySeriesBlock } from '../../blocks/occupancy-series/occupancy-series-block';
 import { SEGMENT_TREND_MAX, segmentTrendBlock } from '../../blocks/segment-trend/segment-trend-block';
 import { EVENT_SEVERITIES } from '../../enums/events';
+
+/**
+ * The widget contract's kinds and the root fields each may read (`itap.dashboard_widget_queries`,
+ * migration `1792365700140_create_dashboards`), mirrored for the console: every entry of
+ * `ANALYTIC_BLOCKS` reads one of these pairs, and every pair has an entry.
+ */
+export const DASHBOARD_WIDGET_QUERIES = {
+  kpi: ['dashboard_kpis'],
+  occupancy_series: ['occupancy_series', 'facility_occupancy_now'],
+  flow_matrix: ['flow_matrix'],
+  heatmap: ['area_hourly_stats', 'occupancy_series'],
+  incidents_list: ['incidents'],
+  segment_trend: ['segment_daily_stats'],
+  device_health: ['devices', 'device_health_metrics'],
+  deliveries: ['delivery_report'],
+} as const;
+
+export type DashboardWidgetKind = keyof typeof DASHBOARD_WIDGET_QUERIES;
 
 /*
  * The analytic blocks a dashboard widget can render (Task 2 maps the widget contract's kinds onto
@@ -35,7 +53,7 @@ export const ANALYTIC_BLOCKS = {
     block: kpisBlock,
     query: 'dashboard_kpis',
     params: z
-      .object({ figures: z.array(z.enum(KPI_FIGURES)).min(1).optional(), details: z.boolean().optional() })
+      .object({ figures: kpiFigures.optional(), details: z.boolean().optional() })
       .strict()
       .transform((p) => defined({ figures: p.figures, details: p.details })),
   },
@@ -69,12 +87,21 @@ export const ANALYTIC_BLOCKS = {
     params: z
       .object({
         facility_id: uuid.nullable().optional(),
-        days: days.optional(),
+        days: days.max(HEATMAP_MAX_DAYS).optional(),
         by: z.enum(HEATMAP_ROWS).optional(),
         limit: count(HEATMAP_MAX_AREAS).optional(),
       })
       .strict()
       .transform((p) => defined({ facilityId: p.facility_id, days: p.days, by: p.by, limit: p.limit })),
+  },
+  heatmapSeries: {
+    // The facility's hourly occupancy series by weekday (the series has no areas).
+    block: heatmapBlock,
+    query: 'occupancy_series',
+    params: z
+      .object({ facility_id: uuid.nullable().optional(), days: days.max(HEATMAP_MAX_DAYS).optional() })
+      .strict()
+      .transform((p) => ({ ...defined({ facilityId: p.facility_id, days: p.days }), source: 'series' as const, by: 'weekday' as const })),
   },
   incidentsList: {
     block: incidentsListBlock,
@@ -113,13 +140,14 @@ export const ANALYTIC_BLOCKS = {
       .strict()
       .transform((p) => defined({ period: p.period })),
   },
-  identityTimeline: {
-    block: identityTimelineBlock,
-    query: 'identity_timeline',
+  deviceHealthChart: {
+    // One device's health over the last 24 hours (the device page's chart).
+    block: healthChartBlock,
+    query: 'device_health_metrics',
     params: z
-      .object({ identity_id: uuid.nullable().optional() })
+      .object({ device_id: uuid.nullable().optional() })
       .strict()
-      .transform((p) => defined({ identityId: p.identity_id })),
+      .transform((p) => defined({ deviceId: p.device_id })),
   },
 } as const;
 

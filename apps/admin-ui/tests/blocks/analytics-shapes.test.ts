@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { activeChannels, outcomeParts } from '../../src/blocks/deliveries/deliveries-shape';
+import { activeChannels, outcomeParts, outcomeTotals } from '../../src/blocks/deliveries/deliveries-shape';
 import type { ReportRow } from '../../src/blocks/delivery-report/delivery-report-query';
 import { type DeviceRow, devicesNeedingAttention, healthParts } from '../../src/blocks/device-health-summary/device-health-summary-shape';
 import { flowGrid } from '../../src/blocks/flow-matrix/flow-matrix-shape';
-import { heatByArea, heatByWeekday, hourColumns } from '../../src/blocks/heatmap/heatmap-shape';
+import { busiestCell, heatByArea, heatByWeekday, hourColumns, seriesHours } from '../../src/blocks/heatmap/heatmap-shape';
 import { incidentWhere } from '../../src/blocks/incidents-list/incidents-list-query';
 import { type SeriesRow, seriesPoints, seriesTotals } from '../../src/blocks/occupancy-series/occupancy-series-shape';
 import { segmentTrends, trendReadStart } from '../../src/blocks/segment-trend/segment-trend-shape';
 import { shortDay, zonedDateTime } from '../../src/blocks/charts/zoned-time';
-import { ANALYTIC_BLOCKS, analyticBlockProps } from '../../src/modules/analytics/widget-blocks';
+import { ANALYTIC_BLOCKS, DASHBOARD_WIDGET_QUERIES, analyticBlockProps } from '../../src/modules/analytics/widget-blocks';
 
 /** How the analytic blocks shape what they read into what they draw. */
 
@@ -100,6 +100,7 @@ describe('heatmap', () => {
       { id: 'a', name: 'Lobby' },
       { id: 'b', name: 'Office' },
     ],
+    truncated: false,
   };
   const days = ['2026-10-19', '2026-10-20'];
 
@@ -119,6 +120,12 @@ describe('heatmap', () => {
     expect(heat.cells[0]?.[0]).toBeCloseTo(1); // Sunday 21:00 UTC is Monday 00:00 in Moscow
     expect(heat.cells[1]?.[9]).toBe(0); // Tuesday is in the period, nobody at 09:00
     expect(heat.cells[2]?.[9]).toBeNull(); // no Wednesday in the period
+  });
+
+  it('should name the busiest cell and read the hourly series as facility rows', () => {
+    expect(busiestCell(heatByArea(read, days, MOSCOW, 10, 'Removed area'))).toEqual({ row: 'Lobby', column: '09:00', value: 1.5 });
+    const fromSeries = seriesHours([{ bucket_start: '2026-10-19T06:00:00+00:00', dwell_seconds: 7200 }]);
+    expect(heatByWeekday(fromSeries, days, MOSCOW).cells[0]?.[9]).toBeCloseTo(2);
   });
 
   it('should write every third hour on the axis', () => {
@@ -163,12 +170,13 @@ describe('device health summary', () => {
       device('older', 'critical', 'active', '2026-10-20T10:00:00Z'),
       device('faulty', 'unknown', 'error'),
     ];
-    expect(healthParts(devices).map((part) => [part.key, part.value])).toEqual([
+    expect(healthParts(devices, (status) => status.toUpperCase()).map((part) => [part.key, part.value])).toEqual([
       ['healthy', 1],
       ['warning', 1],
       ['critical', 2],
       ['unknown', 1],
     ]);
+    expect(healthParts(devices, (status) => status.toUpperCase())[0]?.label).toBe('HEALTHY');
     expect(devicesNeedingAttention(devices).map((row) => row.id)).toEqual(['older', 'down', 'faulty', 'warn']);
   });
 });
@@ -194,6 +202,7 @@ describe('deliveries', () => {
     expect(channels.map((channel) => channel.channel)).toEqual(['in_app', 'email']);
     expect(scale).toBe(8);
     expect(outcomeParts(row('email', 3), (key) => key).map((part) => part.value)).toEqual([2, 1, 0, 0, 0]);
+    expect(outcomeTotals(channels)).toEqual({ delivered: 9, sent: 2, pending: 0, failed: 0, dead_letter: 0 });
   });
 });
 
@@ -227,6 +236,22 @@ describe('widget params', () => {
     expect(refused.ok).toBe(false);
     expect(refused.ok ? [] : refused.issues.map((issue) => issue.path)).toEqual(expect.arrayContaining(['facility_id', 'days']));
     expect(analyticBlockProps('flowMatrix', { colour: 'red' }).ok).toBe(false);
+    expect(analyticBlockProps('heatmap', { days: 32 }).ok).toBe(false);
+    expect(analyticBlockProps('kpis', { figures: ['open_incidents', 'open_incidents'] }).ok).toBe(false);
+  });
+
+  it('should fix the series heatmap to the facility by weekday', () => {
+    expect(analyticBlockProps('heatmapSeries', { facility_id: FACILITY })).toEqual({
+      ok: true,
+      props: { facilityId: FACILITY, source: 'series', by: 'weekday' },
+    });
+    expect(analyticBlockProps('heatmapSeries', { by: 'area' }).ok).toBe(false);
+  });
+
+  it('should cover exactly the widget contract’s kind and query pairs', () => {
+    const allowed = Object.values(DASHBOARD_WIDGET_QUERIES).flat().sort();
+    const read = Object.values(ANALYTIC_BLOCKS).map((entry) => entry.query).sort();
+    expect(read).toEqual(allowed);
   });
 
   it('should name the root field each block reads', () => {
@@ -238,9 +263,10 @@ describe('widget params', () => {
       heatmap: 'area_hourly_stats',
       incidentsList: 'incidents',
       segmentTrend: 'segment_daily_stats',
+      heatmapSeries: 'occupancy_series',
       deviceHealthSummary: 'devices',
+      deviceHealthChart: 'device_health_metrics',
       deliveries: 'delivery_report',
-      identityTimeline: 'identity_timeline',
     });
   });
 });

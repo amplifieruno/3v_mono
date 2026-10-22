@@ -68,6 +68,10 @@ describe('the occupancy series block', () => {
     expect(screen.getAllByTestId('occupancy-series:flow-down')).toHaveLength(1);
     expect(screen.getByText(/Peak on site: 12 people/)).toBeDefined();
     expect(screen.getByText(/Europe\/Moscow/)).toBeDefined();
+    // Every point is in the data table, and the drawing's name carries the figures.
+    expect(screen.getByTestId('occupancy-series:people-table').querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(screen.getByRole('img', { name: /Distinct people present per day .*: most 12/ })).toBeDefined();
+    expect(screen.getByTestId('occupancy-series:flow-table').textContent).toContain('18');
   });
 
   it('should read the last 24 hours by hour up to the next hour boundary', async () => {

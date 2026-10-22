@@ -1,6 +1,7 @@
 import { cn } from '@burojs/ui-shadcn';
 import type * as React from 'react';
-import { HEAT_CLASSES, clip, formatFigure, heatLevel } from './chart-scale';
+import { HEAT_CLASSES, chartLabel, clip, formatFigure, heatLevel } from './chart-scale';
+import { ChartTable } from './chart-table';
 
 /** A row or a column of the grid: its key and its label. */
 export interface HeatAxis {
@@ -18,6 +19,10 @@ export interface HeatGridProps {
   /** The hover title of a cell. */
   readonly describe: (row: HeatAxis, column: HeatAxis, value: number | null) => string;
   readonly ariaLabel: string;
+  /** Written after the accessible name (the busiest cell, the total). */
+  readonly summary?: string;
+  /** The header of the row-header column of the data table ("Area", "From"). */
+  readonly cornerLabel: string;
   /** Long column labels (area names) are written slanted; short ones (hours) upright. */
   readonly slantColumns?: boolean;
   /** Write each non-empty cell's figure in it. */
@@ -42,6 +47,8 @@ export function HeatGrid({
   cells,
   describe,
   ariaLabel,
+  summary,
+  cornerLabel,
   slantColumns = false,
   showValues = false,
   format = formatFigure,
@@ -53,7 +60,7 @@ export function HeatGrid({
   const max = Math.max(...cells.flat().map((value) => value ?? 0), 0);
   return (
     <div className="overflow-x-auto" data-testid={testId}>
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} className="h-auto max-w-full" role="img" aria-label={ariaLabel}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} className="h-auto max-w-full" role="img" aria-label={chartLabel(ariaLabel, undefined, undefined, summary)}>
         {columns.map((column, index) => {
           const x = LABEL_WIDTH + index * CELL + CELL / 2;
           return slantColumns ? (
@@ -116,6 +123,19 @@ export function HeatGrid({
           );
         })}
       </svg>
+      <ChartTable
+        testId={`${testId}-table`}
+        caption={ariaLabel}
+        columns={[cornerLabel, ...columns.map((column) => column.label)]}
+        rows={rows.map((row, rowIndex) => ({
+          key: row.key,
+          header: row.label,
+          cells: columns.map((_, columnIndex) => {
+            const value = cells[rowIndex]?.[columnIndex] ?? null;
+            return value === null ? '—' : format(value);
+          }),
+        }))}
+      />
     </div>
   );
 }

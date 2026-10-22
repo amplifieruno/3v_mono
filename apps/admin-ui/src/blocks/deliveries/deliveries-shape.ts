@@ -26,3 +26,15 @@ export function activeChannels(rows: readonly ReportRow[]): { channels: ReportRo
   const channels = rows.filter((row) => row.total > 0).sort((a, b) => b.total - a.total);
   return { channels, scale: Math.max(...channels.map((row) => row.total), 1) };
 }
+
+/** Each outcome's deliveries summed over the channels, for the legend. */
+export function outcomeTotals(rows: readonly ReportRow[]): Record<(typeof DELIVERY_OUTCOMES)[number]['key'], number> {
+  const sum = (key: (typeof DELIVERY_OUTCOMES)[number]['key']) => rows.reduce((total, row) => total + row[key], 0);
+  return {
+    delivered: sum('delivered'),
+    sent: sum('sent'),
+    pending: sum('pending'),
+    failed: sum('failed'),
+    dead_letter: sum('dead_letter'),
+  };
+}

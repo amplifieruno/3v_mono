@@ -20,6 +20,8 @@ export const segmentTrendBlock = defineBlock('itap:segment-trend', {
     chart: 'Members of {{name}} per day',
     latest: 'now {{value}} · {{change}} over the period',
     today: 'today',
+    day: 'Day',
+    truncated: 'Too many daily figures for one read: the oldest days of the period are left out, so some changes start later. Choose fewer days or one segment.',
   },
   props: {
     segmentId: prop(z.string().nullable().optional()).default(null),

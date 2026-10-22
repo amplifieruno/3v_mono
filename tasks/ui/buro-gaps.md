@@ -949,7 +949,8 @@ migration `1792365700277`.
   element), with no hook returning the translated label string. **[code]**
   (`core/src/data/custom-operation.ts`, `ui-shadcn/src/enum/enum-badge.tsx`).
 - **Workaround:** the KPI block repeats the six labels in its own `texts`; legends render
-  `<EnumBadge presentation="plain">`, and SVG hover titles use the humanized stored value
-  ("connection_error" → "Connection error").
+  `<EnumBadge presentation="plain">`; SVG hover titles, accessible names and chart data tables use
+  our own `useEnumLabel` (`src/blocks/charts/use-enum-label.ts`), which repeats `<EnumBadge>`'s
+  resolution with the exported `resolveEnumLabel` / `enumValueText`.
 - **Expected from a framework:** a `useQueryFieldLabel(query, field)` / `useEnumLabel(enum, value)`
   hook (or the field texts on the handle).

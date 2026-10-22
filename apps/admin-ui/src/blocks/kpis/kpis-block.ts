@@ -13,6 +13,13 @@ export const KPI_FIGURES = [
 
 export type KpiFigure = (typeof KPI_FIGURES)[number];
 
+/** A choice of figures: at least one, each at most once, in the order shown. */
+export const kpiFigures = z
+  .array(z.enum(KPI_FIGURES))
+  .min(1)
+  .max(KPI_FIGURES.length)
+  .refine((figures) => new Set(figures).size === figures.length, { message: 'Each figure can be shown once.' });
+
 /**
  * The organization's headline figures (`itap:kpis`, `dashboard_kpis`): one tile per figure (prop
  * `figures`, in order), the open incidents by severity as one bar, and the segments whose member
@@ -39,7 +46,7 @@ export const kpisBlock = defineBlock('itap:kpis', {
     asOf: 'As of {{time}}; “today” is {{day}} in the organization’s calendar.',
   },
   props: {
-    figures: prop(z.array(z.enum(KPI_FIGURES)).min(1).max(KPI_FIGURES.length)).default([...KPI_FIGURES]),
+    figures: prop(kpiFigures).default([...KPI_FIGURES]),
     details: prop(z.boolean()).default(true),
   },
 });

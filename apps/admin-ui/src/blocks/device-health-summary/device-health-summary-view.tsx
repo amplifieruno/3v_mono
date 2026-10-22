@@ -6,6 +6,7 @@ import { DEVICE_RESOURCE } from '../../data/resource-names';
 import { DEVICE_HEALTH_ENUM, DEVICE_STATUS_ENUM } from '../../enums/devices';
 import { BlockNote } from '../charts/block-note';
 import { StackedBar } from '../charts/stacked-bar';
+import { useEnumLabel } from '../charts/use-enum-label';
 import type { deviceHealthSummaryBlock } from './device-health-summary-block';
 import { deviceHealthSummary } from './device-health-summary-query';
 import { devicesNeedingAttention, healthParts } from './device-health-summary-shape';
@@ -16,11 +17,12 @@ const TEST_ID = 'device-health-summary';
 export function DeviceHealthSummaryView({ props, t }: BlockViewProps<typeof deviceHealthSummaryBlock>): React.ReactElement {
   const app = useApp();
   const Link = useLinkComponent();
+  const healthLabel = useEnumLabel(DEVICE_HEALTH_ENUM);
   const devices = useCustomQuery(deviceHealthSummary, { facilityId: props.facilityId ?? null });
   if (devices.isError || devices.data === null) return <BlockNote testId={TEST_ID} tone="error">{t('failed')}</BlockNote>;
   if (devices.data === undefined) return <BlockNote testId={TEST_ID}>{t('loading')}</BlockNote>;
   if (devices.data.length === 0) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
-  const parts = healthParts(devices.data).map((part) => ({
+  const parts = healthParts(devices.data, healthLabel).map((part) => ({
     ...part,
     legend: <EnumBadge enumName={DEVICE_HEALTH_ENUM} value={part.key} presentation="plain" />,
   }));

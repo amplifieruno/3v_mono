@@ -1,4 +1,3 @@
-import { humanize } from '../charts/chart-scale';
 import type { StackPart } from '../charts/stacked-bar';
 import type { DashboardKpis } from '../../modules/overview/kpis';
 
@@ -11,11 +10,11 @@ const SEVERITY_PARTS = [
   { key: 'info', column: 'open_incidents_info', fill: 'fill-muted-foreground/40', swatch: 'bg-muted-foreground/40' },
 ] as const satisfies readonly { key: string; column: keyof DashboardKpis; fill: string; swatch: string }[];
 
-/** The open incidents per severity as the parts of one bar (labels are the severity values; the view badges them). */
-export function severityParts(kpis: DashboardKpis): StackPart[] {
+/** The open incidents per severity as the parts of one bar, each named by `labelOf(severity)`. */
+export function severityParts(kpis: DashboardKpis, labelOf: (severity: string) => string): StackPart[] {
   return SEVERITY_PARTS.map((part) => ({
     key: part.key,
-    label: humanize(part.key),
+    label: labelOf(part.key),
     value: kpis[part.column],
     fill: part.fill,
     swatch: part.swatch,

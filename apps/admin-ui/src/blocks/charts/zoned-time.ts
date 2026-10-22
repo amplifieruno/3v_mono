@@ -7,6 +7,7 @@
  */
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
 
 /** The zone itself when `Intl` knows it, else `UTC`. */
 export function knownZone(timeZone: string | null | undefined): string {
@@ -63,16 +64,21 @@ function offsetMs(at: number, zone: string): number {
 }
 
 /**
- * The instant the zone's clock reads `hour`:00 on `day`. The offset is taken at a first guess and
- * checked at the answer, so a day on which the clocks change still lands on the zone's own hour.
+ * The instant the zone's clock reads `hour`:00 on `day`, read the way Postgres reads
+ * `timestamp AT TIME ZONE zone` (the stats queries cut days that way): the offsets in force a day
+ * before and a day after give the candidates; of those the clock really shows, the later one (an
+ * hour repeated when the clocks go back takes the offset after the change); a time the clocks skip
+ * (America/Santiago's midnight on 6 September 2026) takes the offset before the change, so it lands
+ * on the first instant after the gap.
  */
 export function zonedTime(day: string, hour: number, timeZone: string | null): Date {
   const zone = knownZone(timeZone);
   const [year = 1970, month = 1, date = 1] = day.split('-').map(Number);
   const wall = Date.UTC(year, month - 1, date, hour);
-  const first = wall - offsetMs(wall, zone);
-  const second = wall - offsetMs(first, zone);
-  return new Date(second);
+  const before = wall - offsetMs(wall - DAY_MS, zone);
+  const after = wall - offsetMs(wall + DAY_MS, zone);
+  const shown = [before, after].filter((at) => wallClockMs(at, zone) === wall);
+  return new Date(shown.length > 0 ? Math.max(...shown) : before);
 }
 
 /** The zone's midnight starting `day`. */

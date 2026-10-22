@@ -36,7 +36,7 @@ export function StackedBar({ parts, ariaLabel, total, legend = false, testId }: 
   let offset = 0;
   return (
     <div className="flex min-w-0 flex-col gap-1" data-testid={testId}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" className="h-3 w-full" role="img" aria-label={ariaLabel}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" className="h-3 w-full" role="img" aria-label={`${ariaLabel}: ${parts.map((part) => `${part.label} ${part.value}`).join(', ')}`}>
         <rect x={0} y={0} width={WIDTH} height={HEIGHT} rx={2} className="fill-muted" />
         {parts.map((part) => {
           if (part.value <= 0) return null;

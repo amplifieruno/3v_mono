@@ -12,8 +12,8 @@ export const trendRow = z.object({
 
 export type TrendRow = z.infer<typeof trendRow>;
 
-/** What the read answers: the organization's time zone (its calendar days) and the rows. */
-export const trendRead = z.object({ timezone: z.string().nullable(), rows: z.array(trendRow) });
+/** What the read answers: the organization's time zone (its calendar days), the rows (newest first) and whether the read was cut. */
+export const trendRead = z.object({ timezone: z.string().nullable(), rows: z.array(trendRow), truncated: z.boolean() });
 
 export type TrendRead = z.infer<typeof trendRead>;
 
@@ -36,7 +36,7 @@ export function trendReadStart(now: Date, days: number): string {
  * its day at `now` (a day without a row is a gap), the `limit` segments with the most members on
  * their latest recorded day first (ties by name). `change` is the latest count less the first.
  */
-export function segmentTrends({ timezone, rows }: TrendRead, now: Date, days: number, limit: number): SegmentTrend[] {
+export function segmentTrends({ timezone, rows }: Pick<TrendRead, 'timezone' | 'rows'>, now: Date, days: number, limit: number): SegmentTrend[] {
   const today = dayIn(now, timezone);
   const period = Array.from({ length: days }, (_, index) => addDays(today, index - days + 1));
   const first = period[0] ?? today;

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { humanize } from '../charts/chart-scale';
 import type { StackPart } from '../charts/stacked-bar';
 import { DEVICE_HEALTH_STATUSES } from '../../enums/devices';
 
@@ -22,11 +21,11 @@ const HEALTH_COLOURS: Readonly<Record<(typeof DEVICE_HEALTH_STATUSES)[number], {
   unknown: { fill: 'fill-muted-foreground/40', swatch: 'bg-muted-foreground/40' },
 };
 
-/** The devices per health status, as the parts of one bar (every status, zeros kept for the legend). */
-export function healthParts(devices: readonly DeviceRow[]): StackPart[] {
+/** The devices per health status, as the parts of one bar (every status, zeros kept for the legend), named by `labelOf`. */
+export function healthParts(devices: readonly DeviceRow[], labelOf: (status: string) => string): StackPart[] {
   return DEVICE_HEALTH_STATUSES.map((status) => ({
     key: status,
-    label: humanize(status),
+    label: labelOf(status),
     value: devices.filter((device) => device.health_status === status).length,
     ...HEALTH_COLOURS[status],
   }));

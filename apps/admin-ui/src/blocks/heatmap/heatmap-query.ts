@@ -9,8 +9,8 @@ import { HEATMAP_ROWS } from './heatmap-block';
 import { heatRead, hourRow } from './heatmap-shape';
 
 /**
- * The most hourly rows one read takes. Rows exist only for hours with presence: a month of a busy
- * facility with 25 areas stays well under it; a longer period may be cut (newest hours dropped).
+ * The most hourly rows one read takes. Rows exist only for hours with presence, read newest first:
+ * a month of a busy facility stays under it; past it the oldest hours are cut and `truncated` says so.
  */
 export const HEATMAP_ROW_LIMIT = 20_000;
 
@@ -31,7 +31,7 @@ export const heatmapOperation = hasuraOperation(ANALYTICS_BINDING, 'heatmapHours
   document: `query HeatmapHours($facility: uuid!, $from: timestamptz!, $to: timestamptz!, $total: Boolean!) {
   area_hourly_stats(
     where: { facility_id: { _eq: $facility }, hour: { _gte: $from, _lt: $to }, area_id: { _is_null: $total } }
-    order_by: [{ hour: asc }]
+    order_by: [{ hour: desc }]
     limit: ${HEATMAP_ROW_LIMIT}
   ) {
     area_id
@@ -50,7 +50,9 @@ export const heatmapOperation = hasuraOperation(ANALYTICS_BINDING, 'heatmapHours
   mapResult: (data) => {
     const rows = z.array(hourRow).safeParse(rootOf(data, 'area_hourly_stats'));
     const areas = z.array(z.object({ id: z.string(), name: z.string() })).safeParse(rootOf(data, 'areas'));
-    return rows.success && areas.success ? { rows: rows.data, areas: areas.data } : null;
+    return rows.success && areas.success
+      ? { rows: rows.data, areas: areas.data, truncated: rows.data.length >= HEATMAP_ROW_LIMIT }
+      : null;
   },
 });
 

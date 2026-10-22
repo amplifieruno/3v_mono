@@ -28,6 +28,10 @@ export const occupancySeriesBlock = defineBlock('itap:occupancy-series', {
     flowPoint: '{{label}}: {{entries}} in / {{exits}} out',
     peak: 'Peak on site: {{peak}} people ({{when}})',
     zone: 'Times in the facility’s time zone ({{zone}}).',
+    day: 'Day',
+    hour: 'Hour',
+    entries: 'Entries',
+    exits: 'Exits',
   },
   props: {
     facilityId: prop(z.string().nullable().optional()).default(null),

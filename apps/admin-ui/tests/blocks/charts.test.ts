@@ -38,6 +38,14 @@ describe('zoned time', () => {
     expect(zonedMidnight('2026-03-30', 'Europe/Berlin').toISOString()).toBe('2026-03-29T22:00:00.000Z');
   });
 
+  it('should read a midnight the clocks skip or repeat as Postgres does', () => {
+    // Values from `'<day>'::timestamp AT TIME ZONE '<zone>'` on the dev database.
+    expect(zonedMidnight('2026-09-06', 'America/Santiago').toISOString()).toBe('2026-09-06T04:00:00.000Z');
+    expect(zonedMidnight('2026-03-08', 'America/Havana').toISOString()).toBe('2026-03-08T05:00:00.000Z');
+    expect(zonedTime('2026-03-29', 2, 'Europe/Berlin').toISOString()).toBe('2026-03-29T01:00:00.000Z');
+    expect(zonedTime('2026-11-01', 1, 'America/New_York').toISOString()).toBe('2026-11-01T06:00:00.000Z');
+  });
+
   it('should read the hour and the day of an instant on the zone’s clock', () => {
     const at = new Date('2026-10-22T22:30:00Z');
     expect(dayIn(at, 'UTC')).toBe('2026-10-22');

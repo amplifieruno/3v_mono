@@ -55,19 +55,20 @@ export function OccupancySeriesView({ props, t }: BlockViewProps<typeof occupanc
           title={t('people')}
           summary={t('peopleSummary', { params: { max: Math.max(...points.map((point) => point.people)) } })}
           ariaLabel={t(bucket === 'day' ? 'peopleDayChart' : 'peopleHourChart')}
+          axisLabel={t(bucket)}
           start={start}
           end={end}
         />
         <BarChart
           testId={`${TEST_ID}:flow`}
-          points={points.map((point) => ({ key: point.key, up: point.entries, down: point.exits }))}
+          points={points.map((point) => ({ key: point.key, label: point.label, up: point.entries, down: point.exits }))}
           title={t('flow')}
           summary={t('flowSummary', { params: { entries: totals.entries, exits: totals.exits } })}
           ariaLabel={t('flowChart')}
-          describe={(bar) => {
-            const point = points.find((candidate) => candidate.key === bar.key);
-            return t('flowPoint', { params: { label: point?.label ?? '', entries: bar.up, exits: bar.down ?? 0 } });
-          }}
+          axisLabel={t(bucket)}
+          upLabel={t('entries')}
+          downLabel={t('exits')}
+          describe={(bar) => t('flowPoint', { params: { label: bar.label, entries: bar.up, exits: bar.down ?? 0 } })}
           start={start}
           end={end}
         />

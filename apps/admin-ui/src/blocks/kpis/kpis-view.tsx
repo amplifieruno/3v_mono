@@ -6,6 +6,7 @@ import { dashboardKpis } from '../../modules/overview/kpis';
 import { BlockNote } from '../charts/block-note';
 import { shortDay } from '../charts/zoned-time';
 import { StackedBar } from '../charts/stacked-bar';
+import { useEnumLabel } from '../charts/use-enum-label';
 import { severityParts } from './kpi-severities';
 import type { kpisBlock } from './kpis-block';
 
@@ -18,11 +19,12 @@ const TEST_ID = 'kpis';
  */
 export function KpisView({ props, t }: BlockViewProps<typeof kpisBlock>): React.ReactElement {
   const kpis = useCustomQuery(dashboardKpis, {});
+  const severityLabel = useEnumLabel(EVENT_SEVERITY_ENUM);
   if (kpis.isError) return <BlockNote testId={TEST_ID} tone="error">{t('failed')}</BlockNote>;
   if (kpis.data === undefined) return <BlockNote testId={TEST_ID}>{t('loading')}</BlockNote>;
   if (kpis.data === null) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
   const figures = kpis.data;
-  const parts = severityParts(figures).map((part) => ({
+  const parts = severityParts(figures, severityLabel).map((part) => ({
     ...part,
     legend: <EnumBadge enumName={EVENT_SEVERITY_ENUM} value={part.key} presentation="plain" />,
   }));

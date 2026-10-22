@@ -65,3 +65,9 @@ export function humanize(value: string): string {
   const words = value.replaceAll('_', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** A chart's accessible name from its data: what it shows, the period it spans and its summary figures. */
+export function chartLabel(what: string, start?: string, end?: string, summary?: string): string {
+  const span = start && end ? ` (${start} – ${end})` : '';
+  return `${what}${span}${summary ? `: ${summary}` : ''}`;
+}
