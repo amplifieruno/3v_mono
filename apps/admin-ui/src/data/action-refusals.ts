@@ -65,7 +65,8 @@ export function withActionRefusals(provider: DataProvider, refusals: ActionRefus
       if (refusal === null || issues === null) throw error;
       const refused: DataError = {
         kind: 'validation',
-        code: refusal.code,
+        // The reader's code: an action's own code, or the refusal a SQL function raised.
+        code: issues[0]?.code ?? refusal.code,
         message: refusal.message,
         // The form resolves `message.key` first (no bundle entry: the English text stays), then `default`.
         details: {

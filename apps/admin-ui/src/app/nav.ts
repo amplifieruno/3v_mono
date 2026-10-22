@@ -52,6 +52,15 @@ export const NAV_ICONS = {
   createIdentity: 'UserPlus',
   addPhotos: 'ImagePlus',
   enrollFace: 'ScanFace',
+  identityDuplicates: 'Copy',
+  identityMerges: 'GitMerge',
+  mergeIdentities: 'GitMerge',
+  rollback: 'Undo2',
+  split: 'Split',
+  relationships: 'Link',
+  verification: 'BadgeCheck',
+  approve: 'Check',
+  reject: 'CircleX',
 } as const;
 
 /**

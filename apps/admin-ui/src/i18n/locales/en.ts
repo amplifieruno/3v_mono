@@ -54,6 +54,15 @@ export default {
       wrongType: '{{name}} is not a JPEG, PNG or WebP image.',
       tooLarge: '{{name}} is larger than {{max}}.',
     },
+    /** The photos to split off an identity (`src/fields/split-photos-impl.ts`). */
+    splitPhotos: {
+      loading: 'Reading the identity’s photos…',
+      none: 'The identity has no photos to split off.',
+      choose: 'Photos to split off',
+      photo: 'Photo {{index}}',
+      count: '{{chosen}} chosen with {{templates}} face templates; {{stay}} photos stay.',
+      moves: '{{photos}} photos and {{templates}} face templates move to the new identity.',
+    },
     /** The browser camera (`src/blocks/webcam-capture/webcam-capture.tsx`). */
     webcam: {
       start: 'Use camera',
@@ -191,6 +200,9 @@ export default {
         notText: '{{item}} {{index}} is not text.',
         blank: '{{item}} {{index}} is empty.',
         repeated: '{{item}} {{index}} repeats {{itemLower}} {{first}}.',
+      },
+      splitPhotos: {
+        none: 'Choose at least one photo to split off.',
       },
       facePhotos: {
         tooFew: 'Add at least {{min}} photos.',

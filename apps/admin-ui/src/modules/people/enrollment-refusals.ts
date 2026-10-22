@@ -48,7 +48,7 @@ function refusalIssue(code: string, message: string, fileIds: readonly string[],
     case 'subject_restricted':
       return photos(
         code,
-        'The face belongs to a person whose processing is restricted or who withdrew biometric consent. Nothing was saved.',
+        'The face belongs to a person whose processing is restricted or who withdrew biometric consent: no photo was added.',
       );
     case 'consent_withdrawn':
       return form(code, 'The person withdrew biometric consent, so no new face data can be stored. Nothing was saved.');
@@ -61,10 +61,13 @@ function refusalIssue(code: string, message: string, fileIds: readonly string[],
     case 'identity_not_found':
       return form(code, 'The identity no longer exists.');
     case 'identity_not_active':
-    case 'identity_merged_frozen':
       return form(code, 'The identity is merged or archived: photos cannot be added to it. Nothing was saved.');
+    // Raised after Enroll face may already have linked the identity to the profile: no claim
+    // that nothing changed (the backend's atomicity is a filed issue).
+    case 'identity_merged_frozen':
+      return form(code, 'The identity is merged or archived: no photo was added to it.');
     case 'identity_matching_disabled':
-      return form(code, 'Matching is off for this identity (biometric consent withdrawn). Nothing was saved.');
+      return form(code, 'Matching is off for this identity (biometric consent withdrawn): no photo was added.');
     case 'identity_conflict':
       return form(code, 'The matching identity changed while the photos were checked. Nothing was saved; try again.');
     default:

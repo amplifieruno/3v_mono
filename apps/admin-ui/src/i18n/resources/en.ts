@@ -68,7 +68,24 @@ export default {
     doc: { topics: { index: 'Consent: recording, withdrawing and its effects' } },
   },
   identity: {
-    doc: { topics: { index: 'Identities: sources, photos, enrollment and the profile link' } },
+    doc: {
+      topics: {
+        index: 'Identities: sources, photos, enrollment and the profile link',
+        governance: 'Merging, splitting, verifying and relating identities; the timeline',
+      },
+    },
+  },
+  identity_merge: {
+    doc: { topics: { index: 'Identity merges and rolling them back' } },
+  },
+  identity_duplicate_candidate: {
+    doc: { topics: { index: 'Identity duplicates: comparing, merging, dismissing' } },
+  },
+  verification_request: {
+    doc: { topics: { index: 'Verification requests: asking, approving, rejecting' } },
+  },
+  identity_relationship: {
+    doc: { topics: { index: 'Identity relationships' } },
   },
   profile_duplicate_candidate: {
     doc: { topics: { index: 'Profile duplicates: comparing, merging, dismissing' } },

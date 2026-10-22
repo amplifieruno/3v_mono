@@ -35,8 +35,9 @@ one removes it.
   If the face already belongs to an identity, nothing is created and the form
   names that identity.
 - **Add photos** (identity page): more photos of the same face, which helps
-  recognition in other light and from other angles. Not offered on a merged
-  or archived identity, and disabled while matching is off.
+  recognition in other light and from other angles. Not offered on an
+  archived identity; shown disabled, with the reason, on a merged identity and
+  while matching is off.
 - **Enroll face** (profile page): the photos go to the person's primary
   identity, or to an unlinked identity whose face matches (which is then
   linked to the profile), or to a new identity linked to the profile. Enrolling
@@ -55,11 +56,14 @@ The platform checks every photo, not the browser. A photo is **refused** when:
 When at least one photo is good, the good ones are saved and the result lists
 each refused photo by its number with the reason, so nothing is half done
 silently: retake those and use **Add photos**. When no photo is good, nothing
-is saved and the form says, photo by photo, why. A request is also refused as
-a whole, with nothing saved, when the face belongs to a person whose
-processing is restricted or who withdrew biometric consent, or (Enroll face)
-when it belongs to an identity linked to another profile: then check whether
-the two profiles are the same person.
+is saved and the form says, photo by photo, why. A request is also refused,
+with no photo added, when the face belongs to a person whose processing is
+restricted or who withdrew biometric consent, or when the identity is merged
+or its matching is off; with **Enroll face** the identity may already have
+been linked to the profile by then, so look at the profile's Identities tab.
+**Enroll face** is refused with nothing saved when the face belongs to an
+identity linked to another profile: then check whether the two profiles are
+the same person.
 
 The platform keeps its own crop of each accepted face. The uploaded originals
 are ordinary files of the organization (kind `face_source`).
@@ -74,11 +78,14 @@ are ordinary files of the organization (kind `face_source`).
 - **Photos**: every face crop, newest first, with its kind (camera capture,
   enrollment, uploaded), the quality score the platform gave it, when it was
   taken and by which camera; the primary photo is marked.
+- **Timeline**, **Relationships**, **Verification** and **Merges**: see
+  *Merging, splitting, verifying and relating identities*.
 
-A red box marks a **merged** identity: it is frozen with its history, and
-**Edit** and **Add photos** are disabled until the merge is rolled back. A
-yellow box marks an identity whose **matching is off** because the person
-withdrew biometric consent.
+A **merged** identity says so in its **Status**: it is frozen with its
+history, and **Edit**, **Add photos**, **Merge into this identity** and
+**Split** are shown disabled with the reason until the merge is rolled back
+(its **Merges** tab links the merge). A yellow box marks an identity whose
+**matching is off** because the person withdrew biometric consent.
 
 ## Editing
 

@@ -132,7 +132,7 @@ export function FacePhotosInput(props: ScalarInputProps<unknown, FacePhotosMeta>
           {t('console.facePhotos.limits', { params: { max: formatBytes(meta.maxSize) } })}
         </span>
       </div>
-      {locked ? null : <WebcamCapture disabled={busy || full} onCapture={(file) => add([file])} />}
+      {locked ? null : <WebcamCapture disabled={busy || full} done={full} onCapture={(file) => add([file])} />}
       <p id={errorId} role="alert" className="text-sm text-destructive empty:hidden" data-testid={testIds.error}>
         {error ?? ''}
       </p>

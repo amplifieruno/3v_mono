@@ -1,9 +1,18 @@
-import { type Check, type CheckDI, defineResource } from '@burojs/core';
+import { type Check, type CheckDI, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
-import { IDENTITY_RESOURCE } from '../../data/resource-names';
+import { resourceByName } from '../../data/resource-by-name';
+import {
+  IDENTITY_MERGE_RESOURCE,
+  IDENTITY_MERGE_SOURCE_RESOURCE,
+  IDENTITY_RESOURCE,
+  VERIFICATION_REQUEST_RESOURCE,
+} from '../../data/resource-names';
 import { IDENTITY_SETTABLE_STATUSES } from '../../enums/identities';
+import { identityTimelineBlock } from '../../blocks/identity-timeline/identity-timeline-block';
 import { addPhotosFlow, createIdentityFlow } from './enrollment-flows';
+import { addRelationshipFlow, mergeIntoFlow, splitFlow } from './identity-governance-flows';
+import { identityRelationshipsBlock } from './identity-relationships-block';
 import { identityFields } from './identity-fields';
 import { IDENTITY_RULES } from './identity-rules';
 import { identitySavedViews } from './identity-views';
@@ -54,9 +63,9 @@ export const IDENTITY_CHECKS: Check[] = [
 /**
  * Identities: every tracked face, known (linked to a profile) or unknown. Created by
  * recognition, by enrollment and by "Create identity from photos", never by a plain form, and
- * never deleted (status instead). The page shows the photos the platform holds for the face;
- * "Add photos" gives it more. Merges, verification and the timeline come with the governance
- * screens.
+ * never deleted (status instead). The page shows the photos the platform holds for the face,
+ * where and when it was seen (timeline), its relationships, verification requests and merges;
+ * "Add photos" gives it more, "Merge into this identity" and "Split" fix mixed-up faces.
  */
 export const identity = defineResource(IDENTITY_RESOURCE, {
   texts: {
@@ -81,7 +90,12 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
   rules: IDENTITY_RULES,
   actions: (r) => ({
     resource: [r.action.flow('create_from_photos', createIdentityFlow)],
-    item: [r.action.flow('add_photos', addPhotosFlow)],
+    item: [
+      r.action.flow('add_photos', addPhotosFlow),
+      r.action.flow('merge_into', mergeIntoFlow),
+      r.action.flow('split', splitFlow),
+      r.action.flow('add_relationship', addRelationshipFlow),
+    ],
   }),
   views: {
     list: {
@@ -134,6 +148,55 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                 }),
               ],
               { key: 'photos', texts: 'Photos' },
+            ),
+            l.panel(
+              [l.place(identityTimelineBlock, { key: 'identity-timeline', props: { identityId: l.ref('record', 'id') } })],
+              { key: 'timeline', texts: 'Timeline' },
+            ),
+            l.panel(
+              [
+                l.place(identityRelationshipsBlock, {
+                  key: 'identity-relationships',
+                  props: { identityId: l.ref('record', 'id') },
+                }),
+              ],
+              { key: 'relationships', texts: 'Relationships' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(VERIFICATION_REQUEST_RESOURCE)), {
+                  key: 'identity-verification',
+                  props: {
+                    // Also seeds "+ Create": a new request is for this identity.
+                    where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['status', 'assigned_to', 'requested_by', 'created_at', 'decided_at', 'reason'],
+                  },
+                }),
+              ],
+              { key: 'verification', texts: 'Verification' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(IDENTITY_MERGE_RESOURCE)), {
+                  key: 'identity-merges-in',
+                  texts: { title: 'Identities merged into this one' },
+                  props: {
+                    where: [{ field: 'target_identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['created_at', 'status', 'reason', 'merged_by', 'rolled_back_at'],
+                    open: 'page',
+                  },
+                }),
+                l.place(relatedList(resourceByName(IDENTITY_MERGE_SOURCE_RESOURCE)), {
+                  key: 'identity-merged-away',
+                  texts: { title: 'This identity merged into another' },
+                  props: {
+                    where: [{ field: 'source_identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['merge_id', 'previous_status', 'previous_profile_id', 'created_at'],
+                    open: 'none',
+                  },
+                }),
+              ],
+              { key: 'merges', texts: 'Merges' },
             ),
           ],
           { key: 'sections' },

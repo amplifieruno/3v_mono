@@ -64,8 +64,8 @@ export const createIdentityFlow = {
 } satisfies FlowConfig<unknown, Record<never, never>, typeof photoFields>;
 
 /**
- * "Add photos" on an identity: offered while it is neither merged nor archived; disabled with
- * the reason while matching is off (`./identity-rules.ts`). Photos whose face is closer to
+ * "Add photos" on an identity: not offered on an archived one; disabled with the reason on a
+ * merged one and while matching is off (`./identity-rules.ts`). Photos whose face is closer to
  * another identity are refused as conflicting; the others are added.
  */
 export const addPhotosFlow = {
@@ -78,7 +78,7 @@ export const addPhotosFlow = {
   },
   icon: NAV_ICONS.addPhotos,
   surfaces: { default: false, show: 'auto' },
-  when: cond.not(cond.in(ref('record', 'status'), ['merged', 'archived'])),
+  when: cond.not(cond.equals(ref('record', 'status'), 'archived')),
   form,
   submit: {
     mutation: addIdentityPhotos,

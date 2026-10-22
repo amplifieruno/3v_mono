@@ -253,5 +253,10 @@ describe('profile duplicates', () => {
     const dialog = await screen.findByRole('dialog');
     const moves = await within(dialog).findByTestId('profile-compare-moves');
     expect(moves.textContent).toContain('PROFILE-00002 moves 0 identities, 3 documents and 2 consents to PROFILE-00001');
+    // The review step says it again (it reads the pair from the flow's values, G35).
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Merge profiles$/ }));
+    await within(dialog).findByRole('button', { name: /^Back$/ });
+    const review = await within(dialog).findByTestId('profile-compare-moves');
+    expect(review.textContent).toContain('PROFILE-00002 moves 0 identities');
   });
 });

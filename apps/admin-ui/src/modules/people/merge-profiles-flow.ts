@@ -3,6 +3,7 @@ import { NAV_ICONS } from '../../app/nav';
 import { PROFILE_DUPLICATE_RESOURCE } from '../../data/resource-names';
 import { fieldApplied } from '../../data/status-applied';
 import { enumField } from '../../enums/field';
+import { carriedId } from '../../fields/carried-id';
 import { MERGE_KEEP, MERGE_KEEP_ENUM } from '../../enums/people-records';
 import { mergeBlocker, mergeDirection, mergeProfiles } from './merge-profiles';
 import { profile } from './profile';
@@ -21,6 +22,8 @@ const mergeFields = {
       },
     },
   }),
+  first: carriedId('First profile'),
+  second: carriedId('Second profile'),
 };
 
 /**
@@ -30,6 +33,13 @@ const mergeFields = {
 const pairProps = {
   first: ref('record', 'profile_a_id') as unknown as ScreenRef<'record'>,
   second: ref('record', 'profile_b_id') as unknown as ScreenRef<'record'>,
+};
+
+/** The same for the review, which reads the flow's values as its record (G35). */
+const reviewProps = {
+  first: ref('record', 'first') as unknown as ScreenRef<'record'>,
+  second: ref('record', 'second') as unknown as ScreenRef<'record'>,
+  keep: ref('record', 'keep') as unknown as ScreenRef<'record'>,
 };
 
 /** Whether the pair's profiles block the merge for `reason`, read through the check's data access. */
@@ -80,10 +90,14 @@ export const mergeProfilesFlow = {
   form: {
     fields: mergeFields,
     // The first profile by default, so the comparison says what moves from the start.
-    initial: { keep: { kind: 'literal', value: 'first' } },
+    initial: {
+      keep: { kind: 'literal', value: 'first' },
+      first: ref('record', 'profile_a_id'),
+      second: ref('record', 'profile_b_id'),
+    },
     body: (l: Layout<typeof mergeFields>) => ['keep', l.place(profileCompareBlock, { key: 'merge-compare', props: pairProps })],
   },
-  review: (l: Layout<typeof mergeFields>) => [l.place(profileCompareBlock, { key: 'merge-review', props: pairProps })],
+  review: (l: Layout<typeof mergeFields>) => [l.place(profileCompareBlock, { key: 'merge-review', props: reviewProps })],
   submit: {
     mutation: mergeProfiles,
     retry: 'never',

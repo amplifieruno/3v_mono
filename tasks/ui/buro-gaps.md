@@ -534,3 +534,51 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** a declared refusal contract on a custom mutation (codes that mean
   "refused, nothing written", with their issue mapping), or a provider hook classifying Action
   errors by `extensions.code` (the server half of G14's "one result/error model").
+- **Phase 4 Task 4:** the same wrapper reads the refusals of tracked SQL functions and one-row
+  inserts (`src/data/sql-refusals.ts`): Hasura answers `itap.raise_code` with `permission-error` /
+  `Check constraint violation. <code>`, which the provider also calls `sent` on a custom mutation;
+  a function runs in one transaction, so the refusal is definite (merges, rollbacks, splits,
+  verification decisions, relationships).
+
+### G34. A bulk flow takes no form or review: a merge of the selection cannot choose its target
+- **Need:** "Merge identities" over the identities selected in the list: choose which one is kept,
+  review what moves, confirm, then one `merge_identities(target, sources)` call.
+- **Framework (0.6.0):** a bulk flow may bind a single mutation (`submit.mutation`, one attempt slot
+  per selection) and its portable `input` may read `ref('selection', 'ids')`, but `BulkFlowRunner`
+  starts the run on the bar's click and only asks the confirm: a form or a review is never drawn,
+  so the kept identity cannot be chosen; a function `input` gets no `selection`, and a relation's
+  `candidates` cannot read `selection` either. **[code]** (`ui-shadcn/src/flows/flow-runtime.tsx`
+  `BulkFlowRunner`, `core/src/flows/machine.ts` `buildInput`, `fields/candidates.ts`).
+- **Workaround:** the kept identity is the page's record: "Merge into this identity" (item flow) with
+  a multi-select of the identities to merge (candidates: not itself, not merged, same synthetic flag)
+  and the review block; a duplicate pair has "Merge identities" with Keep first / second.
+- **Expected from a framework:** a bulk flow with a hosted form and review over the selection
+  (`ref('selection', …)` readable by `initial`, `candidates` and a function `input`).
+
+### G35. A flow's review step reads the flow's values as its record
+- **Need:** the review of a merge or a rollback places a block that reads the flow's record (the
+  pair, the merge) to say what moves.
+- **Framework (0.6.0):** `ReviewTree` draws the review with a show-mode form controller whose value
+  is the flow's values, so `ref('record', …)` in a review placement reads the values; the flow's
+  record is out of reach there (the form body does read it). A block bound to the record waits
+  forever ("Reading…"). **[run]** (`ui-shadcn/src/flows/flow-screen.tsx` `ReviewTree`;
+  `tests/modules/profile-records-page.test.tsx` failed before the workaround: the Task 2 profile
+  merge review never showed what moves).
+- **Workaround:** the ids a review needs travel as hidden form values (`src/fields/carried-id.ts`,
+  `in: []`, filled by `initial` from the record) and the review reads `ref('record', '<value>')`;
+  the rollback flow gains a form for it, whose body shows the same block, so the dialog opens on
+  what comes back.
+- **Expected from a framework:** the flow's record (and `values`) as separate sources in the review,
+  as in the form body.
+
+### G36. A related list cannot list rows matching either of two keys
+- **Need:** an identity's relationships, stored once per pair (`identity_a_id < identity_b_id`), on
+  the identity page whichever side it is on, with "+ Create".
+- **Framework (0.6.0):** a related list's `where` is a conjunction of `{ field, op, value }` entries;
+  there is no `or`. **[code]** (`core/src/blocks/builtin.ts` related-list `where` schema). A create
+  seeded from `where` would also write the pair unordered, which the database refuses half the time.
+- **Workaround:** a block (`itap:identity-relationships`) over a custom query with `_or`; each row
+  opens the relationship in a quick view (Edit, Delete); "Add relationship" on the identity orders
+  the pair in its mutation.
+- **Expected from a framework:** `or` groups in a related list's locked filter, and a create hook
+  that can normalise the input (here: order the pair).

@@ -29,6 +29,14 @@ import {
   identitySourceEnum,
   identityStatusEnum,
 } from './identities';
+import {
+  IDENTITY_GOVERNANCE_ENUM_TABLES,
+  IDENTITY_MERGE_KEEP_ENUM,
+  identityMergeKeepEnum,
+  identityRelationEnum,
+  mergeStatusEnum,
+  verificationStatusEnum,
+} from './identity-governance';
 import { accessLevelEnum, PEOPLE_ENUM_TABLES, profileStatusEnum, profileTypeEnum } from './people';
 import {
   candidateStatusEnum,
@@ -81,10 +89,14 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   identityStatusEnum,
   identitySourceEnum,
   identityPhotoKindEnum,
+  mergeStatusEnum,
+  verificationStatusEnum,
+  identityRelationEnum,
+  identityMergeKeepEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
-export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([MERGE_KEEP_ENUM]);
+export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([MERGE_KEEP_ENUM, IDENTITY_MERGE_KEEP_ENUM]);
 
 /**
  * Registered enum name → the Hasura enum table holding its values. The schema
@@ -98,4 +110,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...PEOPLE_ENUM_TABLES,
   ...PEOPLE_RECORD_ENUM_TABLES,
   ...IDENTITY_ENUM_TABLES,
+  ...IDENTITY_GOVERNANCE_ENUM_TABLES,
 };

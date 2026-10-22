@@ -13,7 +13,7 @@ const matchingOff = (record: unknown): boolean => row(record).matching_enabled =
 
 /** Why a merged identity cannot change (beside every disabled field and action). */
 export const MERGED_REASON =
-  'This identity was merged into another one: it is frozen with its history until the merge is rolled back.';
+  'This identity was merged into another one: it is frozen with its history until the merge is rolled back (Merges tab).';
 
 /** Why a synthetic identity has no profile link. */
 export const SYNTHETIC_REASON =
@@ -41,7 +41,7 @@ export const IDENTITY_RULES: Rule[] = [
     reason: MERGED_REASON,
   },
   {
-    target: { kind: 'action', name: ['edit', 'add_photos'] },
+    target: { kind: 'action', name: ['edit', 'add_photos', 'merge_into', 'split'] },
     deny: 'run',
     when: (ctx) => merged(ctx.record),
     fallback: 'disable',

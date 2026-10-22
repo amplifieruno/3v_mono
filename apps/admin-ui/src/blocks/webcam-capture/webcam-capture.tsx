@@ -9,6 +9,8 @@ export interface WebcamCaptureProps {
   readonly onCapture: (file: File) => void | Promise<void>;
   /** Locks the buttons, for example while the previous frame uploads or the form is read-only. */
   readonly disabled?: boolean;
+  /** No more photos are wanted (the limit is reached): the camera stops and cannot be started. */
+  readonly done?: boolean;
 }
 
 /** The bundle key of what the area says for a camera status, if anything. */
@@ -27,16 +29,21 @@ const PROBLEMS: ReadonlySet<WebcamStatus> = new Set(['denied', 'missing', 'busy'
  * Takes photos with the browser camera (`itap:webcam-capture`, design §10 call 2): "Use camera"
  * asks for the camera, the live picture is shown mirrored like a mirror, and "Take photo" hands
  * the current frame to `onCapture` as a JPEG file. A refused permission, a missing or busy
- * camera and a browser without camera access each say so; the camera stops on "Stop camera"
- * and when the component goes away. No analysis happens here: face quality is checked by the
+ * camera and a browser without camera access each say so; the camera stops on "Stop camera",
+ * once `done` (no more photos wanted) and when the component goes away. No analysis happens here: face quality is checked by the
  * platform when the photos are submitted.
  */
-export function WebcamCapture({ onCapture, disabled = false }: WebcamCaptureProps): React.ReactElement {
+export function WebcamCapture({ onCapture, disabled = false, done = false }: WebcamCaptureProps): React.ReactElement {
   const t = useT();
   const { status, videoRef, start, stop, capture } = useWebcam();
   const [taking, setTaking] = React.useState(false);
   const live = status === 'live';
   const statusKey = STATUS_TEXT[status];
+
+  // The last wanted photo is taken: the camera light goes off rather than waiting for the dialog.
+  React.useEffect(() => {
+    if (done && live) stop();
+  }, [done, live, stop]);
 
   const take = async (): Promise<void> => {
     setTaking(true);
@@ -77,7 +84,7 @@ export function WebcamCapture({ onCapture, disabled = false }: WebcamCaptureProp
             type="button"
             variant="outline"
             size="sm"
-            disabled={disabled || status === 'starting'}
+            disabled={disabled || done || status === 'starting'}
             onClick={() => void start()}
           >
             <Camera className="size-4" aria-hidden />

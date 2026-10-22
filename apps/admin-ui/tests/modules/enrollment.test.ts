@@ -94,7 +94,7 @@ describe('enrollment flows', () => {
     expect(JSON.stringify(flow.state)).toContain('Photo 1: no face found.');
   });
 
-  it('should add photos to an active identity, and not offer it on a merged or archived one', async () => {
+  it('should add photos to an active identity, disable it on a merged one and not offer it on an archived one', async () => {
     const flow = await runFlow(app, target(IDENTITY_RESOURCE, 'add_photos'), {
       user: ADMIN,
       record: face,
@@ -105,10 +105,10 @@ describe('enrollment flows', () => {
     await flow.submit();
     flow.assertOutcome('success');
     expect(flow.submitted[0]?.call).toMatchObject({ input: { identityId: IDENTITY, fileIds: [P1] } });
-    for (const status of ['merged', 'archived']) {
-      const record = { ...face, status };
-      (await runFlow(app, target(IDENTITY_RESOURCE, 'add_photos'), { user: ADMIN, record, rows: { [IDENTITY_RESOURCE]: [record] } }).open()).assertUnavailable();
-    }
+    const merged = { ...face, status: 'merged' };
+    (await runFlow(app, target(IDENTITY_RESOURCE, 'add_photos'), { user: ADMIN, record: merged, rows: { [IDENTITY_RESOURCE]: [merged] } }).open()).assertDisabled(/merged into another one/);
+    const archived = { ...face, status: 'archived' };
+    (await runFlow(app, target(IDENTITY_RESOURCE, 'add_photos'), { user: ADMIN, record: archived, rows: { [IDENTITY_RESOURCE]: [archived] } }).open()).assertUnavailable();
   });
 
   it('should disable Add photos while matching is off, and Enroll face on a restricted or erased profile', async () => {
@@ -141,12 +141,24 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action', () => {
+  it('should register a reader for each enrollment action and each identity governance write', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
       `${PEOPLE_BINDING}.addIdentityPhotos`,
+      `${PEOPLE_BINDING}.addIdentityRelationship`,
+      `${PEOPLE_BINDING}.approveVerification`,
       `${PEOPLE_BINDING}.createIdentityFromPhotos`,
       `${PEOPLE_BINDING}.enrollFace`,
+      `${PEOPLE_BINDING}.mergeIdentities`,
+      `${PEOPLE_BINDING}.rejectVerification`,
+      `${PEOPLE_BINDING}.rollbackMerge`,
+      `${PEOPLE_BINDING}.splitIdentity`,
     ]);
+  });
+
+  it('should not claim nothing was saved for the refusals Enroll face may raise after linking', () => {
+    for (const code of ['subject_restricted', 'identity_merged_frozen', 'identity_matching_disabled']) {
+      expect(read({ code, message: '' }, { fileIds: [P1] })?.[0]?.message).not.toMatch(/Nothing was saved/);
+    }
   });
 });
 

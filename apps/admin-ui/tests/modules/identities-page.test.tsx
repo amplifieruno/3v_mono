@@ -244,6 +244,27 @@ describe('camera', () => {
   });
 });
 
+describe('camera at the photo limit', () => {
+  it('should stop the camera once the last wanted photo is added', async () => {
+    const stop = vi.fn();
+    const stream = { getTracks: () => [{ stop }] };
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia: vi.fn().mockResolvedValue(stream) } });
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    uploads = Array.from({ length: 5 }, (_, i) => `aaaaaaaa-aaaa-4aaa-8aaa-00000000010${i}`);
+    renderAt(`/profiles/${ANNA}`);
+    fireEvent.click(await screen.findByRole('button', { name: /^Enroll face$/ }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Use camera' }));
+    expect(await within(dialog).findByRole('button', { name: 'Take photo' })).toBeDefined();
+    const files = Array.from({ length: 5 }, (_, i) => new File([`jpeg-${i}`], `face-${i}.jpg`, { type: 'image/jpeg' }));
+    fireEvent.change(await within(dialog).findByLabelText(/^Photos/), { target: { files } });
+    await within(dialog).findByRole('img', { name: 'Photo 5' });
+    await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
+    expect(within(dialog).queryByRole('button', { name: 'Take photo' })).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Use camera' }).hasAttribute('disabled')).toBe(true);
+  });
+});
+
 describe('identity pages', () => {
   it('should list the person’s identities on the profile', async () => {
     renderAt(`/profiles/${ANNA}?sections=identities`);
