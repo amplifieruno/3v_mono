@@ -88,6 +88,10 @@ person or deleting a crop removes its original at once.
 - **Incidents**: the incidents the person is involved in, with the role
   (subject, witness, related). People are added on the incident's People tab.
   See *Incidents*.
+- **Watch lists**: the lists this face is on (for a person without a profile,
+  or one identity only), with the reason, the expiry and whether the entry is
+  **Active**. **+ Create** puts the identity on a list. A list that names the
+  linked profile counts too; it is shown on the profile. See *Watch lists*.
 - **Timeline**, **Relationships**, **Verification** and **Merges**: see
   *Merging, splitting, verifying and relating identities*.
 

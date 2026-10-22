@@ -710,3 +710,34 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   filters `assigned_to_me = true`.
 - **Expected from a framework:** a session reference in a declared view's filter value (resolved when
   the view is applied), e.g. `{ field: 'assigned_to', op: 'eq', value: ref('user', 'id') }`.
+
+G44 again (plan 05 Task 4): the shift handover views "Waiting for me", "For me" and "Sent by me" use
+computed columns `shift_handovers.addressed_to_me` / `sent_by_me`, and the watch-list entries'
+"Active" / "Expired" views use `watch_list_entries.active` (a saved view cannot say "now" either);
+migration `1792365700277`.
+
+### G45. Record types cannot discriminate on which of two columns is set
+- **Need:** a watch-list entry names exactly one subject, a profile or an identity
+  (`watch_list_entries_exactly_one_subject`); the create form must offer one of the two, never both
+  or neither.
+- **Framework (0.6.0):** `types: { by }` needs a discriminator column, and a typed create always sends
+  it (`forms/controller/payload.ts`: `payload[discriminator] = input.type`); the table has no such
+  column, and a generated one could not be inserted. **[code]**
+- **Workaround:** two create-path resources over the same table, `watch_list_profile_entry` and
+  `watch_list_identity_entry`, each declaring only its own subject (required, `write: 'create'`); the
+  all-entries resource `watch_list_entry` reads both subjects and has create off. The list's People and
+  Identities tabs and the profile's and identity's Watch lists tabs place the matching one.
+- **Expected from a framework:** a type keyed by a predicate over the record (`present(profile_id)`)
+  whose create sends no discriminator, or a create-time choice between field groups.
+
+### G46. A page cannot order its nodes from data
+- **Need:** the operator workspace page shows the panels the operator's workspace lists
+  (`operator_workspaces.layout.panels`), in that order.
+- **Framework (0.6.0):** a page body is a static tree; `when` can hide a node but nothing reorders
+  nodes, and a ref into a `source.list` reads only `rows` whole or `total`, not `rows.0.layout`.
+  **[code]**
+- **Workaround:** a query `itap:operator-workspace-layout` answers the layout as slots `slot1..slot4`
+  (declared output fields), and the page places each panel in each slot under
+  `when: equals(ref('workspace', 'slotN'), panel)` (16 conditional panels, one shown per slot).
+- **Expected from a framework:** a data-driven order for a container's keyed children (a `order` ref
+  naming child keys), or a repeat node over a list source.

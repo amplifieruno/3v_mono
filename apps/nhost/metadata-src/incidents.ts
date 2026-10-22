@@ -131,6 +131,11 @@ export const incidentTables: TableSpec[] = [
     name: 'shift_handovers',
     profile: 'tenant_crud',
     readOnlyColumns: ['from_user_id', 'acknowledged_at'],
+    // Whether the session user receives / sent it (the console's "For me" and "Sent by me" views).
+    computedFields: [
+      { name: 'addressed_to_me', function: 'shift_handover_addressed_to_me', sessionArgument: 'hasura_session' },
+      { name: 'sent_by_me', function: 'shift_handover_sent_by_me', sessionArgument: 'hasura_session' },
+    ],
     extraPermissions: {
       update_permissions: [
         {
@@ -200,4 +205,5 @@ export const incidentFunctions: FunctionSpec[] = [
   'close_incident',
   'escalate_incident',
   'acknowledge_shift_handover',
+  'add_open_incidents_to_handover',
 ].map((name): FunctionSpec => ({ name, exposedAs: 'mutation', sessionArgument: 'hasura_session', roles: [ORG_ADMIN] }));

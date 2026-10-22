@@ -67,6 +67,10 @@ import {
   FileText,
   Lock,
   Search,
+  ArrowRightLeft,
+  LayoutPanelTop,
+  ShieldAlert,
+  UserSearch,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -139,6 +143,10 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   FileText,
   Lock,
   Search,
+  ArrowRightLeft,
+  LayoutPanelTop,
+  ShieldAlert,
+  UserSearch,
 };
 
 /**

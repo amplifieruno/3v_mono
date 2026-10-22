@@ -11,6 +11,7 @@ import {
   INCIDENT_IDENTITY_HISTORY_RESOURCE,
   TRACKING_SESSION_RESOURCE,
   VERIFICATION_REQUEST_RESOURCE,
+  WATCH_LIST_IDENTITY_ENTRY_RESOURCE,
 } from '../../data/resource-names';
 import { IDENTITY_SETTABLE_STATUSES } from '../../enums/identities';
 import { identityTimelineBlock } from '../../blocks/identity-timeline/identity-timeline-block';
@@ -210,6 +211,16 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                 }),
               ],
               { key: 'incidents', texts: 'Incidents' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(WATCH_LIST_IDENTITY_ENTRY_RESOURCE)), {
+                  key: 'identity-watch-lists',
+                  // Also seeds "+ Create": the new entry is for this identity; the form asks for the list.
+                  props: { where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['watch_list_id', 'reason', 'expires_at', 'active', 'added_by'], open: 'none' },
+                }),
+              ],
+              { key: 'watch-lists', texts: 'Watch lists' },
             ),
             l.panel(
               [

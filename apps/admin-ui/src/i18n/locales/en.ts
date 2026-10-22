@@ -115,6 +115,16 @@ export default {
       /** A row's text box; `item` is capitalized here (`Option 2`). */
       row: '{{item}} {{index}}',
     },
+    /** An operator workspace's panels (`src/fields/workspace-panels-impl.ts`). */
+    workspacePanels: {
+      cameras: 'Live cameras',
+      incidents: 'Open incidents',
+      events: 'Latest critical events',
+      occupancy: 'Occupancy',
+      none: 'No panels',
+      up: 'Move {{panel}} up',
+      down: 'Move {{panel}} down',
+    },
     /** An event rule version's parameters (`src/fields/event-rule-parameters-impl.ts`). */
     ruleParameters: {
       dwell: 'Dwell time (minutes)',
@@ -230,6 +240,9 @@ export default {
       },
       text: {
         blank: 'Enter some text, not only spaces.',
+      },
+      color: {
+        hex: 'Enter a colour as #rrggbb, such as #d97706.',
       },
       facePhotos: {
         tooFew: 'Add at least {{min}} photos.',

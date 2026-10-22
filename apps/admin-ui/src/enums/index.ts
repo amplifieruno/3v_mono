@@ -72,6 +72,7 @@ import {
   incidentIdentityRoleEnum,
   reportFormatEnum,
 } from './incidents';
+import { WATCH_LIST_ENUM_TABLES, watchListKindEnum } from './watch-lists';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -122,6 +123,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   incidentActivityKindEnum,
   incidentIdentityRoleEnum,
   reportFormatEnum,
+  watchListKindEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -144,4 +146,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...MONITORING_ENUM_TABLES,
   ...EVENT_ENUM_TABLES,
   ...INCIDENT_ENUM_TABLES,
+  ...WATCH_LIST_ENUM_TABLES,
 };

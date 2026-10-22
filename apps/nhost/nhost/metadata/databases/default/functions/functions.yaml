@@ -2,6 +2,7 @@
 - "!include itap_acknowledge_incident.yaml"
 - "!include itap_acknowledge_notification.yaml"
 - "!include itap_acknowledge_shift_handover.yaml"
+- "!include itap_add_open_incidents_to_handover.yaml"
 - "!include itap_add_segment_members.yaml"
 - "!include itap_aggregate_stats.yaml"
 - "!include itap_aggregate_stats_range.yaml"

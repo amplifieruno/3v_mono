@@ -40,6 +40,19 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: handover_id
+computed_fields:
+  - name: addressed_to_me
+    definition:
+      function:
+        schema: itap
+        name: shift_handover_addressed_to_me
+      session_argument: hasura_session
+  - name: sent_by_me
+    definition:
+      function:
+        schema: itap
+        name: shift_handover_sent_by_me
+      session_argument: hasura_session
 insert_permissions:
   - role: org_admin
     permission:
@@ -67,6 +80,9 @@ select_permissions:
         - summary
         - to_user_id
         - updated_at
+      computed_fields:
+        - addressed_to_me
+        - sent_by_me
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

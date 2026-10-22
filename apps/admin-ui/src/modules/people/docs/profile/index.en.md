@@ -104,6 +104,10 @@ of the edit form, each with the reason. Its restriction is never lifted.
   **Detections**: every face of the person's identities the cameras recorded.
   See *Tracking sessions* and *Detections*.
 - **Events**: the events that concern the person, newest first. See *Events*.
+- **Watch lists**: the lists the person is on, with the reason, the expiry and
+  whether the entry is **Active**. **+ Create** puts the person on a list.
+  Entries of the person's individual identities are on each identity's own
+  Watch lists tab. See *Watch lists*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

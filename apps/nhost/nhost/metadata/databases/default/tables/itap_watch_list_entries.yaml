@@ -48,6 +48,12 @@ object_relationships:
         column_mapping:
           organization_id: organization_id
           watch_list_id: id
+computed_fields:
+  - name: active
+    definition:
+      function:
+        schema: itap
+        name: watch_list_entry_active
 insert_permissions:
   - role: org_admin
     permission:
@@ -76,6 +82,8 @@ select_permissions:
         - reason
         - updated_at
         - watch_list_id
+      computed_fields:
+        - active
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

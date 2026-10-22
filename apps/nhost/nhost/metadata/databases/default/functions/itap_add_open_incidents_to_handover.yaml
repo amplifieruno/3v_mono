@@ -1,0 +1,9 @@
+function:
+  schema: itap
+  name: add_open_incidents_to_handover
+configuration:
+  custom_name: add_open_incidents_to_handover
+  exposed_as: mutation
+  session_argument: hasura_session
+permissions:
+  - role: org_admin

@@ -117,4 +117,16 @@ export default {
   incident: {
     doc: { topics: { index: 'Incidents: lifecycle, notes, links and timeline' } },
   },
+  watch_list: {
+    doc: { topics: { index: 'Watch lists: kinds, entries and expiry' } },
+  },
+  watch_list_entry: {
+    doc: { topics: { index: 'Watch-list entries' } },
+  },
+  shift_handover: {
+    doc: { topics: { index: 'Shift handovers: handing over and taking over' } },
+  },
+  operator_workspace: {
+    doc: { topics: { index: 'Operator workspace: panels and arranging them' } },
+  },
 } satisfies TranslationBundle;

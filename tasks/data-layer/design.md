@@ -222,10 +222,10 @@ Conditions: groups `{op:'and'|'or'|'not', children}` (exact keys; `not` has one 
 | `incident_note_files` | note_id, file_id | |
 | `incident_activities` | incident_id, actor_id, kind (`status_change/assigned/escalated/notified/action_taken/note/report_generated`), details jsonb, occurred_at | **ro** timeline (written by triggers and actions) |
 | `watch_lists` | name, description, kind (`watch/blacklist/vip`), severity, color | |
-| `watch_list_entries` | watch_list_id, identity_id, profile_id, reason, added_by, expires_at | exactly-one CHECK; expiry implicit |
-| `shift_handovers` | from_user_id, to_user_id, shift_started_at, shift_ended_at, summary, acknowledged_at | |
+| `watch_list_entries` | watch_list_id, identity_id, profile_id, reason, added_by, expires_at | exactly-one CHECK; expiry implicit; computed `active` (no expiry or expiry ahead) |
+| `shift_handovers` | from_user_id, to_user_id, shift_started_at, shift_ended_at, summary, acknowledged_at | computed `addressed_to_me` / `sent_by_me` (session); `add_open_incidents_to_handover` (sender, unacknowledged) links every open/acknowledged/investigating incident |
 | `shift_handover_incidents` | handover_id, incident_id | |
-| `operator_workspaces` | user_id, name, layout jsonb, is_default | |
+| `operator_workspaces` | user_id, name, layout jsonb, is_default | setting `is_default` clears the user's previous default (trigger) |
 
 Event types (`event_types`): `detection_unknown, detection_known, watchlist_match, blacklist_match, vip_arrival, inactive_profile_detected, restricted_area_entry, access_granted, access_denied, tailgating, loitering, unusual_dwell, after_hours, unexpected_facility, abnormal_movement, occupancy_exceeded, device_offline, device_online, device_error, auth_success, auth_failed, emergency_override_started, emergency_override_ended, saved_search_match, integration_failed, admin_action`. Every type has a producer in §8.
 

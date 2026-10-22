@@ -10,6 +10,7 @@ import {
   PROFILE_RESOURCE,
   TRACKING_SESSION_RESOURCE,
   VISIT_RESOURCE,
+  WATCH_LIST_PROFILE_ENTRY_RESOURCE,
 } from '../../data/resource-names';
 import { uploadDocumentFlow } from './document-upload';
 import { enrollFaceFlow } from './enrollment-flows';
@@ -255,6 +256,16 @@ export const profile = defineResource(PROFILE_RESOURCE, {
                 }),
               ],
               { key: 'events', texts: 'Events' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(WATCH_LIST_PROFILE_ENTRY_RESOURCE)), {
+                  key: 'profile-watch-lists',
+                  // Also seeds "+ Create": the new entry is for this profile; the form asks for the list.
+                  props: { where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['watch_list_id', 'reason', 'expires_at', 'active', 'added_by'], open: 'none' },
+                }),
+              ],
+              { key: 'watch-lists', texts: 'Watch lists' },
             ),
             l.panel(
               [

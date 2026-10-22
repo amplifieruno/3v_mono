@@ -19,6 +19,8 @@ export const eventTables: TableSpec[] = [
     profile: 'tenant_crud',
     readOnlyColumns: ['added_by'],
     insertOnlyColumns: ['watch_list_id', 'identity_id', 'profile_id'],
+    // Whether the entry is in force now (the console's "Active" / "Expired" views).
+    computedFields: [{ name: 'active', function: 'watch_list_entry_active' }],
   },
   // Append-only, system-written (Stage B, device health, crons, actions); not audited.
   { name: 'events', profile: 'tenant_read' },

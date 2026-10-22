@@ -81,6 +81,10 @@ export const NAV_ICONS = {
   resolve: 'CircleCheck',
   closeIncident: 'Lock',
   incidentReport: 'FileText',
+  watchLists: 'ShieldAlert',
+  watchListEntries: 'UserSearch',
+  shiftHandovers: 'ArrowRightLeft',
+  operatorWorkspace: 'LayoutPanelTop',
 } as const;
 
 /**

@@ -18,6 +18,7 @@ import { stringListImplementations } from './string-list-impl';
 import { templateStructureImplementations } from './template-structure-impl';
 import { timeWindowsImplementations } from './time-windows-impl';
 import { timezoneImplementations } from './timezone-impl';
+import { workspacePanelsImplementations } from './workspace-panels-impl';
 
 /**
  * The console's field implementations: the kit's, plus the hasura-storage file
@@ -29,9 +30,10 @@ import { timezoneImplementations } from './timezone-impl';
  * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`), files sent inside an
  * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`),
  * the photos to split off an identity (`itap.split-photos`), timestamps with their time of day
- * (`itap.date-time`), a detection's face (`itap.detection-face`) and an event rule version's parameters
- * by rule type (`itap.event-rule-parameters`) and an incident activity's details in one line
- * (`itap.incident-activity-details`). Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
+ * (`itap.date-time`), a detection’s face (`itap.detection-face`), an event rule version's parameters
+ * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
+ * (`itap.incident-activity-details`) and an operator workspace's panels (`itap.workspace-panels`).
+ * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
 export const itapFieldImplementations = composeFieldImplementations(
@@ -54,4 +56,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   detectionFaceImplementations,
   eventRuleParametersImplementations,
   incidentActivityDetailsImplementations,
+  workspacePanelsImplementations,
 );
