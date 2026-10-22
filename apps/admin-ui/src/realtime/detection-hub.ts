@@ -12,7 +12,8 @@ import {
  * Live detections of many cameras over ONE Socket.io connection (`apps/backend/src/recognition/socket.ts`
  * accepts several `join-device` on a socket): every view that shows a camera live subscribes to
  * its device here, the hub joins the device's room once and leaves it when the last view of the
- * device goes. The connection opens with the first subscriber and closes with the last one.
+ * device goes. The connection opens with the first subscriber and closes `IDLE_GRACE_MS` after the
+ * last one goes, so a page swapping its views (a navigation, a re-render) keeps the socket.
  *
  * The server disconnects a socket whose token expired; the hub then reconnects with a fresh
  * token from `getToken()` and joins every subscribed room again. When the token store moves to
@@ -50,6 +51,8 @@ export interface DetectionHubOptions {
   readonly retryDelaysMs?: readonly number[];
 }
 
+/** How long the connection outlives its last subscriber, in milliseconds. */
+export const IDLE_GRACE_MS = 1_000;
 const DEFAULT_RETRY_DELAYS_MS = [500, 1_000, 2_000, 5_000, 10_000] as const;
 
 /** Refused connections in a row (with fresh tokens) before the hub gives up. */
@@ -77,6 +80,8 @@ export function createDetectionHub(options: DetectionHubOptions): DetectionHub {
   let generation = 0;
   let socket: ReturnType<DetectionSocketFactory> | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** Stops the hub when the grace after the last subscriber is over. */
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let phase: Phase | null = null;
   let attempt = 0;
   let unauthorized = 0;
@@ -225,6 +230,8 @@ export function createDetectionHub(options: DetectionHubOptions): DetectionHub {
   };
 
   const stopAll = (): void => {
+    clearTimeout(idleTimer);
+    idleTimer = undefined;
     drop();
     unsubscribeStore?.();
     unsubscribeStore = undefined;
@@ -234,8 +241,24 @@ export function createDetectionHub(options: DetectionHubOptions): DetectionHub {
     refused.clear();
   };
 
+  /** Leaves the room of a device no view shows any more. */
+  const forget = (deviceId: string): void => {
+    refused.delete(deviceId);
+    if (rooms.get(deviceId) === 'joined') socket?.leave(deviceId);
+    rooms.delete(deviceId);
+  };
+
+  /** The last subscriber went: keep a live connection a moment for the next view, else stop now. */
+  const stopWhenIdle = (): void => {
+    if (phase === null || failure !== null) return stopAll();
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => subscribers.size === 0 && stopAll(), IDLE_GRACE_MS);
+  };
+
   return {
     subscribe(deviceId, subscriber) {
+      clearTimeout(idleTimer);
+      idleTimer = undefined;
       const id = nextId++;
       const known = devices().has(deviceId);
       subscribers.set(id, { deviceId, subscriber });
@@ -259,12 +282,9 @@ export function createDetectionHub(options: DetectionHubOptions): DetectionHub {
           if (closed) return;
           closed = true;
           subscribers.delete(id);
-          if (subscribers.size === 0) return stopAll();
           if (devices().has(deviceId)) return;
-          refused.delete(deviceId);
-          const room = rooms.get(deviceId);
-          rooms.delete(deviceId);
-          if (room === 'joined' && socket !== null) socket.leave(deviceId);
+          forget(deviceId);
+          if (subscribers.size === 0) return stopWhenIdle();
           dropWhenUnused();
         },
       };

@@ -185,6 +185,17 @@ describe('refusals through the provider', () => {
       code: 'incident_not_found',
     });
   });
+
+  it('should read a member who is no longer active as a definite refusal naming it', async () => {
+    const operations = ['acknowledgeIncident', 'startInvestigation', 'resolveIncident', 'closeIncident', 'escalateIncident', 'generateIncidentReport'];
+    for (const operation of operations) {
+      await expect(refused(operation, 'member_not_active:assigned_to'), operation).rejects.toMatchObject({
+        kind: 'validation',
+        code: 'member_not_active',
+        details: { issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }] },
+      });
+    }
+  });
 });
 
 describe('what never changes', () => {
@@ -201,6 +212,11 @@ describe('what never changes', () => {
     expect(denied(INCIDENT_RESOURCE, 'edit', incident('closed'))).toBe(true);
     const def = app.registry.get(INCIDENT_RESOURCE) as { operations?: Record<string, boolean> };
     expect(def.operations?.delete).toBe(false);
+  });
+
+  it('should keep facility-less incidents when a facility is picked in the sidebar', () => {
+    const def = app.registry.get(INCIDENT_RESOURCE) as { data?: { scope?: Record<string, unknown> } };
+    expect(def.data?.scope?.facility).toEqual({ field: 'facility_id', empty: 'shared' });
   });
 
   it('should let only the author change or delete a note', () => {

@@ -1,27 +1,33 @@
 import { resourceShowHref } from '@burojs/core';
-import { type BlockViewProps, useApp } from '@burojs/react';
+import { type BlockViewProps, useApp, useList } from '@burojs/react';
 import { useLinkComponent } from '@burojs/ui-shadcn';
 import type * as React from 'react';
 import { DEVICE_RESOURCE } from '../../data/resource-names';
 import { LiveCameraPanel } from './live-camera-panel';
 import { liveCameraOf } from './live-camera-row';
-import type { liveWallBlock } from './live-wall-block';
+import { LIVE_WALL_LIMIT, LIVE_WALL_REFRESH_MS, type liveWallBlock } from './live-wall-block';
 import { useLiveDeps } from './use-live-deps';
 
 /**
  * The live wall's view (`itap:live-wall`), loaded on demand: one live camera view per camera
- * running recognition, each headed by the camera's name linking to its page.
+ * running recognition, each headed by the camera's name linking to its page. The camera list is
+ * read again every 15 seconds (sidebar facility scope applies).
  */
-export default function LiveWallView({
-  data,
-  t,
-}: BlockViewProps<typeof liveWallBlock>): React.ReactElement {
+export default function LiveWallView({ t }: BlockViewProps<typeof liveWallBlock>): React.ReactElement {
   const deps = useLiveDeps();
   const app = useApp();
   const Link = useLinkComponent();
-  const list = (data as { readonly cameras?: { readonly rows?: readonly unknown[]; readonly total?: unknown } })
-    .cameras;
-  const cameras = (list?.rows ?? []).flatMap((row) => {
+  const read = useList(DEVICE_RESOURCE, {
+    // Only cameras run recognition (the start action refuses other devices).
+    filter: { field: 'recognition_enabled', op: 'eq', value: true },
+    sort: [{ field: 'name', direction: 'asc' }],
+    pagination: { kind: 'offset', page: 1, pageSize: LIVE_WALL_LIMIT },
+    refetchInterval: LIVE_WALL_REFRESH_MS,
+  });
+  if (read.isError && read.data === undefined) return <p className="text-sm text-destructive">{t('camerasFailed')}</p>;
+  if (read.data === undefined) return <p className="text-sm text-muted-foreground">{t('loadingCameras')}</p>;
+  const list = read.data as { readonly data?: readonly unknown[]; readonly total?: unknown } | undefined;
+  const cameras = (list?.data ?? []).flatMap((row) => {
     const camera = liveCameraOf(row);
     return camera ? [camera] : [];
   });

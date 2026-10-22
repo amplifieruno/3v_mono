@@ -6,7 +6,8 @@ import { hasuraOperation, rootOf } from '../../data/operations';
 import { resourceByName } from '../../data/resource-by-name';
 import { AREA_OCCUPANCY_RESOURCE, OPERATOR_WORKSPACE_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
-import { workspacePanels } from '../../fields/workspace-panels-format';
+import { EVENT_SEVERITIES, type EventSeverity } from '../../enums/events';
+import { panelEntries, workspacePanels } from '../../fields/workspace-panels-format';
 
 /** The workspace page's slots, top to bottom (one per panel): each shows the panel named in it, or nothing. */
 export const WORKSPACE_SLOTS = ['slot1', 'slot2', 'slot3', 'slot4'] as const;
@@ -18,9 +19,20 @@ export const workspaceLayout = z.object({
   slot2: z.string(),
   slot3: z.string(),
   slot4: z.string(),
+  event_severities: z.array(z.string()),
 });
 
 export type WorkspaceLayout = z.infer<typeof workspaceLayout>;
+
+const isSeverity = (value: unknown): value is EventSeverity =>
+  typeof value === 'string' && (EVENT_SEVERITIES as readonly string[]).includes(value);
+
+/** The severities the events panel lists: those its stored entry names (`{ type: 'event_feed', severities }`), else critical only. */
+export function eventSeveritiesOf(layout: unknown): EventSeverity[] {
+  const named = panelEntries(layout, 'events').flatMap((entry) => (Array.isArray(entry.severities) ? entry.severities : []));
+  const severities = EVENT_SEVERITIES.filter((severity) => named.filter(isSeverity).includes(severity));
+  return severities.length > 0 ? severities : ['critical'];
+}
 
 /** The slots of a workspace row (or of none: the default layout); an unused slot is `''`. */
 export function layoutOf(row: unknown): WorkspaceLayout {
@@ -34,6 +46,7 @@ export function layoutOf(row: unknown): WorkspaceLayout {
     slot2: slot(1),
     slot3: slot(2),
     slot4: slot(3),
+    event_severities: eventSeveritiesOf(value?.layout),
   };
 }
 
@@ -69,6 +82,12 @@ export const operatorWorkspaceLayout = defineQuery('itap:operator-workspace-layo
     slot2: slotField(2),
     slot3: slotField(3),
     slot4: slotField(4),
+    event_severities: f.json({
+      texts: {
+        label: 'Event severities',
+        doc: { summary: 'The severities the latest-events panel lists: those the workspace names for it, else critical only.' },
+      },
+    }),
   },
 });
 

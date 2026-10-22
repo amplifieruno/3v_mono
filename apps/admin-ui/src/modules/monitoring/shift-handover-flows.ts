@@ -65,9 +65,11 @@ const acknowledgedNow: FlowUnknownCheck = async ({ record, data }) => {
 /**
  * Check again after a lost answer: the call went through when every incident still being handled
  * is linked to the handover now (the flow has no link count from before the call to compare, and
- * links that existed before must not read as "applied"). Some still unlinked: not applied.
+ * links that existed before must not read as "applied"). Some still unlinked: not applied. With no
+ * incident being handled the call could add nothing, so nothing proves it ran: "not applied" lets
+ * the operator run it again, which is harmless (it answers 0 added).
  */
-const incidentsLinked: FlowUnknownCheck = async ({ record, data }) => {
+export const incidentsLinked: FlowUnknownCheck = async ({ record, data }) => {
   const id = record?.id;
   if (typeof id !== 'string' || id === '') return 'unknown';
   const page = { kind: 'offset', page: 1, pageSize: 500 } as const;
@@ -83,6 +85,7 @@ const incidentsLinked: FlowUnknownCheck = async ({ record, data }) => {
     const openIds = (open.data as readonly { id?: unknown }[]).map((row) => row.id);
     const linkedIds = new Set((linked.data as readonly { incident_id?: unknown }[]).map((row) => row.incident_id));
     if (openIds.length >= 500 || linkedIds.size >= 500) return 'unknown';
+    if (openIds.length === 0) return 'not-applied';
     return openIds.every((incident) => linkedIds.has(incident)) ? 'applied' : 'not-applied';
   } catch {
     return 'unknown';

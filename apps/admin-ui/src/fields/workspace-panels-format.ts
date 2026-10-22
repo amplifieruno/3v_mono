@@ -13,7 +13,7 @@ export type WorkspacePanel = (typeof WORKSPACE_PANELS)[number];
 export const WORKSPACE_PANEL_LABELS: Readonly<Record<WorkspacePanel, string>> = {
   cameras: 'Live cameras',
   incidents: 'Open incidents',
-  events: 'Latest critical events',
+  events: 'Latest events',
   occupancy: 'Occupancy',
 };
 
@@ -51,10 +51,28 @@ export function workspacePanels(layout: unknown): WorkspacePanel[] {
   return shown;
 }
 
-/** The layout with `panels` as the shown list; other keys kept. */
+/**
+ * The layout with `panels` as the shown list; other keys kept. A panel the stored list already
+ * holds keeps its stored entries (a seeded `{ type, severities, … }` object keeps its settings, the
+ * seeded camera entries stay one per camera); a panel new to the list is written by name.
+ */
 export function withPanels(layout: unknown, panels: readonly WorkspacePanel[]): Record<string, unknown> {
   const base = layout !== null && typeof layout === 'object' && !Array.isArray(layout) ? (layout as Record<string, unknown>) : {};
-  return { ...base, panels: [...panels] };
+  const stored: readonly unknown[] = Array.isArray(base.panels) ? base.panels : [];
+  const entries = panels.flatMap((panel) => {
+    const kept = stored.filter((entry) => panelOf(entry) === panel);
+    return kept.length > 0 ? kept : [panel];
+  });
+  return { ...base, panels: entries };
+}
+
+/** The stored entries of one panel (empty when the layout does not list it, or lists it by name only). */
+export function panelEntries(layout: unknown, panel: WorkspacePanel): Record<string, unknown>[] {
+  const panels = layout !== null && typeof layout === 'object' ? (layout as { readonly panels?: unknown }).panels : undefined;
+  if (!Array.isArray(panels)) return [];
+  return panels.filter(
+    (entry): entry is Record<string, unknown> => entry !== null && typeof entry === 'object' && panelOf(entry) === panel,
+  );
 }
 
 /** Shows or hides one panel: a shown panel joins at the end. */

@@ -4,7 +4,7 @@ import { MONITORING_BINDING } from '../../blocks/occupancy-now/occupancy-query';
 import { type HasuraOperationEntry, hasuraOperation, rootOf } from '../../data/operations';
 import { INCIDENT_ACTIVITY_RESOURCE, INCIDENT_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
-import { type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
+import { MEMBER_NOT_ACTIVE_REFUSAL, type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
 import { INCIDENT_DISPOSITIONS, REPORT_FORMATS } from '../../enums/incidents';
 
 const NOTHING = ' Nothing was changed.';
@@ -15,6 +15,8 @@ const LIFECYCLE_REFUSALS = {
   incident_invalid_transition:
     'Someone else moved the incident on in the meantime (its status no longer allows this step): reload it to see where it stands.' +
     NOTHING,
+  // The incident's member column (`assigned_to`) is checked by `active_member_check` on every write.
+  member_not_active: MEMBER_NOT_ACTIVE_REFUSAL,
 } satisfies Record<string, SqlRefusalText>;
 
 /** What `resolve_incident` raises beside the lifecycle refusals. */
@@ -27,10 +29,14 @@ export const RESOLVE_REFUSALS = {
 export const ESCALATE_REFUSALS = {
   incident_not_found: LIFECYCLE_REFUSALS.incident_not_found,
   incident_not_active: 'The incident is already resolved or closed: there is nobody left to escalate it to.' + NOTHING,
+  member_not_active: MEMBER_NOT_ACTIVE_REFUSAL,
 };
 
 /** What `generate_incident_report` raises. */
-export const REPORT_REFUSALS = { incident_not_found: LIFECYCLE_REFUSALS.incident_not_found };
+export const REPORT_REFUSALS = {
+  incident_not_found: LIFECYCLE_REFUSALS.incident_not_found,
+  member_not_active: MEMBER_NOT_ACTIVE_REFUSAL,
+};
 
 export const incidentIdInput = z.object({ incidentId: z.string().uuid() });
 export const resolveIncidentInput = z.object({

@@ -25,6 +25,14 @@ export function sqlRefusalDetail(message: string): string | null {
  */
 export type SqlRefusalText = string | ((argument: string) => string);
 
+/**
+ * `member_not_active:<column>` (`itap.active_member_check`): a member column the statement writes
+ * (an assignee, a recipient, an author) names someone who is suspended, deactivated or expired.
+ * Shared by the refusal maps of every function that writes rows carrying such a column.
+ */
+export const MEMBER_NOT_ACTIVE_REFUSAL: SqlRefusalText = () =>
+  'The member named here is no longer an active member of the organization (suspended, deactivated or expired): choose an active member. Nothing was changed.';
+
 /** Splits `merge_rows_moved:3` into the code and its argument. */
 function codeOf(detail: string): { readonly code: string; readonly argument: string } {
   const at = detail.indexOf(':');

@@ -362,20 +362,34 @@ test.describe.serial('monitoring smoke', () => {
         )
       ).operator_workspaces_by_pk.layout;
 
-    // The wall shows cameras running recognition (the seeded ones are off): one is switched on for
-    // the test and back off after it.
-    const cams = await graphql<{ devices: { id: string; name: string }[] }>(
-      '{ devices(where: {device_type: {_in: [static_video_camera, ptz_camera]}, recognition_enabled: {_eq: false}, stream_url: {_is_null: false}}, order_by: {name: asc}, limit: 1) { id name } }',
+    // The wall shows cameras running recognition (the seeded ones are off). A seeded camera would
+    // run real recognition on faces and leave unknown identities behind, so the run adds its own
+    // camera instead: inactive (neither the recognition manager nor the health check touches an
+    // inactive camera) on a stream id the stream server does not have, deleted by the sweep.
+    const seeded = await graphql<{ devices: { organization_id: string; facility_id: string }[] }>(
+      '{ devices(where: {device_type: {_in: [static_video_camera, ptz_camera]}, stream_url: {_is_null: false}}, limit: 1) { organization_id facility_id } }',
     );
-    const camera = cams.devices[0];
-    if (!camera) throw new Error('the seed has no idle camera for the live wall');
-    const setRecognition = (on: boolean) =>
-      graphql('mutation ($id: uuid!, $on: Boolean!) { update_devices_by_pk(pk_columns: {id: $id}, _set: {recognition_enabled: $on}) { id } }', {
-        id: camera.id,
-        on,
-      });
-    sweep.push({ name: 'switch the camera off', run: () => setRecognition(false) });
-    await setRecognition(true);
+    const place = seeded.devices[0];
+    if (!place) throw new Error('the seed has no camera');
+    const created = await asAdmin<{ insert_devices_one: { id: string; name: string } }>(
+      'mutation ($o: devices_insert_input!) { insert_devices_one(object: $o) { id name } }',
+      {
+        o: {
+          organization_id: place.organization_id,
+          facility_id: place.facility_id,
+          name: `${RUN} camera`,
+          device_type: 'static_video_camera',
+          status: 'inactive',
+          recognition_enabled: true,
+          stream_url: `rtsp://mediamtx:8554/${RUN}`,
+        },
+      },
+    );
+    const camera = created.insert_devices_one;
+    sweep.push({
+      name: 'delete the test camera',
+      run: () => asAdmin('mutation ($id: uuid!) { delete_devices_by_pk(id: $id) { id } }', { id: camera.id }),
+    });
 
     // Start from a layout that shows every panel, so the change is a visible difference.
     await graphql('mutation ($id: uuid!, $l: jsonb!) { update_operator_workspaces_by_pk(pk_columns: {id: $id}, _set: {layout: $l}) { id } }', {
@@ -384,7 +398,7 @@ test.describe.serial('monitoring smoke', () => {
     });
     await page.goto('/workspace');
     await expect(page.getByTestId('live-wall').getByRole('link', { name: camera.name, exact: true })).toBeVisible();
-    for (const title of ['Live cameras', 'Open incidents', 'Latest critical events', 'Occupancy']) {
+    for (const title of ['Live cameras', 'Open incidents', 'Latest events', 'Occupancy']) {
       await expect(page.getByRole('heading', { name: title })).toBeVisible();
     }
 

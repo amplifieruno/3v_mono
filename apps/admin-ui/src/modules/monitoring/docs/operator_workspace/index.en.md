@@ -7,9 +7,13 @@ shift. It follows the facility chosen in the sidebar and shows four panels:
   with the faces it detects as they happen.
 - **Open incidents**: incidents still being handled (open, acknowledged,
   investigating), newest first. Open one to acknowledge or handle it.
-- **Latest critical events**: the newest events of critical severity.
+- **Latest events**: the newest events of critical severity, or of the
+  severities the workspace names for this panel (the seeded workspaces name
+  medium and above).
 - **Occupancy**: the facility's people on site, its capacity, the areas over
-  capacity and the busiest area now. Choose a facility in the sidebar first.
+  capacity and the busiest area now, read again every 15 seconds (the time
+  of the last read is shown under them). Choose a facility in the sidebar
+  first.
 
 ## Arranging the page
 

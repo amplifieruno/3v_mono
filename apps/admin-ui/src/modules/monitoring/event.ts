@@ -52,7 +52,8 @@ export const EVENT_SAVED_VIEWS = [
  * append-only log: no create, edit or delete and no count on every page (the mapping's
  * `noAggregate`, `count: 'manual'`). Operators watch it, so it polls; buro ignores polling on a
  * cursor list (accumulated pages), hence offset paging here, unlike the other logs. The sidebar
- * facility narrows it.
+ * facility narrows it; an event with no facility (a device or system event) shows under every
+ * facility (`empty: 'shared'`).
  */
 export const event = defineResource(EVENT_RESOURCE, {
   texts: {
@@ -68,7 +69,7 @@ export const event = defineResource(EVENT_RESOURCE, {
   order: 2,
   icon: NAV_ICONS.events,
   displayField: 'title',
-  data: { provider: 'hasura', scope: { facility: { field: 'facility_id' } } },
+  data: { provider: 'hasura', scope: { facility: { field: 'facility_id', empty: 'shared' } } },
   operations: { create: false, edit: false, delete: false },
   builtinActions: { edit: false, delete: false },
   fields: eventFields,

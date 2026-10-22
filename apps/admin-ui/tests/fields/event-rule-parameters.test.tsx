@@ -58,6 +58,10 @@ describe('parameters by rule type', () => {
     expect(validateParameters({}, 'unusual_dwell')?.code).toBe('ruleParameters.dwellRequired');
     expect(validateParameters({ dwell_seconds: 0 }, 'unusual_dwell')?.code).toBe('ruleParameters.dwell');
     expect(validateParameters({ dwell_seconds: '40' }, 'unusual_dwell')?.code).toBe('ruleParameters.dwell');
+    // Whole minutes only, as the editor's box (step 1, min 1) takes them.
+    expect(validateParameters({ dwell_seconds: 90 }, 'unusual_dwell')?.code).toBe('ruleParameters.dwell');
+    expect(validateParameters({ dwell_seconds: 30 }, 'unusual_dwell')?.code).toBe('ruleParameters.dwell');
+    expect(validateParameters({ dwell_seconds: 60 }, 'unusual_dwell')).toBeNull();
     expect(validateParameters({}, 'loitering')).toBeNull();
     // On a form that does not carry the type, the shape alone is checked.
     expect(validateParameters({}, undefined)).toBeNull();

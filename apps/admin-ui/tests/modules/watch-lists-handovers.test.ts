@@ -5,6 +5,7 @@ import { app } from '../../src/app/app-definition';
 import { MONITORING_BINDING } from '../../src/blocks/occupancy-now/occupancy-query';
 import { withActionRefusals } from '../../src/data/action-refusals';
 import {
+  INCIDENT_RESOURCE,
   SHIFT_HANDOVER_INCIDENT_HISTORY_RESOURCE,
   SHIFT_HANDOVER_INCIDENT_RESOURCE,
   SHIFT_HANDOVER_RESOURCE,
@@ -15,6 +16,7 @@ import {
 import { ACTION_REFUSALS } from '../../src/modules';
 import { SHIFT_HANDOVER_CHECKS, SHIFT_HANDOVER_SAVED_VIEWS } from '../../src/modules/monitoring/shift-handover-fields';
 import { HANDOVER_INCIDENT_COLUMNS } from '../../src/modules/monitoring/shift-handover-incidents';
+import { incidentsLinked } from '../../src/modules/monitoring/shift-handover-flows';
 import { HANDOVER_INCIDENT_EFFECTS } from '../../src/modules/monitoring/shift-handover-ops';
 import { hexColorProblem } from '../../src/modules/monitoring/watch-list';
 import { expectTranslated } from '../support/field-issues';
@@ -160,6 +162,20 @@ describe('open incidents passed on (Review Focus 5)', () => {
     expect(run.state.effects?.notify).toBe('Open incidents added to the handover: 3.');
   });
 
+  it('should check a lost answer by the open incidents linked now, never vacuously', async () => {
+    const check = async (open: string[], linked: string[]) => {
+      const list = async (resource: { ref?: string }) => ({
+        data: resource.ref === INCIDENT_RESOURCE ? open.map((id) => ({ id })) : linked.map((incident_id) => ({ incident_id })),
+      });
+      return incidentsLinked({ record: handover(), data: { list } } as never);
+    };
+    expect(await check(['i1', 'i2'], ['i1', 'i2', 'old'])).toBe('applied');
+    expect(await check(['i1', 'i2'], ['i1'])).toBe('not-applied');
+    // No incident being handled: the call could add nothing, so nothing proves it ran.
+    expect(await check([], [])).toBe('not-applied');
+    expect(await check([], ['old'])).toBe('not-applied');
+  });
+
   it('should refresh both incident lists of the handover', () => {
     expect(HANDOVER_INCIDENT_EFFECTS.map((e) => e.resource)).toEqual([SHIFT_HANDOVER_INCIDENT_RESOURCE, SHIFT_HANDOVER_INCIDENT_HISTORY_RESOURCE]);
   });
@@ -202,6 +218,16 @@ describe('refusals through the provider', () => {
     });
     for (const code of ['handover_not_found', 'handover_not_sender', 'handover_acknowledged']) {
       await expect(refused('addOpenIncidentsToHandover', code), code).rejects.toMatchObject({ kind: 'validation', code });
+    }
+  });
+
+  it('should read a member who is no longer active as a definite refusal naming it', async () => {
+    for (const operation of ['acknowledgeShiftHandover', 'addOpenIncidentsToHandover']) {
+      await expect(refused(operation, 'member_not_active:to_user_id'), operation).rejects.toMatchObject({
+        kind: 'validation',
+        code: 'member_not_active',
+        details: { issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }] },
+      });
     }
   });
 });

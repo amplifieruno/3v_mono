@@ -186,6 +186,11 @@ describe('scope and saved views', () => {
     expect(def.operations?.edit).toBe(false);
   });
 
+  it('should keep facility-less events (device, system) when a facility is picked in the sidebar', () => {
+    const def = app.registry.get(EVENT_RESOURCE) as { data?: { scope?: Record<string, unknown> } };
+    expect(def.data?.scope?.facility).toEqual({ field: 'facility_id', empty: 'shared' });
+  });
+
   it('should filter the event views by the ordered severity scale', () => {
     expect(severitiesFrom('high')).toEqual(['high', 'critical']);
     const byId = Object.fromEntries(EVENT_SAVED_VIEWS.map((view) => [view.id, view.state.filters]));

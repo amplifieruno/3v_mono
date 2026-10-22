@@ -121,8 +121,9 @@ export function validateParameters(value: unknown, ruleType: unknown): FieldProb
   }
   if ('dwell_seconds' in value) {
     const seconds = value.dwell_seconds;
-    if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
-      return { code: 'ruleParameters.dwell', text: 'Enter a dwell time above 0 minutes.' };
+    // Whole minutes, 1 or more: what the editor's box takes (step 1, min 1) and the display shows.
+    if (typeof seconds !== 'number' || !Number.isInteger(seconds) || seconds < 60 || seconds % 60 !== 0) {
+      return { code: 'ruleParameters.dwell', text: 'Enter the dwell time in whole minutes, 1 or more.' };
     }
   } else if (ruleType === 'unusual_dwell') {
     return {

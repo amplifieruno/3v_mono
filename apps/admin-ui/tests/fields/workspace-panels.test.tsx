@@ -74,6 +74,27 @@ describe('workspace layout', () => {
     expect(hiddenPanels(layout)).toEqual(['events', 'occupancy']);
   });
 
+  it('should keep the stored panel objects (and their settings) of panels only moved or kept', () => {
+    const lobby = { type: 'camera', device_id: 'd1', title: 'Lobby' };
+    const dock = { type: 'camera', device_id: 'd2', title: 'Dock' };
+    const feed = { type: 'event_feed', severities: ['medium', 'high', 'critical'] };
+    const seeded = { columns: 2, panels: [lobby, dock, feed] };
+    expect(movePanel(seeded, 'events', -1)).toEqual({ columns: 2, panels: [feed, lobby, dock] });
+    expect(togglePanel(seeded, 'occupancy', true)).toEqual({ columns: 2, panels: [lobby, dock, feed, 'occupancy'] });
+    expect(togglePanel(seeded, 'cameras', false)).toEqual({ columns: 2, panels: [feed] });
+    expect(workspacePanels(movePanel(seeded, 'events', -1))).toEqual(['events', 'cameras']);
+  });
+
+  it('should filter the events panel by the stored severities, else critical only', () => {
+    const feed = (severities?: unknown) => ({ layout: { panels: [{ type: 'event_feed', ...(severities ? { severities } : {}) }] } });
+    expect(layoutOf(feed(['medium', 'high', 'critical'])).event_severities).toEqual(['medium', 'high', 'critical']);
+    expect(layoutOf(feed(['bogus', 'high'])).event_severities).toEqual(['high']);
+    expect(layoutOf(feed()).event_severities).toEqual(['critical']);
+    expect(layoutOf(feed([])).event_severities).toEqual(['critical']);
+    expect(layoutOf({ layout: { panels: ['events'] } }).event_severities).toEqual(['critical']);
+    expect(layoutOf(undefined).event_severities).toEqual(['critical']);
+  });
+
   it('should lay the page out in slots, an unused slot empty', () => {
     expect(layoutOf({ id: 'w1', name: 'Night desk', layout: { panels: ['events', 'incidents'] } })).toEqual({
       workspace_id: 'w1',
@@ -82,6 +103,7 @@ describe('workspace layout', () => {
       slot2: 'incidents',
       slot3: '',
       slot4: '',
+      event_severities: ['critical'],
     });
     expect(layoutOf(undefined)).toMatchObject({ workspace_id: null, slot1: 'cameras', slot4: 'occupancy' });
   });

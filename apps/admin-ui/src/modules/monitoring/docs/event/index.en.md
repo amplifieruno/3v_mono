@@ -4,7 +4,9 @@ An **event** is a state change the platform noticed: an unknown person arrived,
 a blacklisted person was seen, a door refused someone, someone stayed too long
 in an area, a camera went offline. **Monitoring → Events** lists them newest
 first with **When**, **Severity**, **Event**, **Title**, **Area**, **Person**
-and **Device**. The sidebar facility picker narrows the list to one facility.
+and **Device**. The sidebar facility picker narrows the list to one facility;
+an event with no facility (a device or system event) stays listed under every
+facility.
 
 Events are written by the platform only: they cannot be created, edited or
 deleted here. The list refreshes itself every 15 seconds while it is open

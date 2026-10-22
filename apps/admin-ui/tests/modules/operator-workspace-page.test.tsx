@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, configure, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
+import { facilityStorageKey } from '../../src/app/scope';
+import { OCCUPANCY_REFRESH_MS } from '../../src/blocks/occupancy-now/occupancy-now-view';
 import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/console-dom';
 
 /**
@@ -16,6 +18,10 @@ const NOVA = '11111111-1111-4111-8111-111111111111';
 const HANDOVER = '88888888-8888-4888-8888-000000000001';
 const INCIDENT = '77777777-7777-4777-8777-000000000001';
 const ANNA = '55555555-5555-4555-8555-000000000001';
+const TOWER = '22222222-2222-4222-8222-000000000001';
+
+/** People on site the fake answers, one more on every read of the workspace's occupancy figures. */
+let onSite = 0;
 
 interface GraphqlBody {
   readonly query: string;
@@ -34,6 +40,14 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 1 } } } });
   if (query.includes('OperatorWorkspaceLayout')) return hasuraResponse({ data: { operator_workspaces: workspaces } });
+  if (query.includes('WorkspaceOccupancyFacts')) {
+    onSite += 1;
+    const row = { area_id: null, parent_id: null, name: 'Nova Tower', capacity: 500, occupancy: onSite, direct_occupancy: onSite };
+    return hasuraResponse({ data: { facility_occupancy_now: [row] } });
+  }
+  if (/\bitems: facilities\(/.test(query)) {
+    return hasuraResponse({ data: { items: [{ id: TOWER, code: 'FAC-1', name: 'Nova Tower', status: 'active' }] } });
+  }
   if (query.includes('shift_handovers_by_pk')) {
     return hasuraResponse({
       data: {
@@ -89,7 +103,7 @@ const renderAt = (path: string) =>
 
 /** The panel titles of the workspace page, top to bottom. */
 const panelTitles = (): string[] =>
-  ['Live cameras', 'Open incidents', 'Latest critical events', 'Occupancy']
+  ['Live cameras', 'Open incidents', 'Latest events', 'Occupancy']
     .flatMap((title) => screen.queryAllByText(title, { exact: true }).map((node) => ({ title, node })))
     .sort((a, b) => (a.node.compareDocumentPosition(b.node) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
     .map(({ title }) => title);
@@ -101,6 +115,7 @@ beforeAll(installDomShims);
 beforeEach(() => {
   localStorage.clear();
   workspaces = [];
+  onSite = 0;
   vi.stubGlobal('fetch', vi.fn(serve));
 });
 
@@ -115,13 +130,13 @@ describe('operator workspace page', () => {
   it('should show every panel in the default order when the operator has no workspace', async () => {
     renderAt('/workspace');
     await screen.findByText('Arrange this page');
-    await waitFor(() => expect(panelTitles()).toEqual(['Live cameras', 'Open incidents', 'Latest critical events', 'Occupancy']));
+    await waitFor(() => expect(panelTitles()).toEqual(['Live cameras', 'Open incidents', 'Latest events', 'Occupancy']));
   });
 
   it('should show only the panels of the default workspace, in its order', async () => {
     workspaces = [{ id: 'w1', name: 'Night desk', layout: { panels: ['events', 'incidents'] } }];
     renderAt('/workspace');
-    await waitFor(() => expect(panelTitles()).toEqual(['Latest critical events', 'Open incidents']));
+    await waitFor(() => expect(panelTitles()).toEqual(['Latest events', 'Open incidents']));
     // Open incidents are read by status; critical events by severity.
     await waitFor(() => {
       const incidents = bodies().find((body) => /\bitems: incidents\(/.test(body.query));
@@ -129,6 +144,41 @@ describe('operator workspace page', () => {
       const events = bodies().find((body) => /\bitems: events\(/.test(body.query));
       expect(JSON.stringify(events?.variables)).toContain('"_in":["critical"]');
     });
+  });
+
+  it('should list the events of the severities the workspace names for its events panel', async () => {
+    workspaces = [{ id: 'w1', name: 'Lobby', layout: { columns: 2, panels: [{ type: 'event_feed', severities: ['medium', 'high', 'critical'] }] } }];
+    renderAt('/workspace');
+    await waitFor(() => expect(panelTitles()).toEqual(['Latest events']));
+    await waitFor(() => {
+      const events = bodies().find((body) => /\bitems: events\(/.test(body.query));
+      expect(JSON.stringify(events?.variables)).toContain('"_in":["medium","high","critical"]');
+    });
+  });
+});
+
+describe('occupancy panel', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should read the facility’s figures again while the page is open, and say when', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    localStorage.setItem(facilityStorageKey(NOVA), TOWER);
+    workspaces = [{ id: 'w1', name: 'Desk', layout: { panels: ['occupancy'] } }];
+    renderAt('/workspace');
+    const reads = () => bodies().filter((body) => body.query.includes('WorkspaceOccupancyFacts'));
+    await waitFor(() => expect(reads().length).toBeGreaterThan(0));
+    expect(await screen.findByText(/^Updated .+; read again every 15 seconds\.$/)).toBeDefined();
+    await waitFor(() => expect(screen.getByText('On site now').parentElement?.textContent).toContain('1'));
+    const before = reads().length;
+    await act(() => vi.advanceTimersByTimeAsync(OCCUPANCY_REFRESH_MS + 1000));
+    await waitFor(() => expect(reads().length).toBeGreaterThan(before));
+    // The facts block shows the figures read again (it shares the query's cache).
+    const figures = () => screen.getByText('On site now').parentElement?.textContent ?? '';
+    await waitFor(() => expect(figures()).not.toContain(String(before)));
+    expect(figures()).toContain(String(reads().length));
+    expect(JSON.stringify(reads().at(-1)?.variables)).toContain(TOWER);
   });
 });
 

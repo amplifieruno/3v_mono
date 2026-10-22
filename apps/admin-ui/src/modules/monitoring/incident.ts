@@ -83,7 +83,8 @@ const INCIDENT_RULES: Rule[] = [
  * Incidents (`itap.incidents`): situations an operator has to handle, opened by event rules
  * (`creates_incident`) or by hand, followed from open to closed by the lifecycle steps
  * (`./incident-flows.ts`), each recorded in the activity timeline by the database. Operators watch
- * the list, so it polls; the sidebar facility narrows it. An incident is history: never deleted.
+ * the list, so it polls; the sidebar facility narrows it, and an incident with no facility shows
+ * under every facility (`empty: 'shared'`). An incident is history: never deleted.
  */
 export const incident = defineResource(INCIDENT_RESOURCE, {
   texts: {
@@ -99,7 +100,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
   order: 3,
   icon: NAV_ICONS.incidents,
   displayField: 'code',
-  data: { provider: 'hasura', scope: { facility: { field: 'facility_id' } } },
+  data: { provider: 'hasura', scope: { facility: { field: 'facility_id', empty: 'shared' } } },
   prefill: { fromQuery: ['facility_id', 'area_id'] },
   operations: { delete: false },
   builtinActions: { delete: false },

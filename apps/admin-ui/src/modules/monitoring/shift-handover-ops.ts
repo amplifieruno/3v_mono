@@ -8,7 +8,7 @@ import {
   SHIFT_HANDOVER_RESOURCE,
 } from '../../data/resource-names';
 import { schema } from '../../data/schema';
-import { type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
+import { MEMBER_NOT_ACTIVE_REFUSAL, type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
 
 const NOTHING = ' Nothing was changed.';
 const NOT_FOUND = 'The handover no longer exists in this organization.' + NOTHING;
@@ -17,6 +17,8 @@ const NOT_FOUND = 'The handover no longer exists in this organization.' + NOTHIN
 export const ACKNOWLEDGE_HANDOVER_REFUSALS = {
   handover_not_found: NOT_FOUND,
   handover_not_recipient: 'Only the operator the shift is handed over to can acknowledge it.' + NOTHING,
+  // The handover's member columns (`to_user_id`) are checked by `active_member_check` on every write.
+  member_not_active: MEMBER_NOT_ACTIVE_REFUSAL,
 } satisfies Record<string, SqlRefusalText>;
 
 /** What `add_open_incidents_to_handover` raises. */
@@ -24,6 +26,7 @@ export const ADD_OPEN_INCIDENTS_REFUSALS = {
   handover_not_found: NOT_FOUND,
   handover_not_sender: 'Only the operator who wrote the handover can add incidents to it.' + NOTHING,
   handover_acknowledged: 'The handover is already acknowledged: its incidents can no longer change.' + NOTHING,
+  member_not_active: MEMBER_NOT_ACTIVE_REFUSAL,
 } satisfies Record<string, SqlRefusalText>;
 
 export const handoverIdInput = z.object({ handoverId: z.string().uuid() });

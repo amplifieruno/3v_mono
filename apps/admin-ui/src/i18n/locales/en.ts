@@ -119,7 +119,7 @@ export default {
     workspacePanels: {
       cameras: 'Live cameras',
       incidents: 'Open incidents',
-      events: 'Latest critical events',
+      events: 'Latest events',
       occupancy: 'Occupancy',
       none: 'No panels',
       up: 'Move {{panel}} up',
@@ -224,7 +224,7 @@ export default {
       },
       ruleParameters: {
         notObject: 'Parameters must be an object of named values.',
-        dwell: 'Enter a dwell time above 0 minutes.',
+        dwell: 'Enter the dwell time in whole minutes, 1 or more.',
         dwellRequired: 'Enter the dwell time: an unusual-dwell rule without one never fires.',
         watchListKinds: 'Watch-list kinds must be some of watch, blacklist and VIP; leave all unticked for every kind.',
       },

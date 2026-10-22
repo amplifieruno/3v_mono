@@ -2,7 +2,7 @@ import { defineCustomPage, facts, relatedList, source } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { liveWallBlock } from '../../blocks/live-camera/live-wall-block';
 import { occupancyNowBlock } from '../../blocks/occupancy-now/occupancy-now-block';
-import { severitiesFrom } from '../../enums/events';
+import { occupancyUpdatedBlock } from '../../blocks/occupancy-now/occupancy-updated-block';
 import { WORKSPACE_PANELS, WORKSPACE_PANEL_LABELS, type WorkspacePanel } from '../../fields/workspace-panels-format';
 import { event } from './event';
 import { INCIDENT_COLUMNS, incident } from './incident';
@@ -48,11 +48,12 @@ export const operatorWorkspacePage = defineCustomPage({
             }),
           ];
         case 'events':
+          // The severities the workspace names for its events panel, else critical only.
           return [
             l.place(relatedList(event), {
               key: `${key}-list`,
               props: {
-                where: [{ field: 'severity', op: 'in', value: severitiesFrom('critical') }],
+                where: [{ field: 'severity', op: 'in', value: l.ref('workspace', 'event_severities') }],
                 columns: ['occurred_at', 'severity', 'event_type', 'title', 'area_id'],
                 pageSize: PANEL_ROWS,
                 open: 'page',
@@ -66,6 +67,8 @@ export const operatorWorkspacePage = defineCustomPage({
               props: { query: workspaceOccupancyFacts, input: { facilityId: facility }, rows: [...OCCUPANCY_FACT_ROWS], view: 'grid' },
               when: l.present(facility),
             }),
+            // Reads the same figures every 15 seconds (the facts block cannot poll, G47) and says when.
+            l.place(occupancyUpdatedBlock, { key: `${key}-updated`, props: { facilityId: facility }, when: l.present(facility) }),
             // Without a facility the occupancy block reads nothing and asks for one.
             l.place(occupancyNowBlock, { key: `${key}-choose`, props: { facilityId: null }, when: l.not(l.present(facility)) }),
           ];

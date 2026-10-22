@@ -29,6 +29,7 @@ import {
   WATCH_LIST_RESOURCE,
 } from '../../data/resource-names';
 import { occupancyNowBlock } from '../../blocks/occupancy-now/occupancy-now-block';
+import { occupancyUpdatedBlock } from '../../blocks/occupancy-now/occupancy-updated-block';
 import { occupancyRows, occupancyRowsOperation } from '../../blocks/occupancy-now/occupancy-query';
 import type { ConsoleModule } from '../module';
 import { areaOccupancy } from './area-occupancy';
@@ -114,6 +115,7 @@ export const monitoringModule = {
     areaOccupancy,
     occupancyRows,
     occupancyNowBlock,
+    occupancyUpdatedBlock,
     occupancyPage,
     eventRule,
     eventRuleVersion,

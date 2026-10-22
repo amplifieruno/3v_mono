@@ -8,7 +8,8 @@ title, the severity, the place, the assignee and an external reference (a
 ticket or police case number).
 
 **Monitoring → Incidents** lists them newest first and refreshes itself every
-15 seconds while it is open; the sidebar facility picker narrows it. The saved
+15 seconds while it is open; the sidebar facility picker narrows it (an incident
+with no facility stays listed under every facility). The saved
 views are **Open** (still being handled: open, acknowledged or investigating),
 **Unacknowledged** (nobody has taken it on), **Mine** (being handled and
 assigned to you) and **Critical** (critical and still being handled).

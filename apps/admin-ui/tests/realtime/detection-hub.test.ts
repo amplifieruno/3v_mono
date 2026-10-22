@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDetectionHub } from '../../src/realtime/detection-hub';
+import { IDLE_GRACE_MS, createDetectionHub } from '../../src/realtime/detection-hub';
 import type { DetectionMessage, DetectionStreamState } from '../../src/realtime/detection-types';
 import { FakeDetectionSocket, detectionOf, fakeTokenStore } from '../support/fake-detection-socket';
 
 /**
  * Many views, one connection: the hub joins each subscribed camera's room on a single socket,
- * leaves a room with the last view of its camera, closes the socket with the last view, joins
+ * leaves a room with the last view of its camera, closes the socket a moment after the last view
+ * (a view arriving meanwhile keeps it), joins
  * every room again after a reconnect, stops one camera on a refused room and every camera on
  * repeated refusals, and starts over on "Reconnect".
  */
@@ -106,8 +107,32 @@ describe('detection hub', () => {
     // A room left is not delivered any more, even when the server still sends.
     h.socket(0).push(detectionOf(A, { detectionId: 'late' }));
     other.close();
+    expect(h.socket(0).leaves).toEqual([A, B]);
+    // The socket outlives the last view by a grace period (a page swapping its views).
+    expect(h.socket(0).closed).toBe(false);
+    await vi.advanceTimersByTimeAsync(IDLE_GRACE_MS);
     expect(h.socket(0).closed).toBe(true);
     expect(h.store.listenerCount).toBe(0);
+  });
+
+  it('should keep the socket for a view that comes within the grace period after the last one closed', async () => {
+    const h = harness();
+    const a = h.view(A);
+    await settle();
+    h.socket(0).connect();
+    h.socket(0).answer(A);
+    a.close();
+    expect(h.socket(0).leaves).toEqual([A]);
+    await vi.advanceTimersByTimeAsync(IDLE_GRACE_MS / 2);
+    const b = h.view(B);
+    expect(h.sockets).toHaveLength(1);
+    expect(h.socket(0).joins.map((join) => join.deviceId)).toEqual([A, B]);
+    h.socket(0).answer(B);
+    expect(b.states.at(-1)).toEqual({ status: 'live' });
+    await vi.advanceTimersByTimeAsync(IDLE_GRACE_MS * 2);
+    expect(h.socket(0).closed).toBe(false);
+    h.hub.close();
+    expect(h.socket(0).closed).toBe(true);
   });
 
   it('should leave a room whose join is accepted after its last view closed', async () => {
@@ -246,6 +271,7 @@ describe('detection hub', () => {
     h.socket(0).connect();
     h.socket(0).answer(A);
     a.close();
+    await vi.advanceTimersByTimeAsync(IDLE_GRACE_MS);
     expect(h.socket(0).closed).toBe(true);
     const again = h.view(A);
     expect(again.states.at(-1)).toEqual({ status: 'connecting' });
