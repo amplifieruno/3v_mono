@@ -180,4 +180,7 @@ export default {
   report_schedule: {
     doc: { topics: { index: 'Report schedules: the cron, time zones, runs and failures' } },
   },
+  search_request: {
+    doc: { topics: { index: 'Face and attribute search: photos, filters, thresholds, match types and history' } },
+  },
 } satisfies TranslationBundle;

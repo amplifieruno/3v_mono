@@ -14,6 +14,7 @@ import {
   overviewSection,
   peopleSection,
   placesSection,
+  searchSection,
 } from './nav';
 import { helpPage } from './pages';
 
@@ -28,6 +29,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use(NAV_SECTIONS.places, placesSection);
   use(NAV_SECTIONS.devices, devicesSection);
   use(NAV_SECTIONS.people, peopleSection);
+  use(NAV_SECTIONS.search, searchSection);
   use(NAV_SECTIONS.monitoring, monitoringSection);
   use(NAV_SECTIONS.notifications, notificationsSection);
   use(NAV_SECTIONS.analytics, analyticsSection);

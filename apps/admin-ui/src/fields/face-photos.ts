@@ -24,6 +24,8 @@ export interface FacePhotosOptions {
   readonly min: number;
   /** Most photos the form accepts (the actions take up to 10; the console asks for at most 5). */
   readonly max: number;
+  /** `storage.files.metadata.kind` of the uploads; {@link FACE_SOURCE_KIND} by default (a search photo is `search`). */
+  readonly kind?: string;
   readonly texts?: string | FieldTexts;
 }
 
@@ -48,6 +50,6 @@ export function facePhotos(opts: FacePhotosOptions) {
   return {
     ...base,
     ui: { ...base.ui, input: FACE_PHOTOS_FIELD, display: FACE_PHOTOS_FIELD },
-    meta: { min: opts.min, max: opts.max, kind: FACE_SOURCE_KIND, accept: FACE_PHOTO_ACCEPT, maxSize: FACE_PHOTO_MAX_BYTES },
+    meta: { min: opts.min, max: opts.max, kind: opts.kind ?? FACE_SOURCE_KIND, accept: FACE_PHOTO_ACCEPT, maxSize: FACE_PHOTO_MAX_BYTES },
   };
 }

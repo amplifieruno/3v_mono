@@ -103,6 +103,16 @@ import {
   reportStatusEnum,
   reportTypeEnum,
 } from './reports';
+import {
+  SEARCH_ENUM_TABLES,
+  SEARCH_GENDER_ENUM,
+  SEARCH_LINKED_ENUM,
+  searchGenderEnum,
+  searchLinkedEnum,
+  searchMatchTypeEnum,
+  searchStatusEnum,
+  searchTypeEnum,
+} from './search';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -170,6 +180,11 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   reportStatusEnum,
   reportChannelEnum,
   reportPeriodEnum,
+  searchTypeEnum,
+  searchStatusEnum,
+  searchMatchTypeEnum,
+  searchGenderEnum,
+  searchLinkedEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -184,6 +199,9 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   // The channels a report schedule delivers on (G52), and a template's `parameters.period` (a jsonb key).
   REPORT_CHANNEL_ENUM,
   REPORT_PERIOD_ENUM,
+  // Keys of a search's filters (`itap.valid_search_filters`), not tables.
+  SEARCH_GENDER_ENUM,
+  SEARCH_LINKED_ENUM,
 ]);
 
 /**
@@ -207,4 +225,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...NOTIFICATION_ENUM_TABLES,
   ...SEGMENT_ENUM_TABLES,
   ...REPORT_ENUM_TABLES,
+  ...SEARCH_ENUM_TABLES,
 };

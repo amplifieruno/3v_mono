@@ -1014,3 +1014,43 @@ migration `1792365700277`.
   same nested write).
 - **Expected from a framework:** writable links on create (nested junction rows in the provider's
   create), or a create view whose submit can be bound to a custom mutation.
+
+### G63. A resource-level flow placed inline on a custom page is drawn without its label
+- **Need:** the Search page (plan 09 Task 1) is a resource-less page whose body is the search form
+  (`search_faces`) with the results block in its place once it ran.
+- **Framework (0.6.0):** a page names a flow with `{ app }` or `{ resource, flow }`
+  (`buro:inline-flow`). For `{ resource, flow }` `PageInlineFlow` hands `InlineFlowHost` the target
+  but no resource, name or label, so `useFlowChrome('', '')` answers an empty label and the submit
+  button has no text (`ui-shadcn/src/flows/inline-flow-view.tsx`). `checkApp` also reports
+  `flow.page-host-missing` for such a flow with `host: { page }`, because its resource view has no
+  `page` lookup (the compiler's own check passes). An app flow (`{ app }`) gets its label, but an app
+  flow must be portable: a form field with a schema or a validator (any `f.enum`, `f.number` with
+  `validate`) is refused ("only submit.input and submit.onUnknown.check may be functions"). **[code]**
+- **Workaround:** the page places a block that draws a current-record screen (as the settings page,
+  G13/G16) of `search_workspace`, a read-only twin resource over the organization's
+  `organization_settings` row, whose show tree places the item flow `search` inline
+  (`src/modules/search/search-workspace.ts`). The item flow keeps the typed fields and checks.
+- **Expected from a framework:** the page inline host resolving a resource-level flow's chrome from
+  its resource and name; `checkApp` passing pages to the resource view; app flows taking the same
+  field declarations as resource flows.
+
+### G64. A form field cannot pick several values of an enum
+- **Need:** search filters take lists of identity statuses and profile types
+  (`filters.status`, `filters.profile_type`, `itap.valid_search_filters`).
+- **Framework (0.6.0):** `f.enum` has one value; there is no multi-value enum field (an `enumSet`)
+  for a flow form or a jsonb key (G49 is the same wall for junctions). **[code]**
+- **Workaround:** the search form picks one status and one profile type and sends each as a list of
+  one; a stored definition with several (written by another client) is shown as stored and run
+  again unchanged, and read back into the form with its first value (`searchValuesOf`).
+- **Expected from a framework:** a multi-select enum field (`f.enum(values, { multiple: true })`)
+  whose value is an array.
+
+### G65. A flow form's body cannot read the record
+- **Need:** "Run again" on a past search shows the threshold and fuzzy fields for a face search and
+  hides them for an attribute search, by the record's `search_type`.
+- **Framework (0.6.0):** a flow form's `when` reads the form's values (and scope, user) only; a
+  `record` ref in `form.body` is `ref.unknown-source` at run time (`createFlowFormPort`), and the
+  layout types refs by the form's own fields. **[code]**
+- **Workaround:** two item flows with the same label, each with its own `when` on the record's type
+  (`run_again` with threshold, limit and fuzzy; `run_attributes_again` with the limit only).
+- **Expected from a framework:** `record` (and `with` sources) readable from a flow form's `when`s.

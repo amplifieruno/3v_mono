@@ -90,3 +90,5 @@ export const REPORT_TEMPLATE_RESOURCE = 'report_template';
 export const REPORT_SCHEDULE_RESOURCE = 'report_schedule';
 export const REPORT_FACILITY_RESOURCE = 'report_facility';
 export const REPORT_SEGMENT_RESOURCE = 'report_segment';
+export const SEARCH_REQUEST_RESOURCE = 'search_request';
+export const SEARCH_WORKSPACE_RESOURCE = 'search_workspace';

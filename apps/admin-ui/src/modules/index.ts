@@ -8,6 +8,7 @@ import { organizationModule } from './organization';
 import { peopleModule } from './people';
 import { overviewModule } from './overview';
 import { placesModule } from './places';
+import { searchModule } from './search';
 import { segmentsModule } from './segments';
 
 /**
@@ -21,6 +22,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   placesModule,
   devicesModule,
   peopleModule,
+  searchModule,
   monitoringModule,
   notificationsModule,
   segmentsModule,

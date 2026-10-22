@@ -116,6 +116,10 @@ export const NAV_ICONS = {
   reportSchedules: 'CalendarClock',
   newReport: 'FilePlus',
   retryReport: 'RotateCcw',
+  search: 'ScanSearch',
+  faceSearch: 'ScanSearch',
+  searchHistory: 'History',
+  runSearchAgain: 'RotateCw',
 } as const;
 
 /**
@@ -131,6 +135,7 @@ export const NAV_SECTIONS = {
   places: 'places',
   devices: 'devices',
   people: 'people',
+  search: 'search',
   monitoring: 'monitoring',
   notifications: 'notifications',
   analytics: 'analytics',
@@ -177,6 +182,14 @@ export const peopleSection = defineSection({
   icon: NAV_ICONS.people,
   texts: 'People',
   order: 40,
+  collapsible: true,
+});
+
+export const searchSection = defineSection({
+  name: NAV_SECTIONS.search,
+  icon: NAV_ICONS.search,
+  texts: 'Search',
+  order: 45,
   collapsible: true,
 });
 
