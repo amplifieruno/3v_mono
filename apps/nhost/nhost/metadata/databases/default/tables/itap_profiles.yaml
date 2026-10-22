@@ -265,6 +265,11 @@ array_relationships:
           organization_id: organization_id
           id: profile_id
 computed_fields:
+  - name: full_name
+    definition:
+      function:
+        schema: itap
+        name: profile_full_name
   - name: has_face
     definition:
       function:
@@ -338,6 +343,7 @@ select_permissions:
         - updated_at
         - work_schedule_id
       computed_fields:
+        - full_name
         - has_face
         - is_blacklisted
       filter:

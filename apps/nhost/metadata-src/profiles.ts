@@ -25,6 +25,8 @@ export const profileTables: TableSpec[] = [
     computedFields: [
       { name: 'has_face', function: 'profile_has_face' },
       { name: 'is_blacklisted', function: 'profile_is_blacklisted' },
+      // First and last name joined: what pickers and record titles show and search (console gap G29).
+      { name: 'full_name', function: 'profile_full_name' },
     ],
   },
   { name: 'profile_document_kinds', isEnum: true, profile: 'none' },
