@@ -23,9 +23,11 @@ const mergeIntoFields = {
     required: true,
     // Not this identity, not one already merged, and real with real, synthetic with synthetic.
     candidates: [
-      { field: 'id', op: 'ne', value: ref('record', 'id') },
+      // A field's meta reads the flow's values, not its record: the review step draws the form
+      // fields over the values only, so the kept identity travels as `target_id` / `target_synthetic`.
+      { field: 'id', op: 'ne', value: ref('values', 'target_id') },
       { field: 'status', op: 'ne', value: 'merged' },
-      { field: 'is_synthetic', op: 'eq', value: ref('record', 'is_synthetic') },
+      { field: 'is_synthetic', op: 'eq', value: ref('values', 'target_synthetic') },
     ],
     texts: {
       label: 'Identities to merge',
@@ -40,6 +42,14 @@ const mergeIntoFields = {
     texts: { label: 'Reason', doc: { summary: 'Why they are the same person; kept on the merge and in the audit log.' } },
   }),
   target_id: carriedId('Identity'),
+  target_synthetic: f.boolean({
+    in: [],
+    nullable: true,
+    texts: {
+      label: 'Kept identity is synthetic',
+      doc: { summary: 'Whether the kept identity is a synthetic one, carried so the picker offers only the same kind.' },
+    },
+  }),
 };
 
 /**
@@ -99,6 +109,7 @@ export const mergeIntoFlow = {
       source_ids: { kind: 'literal', value: [] },
       reason: { kind: 'literal', value: null },
       target_id: ref('record', 'id'),
+      target_synthetic: ref('record', 'is_synthetic'),
     },
     body: (l: Layout<typeof mergeIntoFields>) => [
       'source_ids',
