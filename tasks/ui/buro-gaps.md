@@ -111,6 +111,8 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   `/login`.
 - **Expected from a framework:** the registry built over the runtime value that carries the auth
   controller (or the controller passed to `createDataRuntime`).
+- **Status:** fixed upstream in PR #147 (merged, unreleased); the `SessionWatch` workaround stays
+  until the next buro release.
 
 ### G11. A flow's form check ignores the field type's own format
 - **Need:** the `invite` flow refuses `not-an-email` in its `f.email` field before any request.
@@ -286,3 +288,45 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** a flow form layout typed with the flow's sources (`record` for
   an item flow, `args`), and field `default`s seeding a flow's values, or `.optional()` allowed
   with a ref default (missing = `undefined`).
+
+### G21. A relation field cannot choose the read scope of its options
+- **Need:** the facility's "Apply template" form offers the facility's own areas for "Inside",
+  whatever facility the sidebar picker holds.
+- **Framework (0.6.0):** the relation select reads its options with scope `'context'`: the
+  nearest record frame that carries the target's scope key, then the session selection. A flow
+  form on a facility carries no frame for `area` (the facility has no `facility_id`; the facility
+  `RecordScreen` adds no frame because `facility` declares no `data.scope`), so the sidebar
+  facility narrows the options on top of the field's `candidates` (`facility_id = record.id`):
+  with the sidebar on another facility the select offered nothing. `scope` is a prop of
+  `RelationPicker` for custom implementations only; `f.relation` has no option for it. **[run]**
+- **Workaround:** `inRecordScope(f.relation(...), { resource, field, value })`
+  (`src/fields/record-scoped-relation*.ts(x)`): an input id whose implementation wraps the kit's
+  relation input in `<RecordScopeProvider resource values={{ [field]: value }}>`, the value a
+  meta ref (`ref('record', 'id')`). Tested in `tests/modules/apply-template-picker.test.tsx`.
+- **Expected from a framework:** `f.relation({ scope: 'none' | 'session' | 'context' })`, or a
+  flow form that provides a frame from its `candidates` refs.
+
+### G22. A create form cannot default a field from the scope selection
+- **Need:** a new area, floor plan or access point starts in the facility the sidebar picker
+  holds (`facility_id` = the selection), as the area tree's "+" already does through its link.
+- **Framework (0.6.0):** a create form seeds from a field's static `default`, a record type's
+  `defaults`, the URL prefill and the caller's `defaults` (`<RecordScreen defaults>`), in that
+  order. A function default is dropped with a warning (`fieldDefaults`, `record-values.ts`),
+  a ref (`ref('scope', 'facility')`) is not read as a default, and the list's Create button
+  builds its link without a prefill. The framework's routes render the create screen, so the
+  console passes no `defaults`. **[code]**
+- **Workaround:** none; the facility is picked in the form. The area tree's "+" links pass
+  `?prefill.facility_id=` (and the parent), so adding from a facility page starts filled.
+- **Expected from a framework:** a field default read from a source (`default: ref('scope',
+  'facility')`), or a resource-level create seed from the context.
+
+### G23. A flow's notification cannot choose a count form
+- **Need:** "Template applied: 1 area created" vs "5 areas created".
+- **Framework (0.6.0):** `then.notify` is `true` or `{ params }`; the sentence is the flow's
+  `texts.notify` with the params interpolated. A `count` inside `params` only interpolates
+  `{{count}}`; a count family (`_one` / `_other`) is selected only by a top-level `count`, which
+  the flow machine never passes (`flows/machine.ts`, i18n guide "Counts"). **[code]**
+- **Workaround:** the apply-template sentence is count-neutral ("Areas created: 1, at the top
+  level: 1 (Lobby).").
+- **Expected from a framework:** `then.notify: { params, count: ref('result', 'created') }`.
+
