@@ -681,6 +681,11 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   (create/delete, placed while the version is open) and `event_rule_version_scope_history` (all
   operations off, placed otherwise), each in a panel with `when` on the version's status.
 - **Expected from a framework:** `create: false` (or a condition) on a related-list placement.
+- **Plan 05 Task 3:** the same twins for a closed incident's notes, note files, linked events and
+  people (`incident_note(_history)`, `incident_note_file(_history)`, `incident_event(_history)`,
+  `incident_identity(_history)`); the read-only twins double as the event's and the identity's
+  Incidents lists. A note's files show "+ Create" to members who are not its author (the database
+  refuses them); a create rule sees no parent record to tell.
 
 ### G43. Record types cannot key per-type fields stored inside one jsonb column
 - **Need:** an event rule version's `parameters` jsonb holds different keys per rule type
@@ -694,3 +699,14 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   validator per type, other keys kept as stored).
 - **Expected from a framework:** record types over a parent's field and per-type fields mapped to keys
   of one jsonb column.
+
+### G44. A saved view cannot filter by the signed-in user
+- **Need:** the incident list's "Mine" view (plan 05 Task 3): incidents assigned to the operator
+  looking at the list.
+- **Framework (0.6.0):** `views.list.savedViews[].state.filters` hold literal values only (the state
+  is persisted and applied as a URL state, `SavedViewDef`); no reference to the session user. **[code]**
+- **Workaround:** a computed column `incidents.assigned_to_me` (`itap.incident_assigned_to_me`, with
+  the Hasura session argument; migration `1792365700276`), declared as a hidden boolean field: the view
+  filters `assigned_to_me = true`.
+- **Expected from a framework:** a session reference in a declared view's filter value (resolved when
+  the view is applied), e.g. `{ field: 'assigned_to', op: 'eq', value: ref('user', 'id') }`.

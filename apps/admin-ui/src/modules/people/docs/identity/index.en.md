@@ -85,6 +85,9 @@ person or deleting a crop removes its original at once.
   *Tracking sessions*.
 - **Events**: the events that concern this identity (arrivals, watch-list
   matches, restricted areas), newest first. See *Events*.
+- **Incidents**: the incidents the person is involved in, with the role
+  (subject, witness, related). People are added on the incident's People tab.
+  See *Incidents*.
 - **Timeline**, **Relationships**, **Verification** and **Merges**: see
   *Merging, splitting, verifying and relating identities*.
 

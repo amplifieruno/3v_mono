@@ -8,6 +8,7 @@ import {
   IDENTITY_MERGE_RESOURCE,
   IDENTITY_MERGE_SOURCE_RESOURCE,
   IDENTITY_RESOURCE,
+  INCIDENT_IDENTITY_HISTORY_RESOURCE,
   TRACKING_SESSION_RESOURCE,
   VERIFICATION_REQUEST_RESOURCE,
 } from '../../data/resource-names';
@@ -196,6 +197,19 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                 }),
               ],
               { key: 'events', texts: 'Events' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(INCIDENT_IDENTITY_HISTORY_RESOURCE)), {
+                  key: 'identity-incidents',
+                  props: {
+                    where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['incident_id', 'role', 'created_at'],
+                    open: 'none',
+                  },
+                }),
+              ],
+              { key: 'incidents', texts: 'Incidents' },
             ),
             l.panel(
               [

@@ -8,6 +8,15 @@ import {
   EVENT_RULE_SCOPE_RESOURCE,
   EVENT_RULE_VERSION_RESOURCE,
   IDENTITY_LOCATION_RESOURCE,
+  INCIDENT_ACTIVITY_RESOURCE,
+  INCIDENT_EVENT_HISTORY_RESOURCE,
+  INCIDENT_EVENT_RESOURCE,
+  INCIDENT_IDENTITY_HISTORY_RESOURCE,
+  INCIDENT_IDENTITY_RESOURCE,
+  INCIDENT_NOTE_FILE_HISTORY_RESOURCE,
+  INCIDENT_NOTE_FILE_RESOURCE,
+  INCIDENT_NOTE_HISTORY_RESOURCE,
+  INCIDENT_NOTE_RESOURCE,
   INCIDENT_RESOURCE,
   TRACKING_SESSION_RESOURCE,
 } from '../../data/resource-names';
@@ -32,6 +41,32 @@ import { eventRuleScope, eventRuleScopeFields, eventRuleScopeHistory } from './e
 import { eventRuleVersion } from './event-rule-version';
 import { eventRuleVersionFields } from './event-rule-version-fields';
 import { incident, incidentFields } from './incident';
+import { incidentActivity, incidentActivityFields } from './incident-activity';
+import {
+  incidentEvent,
+  incidentEventFields,
+  incidentEventHistory,
+  incidentIdentity,
+  incidentIdentityFields,
+  incidentIdentityHistory,
+} from './incident-links';
+import {
+  incidentNote,
+  incidentNoteFields,
+  incidentNoteFile,
+  incidentNoteFileFields,
+  incidentNoteFileHistory,
+  incidentNoteHistory,
+} from './incident-notes';
+import {
+  INCIDENT_OPERATIONS,
+  acknowledgeIncident,
+  closeIncident,
+  escalateIncident,
+  generateIncidentReport,
+  resolveIncident,
+  startInvestigation,
+} from './incident-ops';
 import { identityLocation } from './identity-location';
 import { identityLocationFields } from './identity-location-fields';
 import { occupancyPage } from './occupancy-page';
@@ -43,7 +78,7 @@ import { trackingSessionFields } from './tracking-session-fields';
  * detections (every face a camera recognised), tracking sessions with their paths, the
  * locations they are made of (append-only logs: no count per page, keyset paging), who is where
  * now (polled), the occupancy of each area on the floor plan, event rules with their versions
- * and scopes, and the incidents rules open.
+ * and scopes, and incidents with their lifecycle, notes, links and activity timeline.
  */
 export const monitoringModule = {
   name: 'monitoring-module',
@@ -63,6 +98,21 @@ export const monitoringModule = {
     eventRuleScopeHistory,
     createEventRuleDraft,
     publishEventRuleVersion,
+    incidentActivity,
+    incidentNote,
+    incidentNoteHistory,
+    incidentNoteFile,
+    incidentNoteFileHistory,
+    incidentEvent,
+    incidentEventHistory,
+    incidentIdentity,
+    incidentIdentityHistory,
+    acknowledgeIncident,
+    startInvestigation,
+    resolveIncident,
+    closeIncident,
+    escalateIncident,
+    generateIncidentReport,
   ],
   tables: {
     [EVENT_RESOURCE]: hasuraTable('events', {
@@ -71,6 +121,23 @@ export const monitoringModule = {
       noAggregate: true,
     }),
     [INCIDENT_RESOURCE]: hasuraTable('incidents', { selectFields: selectFieldsOf(incidentFields) }),
+    [INCIDENT_ACTIVITY_RESOURCE]: hasuraTable('incident_activities', {
+      selectFields: selectFieldsOf(incidentActivityFields),
+      orderByField: 'occurred_at',
+      noAggregate: true,
+    }),
+    [INCIDENT_NOTE_RESOURCE]: hasuraTable('incident_notes', { selectFields: selectFieldsOf(incidentNoteFields) }),
+    [INCIDENT_NOTE_HISTORY_RESOURCE]: hasuraTable('incident_notes', { selectFields: selectFieldsOf(incidentNoteFields) }),
+    [INCIDENT_NOTE_FILE_RESOURCE]: hasuraTable('incident_note_files', { selectFields: selectFieldsOf(incidentNoteFileFields) }),
+    [INCIDENT_NOTE_FILE_HISTORY_RESOURCE]: hasuraTable('incident_note_files', {
+      selectFields: selectFieldsOf(incidentNoteFileFields),
+    }),
+    [INCIDENT_EVENT_RESOURCE]: hasuraTable('incident_events', { selectFields: selectFieldsOf(incidentEventFields) }),
+    [INCIDENT_EVENT_HISTORY_RESOURCE]: hasuraTable('incident_events', { selectFields: selectFieldsOf(incidentEventFields) }),
+    [INCIDENT_IDENTITY_RESOURCE]: hasuraTable('incident_identities', { selectFields: selectFieldsOf(incidentIdentityFields) }),
+    [INCIDENT_IDENTITY_HISTORY_RESOURCE]: hasuraTable('incident_identities', {
+      selectFields: selectFieldsOf(incidentIdentityFields),
+    }),
     [EVENT_RULE_RESOURCE]: hasuraTable('event_rules', { selectFields: selectFieldsOf(eventRuleFields) }),
     [EVENT_RULE_VERSION_RESOURCE]: hasuraTable('event_rule_versions', {
       selectFields: selectFieldsOf(eventRuleVersionFields),
@@ -102,5 +169,10 @@ export const monitoringModule = {
       orderByField: 'last_seen_at',
     }),
   },
-  operations: [occupancyRowsOperation, createEventRuleDraftOperation, publishEventRuleVersionOperation],
+  operations: [
+    occupancyRowsOperation,
+    createEventRuleDraftOperation,
+    publishEventRuleVersionOperation,
+    ...INCIDENT_OPERATIONS,
+  ],
 } as const satisfies ConsoleModule;

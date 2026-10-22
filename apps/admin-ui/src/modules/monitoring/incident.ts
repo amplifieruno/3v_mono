@@ -1,56 +1,89 @@
-import { defineResource } from '@burojs/core';
-import { f } from '@burojs/field-types';
+import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { EVENT_RULE_RESOURCE, INCIDENT_RESOURCE } from '../../data/resource-names';
-import { INCIDENT_STATUSES, INCIDENT_STATUS_ENUM } from '../../enums/events';
-import { enumField } from '../../enums/field';
-import { dateTime } from '../../fields/date-time';
-import { severityField } from './event-fields';
-import { areaRelation, facilityRelation, platformRelation } from './place-fields';
+import { resourceByName } from '../../data/resource-by-name';
+import {
+  INCIDENT_ACTIVITY_RESOURCE,
+  INCIDENT_EVENT_HISTORY_RESOURCE,
+  INCIDENT_EVENT_RESOURCE,
+  INCIDENT_IDENTITY_HISTORY_RESOURCE,
+  INCIDENT_IDENTITY_RESOURCE,
+  INCIDENT_NOTE_HISTORY_RESOURCE,
+  INCIDENT_NOTE_RESOURCE,
+  INCIDENT_RESOURCE,
+} from '../../data/resource-names';
+import { severitiesFrom } from '../../enums/events';
+import { INCIDENT_ACTIVITY_COLUMNS } from './incident-activity';
+import { incidentFields } from './incident-fields';
+import {
+  ACTIVE_STATUSES,
+  acknowledgeFlow,
+  closeFlow,
+  escalateFlow,
+  generateReportFlow,
+  reopenFlow,
+  resolveFlow,
+  startInvestigationFlow,
+} from './incident-flows';
+import { INCIDENT_NOTE_COLUMNS } from './incident-notes';
 
-const shown = ['list', 'show'] as const;
+export { incidentFields };
 
-/**
- * Columns of `itap.incidents` read so far: what an event rule's page lists. The incident
- * workflow (assignment, lifecycle, notes, linked events and identities) is added by the
- * incidents task of this phase.
- */
-export const incidentFields = {
-  id: f.uuid({ system: true, texts: 'ID', in: [] }),
-  code: f.string({
-    system: true,
-    in: [...shown],
-    texts: { label: 'Code', doc: { summary: 'The incident’s number in the organization (INCIDENT-00012).' } },
-  }),
-  title: f.string({ system: true, in: [...shown], texts: 'Title' }),
-  severity: severityField('How urgent the incident is; an incident opened by a rule takes the event’s severity.'),
-  status: enumField(INCIDENT_STATUSES, INCIDENT_STATUS_ENUM, {
-    system: true,
-    in: [...shown],
-    texts: {
-      label: 'Status',
-      doc: { summary: 'Open, acknowledged, investigating, resolved or closed; changed only by the lifecycle steps.' },
+/** How often the incident list reads again while open, in milliseconds. */
+export const INCIDENT_POLL_MS = 15_000;
+
+/** The columns of the incident lists (the list page, a rule's and a person's Incidents tabs). */
+export const INCIDENT_COLUMNS = ['code', 'title', 'severity', 'status', 'assigned_to', 'facility_id', 'created_at'] as const;
+
+/** Saved views of the incident list: what operators look at first. */
+export const INCIDENT_SAVED_VIEWS = [
+  {
+    id: 'open',
+    texts: 'Open',
+    state: { filters: [{ field: 'status', op: 'in', value: [...ACTIVE_STATUSES] }] },
+  },
+  {
+    id: 'unacknowledged',
+    texts: 'Unacknowledged',
+    state: { filters: [{ field: 'acknowledged_at', op: 'isNull' }] },
+  },
+  {
+    id: 'mine',
+    texts: 'Mine',
+    state: {
+      filters: [
+        { field: 'assigned_to_me', op: 'eq', value: true },
+        { field: 'status', op: 'in', value: [...ACTIVE_STATUSES] },
+      ],
     },
-  }),
-  facility_id: facilityRelation('The facility it happened in.'),
-  area_id: areaRelation('The area it happened in.'),
-  rule_id: platformRelation(EVENT_RULE_RESOURCE, null, {
-    label: 'Opened by rule',
-    summary:
-      'The event rule whose version opened the incident (one incident per stay and rule); empty for an incident opened by hand.',
-  }),
-  created_at: dateTime({ system: true, in: [...shown], texts: { label: 'Opened', doc: { summary: 'When the incident was opened.' } } }),
-  acknowledged_at: dateTime({
-    system: true,
-    in: ['show'],
-    texts: { label: 'Acknowledged', doc: { summary: 'When an operator took it on; empty while unacknowledged.' } },
-  }),
-  resolved_at: dateTime({ system: true, in: ['show'], texts: { label: 'Resolved', doc: { summary: 'When it was resolved.' } } }),
-};
+  },
+  {
+    id: 'critical',
+    texts: 'Critical',
+    state: {
+      filters: [
+        { field: 'severity', op: 'in', value: severitiesFrom('critical') },
+        { field: 'status', op: 'in', value: [...ACTIVE_STATUSES] },
+      ],
+    },
+  },
+];
+
+/** A closed incident is final: the database refuses any change (`status <> closed` on update). */
+const INCIDENT_RULES: Rule[] = [
+  {
+    target: { kind: 'action', name: 'edit' },
+    deny: 'run',
+    when: (ctx) => (ctx.record as { readonly status?: unknown } | undefined)?.status === 'closed',
+    fallback: 'disable',
+    reason: 'The incident is closed: nothing about it changes any more.',
+  },
+];
 
 /**
  * Incidents (`itap.incidents`): situations an operator has to handle, opened by event rules
- * (`creates_incident`) or by hand. Read-only here; the lifecycle comes with the incidents task.
+ * (`creates_incident`) or by hand, followed from open to closed by the lifecycle steps
+ * (`./incident-flows.ts`), each recorded in the activity timeline by the database. Operators watch
+ * the list, so it polls; the sidebar facility narrows it. An incident is history: never deleted.
  */
 export const incident = defineResource(INCIDENT_RESOURCE, {
   texts: {
@@ -58,7 +91,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
     labelPlural: 'Incidents',
     doc: {
       summary:
-        'A situation an operator has to handle, opened by an event rule or by hand, followed from open to closed.',
+        'A situation an operator has to handle, opened by an event rule or by hand, followed from open to closed with notes, linked events and people, and a timeline of every step.',
     },
   },
   basePath: '/incidents',
@@ -67,19 +100,131 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
   icon: NAV_ICONS.incidents,
   displayField: 'code',
   data: { provider: 'hasura', scope: { facility: { field: 'facility_id' } } },
-  operations: { create: false, edit: false, delete: false },
-  builtinActions: { edit: false, delete: false },
+  prefill: { fromQuery: ['facility_id', 'area_id'] },
+  operations: { delete: false },
+  builtinActions: { delete: false },
+  rules: INCIDENT_RULES,
   fields: incidentFields,
+  actions: (r) => ({
+    item: [
+      r.action.flow('acknowledge', acknowledgeFlow),
+      r.action.flow('start_investigation', startInvestigationFlow),
+      r.action.flow('resolve', resolveFlow),
+      r.action.flow('close', closeFlow),
+      r.action.flow('reopen', reopenFlow),
+      r.action.flow('escalate', escalateFlow),
+      r.action.flow('generate_report', generateReportFlow),
+    ],
+  }),
   views: {
     list: {
-      columns: ['code', 'title', 'severity', 'status', 'facility_id', 'rule_id', 'created_at'],
+      columns: [...INCIDENT_COLUMNS],
+      optionalColumns: ['area_id', 'rule_id', 'disposition', 'acknowledged_at', 'escalation_step'],
       defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      refetchInterval: INCIDENT_POLL_MS,
       search: { fields: ['code', { field: 'title', op: 'contains' }] },
-      filters: { pinned: ['status', 'severity'], fields: ['status', 'severity', 'facility_id', 'area_id', 'rule_id', 'created_at'] },
+      filters: {
+        pinned: ['status', 'severity', 'assigned_to'],
+        fields: [
+          'status',
+          'severity',
+          'assigned_to',
+          'assigned_to_me',
+          'disposition',
+          'facility_id',
+          'area_id',
+          'rule_id',
+          'acknowledged_at',
+          'created_at',
+        ],
+      },
+      savedViews: INCIDENT_SAVED_VIEWS,
     },
     show: {
-      header: (l) => [l.grid(['code', 'status', 'severity', 'created_at'])],
-      body: (l) => ['title', l.grid(['facility_id', 'area_id', 'rule_id']), l.grid(['acknowledged_at', 'resolved_at'])],
+      header: (l) => [l.grid(['code', 'status', 'severity', 'assigned_to'])],
+      body: (l) => {
+        const isClosed = l.in(l.ref('record', 'status'), ['closed']);
+        const byIncident = [{ field: 'incident_id', op: 'eq', value: l.ref('record', 'id') }] as const;
+        const linkTab = (key: string, texts: string, [open, frozen]: readonly [string, string], columns: readonly string[], rows: 'page' | 'none') =>
+          l.panel(
+            [
+              l.panel(
+                [l.place(relatedList(resourceByName(open)), { key: `${key}-open`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
+                { key: `${key}-editable`, when: l.not(isClosed) },
+              ),
+              l.panel(
+                [l.place(relatedList(resourceByName(frozen)), { key: `${key}-frozen`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
+                { key: `${key}-closed`, when: isClosed },
+              ),
+            ],
+            { key, texts },
+          );
+        return [
+          l.tabs(
+            [
+              l.panel(
+                [
+                  'title',
+                  'description',
+                  l.grid(['facility_id', 'area_id', 'rule_id']),
+                  l.grid(['created_at', 'created_by', 'external_ref']),
+                  l.panel(
+                    [
+                      l.grid(['acknowledged_at', 'acknowledged_by']),
+                      l.grid(['resolved_at', 'resolved_by', 'disposition']),
+                      'resolution',
+                    ],
+                    { key: 'lifecycle', texts: 'Handling' },
+                  ),
+                  l.panel([l.grid(['escalation_policy_id', 'escalation_step', 'last_escalated_at'])], {
+                    key: 'escalation',
+                    texts: 'Escalation',
+                  }),
+                  'updated_at',
+                ],
+                { key: 'details', texts: 'Details' },
+              ),
+              l.panel(
+                [
+                  l.place(relatedList(resourceByName(INCIDENT_ACTIVITY_RESOURCE)), {
+                    key: 'incident-activity',
+                    props: { where: [...byIncident], columns: [...INCIDENT_ACTIVITY_COLUMNS], open: 'none' },
+                  }),
+                ],
+                { key: 'activity', texts: 'Activity' },
+              ),
+              linkTab('notes', 'Notes', [INCIDENT_NOTE_RESOURCE, INCIDENT_NOTE_HISTORY_RESOURCE], INCIDENT_NOTE_COLUMNS, 'page'),
+              linkTab('events', 'Events', [INCIDENT_EVENT_RESOURCE, INCIDENT_EVENT_HISTORY_RESOURCE], ['event_id', 'created_at'], 'none'),
+              linkTab(
+                'people',
+                'People',
+                [INCIDENT_IDENTITY_RESOURCE, INCIDENT_IDENTITY_HISTORY_RESOURCE],
+                ['identity_id', 'role', 'created_at'],
+                'none',
+              ),
+            ],
+            { key: 'sections' },
+          ),
+        ];
+      },
+    },
+    create: {
+      body: (l) => [
+        'title',
+        l.grid(['severity', 'assigned_to']),
+        'description',
+        l.grid(['facility_id', 'area_id']),
+        'external_ref',
+      ],
+    },
+    edit: {
+      body: (l) => [
+        'title',
+        l.grid(['severity', 'assigned_to']),
+        'description',
+        l.grid(['facility_id', 'area_id']),
+        'external_ref',
+      ],
     },
   },
 });

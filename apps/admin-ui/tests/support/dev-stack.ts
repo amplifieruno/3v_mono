@@ -7,7 +7,7 @@ import { type TokenStore, createTokenStore } from '../../src/auth/token-store';
 import { DEV_AUTH, DEV_GRAPHQL, seedPassword } from './dev-hosts';
 import { type DevSessions, sessionKey } from './dev-sessions';
 
-export { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME } from './dev-hosts';
+export { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, DEV_STORAGE, NOVA_NAME, devAdminSecret } from './dev-hosts';
 
 /**
  * Shared by the dev-stack tests (`tests/integration/*.dev.test.ts`): they run

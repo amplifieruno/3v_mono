@@ -75,6 +75,12 @@ export const NAV_ICONS = {
   incidents: 'Siren',
   editDraft: 'FilePen',
   publish: 'Send',
+  acknowledge: 'CheckCheck',
+  investigate: 'Search',
+  escalate: 'ChevronsUp',
+  resolve: 'CircleCheck',
+  closeIncident: 'Lock',
+  incidentReport: 'FileText',
 } as const;
 
 /**

@@ -55,7 +55,11 @@ export const incidentTables: TableSpec[] = [
       'dedup_key',
     ],
     // The event rule that opened the incident (from dedup_key), so a rule lists its incidents.
-    computedFields: [{ name: 'rule_id', function: 'incident_rule_id' }],
+    // and whether it is assigned to the session user (the console's "Mine" view).
+    computedFields: [
+      { name: 'rule_id', function: 'incident_rule_id' },
+      { name: 'assigned_to_me', function: 'incident_assigned_to_me', sessionArgument: 'hasura_session' },
+    ],
     extraPermissions: {
       // Closed incidents are frozen (closed is terminal).
       update_permissions: [

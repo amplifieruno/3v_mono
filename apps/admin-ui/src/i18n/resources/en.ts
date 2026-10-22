@@ -115,6 +115,6 @@ export default {
     doc: { topics: { index: 'Rule versions' } },
   },
   incident: {
-    doc: { topics: { index: 'Incidents' } },
+    doc: { topics: { index: 'Incidents: lifecycle, notes, links and timeline' } },
   },
 } satisfies TranslationBundle;

@@ -38,4 +38,5 @@ a rule matched.
 
 The pages of facilities, areas, devices, identities and people have an
 **Events** tab with their own events. Incidents opened by rules link their
-events; see *Event rules*.
+events; see *Event rules*. An event's **Incidents** section lists the incidents
+it is linked to; links are added on the incident's Events tab (see *Incidents*).

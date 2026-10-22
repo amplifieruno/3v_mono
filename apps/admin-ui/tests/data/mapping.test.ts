@@ -70,7 +70,7 @@ describe('selectFieldsOf', () => {
 });
 
 describe('append-only logs', () => {
-  const LOGS = ['device_health_metric', 'device_event', 'detection', 'tracking_session', 'identity_location'];
+  const LOGS = ['device_health_metric', 'device_event', 'detection', 'tracking_session', 'identity_location', 'incident_activity'];
 
   it('should page the logs by cursor and count them only on demand', async () => {
     await app.ready;

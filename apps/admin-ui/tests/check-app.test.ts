@@ -33,6 +33,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // (`merge_into` has a check: it remembers the first identity it sent, `mergeIntoApplied`.)
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.2.submit' },
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.3.submit' },
+  // `generate_report` on an incident: the queued report is read on the reports pages (phase 8), not
+  // from here, and resending would queue a second report; the unknown screen tells the user to
+  // check before trying again (the timeline records the report once it is generated).
+  { code: 'flow.unknown-unhandled', location: 'incident toolbar.item.6.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

@@ -159,6 +159,12 @@ array_relationships:
           organization_id: organization_id
           id: incident_id
 computed_fields:
+  - name: assigned_to_me
+    definition:
+      function:
+        schema: itap
+        name: incident_assigned_to_me
+      session_argument: hasura_session
   - name: rule_id
     definition:
       function:
@@ -212,6 +218,7 @@ select_permissions:
         - title
         - updated_at
       computed_fields:
+        - assigned_to_me
         - rule_id
       filter:
         organization_id:

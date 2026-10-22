@@ -61,6 +61,12 @@ import {
   UsersRound,
   X,
   Zap,
+  CheckCheck,
+  ChevronsUp,
+  CircleCheck,
+  FileText,
+  Lock,
+  Search,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -127,6 +133,12 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   UsersRound,
   X,
   Zap,
+  CheckCheck,
+  ChevronsUp,
+  CircleCheck,
+  FileText,
+  Lock,
+  Search,
 };
 
 /**

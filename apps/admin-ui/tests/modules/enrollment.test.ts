@@ -141,10 +141,16 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step and event rule function', () => {
+  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function and incident function', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
+      'monitoring.acknowledgeIncident',
+      'monitoring.closeIncident',
       'monitoring.createEventRuleDraft',
+      'monitoring.escalateIncident',
+      'monitoring.generateIncidentReport',
       'monitoring.publishEventRuleVersion',
+      'monitoring.resolveIncident',
+      'monitoring.startInvestigation',
       `${PEOPLE_BINDING}.addIdentityPhotos`,
       `${PEOPLE_BINDING}.addIdentityRelationship`,
       `${PEOPLE_BINDING}.approveVerification`,

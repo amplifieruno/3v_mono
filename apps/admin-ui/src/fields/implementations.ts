@@ -7,6 +7,7 @@ import { detectionFaceImplementations } from './detection-face-impl';
 import { eventRuleParametersImplementations } from './event-rule-parameters-impl';
 import { facePhotosImplementations } from './face-photos-impl';
 import { imageSizeImplementations } from './image-size-impl';
+import { incidentActivityDetailsImplementations } from './incident-activity-details-impl';
 import { inlineFileImplementations } from './inline-file-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
@@ -29,7 +30,8 @@ import { timezoneImplementations } from './timezone-impl';
  * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`),
  * the photos to split off an identity (`itap.split-photos`), timestamps with their time of day
  * (`itap.date-time`), a detection's face (`itap.detection-face`) and an event rule version's parameters
- * by rule type (`itap.event-rule-parameters`). Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
+ * by rule type (`itap.event-rule-parameters`) and an incident activity's details in one line
+ * (`itap.incident-activity-details`). Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
 export const itapFieldImplementations = composeFieldImplementations(
@@ -51,4 +53,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   dateTimeImplementations,
   detectionFaceImplementations,
   eventRuleParametersImplementations,
+  incidentActivityDetailsImplementations,
 );

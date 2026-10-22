@@ -65,6 +65,13 @@ import {
   versionStatusEnum,
 } from './events';
 import { eventTypeEnum } from './event-types';
+import {
+  INCIDENT_ENUM_TABLES,
+  incidentActivityKindEnum,
+  incidentDispositionEnum,
+  incidentIdentityRoleEnum,
+  reportFormatEnum,
+} from './incidents';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -111,6 +118,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   eventRuleTypeEnum,
   versionStatusEnum,
   incidentStatusEnum,
+  incidentDispositionEnum,
+  incidentActivityKindEnum,
+  incidentIdentityRoleEnum,
+  reportFormatEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -132,4 +143,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...VISIT_ENUM_TABLES,
   ...MONITORING_ENUM_TABLES,
   ...EVENT_ENUM_TABLES,
+  ...INCIDENT_ENUM_TABLES,
 };

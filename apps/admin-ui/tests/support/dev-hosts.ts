@@ -24,3 +24,13 @@ export function seedPassword(): string {
   if (!password) throw new Error('SEED_PASSWORD is not set (see apps/backend/.env).');
   return password;
 }
+
+/**
+ * The dev Hasura admin secret (`GRAPHQL_ADMIN_SECRET` in `apps/backend/.env`), for cleaning up rows
+ * the console's role may not delete (an incident is history for `org_admin`). Tests only.
+ */
+export function devAdminSecret(): string {
+  const secret = process.env.GRAPHQL_ADMIN_SECRET;
+  if (!secret) throw new Error('GRAPHQL_ADMIN_SECRET is not set (see apps/backend/.env).');
+  return secret;
+}
