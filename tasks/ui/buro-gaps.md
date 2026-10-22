@@ -974,6 +974,11 @@ migration `1792365700277`.
   from `blocks.<id>.*` through `I18nContext` (`block-t.ts`), and the two blocks with `data` entries
   (`itap:occupancy-now`, `itap:health-chart`) get them read by the tile (`widget-data.tsx`). Each tile
   has its own error boundary. Grid starts and spans are literal Tailwind classes per number.
+  A tile's error boundary resets when the widget's kind, source or settings change (the editor
+  preview recovers once the settings are fixed). Known limit: a tile's "no access" note checks only the
+  widget's own query; blocks that read more (`deviceHealthDay` reads `device_health_metrics_aggregate`,
+  `occupancyNow` reads floor plans and areas) are not checked for those and may show empty data or the
+  failed note for a viewer who cannot read them.
 - **Expected from a framework:** a dynamic placement (`l.each(ref, item => l.place(...))` or a
   `renderBlock(block, props)` component that mounts a placement with its chrome, data and texts),
   and per-child grid placement on `l.grid` (column start, span and row span from a ref).

@@ -4,6 +4,8 @@ export interface TileBoundaryProps {
   /** What the tile shows when its view throws while drawing. */
   readonly fallback: React.ReactNode;
   readonly children: React.ReactNode;
+  /** Changes when the widget's settings change: a failed tile draws again with the new ones. */
+  readonly resetKey?: string;
 }
 
 /**
@@ -15,6 +17,10 @@ export class TileBoundary extends React.Component<TileBoundaryProps, { readonly 
 
   static getDerivedStateFromError(): { readonly failed: boolean } {
     return { failed: true };
+  }
+
+  override componentDidUpdate(previous: TileBoundaryProps): void {
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false });
   }
 
   override render(): React.ReactNode {

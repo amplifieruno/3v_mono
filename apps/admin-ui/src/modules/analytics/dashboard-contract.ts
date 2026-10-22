@@ -67,8 +67,12 @@ const isKind = (value: unknown): value is DashboardWidgetKind =>
 const intBetween = (value: unknown, min: number, max: number): boolean =>
   typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
 
+/** Length in characters (code points), as the database counts. */
+const chars = (value: string): number => [...value].length;
+
 /** How a widget is named in a refusal: its title, else its id, else nothing. */
-function nameOf(widget: { readonly title?: unknown; readonly id?: unknown }): string {
+export function nameOf(value: unknown): string {
+  const widget: { readonly title?: unknown; readonly id?: unknown } = isObject(value) ? value : {};
   if (typeof widget.title === 'string' && widget.title.trim() !== '') return widget.title.trim();
   return typeof widget.id === 'string' ? widget.id : '';
 }
@@ -108,7 +112,7 @@ function widgetProblems(index: number, widget: unknown, seen: Map<string, number
     return [problem(index, 'keys', 'Widget {{position}} “{{name}}”: needs exactly the keys id, kind, title, query, params and position.', { name })];
   const out: WidgetProblem[] = [];
   const { id, kind, query, title, params, position } = widget;
-  if (typeof id !== 'string' || id.length < 1 || id.length > MAX_WIDGET_ID)
+  if (typeof id !== 'string' || chars(id) < 1 || chars(id) > MAX_WIDGET_ID)
     out.push(problem(index, 'id', 'Widget {{position}} “{{name}}”: give it an id of 1 to 64 characters.', { name }));
   else if (seen.has(id))
     out.push(problem(index, 'duplicateId', 'Widget {{position}} “{{name}}”: repeats the id “{{id}}” of widget {{first}}.', { name, id, first: (seen.get(id) ?? 0) + 1 }));
@@ -123,7 +127,7 @@ function widgetProblems(index: number, widget: unknown, seen: Map<string, number
         query: String(query),
       }),
     );
-  if (typeof title !== 'string' || title.trim() === '' || title.length > MAX_WIDGET_TITLE)
+  if (typeof title !== 'string' || /^ *$/u.test(title) || chars(title) > MAX_WIDGET_TITLE)
     out.push(problem(index, 'title', 'Widget {{position}}: give it a title of at most 200 characters, not only spaces.'));
   if (!isObject(params)) out.push(problem(index, 'params', 'Widget {{position}} “{{name}}”: its settings must be an object.', { name }));
   out.push(...positionProblems(index, position, name));

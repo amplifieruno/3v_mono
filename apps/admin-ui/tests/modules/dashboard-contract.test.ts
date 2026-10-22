@@ -38,6 +38,16 @@ describe('dashboard widget contract', () => {
     expect(contractProblems([])).toEqual([]);
   });
 
+  it('should count characters and strip only spaces, like the database', () => {
+    const astral = '😀';
+    expect(codes([widget({ id: astral.repeat(64) })])).toEqual([]);
+    expect(codes([widget({ id: astral.repeat(65) })])).toEqual(['id']);
+    expect(codes([widget({ title: astral.repeat(200) })])).toEqual([]);
+    expect(codes([widget({ title: astral.repeat(201) })])).toEqual(['title']);
+    expect(codes([widget({ title: '   ' })])).toEqual(['title']);
+    expect(codes([widget({ title: '\t' })])).toEqual([]);
+  });
+
   it('should refuse what the database refuses, each with its reason', () => {
     const noPosition = Object.fromEntries(Object.entries(widget()).filter(([key]) => key !== 'position'));
     const cases: [unknown, string[]][] = [

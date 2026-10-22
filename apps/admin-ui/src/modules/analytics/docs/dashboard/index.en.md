@@ -69,3 +69,9 @@ the editor shows the same reason on that widget until it is corrected.
 
 The preview under the form draws the widgets on screen as the dashboard will
 show them, reading live data, before anything is saved.
+
+A tile says you have no access when you may not read the source its widget
+names. Some widgets also read other data to draw (device health reads the
+health history of the devices, occupancy reads the floor plans and areas), and
+that is not checked beforehand: if you may not read it, the tile shows what it
+could read or fails by itself, without affecting the other tiles.

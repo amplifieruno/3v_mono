@@ -89,6 +89,7 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   if (query.includes('DashboardKpis')) return hasuraResponse({ data: { dashboard_kpis: [KPIS] } });
   if (query.includes('dashboards_by_pk')) return hasuraResponse({ data: { item: board } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 0 } } } });
+  if (/\bitems: dashboards\(/.test(query)) return hasuraResponse({ data: { items: [board] } });
   if (/\bitems: facilities\(/.test(query)) {
     return hasuraResponse({ data: { items: [{ id: FACILITY, code: 'FAC-1', name: 'Nova Tower', status: 'active' }] } });
   }
@@ -170,6 +171,20 @@ describe('dashboard page', () => {
     await screen.findByTestId('dashboard-grid');
     const edit = await screen.findByRole('link', { name: /^Edit/ });
     expect(edit.getAttribute('aria-disabled')).not.toBe('true');
+  });
+});
+
+describe('dashboard list', () => {
+  it('should enable Edit and Delete on the rows of the member\'s own dashboards only', async () => {
+    board = row({ owner_id: 'user-1', owned_by_me: true });
+    renderAt('/dashboards');
+    await screen.findByText('Security overview');
+    expect(bodies().some((body) => /items: dashboards\(/.test(body.query) && body.query.includes('owned_by_me'))).toBe(true);
+    const more = screen.getByRole('button', { name: 'More' });
+    fireEvent.keyDown(more, { key: 'Enter' });
+    const actions = await screen.findAllByRole('menuitem');
+    expect(actions.map((node) => node.textContent)).toEqual(expect.arrayContaining([expect.stringMatching(/^Edit/u), expect.stringMatching(/^Delete/u)]));
+    expect(actions.filter((node) => node.getAttribute('aria-disabled') === 'true' || node.hasAttribute('data-disabled'))).toEqual([]);
   });
 });
 
