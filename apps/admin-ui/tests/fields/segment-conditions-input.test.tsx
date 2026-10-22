@@ -86,7 +86,8 @@ describe('the conditions editor', () => {
     expect(changes.at(-1)).toEqual({ op: 'and', children: [leaf('first_name', 'eq', ''), leaf('first_name', 'eq', '')] });
     // Both new conditions lack a value: each says so on its own node.
     const second = await screen.findByTestId('segment-node-$.children[1]');
-    expect(within(second).getByRole('alert').textContent).toBe('Enter some text.');
+    expect(within(second).getByText('Enter some text.').id).toMatch(/-1-problem$/);
+    expect(within(second).queryByRole('alert')).toBeNull();
   });
 
   it('should ask for the target before offering fields', async () => {
@@ -115,7 +116,7 @@ describe('the conditions editor', () => {
     const node = await screen.findByTestId('segment-node-$.children[1]');
     expect(node.getAttribute('data-invalid')).toBe('true');
     expect(node.textContent).toContain('“custom_fields.badge_number” (no longer offered)');
-    expect(within(node).getByRole('alert').textContent).toMatch(/^The field “custom_fields.badge_number” is not offered/);
+    expect(within(node).getByText(/^The field “custom_fields.badge_number” is not offered/)).toBeDefined();
     expect(screen.getByTestId('segment-node-$.children[0]').getAttribute('data-invalid')).toBeNull();
   });
 
@@ -131,7 +132,11 @@ describe('the conditions editor', () => {
     render(<Harness initial={initial} changes={[]} issues={[issue]} />, { wrapper: Wrapper });
     const node = await screen.findByTestId('segment-node-$.children[1]');
     expect(node.getAttribute('data-invalid')).toBe('true');
-    expect(within(node).getByRole('alert').textContent).toBe('The server refused this value.');
+    const problem = within(node).getByText('The server refused this value.');
+    // Only the value control is flagged and points at the text.
+    const flagged = node.querySelectorAll('[aria-invalid="true"]');
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0]?.getAttribute('aria-describedby')).toBe(problem.id);
     expect(screen.getByTestId('segment-node-$.children[0]').getAttribute('data-invalid')).toBeNull();
   });
 

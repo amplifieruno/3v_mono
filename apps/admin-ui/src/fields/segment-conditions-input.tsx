@@ -8,7 +8,7 @@ import { type ConditionsEditor, ConditionsEditorContext } from './segment-condit
 import { conditionsSentence } from './segment-conditions-format';
 import { type SegmentConditionsMeta, targetOf } from './segment-conditions-meta';
 import { catalogOf, newLeaf } from './segment-conditions-operators';
-import { issueJsonPath, ownerOf } from './segment-conditions-path';
+import { type PathPart, issueJsonPath, ownerOf, targetOfPath } from './segment-conditions-path';
 import { segmentConditionsCatalog } from './segment-conditions-query';
 import { publishConditions } from './segment-conditions-registry';
 import { addChild, isEmptyConditions, isGroup, moveAt, removeAt, replaceAt, setGroupOp } from './segment-conditions-tree';
@@ -19,12 +19,15 @@ function useProblems(
   value: unknown,
   ctx: Parameters<typeof validateSegmentConditions>[1],
   issues: ScalarInputProps<unknown>['issues'],
-): (jsonPath: string) => readonly string[] {
+): { readonly problemsAt: (jsonPath: string) => readonly string[]; readonly partsAt: (jsonPath: string) => ReadonlySet<PathPart> } {
   const t = useT();
   const byNode = new Map<string, string[]>();
+  const partsByNode = new Map<string, Set<PathPart>>();
   const put = (path: string | null, text: string) => {
     const owner = path === null ? null : ownerOf(path);
-    if (owner === null) return;
+    if (owner === null || path === null) return;
+    const part = targetOfPath(path)?.part;
+    if (part !== undefined) partsByNode.set(owner, (partsByNode.get(owner) ?? new Set<PathPart>()).add(part));
     const list = byNode.get(owner) ?? [];
     if (!list.includes(text)) list.push(text);
     byNode.set(owner, list);
@@ -33,7 +36,7 @@ function useProblems(
     put(problem.path, t(problemKey(problem.code), { params: problem.params ?? {} }));
   }
   for (const issue of issues) put(issueJsonPath(issue), resolveValidationMessage(issue, { t }));
-  return (jsonPath) => byNode.get(jsonPath) ?? [];
+  return { problemsAt: (jsonPath) => byNode.get(jsonPath) ?? [], partsAt: (jsonPath) => partsByNode.get(jsonPath) ?? new Set<PathPart>() };
 }
 
 /**
@@ -57,7 +60,7 @@ export function SegmentConditionsInput(props: ScalarInputProps<unknown, SegmentC
     if (target === undefined || catalog === undefined || data === undefined) return undefined;
     return publishConditions({ target, catalog, refs: data.refs, self });
   }, [target, catalog, data, self]);
-  const problemsAt = useProblems(value, { catalog, refs: data?.refs, target, self }, issues);
+  const { problemsAt, partsAt } = useProblems(value, { catalog, refs: data?.refs, target, self }, issues);
 
   if (target === undefined) return <p className="text-sm text-muted-foreground">{t('console.segmentConditions.noTarget')}</p>;
   if (query.isError) return <p className="text-sm text-destructive">{t('console.segmentConditions.failed')}</p>;
@@ -73,6 +76,7 @@ export function SegmentConditionsInput(props: ScalarInputProps<unknown, SegmentC
     locked: disabled === true || readOnly === true,
     prefix: accessibility.input ?? 'segment-conditions',
     problemsAt,
+    partsAt,
     replace: (path, next) => write(replaceAt(value, path, next)),
     remove: (path) => write(removeAt(value, path)),
     move: (path, delta) => write(moveAt(value, path, delta)),

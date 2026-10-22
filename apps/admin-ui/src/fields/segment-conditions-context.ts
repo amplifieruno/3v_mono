@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { Catalog } from './segment-conditions-operators';
 import type { ConditionRefs } from './segment-conditions-refs';
+import type { PathPart } from './segment-conditions-path';
 import type { NodePath } from './segment-conditions-tree';
 
 /** What every node of the conditions editor reads and how it writes the tree. */
@@ -14,6 +15,8 @@ export interface ConditionsEditor {
   readonly prefix: string;
   /** The problem texts of the node with this JSON path (client and server), first first. */
   readonly problemsAt: (jsonPath: string) => readonly string[];
+  /** The parts of the node with this JSON path that its problems point to. */
+  readonly partsAt: (jsonPath: string) => ReadonlySet<PathPart>;
   /** Replaces the node at `path`. */
   readonly replace: (path: NodePath, next: unknown) => void;
   readonly remove: (path: NodePath) => void;

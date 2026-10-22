@@ -17,7 +17,11 @@ import type { ConditionRefs } from './segment-conditions-refs';
 /** The registry key the conditions' operation is bound under. */
 export const SEGMENT_CONDITIONS_BINDING = 'segment-conditions';
 
-/** The most records of each kind the editor offers (a demo organization has far fewer). */
+/**
+ * The most records of each kind the editor offers (a demo organization has far fewer). A record
+ * past the cap is not in the lists, so the client validator flags a condition naming it as "gone";
+ * a demo-size limit, not a framework gap.
+ */
 export const SEGMENT_CHOICES_MAX = 1000;
 
 const named = z.object({ id: z.string(), name: z.string() });

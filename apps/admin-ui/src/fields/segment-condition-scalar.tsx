@@ -11,6 +11,7 @@ export interface ScalarValueProps {
   readonly type: string;
   readonly value: unknown;
   readonly invalid: boolean;
+  readonly describedBy?: string | undefined;
   readonly disabled: boolean;
   readonly onChange: (next: unknown) => void;
   readonly onBlur?: () => void;
@@ -24,9 +25,9 @@ const shown = (value: unknown): string => (typeof value === 'number' || typeof v
  * negative = ago), resolved when the segment is evaluated.
  */
 export function ScalarValue(props: ScalarValueProps): React.ReactElement {
-  const { id, label, type, value, invalid, disabled, onChange, onBlur } = props;
+  const { id, label, type, value, invalid, describedBy, disabled, onChange, onBlur } = props;
   const t = useT();
-  const common = { id, 'aria-label': label, 'aria-invalid': invalid || undefined, disabled, ...(onBlur === undefined ? {} : { onBlur }) };
+  const common = { id, 'aria-label': label, 'aria-invalid': invalid || undefined, 'aria-describedby': describedBy, disabled, ...(onBlur === undefined ? {} : { onBlur }) };
   if (type === 'integer' || type === 'number') {
     return (
       <Input

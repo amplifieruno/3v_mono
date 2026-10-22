@@ -29,6 +29,11 @@ export function ConditionLeafEditor({ path, leaf, siblings }: ConditionLeafEdito
   const spec = editor.catalog.get(leaf.field);
   const problems = editor.problemsAt(jsonPath);
   const invalid = problems.length > 0;
+  const parts = editor.partsAt(jsonPath);
+  const problemId = `${id}-problem`;
+  const flagField = parts.has('field') || (invalid && spec === undefined);
+  const flagOperator = parts.has('operator');
+  const flagValue = parts.has('value') || parts.has('node');
   const name = nodeName(path, 'condition', t);
   const operators = spec?.operators ?? [leaf.operator];
   return (
@@ -48,7 +53,7 @@ export function ConditionLeafEditor({ path, leaf, siblings }: ConditionLeafEdito
             if (next !== undefined) editor.replace(path, withField(leaf, spec, next));
           }}
         >
-          <SelectTrigger id={`${id}-field`} className="w-60" aria-label={t('console.segmentConditions.field')} aria-invalid={(invalid && spec === undefined) || undefined}>
+          <SelectTrigger id={`${id}-field`} className="w-60" aria-label={t('console.segmentConditions.field')} aria-invalid={flagField || undefined} aria-describedby={flagField ? problemId : undefined}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -63,7 +68,7 @@ export function ConditionLeafEditor({ path, leaf, siblings }: ConditionLeafEdito
           </SelectContent>
         </Select>
         <Select value={leaf.operator} disabled={editor.locked || spec === undefined} onValueChange={(operator) => editor.replace(path, withOperator(leaf, spec, operator))}>
-          <SelectTrigger id={`${id}-operator`} className="w-44" aria-label={t('console.segmentConditions.operator')}>
+          <SelectTrigger id={`${id}-operator`} className="w-44" aria-label={t('console.segmentConditions.operator')} aria-invalid={flagOperator || undefined} aria-describedby={flagOperator ? problemId : undefined}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -79,12 +84,13 @@ export function ConditionLeafEditor({ path, leaf, siblings }: ConditionLeafEdito
           spec={spec}
           operator={leaf.operator}
           value={leaf.value}
-          invalid={invalid}
+          invalid={flagValue}
+          describedBy={flagValue ? problemId : undefined}
           onChange={(value) => editor.replace(path, { ...leaf, value })}
         />
         <NodeActions path={path} siblings={siblings} name={name} />
       </div>
-      <NodeProblems id={`${id}-problem`} problems={problems} />
+      <NodeProblems id={problemId} problems={problems} />
     </div>
   );
 }

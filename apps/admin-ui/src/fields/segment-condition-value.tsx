@@ -16,6 +16,8 @@ export interface ConditionValueProps {
   readonly operator: string;
   readonly value: unknown;
   readonly invalid: boolean;
+  /** The id of the element naming the problem, set on the control while it is flagged. */
+  readonly describedBy?: string | undefined;
   readonly onChange: (next: unknown) => void;
 }
 
@@ -35,7 +37,7 @@ function choicesOf(spec: CatalogField, editor: ConditionsEditor): { readonly val
  * A value of a field the catalog does not offer is shown as stored.
  */
 export function ConditionValue(props: ConditionValueProps): React.ReactElement {
-  const { id, spec, operator, value, invalid, onChange } = props;
+  const { id, spec, operator, value, invalid, describedBy, onChange } = props;
   const editor = useConditionsEditor();
   const t = useT();
   const choices = spec === undefined ? null : choicesOf(spec, editor);
@@ -48,7 +50,7 @@ export function ConditionValue(props: ConditionValueProps): React.ReactElement {
     const current = value === true ? options[0] : value === false ? options[1] : '';
     return (
       <Select value={current} disabled={editor.locked} onValueChange={(next) => onChange(next === options[0])}>
-        <SelectTrigger id={id} className="w-36" aria-label={label} aria-invalid={invalid || undefined}>
+        <SelectTrigger id={id} className="w-36" aria-label={label} aria-invalid={invalid || undefined} aria-describedby={describedBy}>
           <SelectValue placeholder={t('console.segmentConditions.choose')} />
         </SelectTrigger>
         <SelectContent>
@@ -73,6 +75,7 @@ export function ConditionValue(props: ConditionValueProps): React.ReactElement {
         multiple={multiple}
         unknownLabel={(stored) => t('console.segmentConditions.unknownRecord', { params: { id: stored } })}
         invalid={invalid}
+        describedBy={describedBy}
         disabled={editor.locked}
         onChange={(next) => onChange(multiple ? [...next] : (next[0] ?? null))}
         {...blur}
@@ -80,7 +83,7 @@ export function ConditionValue(props: ConditionValueProps): React.ReactElement {
     );
   }
   const scalar = (at: string, current: unknown, write: (next: unknown) => void, name = label) => (
-    <ScalarValue id={at} label={name} type={spec.type} value={current} invalid={invalid} disabled={editor.locked} onChange={write} {...blur} />
+    <ScalarValue id={at} label={name} type={spec.type} value={current} invalid={invalid} describedBy={describedBy} disabled={editor.locked} onChange={write} {...blur} />
   );
   if (shape === 'pair') {
     const [low, high] = Array.isArray(value) ? value : [value, null];

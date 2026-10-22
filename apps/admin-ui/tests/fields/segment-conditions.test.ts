@@ -184,6 +184,8 @@ describe('tree edits', () => {
     expect(replaceAt(and(a, and(b)), [1, 0], c)).toEqual(and(a, and(c)));
     expect(removeAt(and(a, b), [0])).toEqual(and(b));
     expect(removeAt(a, [])).toEqual({});
+    expect(removeAt(and(a), [0])).toEqual({});
+    expect(removeAt(and(a, and(b)), [1, 0])).toEqual(and(a, and()));
   });
 
   it('should keep "not" to one condition and stop at the limits', () => {

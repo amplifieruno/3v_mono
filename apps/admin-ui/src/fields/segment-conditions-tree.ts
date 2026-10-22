@@ -86,10 +86,14 @@ function editChildren(root: unknown, path: NodePath, edit: (children: unknown[])
   return replaceAt(root, path, { ...group, children: edit([...childrenOf(group)]) });
 }
 
-/** The tree without the node at `path`; removing the root leaves no conditions (`{}`). */
+/**
+ * The tree without the node at `path`; removing the root, or the last condition of the top group,
+ * leaves no conditions (`{}`), not an empty "all of" group.
+ */
 export function removeAt(root: unknown, path: NodePath): unknown {
   if (path.length === 0) return {};
   const index = path[path.length - 1] ?? 0;
+  if (path.length === 1 && childrenOf(root).length === 1 && index === 0) return {};
   return editChildren(root, path.slice(0, -1), (children) => children.filter((_, i) => i !== index));
 }
 

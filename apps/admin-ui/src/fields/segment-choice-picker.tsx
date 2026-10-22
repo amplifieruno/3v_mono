@@ -30,6 +30,7 @@ export interface ChoicePickerProps {
   /** How a chosen value that is not among the choices reads (a deleted record, a value no longer offered). */
   readonly unknownLabel: (value: string) => string;
   readonly invalid: boolean;
+  readonly describedBy?: string | undefined;
   readonly disabled: boolean;
   readonly onChange: (next: readonly string[]) => void;
   readonly onBlur?: () => void;
@@ -41,7 +42,7 @@ export interface ChoicePickerProps {
  * record whatever its spelling; a chosen value missing from the list stays shown.
  */
 export function ChoicePicker(props: ChoicePickerProps): React.ReactElement {
-  const { id, choices, selected, multiple, invalid, disabled } = props;
+  const { id, choices, selected, multiple, invalid, describedBy, disabled } = props;
   const t = useT();
   const [open, setOpen] = React.useState(false);
   const isChosen = (value: string) => selected.some((chosen) => sameId(chosen, value));
@@ -73,6 +74,7 @@ export function ChoicePicker(props: ChoicePickerProps): React.ReactElement {
           aria-label={props.label}
           aria-expanded={open}
           aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           disabled={disabled}
           className="min-w-40 max-w-md justify-between font-normal"
         >
