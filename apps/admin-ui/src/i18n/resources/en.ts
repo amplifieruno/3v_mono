@@ -11,4 +11,7 @@ export default {
   organization_member: {
     doc: { topics: { members: 'Members and invitations' } },
   },
+  organization_settings: {
+    doc: { topics: { index: 'Organization settings' } },
+  },
 } satisfies TranslationBundle;

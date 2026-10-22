@@ -23,6 +23,7 @@ export const NAV_ICONS = {
   invitations: 'MailPlus',
   invite: 'UserPlus',
   revoke: 'Ban',
+  settings: 'Settings',
 } as const;
 
 /**

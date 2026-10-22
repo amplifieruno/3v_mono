@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type * as React from 'react';
-import { MemoryRouter, useLocation } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
-import type { ItapAuthProvider, ItapIdentity } from '../../src/auth';
+import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/console-dom';
+import { LocationProbe } from '../support/location-probe';
 
 /**
  * The "Organization" page: the current organization's record screen in show
@@ -26,24 +26,7 @@ const ROW = {
   updated_at: '2026-01-02T00:00:00Z',
 };
 
-beforeAll(() => {
-  window.matchMedia ??= (query: string) =>
-    ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    }) satisfies MediaQueryList;
-  globalThis.ResizeObserver ??= class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  };
-});
+beforeAll(installDomShims);
 
 /**
  * The Hasura answers the page needs: the organization by key ({@link ROW}),
@@ -57,7 +40,7 @@ async function fakeGraphql(_input: RequestInfo | URL, init?: RequestInit): Promi
     : query.includes('_aggregate')
       ? { meta: { aggregate: { count: 0 } } }
       : { items: [] };
-  return new Response(JSON.stringify({ data }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return hasuraResponse({ data });
 }
 
 beforeEach(() => {
@@ -70,35 +53,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function fakeAuth(): ItapAuthProvider {
-  const identity: ItapIdentity = {
-    id: 'user-1',
-    email: 'admin@itap.demo',
-    name: 'Admin',
-    roles: ['org_admin'],
-    organizationId: NOVA,
-    memberships: [{ organizationId: NOVA, name: ROW.name, logoFileId: null, role: 'admin', status: 'active' }],
-  };
-  return {
-    check: async () => ({ authenticated: true }),
-    getIdentity: async () => identity,
-    login: async () => ({ success: true }),
-    logout: async () => ({ success: true }),
-    onError: async (error) => ({ action: 'propagate', error }),
-    getToken: async () => 'fake-org-token',
-    switchOrganization: async () => ({ success: true }),
-  };
-}
-
-function LocationProbe(): React.ReactElement {
-  return <output data-testid="location">{useLocation().pathname}</output>;
-}
-
 describe('organization profile page', () => {
   it('should show the current organization and open its edit screen', async () => {
     render(
       <MemoryRouter initialEntries={['/organization-profile']}>
-        <ConsoleApp auth={fakeAuth()} />
+        <ConsoleApp auth={fakeAdminAuth(NOVA, ROW.name)} />
         <LocationProbe />
       </MemoryRouter>,
     );

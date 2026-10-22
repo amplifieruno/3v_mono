@@ -148,3 +148,26 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   show route, not on the page.
 - **Expected from a framework:** a resource view whose record id is a function of the session
   (identity or scope), with its show/edit routes at the resource's base path.
+
+### G14. A record form's number range is not enforced, and a server refusal never reaches a field
+- **Need:** a settings value outside the database's CHECK range is refused on its field, with the
+  range in the message; a refusal by the server still lands on the field it concerns.
+- **Framework (0.6.0):** the record form validates each active field with `type: 'unknown'` and
+  only `required` plus the field's own `validate` (`runValidation`,
+  `@burojs/react/src/forms/controller/pipeline.ts`): the `min`/`max`/`integer` of `f.number` (and
+  its zod schema) are never run, so an out-of-range number reaches the server. The framework's own
+  `number.minimum`/`number.maximum` texts ("Value is too small/large") do not name the range
+  either. On save, `<RecordScreen>` shows any failure as one form-level alert
+  (`frame-pieces.tsx` `failureText`); `normalizeServerRecordIssues` is used by flows only. The
+  Hasura provider maps `constraint-violation` to `conflict` and `permission-error` to `forbidden`,
+  neither with a field. Measured on the dev stack: Hasura answers an `org_admin` CHECK violation
+  with `permission-error` (not `constraint-violation`), so the provider reports `forbidden`; the
+  alert reads "Validation failed" (its friendly match on the message). **[run]**
+  Evidence: `tests/integration/organization-settings.dev.test.ts`,
+  `tests/modules/organization-settings-page.test.tsx`.
+- **Workaround:** `boundedNumber` (`src/fields/bounded-number.ts`) restates the range as
+  `validate` with a message naming it ("Enter a whole number from 10 to 3600."); ranges mirror the
+  CHECK constraints (`SETTINGS_RANGES`), so the server refusal is a backstop only.
+- **Expected from a framework:** the record form runs the field's declared constraints, with
+  range-aware default messages; a provider hook mapping a server refusal (constraint name) to a
+  field issue, rendered on the field as flows already do.

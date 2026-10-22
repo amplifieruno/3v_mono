@@ -6,10 +6,12 @@ import { inviteMember, inviteMemberOperation } from './invite-member';
 import { MEMBER_RESOURCE, memberFields, organizationMember } from './members';
 import { ORGANIZATION_RESOURCE, organization, organizationFields } from './organization';
 import { organizationProfileBlock, organizationProfilePage } from './profile-page';
+import { SETTINGS_RESOURCE, organizationSettings, settingsFields } from './settings';
+import { organizationSettingsBlock, organizationSettingsPage } from './settings-page';
 import { USER_RESOURCE, user, userFields } from './user';
 
 /**
- * Organization: the profile page of the current organization, members,
+ * Organization: the profile and settings pages of the current organization, members,
  * invitations (the `invite_member` flow and its one-time token) and the
  * read-only sign-in accounts they point at.
  */
@@ -24,6 +26,9 @@ export const organizationModule = {
     organizationProfileBlock,
     invitationTokenBlock,
     inviteMember,
+    organizationSettings,
+    organizationSettingsPage,
+    organizationSettingsBlock,
   ],
   tables: {
     [ORGANIZATION_RESOURCE]: hasuraTable('organizations', {
@@ -44,6 +49,11 @@ export const organizationModule = {
       byPkRoot: 'user',
       aggregate: false,
       orderByField: 'displayName',
+    }),
+    /** One row per organization, keyed by `organization_id` (no `id`). */
+    [SETTINGS_RESOURCE]: hasuraTable('organization_settings', {
+      selectFields: selectFieldsOf(settingsFields),
+      pkField: 'organization_id',
     }),
   },
   operations: [inviteMemberOperation],
