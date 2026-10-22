@@ -260,7 +260,7 @@ test.describe.serial('places smoke', () => {
     await page.getByRole('option', { name: new RegExp(TEMPLATE) }).click();
     await expect(dialog.getByText('Creates 5 areas:')).toBeVisible();
     await dialog.getByRole('button', { name: 'Apply template', exact: true }).click();
-    await expect(page.getByText(/Template applied: 5 areas created \(4 at the top: /)).toBeVisible();
+    await expect(page.getByText(/Template applied\. Areas created: 5, at the top level: 4 \(/)).toBeVisible();
 
     expect((await runAreas()).sort()).toEqual(
       [INNER, OUTER, 'Elevator Lobby', 'Focus Booths', 'Kitchen', 'Meeting Room', 'Open Office'].sort(),

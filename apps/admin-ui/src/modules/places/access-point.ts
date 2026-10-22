@@ -1,5 +1,5 @@
 import { defineResource, ref, relatedList } from '@burojs/core';
-import { f } from '@burojs/field-types';
+import { type FieldValidator, f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import { enumField } from '../../enums/field';
@@ -11,14 +11,29 @@ import {
   AREA_STATUSES,
   AREA_STATUS_ENUM,
 } from '../../enums/places';
+import { type FieldProblem, problemIssue } from '../../fields/field-issue';
 import { planPosition } from '../../fields/plan-position';
-import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE, AREA_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
+import {
+  ACCESS_POINT_DEVICE_RESOURCE,
+  ACCESS_POINT_RESOURCE,
+  AREA_RESOURCE,
+  FACILITY_RESOURCE,
+} from '../../data/resource-names';
 
 /** `access_points_areas_differ`: an access point does not lead from an area into the same area. */
-export const checkFromArea = (value: unknown, ctx: { readonly values: Readonly<Record<string, unknown>> }) =>
-  value !== null && value !== undefined && value !== '' && value === ctx.values.area_id
-    ? 'Choose another area than the one it leads into, or none.'
+export const fromAreaProblem = (
+  value: unknown,
+  values: Readonly<Record<string, unknown>>,
+): FieldProblem | null =>
+  value !== null && value !== undefined && value !== '' && value === values.area_id
+    ? { code: 'accessPoint.sameArea', text: 'Choose another area than the one it leads into, or none.' }
     : null;
+
+/** {@link fromAreaProblem} as the field's `validate` (it reads the form's `area_id`). */
+export const checkFromArea = (value: unknown, ctx: { readonly values: Readonly<Record<string, unknown>> }) => {
+  const problem = fromAreaProblem(value, ctx.values);
+  return problem === null ? null : problemIssue(problem);
+};
 
 const sameFacility = [{ field: 'facility_id', op: 'eq', value: ref('values', 'facility_id') }] as const;
 
@@ -67,7 +82,8 @@ export const accessPointFields = {
     nullable: true,
     open: 'page',
     candidates: [...sameFacility],
-    validate: checkFromArea,
+    // An issue object, as `problemValidator` answers (`../../fields/field-issue.ts`): typed as text only.
+    validate: checkFromArea as unknown as FieldValidator<string | number>,
     texts: {
       label: 'Leads from',
       description: 'The area on the near side; empty for the outside of the facility.',
@@ -102,7 +118,7 @@ export const accessPointFields = {
       label: 'Facility entry/exit',
       doc: {
         summary:
-          'Marks a way in or out of the whole facility. A visitor seen leaving through one ends their visit; occupancy counts people out through these.',
+          'Marks a way in or out of the whole facility. A tracking session whose last sighting was at one ends as completed (the person left) rather than lost when it closes. It does not check visitors out and does not change occupancy.',
       },
     },
   }),

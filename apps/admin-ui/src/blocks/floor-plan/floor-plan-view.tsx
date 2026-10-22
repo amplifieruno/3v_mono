@@ -1,7 +1,14 @@
 import { type InferBlockData, resourceShowHref } from '@burojs/core';
 import { type BlockViewProps, useApp } from '@burojs/react';
 import type * as React from 'react';
-import { accessPointsOnPlan, areasOnPlan, floorPlanOf, planAccessPointOf, planAreaOf, rowsOf } from '../../fields/plan-rows';
+import {
+  accessPointsOnPlan,
+  areasOnPlan,
+  floorPlanOf,
+  planAccessPointOf,
+  planAreaOf,
+  rowsOf,
+} from '../../fields/plan-rows';
 import type { floorPlanBlock } from './floor-plan-block';
 import { FloorPlanFigure } from './floor-plan-figure';
 import { FloorPlanLegend } from './floor-plan-legend';

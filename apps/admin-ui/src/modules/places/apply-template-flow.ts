@@ -1,6 +1,7 @@
 import { type FlowConfig, type Layout, type ScreenRef, ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
+import { inRecordScope } from '../../fields/record-scoped-relation';
 import { applyFacilityTemplate } from './apply-template';
 import { templateOverlapBlock } from './template-overlap-block';
 import { AREA_RESOURCE, FACILITY_TEMPLATE_RESOURCE } from '../../data/resource-names';
@@ -12,19 +13,24 @@ const applyTemplateFields = {
     required: true,
     texts: { label: 'Template', doc: { summary: 'The facility template whose areas are created.' } },
   }),
-  parent_area_id: f.relation({
-    to: AREA_RESOURCE,
-    nullable: true,
-    candidates: [{ field: 'facility_id', op: 'eq', value: ref('record', 'id') }],
-    texts: {
-      label: 'Inside',
-      description: 'The area to create them in (such as a floor); empty for the top level.',
-      doc: {
-        summary:
-          'The area of this facility the template’s top-level areas are created in; empty creates them at the facility’s top level.',
+  // This facility's areas whatever the sidebar facility: the facility has no `facility_id`, so
+  // the form carries no area scope of its own and the select is put in one.
+  parent_area_id: inRecordScope(
+    f.relation({
+      to: AREA_RESOURCE,
+      nullable: true,
+      candidates: [{ field: 'facility_id', op: 'eq', value: ref('record', 'id') }],
+      texts: {
+        label: 'Inside',
+        description: 'The area to create them in (such as a floor); empty for the top level.',
+        doc: {
+          summary:
+            'The area of this facility the template’s top-level areas are created in; empty creates them at the facility’s top level.',
+        },
       },
-    },
-  }),
+    }),
+    { resource: AREA_RESOURCE, field: 'facility_id', value: ref('record', 'id') },
+  ),
 };
 
 /**
@@ -35,7 +41,8 @@ const applyTemplateFields = {
 export const applyTemplateFlow = {
   texts: {
     label: 'Apply template',
-    notify: 'Template applied: {{created}} areas created ({{topLevel}} at the top: {{names}}).',
+    // Count-neutral: a flow's notify reads no count family (tasks/ui/buro-gaps.md G23).
+    notify: 'Template applied. Areas created: {{created}}, at the top level: {{topLevel}} ({{names}}).',
     doc: {
       summary:
         'Creates the areas of a facility template in this facility, at the top level or inside a chosen area, in one step. Every area is created, even where one of the same name exists.',

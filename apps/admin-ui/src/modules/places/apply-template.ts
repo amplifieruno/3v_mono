@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { hasuraOperation, rootOf } from '../../data/operations';
 import { schema } from '../../data/schema';
 import { PLACES_BINDING } from './occupancy';
-import { AREA_RESOURCE } from '../../data/resource-names';
+import { AREA_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 
 export const applyFacilityTemplateInput = z.object({
   templateId: z.string().uuid(),
@@ -71,14 +71,19 @@ export const applyFacilityTemplateOperation = hasuraOperation(
 );
 
 /**
+ * What applying refreshes: every area read, and the facility (its area count and occupancy).
+ * Named, not imported: the facility page imports this.
+ */
+export const APPLY_TEMPLATE_EFFECTS = [{ resource: AREA_RESOURCE }, { resource: FACILITY_RESOURCE }];
+
+/**
  * Applies a facility template (the tracked SQL function `apply_facility_template`): every area
  * of the template is created, even where an area of the same name already exists. The new
- * areas refresh every area read.
+ * areas refresh every area read and the facility.
  */
 export const applyFacilityTemplate = defineMutation('itap:apply-facility-template', {
   binding: applyFacilityTemplateOperation.binding,
   input: schema(applyFacilityTemplateInput),
   output: schema(applyFacilityTemplateOutput),
-  // The area resource by name: the facility page (which imports this) is imported by `./area.ts`.
-  effects: [{ resource: AREA_RESOURCE }],
+  effects: APPLY_TEMPLATE_EFFECTS,
 });

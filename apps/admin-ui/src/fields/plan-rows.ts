@@ -7,6 +7,13 @@ import {
 } from './plan-geometry';
 
 /**
+ * The most areas (and floor plans) of one facility the plan-space reads take: the floor-plan
+ * block (`source.list` allows 100) and the plan inputs read the same first page, so both find
+ * the same plan for an area.
+ */
+export const PLAN_AREA_LIMIT = 100;
+
+/**
  * Rows of the plan-space resources as the plan inputs and the floor-plan block read them,
  * parsed from untyped list rows. The resources are read by name (`src/data/resource-names.ts`),
  * not imported, because the places module's resources import these fields.

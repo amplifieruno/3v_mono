@@ -5,6 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { ConsoleApp } from '../../src/app/app';
 import { facilityStorageKey } from '../../src/app/scope';
 import { checkFromArea } from '../../src/modules/places/access-point';
+import { issueText } from '../support/field-issues';
 import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/console-dom';
 
 /**
@@ -173,7 +174,7 @@ describe('access point form', () => {
   });
 
   it('should refuse leading from the area it leads into', async () => {
-    const check = (value: unknown, values: Record<string, unknown>) => checkFromArea(value, { values });
+    const check = (value: unknown, values: Record<string, unknown>) => issueText(checkFromArea(value, { values }));
     expect(check(LOBBY, { area_id: LOBBY })).toBe(
       'Choose another area than the one it leads into, or none.',
     );
@@ -251,7 +252,7 @@ describe('facility page: access points and templates', () => {
     await waitFor(() => expect(mutations()).toHaveLength(1));
     expect(mutations()[0]?.variables).toEqual({ template: TEMPLATE, facility: TOWER_F, parent: null });
     expect(
-      await screen.findByText('Template applied: 3 areas created (2 at the top: Lobby, Open Office).'),
+      await screen.findByText('Template applied. Areas created: 3, at the top level: 2 (Lobby, Open Office).'),
     ).toBeDefined();
   });
 });

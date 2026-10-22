@@ -1,16 +1,24 @@
 import { absent, defineBlock, prop, source } from '@burojs/core';
 import { z } from 'zod';
 import { resourceByName } from '../../data/resource-by-name';
-import { ACCESS_POINT_RESOURCE, AREA_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
+import {
+  ACCESS_POINT_RESOURCE,
+  AREA_RESOURCE,
+  FLOOR_PLAN_RESOURCE,
+} from '../../data/resource-names';
+import { PLAN_AREA_LIMIT } from '../../fields/plan-rows';
 
-/** The most areas the plan reads at once (`source.list` allows 100); the count says when more exist. */
-export const FLOOR_PLAN_AREA_LIMIT = 100;
+/**
+ * The most areas the plan reads at once, the same as the plan inputs (`PLAN_AREA_LIMIT`); the
+ * count says when more exist.
+ */
+export const FLOOR_PLAN_AREA_LIMIT = PLAN_AREA_LIMIT;
 
 /** The most access points the plan reads at once (`source.list` allows 100). */
 export const FLOOR_PLAN_ACCESS_POINT_LIMIT = 100;
 
 /** More floor plans than one facility holds; they decide which areas belong to which plan. */
-const FACILITY_PLANS_LIMIT = 100;
+const FACILITY_PLANS_LIMIT = PLAN_AREA_LIMIT;
 
 const facilityOf = (plans: unknown): string | null => {
   const rows = (plans as { readonly rows?: readonly Readonly<Record<string, unknown>>[] } | null)

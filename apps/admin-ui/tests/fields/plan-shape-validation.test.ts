@@ -103,7 +103,7 @@ describe('shape validation (mirrors itap.valid_shape)', () => {
   });
 
   it('should check the bounds the mounted input published, through the field validator', async () => {
-    const field = areaShape();
+    const field = areaShape({ areaField: 'parent_id', selfIsArea: true });
     const validate = checkAreaShape(field.meta.channel);
     const value = polygon([0, 0], [1300, 0], [10, 10]);
     // No input mounted: only the structure is checked (the database checks no bounds either).

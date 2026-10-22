@@ -30,13 +30,15 @@ export function CustomFieldsInput(
   const stored =
     props.record !== undefined && typeof fieldName === 'string' ? props.record[fieldName] : undefined;
 
+  // Republished only when what the validator reads changes (`state` is a new object per render).
+  const definitions = state.status === 'ready' ? state.definitions : undefined;
   React.useEffect(() => {
-    if (state.status !== 'ready') return undefined;
+    if (definitions === undefined) return undefined;
     return publishCustomFields(meta.entity, {
-      definitions: state.definitions,
+      definitions,
       ...(stored === undefined ? {} : { stored }),
     });
-  }, [state, meta.entity, stored]);
+  }, [definitions, meta.entity, stored]);
 
   if (state.status === 'pending') {
     return <span className="text-sm text-muted-foreground">{t('console.customFields.loading')}</span>;

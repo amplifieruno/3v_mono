@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { FLOOR_PLAN_AREA_LIMIT } from '../../src/blocks/floor-plan/floor-plan-block';
+import { areaShape } from '../../src/fields/area-shape';
 import {
   applyClick,
   applyDrag,
@@ -7,6 +9,7 @@ import {
 } from '../../src/fields/area-shape-edit';
 import { parseShape } from '../../src/fields/plan-geometry';
 import {
+  PLAN_AREA_LIMIT,
   type FloorPlanRow,
   areaChain,
   areasOnPlan,
@@ -222,5 +225,19 @@ describe('editing a shape', () => {
       ],
     });
     expect(removeLastPoint(removeLastPoint(two))).toBeNull();
+  });
+});
+
+describe('plan-space field options', () => {
+  it('should read as many areas in the floor-plan block as in the plan inputs', () => {
+    expect(FLOOR_PLAN_AREA_LIMIT).toBe(PLAN_AREA_LIMIT);
+  });
+
+  it('should look the record itself up as an area only when asked', () => {
+    expect(areaShape({ areaField: 'area_id' }).meta).toMatchObject({ areaField: 'area_id', selfIsArea: false });
+    expect(areaShape({ areaField: 'parent_id', selfIsArea: true }).meta).toMatchObject({
+      areaField: 'parent_id',
+      selfIsArea: true,
+    });
   });
 });

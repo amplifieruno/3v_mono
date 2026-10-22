@@ -6,7 +6,10 @@ import type { ImageSizeMeta } from './image-size-meta';
 import { idOf } from './plan-context';
 import { usePresignedUrl } from './presigned-url';
 
-/** The natural size of the image at `url` (the browser decodes it). */
+/**
+ * The natural size of the image at `url` (the browser decodes it); 0 × 0 for an image without
+ * a size of its own (an SVG without `width` and `height`).
+ */
 function naturalSize(url: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -32,7 +35,8 @@ const numberOf = (value: unknown): number | null =>
 
 /**
  * A number of pixels. Empty while the form holds an image, it takes the image's own size;
- * when the image's size differs, a button takes it over.
+ * when the image's size differs, a button takes it over. An image without a size of its own
+ * (an SVG without `width` and `height`) leaves it empty with a note to enter it.
  */
 export function ImageSizeInput(
   props: ScalarInputProps<unknown, ImageSizeMeta>,
@@ -52,7 +56,10 @@ export function ImageSizeInput(
   const t = useT();
   const fileId = idOf(form?.[meta.imageField]);
   const size = useImageSize(fileId);
-  const natural = size.data?.[meta.axis] ?? null;
+  // An image without a size of its own decodes at 0: no size to take, the user enters it.
+  const decoded = size.data?.[meta.axis] ?? null;
+  const sizeless = decoded !== null && decoded <= 0;
+  const natural = sizeless ? null : decoded;
   const current = numberOf(value);
   const locked = disabled === true || readOnly === true;
 
@@ -79,6 +86,9 @@ export function ImageSizeInput(
         }
         onBlur={onBlur}
       />
+      {sizeless && !locked ? (
+        <span className="text-sm text-muted-foreground">{t('console.imageSize.sizeless')}</span>
+      ) : null}
       {natural !== null && natural !== current && !locked ? (
         <div>
           <Button

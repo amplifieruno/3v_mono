@@ -8,10 +8,19 @@ import { newPlanChannel, planSizeFor } from './plan-size-registry';
 export const AREA_SHAPE_FIELD = 'itap.area-shape';
 
 export interface AreaShapeOptions {
-  /** The form field holding the area's facility (`facility_id`). */
+  /**
+   * The form field naming the area the shape is drawn from (an area's `parent_id`, a device's
+   * `area_id`); its floor plan, or its nearest enclosing area's, is the one to draw on.
+   */
+  readonly areaField: string;
+  /**
+   * The record is an area itself (`areas.shape`): its own floor plan comes before `areaField`'s,
+   * and its stored shape is not repeated among the faint shapes. Default `false` (a device's
+   * coverage).
+   */
+  readonly selfIsArea?: boolean;
+  /** The form field holding the record's facility (`facility_id`). */
   readonly facilityField?: string;
-  /** The form field holding the enclosing area (`parent_id`). */
-  readonly parentField?: string;
   readonly texts?: string | FieldTexts;
 }
 
@@ -24,12 +33,12 @@ export function checkAreaShape(channel: string): FieldValidator {
 }
 
 /**
- * An area's outline in floor-plan pixels, in a nullable `jsonb` column (`areas.shape`): a
- * polygon or a circle (`./plan-geometry.ts`). The input draws it over the floor plan the area
- * lies on (the plan of the area itself or of its nearest enclosing area that has one); the
- * display is a small preview of the outline.
+ * An outline in floor-plan pixels, in a nullable `jsonb` column (`areas.shape`,
+ * `devices.coverage`): a polygon or a circle (`./plan-geometry.ts`). The input draws it over
+ * the floor plan found from `areaField` (with `selfIsArea`, the record's own plan first): that
+ * area's plan or its nearest enclosing area's; the display is a small preview of the outline.
  */
-export function areaShape(opts: AreaShapeOptions = {}) {
+export function areaShape(opts: AreaShapeOptions) {
   const channel = newPlanChannel('areaShape');
   const jsonOpts: JsonFieldOpts = {
     nullable: true,
@@ -43,7 +52,8 @@ export function areaShape(opts: AreaShapeOptions = {}) {
     meta: {
       channel,
       facilityField: opts.facilityField ?? 'facility_id',
-      parentField: opts.parentField ?? 'parent_id',
+      areaField: opts.areaField,
+      selfIsArea: opts.selfIsArea ?? false,
     },
   };
 }

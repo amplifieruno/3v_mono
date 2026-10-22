@@ -1,11 +1,17 @@
 import { useList } from '@burojs/react';
 import * as React from 'react';
-import { type FloorPlanRow, type PlanAreaRow, areaChain, areasOnPlan, floorPlanOf, planAreaOf, planOfChain, rowsOf } from './plan-rows';
+import {
+  PLAN_AREA_LIMIT,
+  type FloorPlanRow,
+  type PlanAreaRow,
+  areaChain,
+  areasOnPlan,
+  floorPlanOf,
+  planAreaOf,
+  planOfChain,
+  rowsOf,
+} from './plan-rows';
 import { AREA_RESOURCE, FLOOR_PLAN_RESOURCE } from '../data/resource-names';
-
-/** More floor plans and areas than one facility holds; one page of each is read. */
-const PLANS_PAGE_SIZE = 100;
-const AREAS_PAGE_SIZE = 500;
 
 export type PlanContextState =
   | { readonly status: 'no-facility' }
@@ -30,7 +36,8 @@ export interface PlanContextInput {
 
 /**
  * The floor plan a place lies on, for the plan-space inputs: the facility's plans and areas
- * (two list reads, never narrowed by the facility picker), then the nearest plan outwards
+ * (two list reads of the first `PLAN_AREA_LIMIT` rows, never narrowed by the facility
+ * picker), then the nearest plan outwards
  * from the place (`planOfChain`).
  */
 export function usePlanContext({
@@ -43,13 +50,13 @@ export function usePlanContext({
   const plans = useList(FLOOR_PLAN_RESOURCE, {
     scope: 'none',
     filter: facilityFilter,
-    pagination: { kind: 'offset', page: 1, pageSize: PLANS_PAGE_SIZE },
+    pagination: { kind: 'offset', page: 1, pageSize: PLAN_AREA_LIMIT },
     enabled,
   });
   const areas = useList(AREA_RESOURCE, {
     scope: 'none',
     filter: facilityFilter,
-    pagination: { kind: 'offset', page: 1, pageSize: AREAS_PAGE_SIZE },
+    pagination: { kind: 'offset', page: 1, pageSize: PLAN_AREA_LIMIT },
     enabled,
   });
   const planRows = plans.data?.data;

@@ -17,7 +17,13 @@ import {
   NOVA_NAME,
   signInDev,
 } from '../support/dev-stack';
-import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE, AREA_RESOURCE, FACILITY_RESOURCE, FACILITY_TEMPLATE_RESOURCE } from '../../src/data/resource-names';
+import {
+  ACCESS_POINT_DEVICE_RESOURCE,
+  ACCESS_POINT_RESOURCE,
+  AREA_RESOURCE,
+  FACILITY_RESOURCE,
+  FACILITY_TEMPLATE_RESOURCE,
+} from '../../src/data/resource-names';
 
 /**
  * Access points, device bindings and facility templates against the dev stack (Nova Tower,
@@ -156,6 +162,8 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
     ).rejects.toMatchObject({ message: expect.stringMatching(/structure_valid|[Cc]heck constraint/) });
   });
 
+  // Pins today's doubling; when bd 3v_mono-62p makes apply_facility_template skip names that
+  // already exist under the same parent, this test changes to expect the second apply to skip.
   it('reports the created areas on each apply; the second apply doubles the tree', async () => {
     const first = await apply(null);
     expect(first).toEqual({ created: 3, top_level: 2, names: 'Elevator Lobby, Open Office' });

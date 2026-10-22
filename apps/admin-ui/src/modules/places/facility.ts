@@ -7,6 +7,7 @@ import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
 import { rangeValidator } from '../../fields/bounded-number';
 import { customFields } from '../../fields/custom-fields';
+import { type FieldProblem, problemValidator } from '../../fields/field-issue';
 import { timeWindows } from '../../fields/time-windows';
 import { timezone } from '../../fields/timezone';
 import { applyTemplateFlow } from './apply-template-flow';
@@ -14,10 +15,15 @@ import { areaTreeBlock } from './area-tree-block';
 import { FACILITY_OCCUPANCY_ROWS, facilityOccupancyNow } from './occupancy';
 
 /** `facilities_contact_is_object`: the contact details are a JSON object (`{}` for none). */
-const checkContact = (value: unknown): string | null =>
+export const contactProblem = (value: unknown): FieldProblem | null =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? null
-    : 'Enter a JSON object, such as {"phone": "+7 495 000-00-00", "email": "desk@example.com"}, or {} for none.';
+    : {
+        code: 'facility.contactNotObject',
+        text: 'Enter a JSON object, such as {"phone": "+7 495 000-00-00", "email": "desk@example.com"}, or {} for none.',
+      };
+
+export const checkContact = problemValidator(contactProblem);
 
 /** Columns of `itap.facilities` (and its two computed fields) the `org_admin` role reads; the module's `index.ts` mapping selects these. */
 export const facilityFields = {
@@ -131,7 +137,7 @@ export const facilityFields = {
       label: 'On site now',
       doc: {
         summary:
-          'People currently placed in an area of the facility, as the tracker last placed them; an identity counts once per area.',
+          'People currently placed in an area of the facility, as the tracker last placed them; each person counts once (a person is in one area of a facility at a time).',
       },
     },
   }),

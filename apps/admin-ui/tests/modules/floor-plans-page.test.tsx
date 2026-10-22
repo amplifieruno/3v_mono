@@ -164,6 +164,33 @@ describe('floor plan form', () => {
   });
 });
 
+describe('floor plan form: an image without a size of its own', () => {
+  /** An SVG without width and height: the browser decodes it at 0 × 0. */
+  class SizelessImage extends LoadedImage {
+    override naturalWidth = 0;
+    override naturalHeight = 0;
+  }
+
+  it('should leave the size empty and ask for it instead of taking 0', async () => {
+    vi.stubGlobal('Image', SizelessImage);
+    renderAt(`/floor-plans/create?prefill.facility_id=${TOWER_F}&prefill.area_id=${FLOOR}`);
+    const upload = await screen.findByRole('button', { name: /Upload/ });
+    await waitFor(() => expect(upload.hasAttribute('disabled')).toBe(false));
+    const file = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'plan.svg', {
+      type: 'image/svg+xml',
+    });
+    fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
+      target: { files: [file] },
+    });
+    const notes = await screen.findAllByText(
+      'The image has no size of its own (an SVG without width and height): enter its size in pixels.',
+    );
+    expect(notes.length).toBeGreaterThan(0);
+    expect((screen.getByRole('spinbutton', { name: /^Width/ }) as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('button', { name: /Use the image’s 0 px/ })).toBeNull();
+  });
+});
+
 describe('floor plan list', () => {
   it('should follow the sidebar facility picker', async () => {
     localStorage.setItem(facilityStorageKey(NOVA), DEPOT_F);

@@ -3,9 +3,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { templateNodesOf } from '../../src/fields/template-structure-format';
 import { HASURA_OPERATIONS } from '../../src/modules';
-import { summarizeApplied } from '../../src/modules/places/apply-template';
+import { APPLY_TEMPLATE_EFFECTS, summarizeApplied } from '../../src/modules/places/apply-template';
 import { overlappingNames } from '../../src/modules/places/template-overlap';
-import { FACILITY_RESOURCE } from '../../src/data/resource-names';
+import { AREA_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
 
 /**
  * The facility's "Apply template" flow without the UI: it sends `apply_facility_template` with
@@ -42,7 +42,7 @@ describe('apply template flow', () => {
       input: { templateId: TEMPLATE, facilityId: FACILITY, parentAreaId: FLOOR },
     });
     expect(flow.state.effects?.notify).toBe(
-      'Template applied: 5 areas created (4 at the top: Elevator Lobby, Open Office, Meeting Room, Kitchen).',
+      'Template applied. Areas created: 5, at the top level: 4 (Elevator Lobby, Open Office, Meeting Room, Kitchen).',
     );
   });
 
@@ -62,6 +62,17 @@ describe('apply template flow', () => {
     expect(input?.parentAreaId ?? null).toBeNull();
   });
 
+  it('should report a single created area without a wrong plural', async () => {
+    const flow = runFlow(app, target, {
+      user: ADMIN,
+      record: NOVA,
+      rows: { [FACILITY_RESOURCE]: [NOVA] },
+      mutations: { 'itap:apply-facility-template': [answer({ created: 1, top_level: 1, names: 'Lobby' })] },
+    });
+    await flow.fill({ template_id: TEMPLATE }).submit();
+    expect(flow.state.effects?.notify).toBe('Template applied. Areas created: 1, at the top level: 1 (Lobby).');
+  });
+
   it('should not submit without a template', async () => {
     const flow = runFlow(app, target, {
       user: ADMIN,
@@ -71,6 +82,10 @@ describe('apply template flow', () => {
     });
     await flow.fill({ parent_area_id: FLOOR }).submit();
     flow.assertNotSubmitted();
+  });
+
+  it('should refresh the area reads and the facility (its area count and occupancy)', () => {
+    expect(APPLY_TEMPLATE_EFFECTS).toEqual([{ resource: AREA_RESOURCE }, { resource: FACILITY_RESOURCE }]);
   });
 
   it('should map the function variables and count the created areas', () => {

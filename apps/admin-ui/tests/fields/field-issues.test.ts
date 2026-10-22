@@ -3,6 +3,8 @@ import { checkRange, rangeValidator } from '../../src/fields/bounded-number';
 import { problemIssue } from '../../src/fields/field-issue';
 import { checkStringList } from '../../src/fields/string-list';
 import { validateStringList } from '../../src/fields/string-list-format';
+import { checkFromArea, fromAreaProblem } from '../../src/modules/places/access-point';
+import { checkContact, contactProblem } from '../../src/modules/places/facility';
 import { expectTranslated, validatorResult } from '../support/field-issues';
 
 /**
@@ -52,5 +54,29 @@ describe('number range issues', () => {
     }
     expect(checkRange(30.5, ranges[0])?.text).toBe('Enter a whole number from 30 to 86400.');
     expect(checkRange(null, ranges[0])).toBeNull();
+  });
+});
+
+describe('places check issues', () => {
+  it('should refuse a contact that is not a JSON object with a translatable issue', async () => {
+    for (const value of [[], 'desk', null]) {
+      const problem = contactProblem(value);
+      expect(problem?.code, JSON.stringify(value)).toBe('facility.contactNotObject');
+      if (problem === null) continue;
+      expect(await validatorResult(checkContact, value)).toEqual(problemIssue(problem));
+      await expectTranslated(problem);
+    }
+    expect(contactProblem({})).toBeNull();
+  });
+
+  it('should refuse leading from the area it leads into with a translatable issue', async () => {
+    const problem = fromAreaProblem('a1', { area_id: 'a1' });
+    expect(problem?.code).toBe('accessPoint.sameArea');
+    if (problem !== null) {
+      expect(checkFromArea('a1', { values: { area_id: 'a1' } })).toEqual(problemIssue(problem));
+      await expectTranslated(problem);
+    }
+    expect(fromAreaProblem('a2', { area_id: 'a1' })).toBeNull();
+    expect(fromAreaProblem(null, { area_id: 'a1' })).toBeNull();
   });
 });

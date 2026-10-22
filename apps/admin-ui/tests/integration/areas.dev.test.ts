@@ -7,7 +7,13 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { isInsideArea } from '../../src/modules/places/area-tree';
-import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } from '../support/dev-stack';
+import {
+  ADMIN_EMAIL,
+  DEV_GRAPHQL,
+  DEV_STACK_ENABLED,
+  NOVA_NAME,
+  signInDev,
+} from '../support/dev-stack';
 import { AREA_RESOURCE, FACILITY_RESOURCE } from '../../src/data/resource-names';
 
 /**

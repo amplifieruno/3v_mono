@@ -115,6 +115,8 @@ export default {
     /** The image size field (`src/fields/image-size-impl.ts`). */
     imageSize: {
       use: 'Use the image’s {{size}} px',
+      sizeless:
+        'The image has no size of its own (an SVG without width and height): enter its size in pixels.',
     },
     organizations: {
       title: 'Choose an organization',
@@ -193,6 +195,13 @@ export default {
         childrenNotList: 'Area {{node}}: children must be a list of areas.',
         tooDeep: 'The structure is deeper than {{max}} levels.',
         tooMany: 'The structure has more than {{max}} areas.',
+      },
+      facility: {
+        contactNotObject:
+          'Enter a JSON object, such as {"phone": "+7 495 000-00-00", "email": "desk@example.com"}, or {} for none.',
+      },
+      accessPoint: {
+        sameArea: 'Choose another area than the one it leads into, or none.',
       },
       number: {
         range: 'Enter a number from {{min}} to {{max}}.',

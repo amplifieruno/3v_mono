@@ -47,11 +47,11 @@ export function AreaShapeInput(
     shape?.type === 'Circle' ? 'circle' : 'polygon',
   );
   const [dragging, setDragging] = React.useState<ShapeHandle | null>(null);
-  const selfId = idOf(record?.id);
+  const selfId = meta.selfIsArea ? idOf(record?.id) : null;
   const state = usePlanContext({
     facilityId: idOf(form?.[meta.facilityField]) ?? idOf(record?.[meta.facilityField]),
     selfId,
-    startId: idOf((form ?? record)?.[meta.parentField]),
+    startId: idOf((form ?? record)?.[meta.areaField]),
   });
   const plan = state.status === 'ready' ? state.plan : null;
   React.useEffect(

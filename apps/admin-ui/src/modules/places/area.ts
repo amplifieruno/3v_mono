@@ -111,6 +111,8 @@ export const areaFields = {
     },
   }),
   shape: areaShape({
+    areaField: 'parent_id',
+    selfIsArea: true,
     texts: {
       label: 'Shape',
       description: 'Drawn on the floor plan of this area, or of the nearest area it lies inside.',

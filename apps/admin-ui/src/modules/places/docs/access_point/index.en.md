@@ -13,8 +13,10 @@ control or sense it.
   the near side (empty when it leads in from outside). The two must differ, and
   both must belong to the access point's facility.
 - **Direction**: entry only, exit only, or both.
-- **Facility entry/exit**: marks a way into or out of the whole facility. A
-  visitor seen leaving through one ends their visit.
+- **Facility entry/exit**: marks a way into or out of the whole facility. When
+  a person's tracking session closes and their last sighting was at such an
+  access point, the session ends as *completed* (they left) rather than *lost*.
+  It does not check a visitor out and does not change occupancy.
 - **Face credential**: the door opens on a recognised face. A camera bound to
   the access point decides access by the access policies (with a short
   cooldown per person), and each decision is logged. The access point needs a
