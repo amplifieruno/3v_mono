@@ -1,14 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { createStorageClient } from '../../src/storage/storageClient.js';
-import { asAdmin, asOrgAdmin, asUser, orgAdminToken, testEnv, userToken } from './support/clients.js';
+import { asAdmin, asOrgAdmin, orgAdminToken, testEnv, userToken } from './support/clients.js';
 import { trackFile } from './support/registry.js';
 import { runSql } from './support/sql.js';
 import { createTestOrg, createTwoOrgs, expectDenied, expectSensitiveKindRefused, uploadFile } from './support/fixtures.js';
 
 const BUCKET = `query B($id: String!) { bucket(id: $id) { id } }`;
 const FILE = `query F($id: uuid!) { file(id: $id) { id bucketId metadata } }`;
-const FILE_NO_META = `query F($id: uuid!) { file(id: $id) { id bucketId } }`;
 const FILES_IN = `query FS($b: String!) { files(where: { bucketId: { _eq: $b } }) { id } }`;
 const FILES_META_IN = `query FM($b: String!) { files(where: { bucketId: { _eq: $b } }) { id metadata } }`;
 const UPDATE_FILE_META = `

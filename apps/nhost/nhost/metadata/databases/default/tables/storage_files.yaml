@@ -52,6 +52,9 @@ object_relationships:
   - name: bucket
     using:
       foreign_key_constraint_on: bucket_id
+# The sensitive kinds below (profile_document, dsr_export, auth_capture, export) must match
+# itap.sensitive_file_kinds() (migration 1792365700271_storage_sensitive_kind_guard), which the
+# trigger itap.storage_files_sensitive_kind_guard enforces on the upload path; change both together.
 insert_permissions:
   - role: org_admin
     permission:
@@ -119,6 +122,8 @@ insert_permissions:
         - size
       set:
         uploaded_by_user_id: x-hasura-User-Id
+# org_admin select hides the same sensitive kinds (itap.sensitive_file_kinds()) and shows the
+# owner-only kinds (search, bulk_input, bulk_search_result) to their uploader only.
 select_permissions:
   - role: org_admin
     permission:
