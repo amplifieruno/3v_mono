@@ -741,3 +741,34 @@ migration `1792365700277`.
   `when: equals(ref('workspace', 'slotN'), panel)` (16 conditional panels, one shown per slot).
 - **Expected from a framework:** a data-driven order for a container's keyed children (a `order` ref
   naming child keys), or a repeat node over a list source.
+
+### G47. The facts block cannot poll
+- **Need:** the operator workspace's Occupancy panel shows the facility's figures now
+  (`itap:workspace-occupancy-facts`) and must follow them while an operator keeps the page open.
+- **Framework (0.6.0):** `buro:facts` (`ui-shadcn/src/blocks/facts-view.tsx`) calls
+  `useCustomQuery(handle, input, { enabled })` with no other option, and its props
+  (`query`, `input`, `rows`, `view`, `title`, `missing`) carry no refetch interval; a resource list
+  has `refetchInterval`, a custom query placed in a page has nothing. **[code]**
+- **Workaround:** a small block `itap:occupancy-updated` placed under the facts reads the same
+  query with the same input and `refetchInterval: 15 s` and says when the figures were read; the
+  descriptors are equal, so both share one cache entry and the facts block re-renders with every
+  read (plan 05 final review I3).
+- **Expected from a framework:** a `refetchInterval` (or `poll`) prop on `buro:facts`, and the
+  "as of" time of the read shown by the block.
+
+### G48. A record form shows no server refusal text
+- **Need:** an incident saved with an assignee, or a handover with a recipient, who is no longer an
+  active member is refused by the database (`member_not_active:<column>`,
+  `itap.active_member_check`); the form should say so on that field.
+- **Framework (0.6.0):** a record form (create/edit page) reports a failed write through
+  `record-screen.tsx` `setSubmitError` and `frame-pieces.tsx` `failureText`, which shows a friendly
+  title for known transport messages and otherwise `errors.failed` ("Validation failed"); a
+  `validation` error's `details.issues` reach the form only in a flow
+  (`flows/machine.ts` `serverFormIssues`). A provider wrapper that turned the refusal into a
+  `validation` error with an issue on the field was tried (plan 05 final review D2): the page still
+  showed "Validation failed". **[code]**
+- **Workaround:** the functions' refusal maps (flows) carry `member_not_active`
+  (`MEMBER_NOT_ACTIVE_REFUSAL`, `src/data/sql-refusals.ts`); the record forms keep the generic
+  message, and the fields' `doc.summary` say an active member is required.
+- **Expected from a framework:** a record form that places a write's `validation` issues on their
+  fields (or form-level with their text), as flows do.

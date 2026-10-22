@@ -1,6 +1,6 @@
 # Summary — phase 5: Monitoring
 
-Plan: `plan-05-monitoring.md`. Spec: `design.md`. Framework gaps: `buro-gaps.md` (G38–G46).
+Plan: `plan-05-monitoring.md`. Spec: `design.md`. Framework gaps: `buro-gaps.md` (G38–G48).
 Branch `feat/ui-console`, base `d168f5b`: realtime hub `ad2c300`, detections/tracking/occupancy
 `49996a5` + review fixes `cb31888`, events and event rules `98565aa`, incidents `0c20a88`, watch lists,
 handovers and workspace `4e411e9`, review follow-ups `625a634`, the monitoring smoke suite and this
@@ -85,7 +85,27 @@ Tracking sessions, Locations, Who is where, Watch lists, Watch-list entries, Eve
   finished uploading and sent nothing (60 s timeout); it now waits for the upload, with a longer test
   timeout for up to three face analyses.
 
-## Framework gaps met (G38–G46)
+## Final review fixes
+
+- **C1** the admin-ui and backend images copy `patches/` before `pnpm install` (the root
+  `pnpm.patchedDependencies` needs it; every image build failed with ENOENT).
+- **I2** the workspace e2e no longer turns recognition on for a seeded camera (real faces made
+  unknown identities in the dev database): it adds an inactive camera of its own on a stream id the
+  stream server does not have and deletes it in the sweep.
+- **I3** the workspace's Occupancy panel reads its figures again every 15 seconds and says when
+  (block `itap:occupancy-updated`, sharing the facts block's query cache; G47).
+- **M4** events and incidents without a facility stay listed when a facility is picked
+  (`empty: 'shared'`). **M5** a moved or kept panel keeps its stored object and settings; the events
+  panel lists the severities its workspace names (seeded: medium and above), else critical; the
+  panel is now titled "Latest events". **M6** the detection hub keeps its socket 1 s after the last
+  view (a page swapping its views). **M8** migration `1792365700278`: the "me" computed fields
+  compare through `itap.session_user_id`. **M10** the live wall reads its camera list every 15 s.
+- **D1** the dwell time is whole minutes, 1 or more (validator and input agree). **D2** the
+  incident and handover functions' refusal maps carry `member_not_active`; resource writes cannot
+  show it (G48). **D3** the "Add open incidents" lost-answer check no longer reads "applied" when no
+  incident is being handled.
+
+## Framework gaps met (G38–G48)
 
 - G38 cursor lists stay empty under React StrictMode (patched).
 - G39 a related list cannot order its own rows.
@@ -96,6 +116,9 @@ Tracking sessions, Locations, Who is where, Watch lists, Watch-list entries, Eve
 - G44 a saved view cannot filter by the signed-in user (computed column).
 - G45 record types cannot discriminate on which of two columns is set.
 - G46 a page cannot order its nodes from data (slot query).
+- G47 the facts block cannot poll (a sibling block polls the same query).
+- G48 a record form shows no server refusal text (`member_not_active` on an assignee or recipient
+  reads "Validation failed").
 
 ## bd issues filed this phase
 
@@ -106,27 +129,43 @@ Tracking sessions, Locations, Who is where, Watch lists, Watch-list entries, Eve
 
 ## Deferred minors (from the reviews)
 
-- Leave-while-joining in the hub; profile Detections tab performance (no index on the computed
-  profile path); the identities dev test is polluted by camera identities of recognition runs.
-- Incident `rule_id` filter is a regex over `dedup_key` without an index (known limit).
-- Dwell input step against the fractional validator; segment scope comment in event rules.
-- `member_not_active` refusals are unmapped on handovers; "nobody yet" fallback wording on
-  acknowledgement.
+- Leave-while-joining in the hub; segment scope comment in event rules; "nobody yet" fallback
+  wording on acknowledgement.
 - "Add open incidents" does not filter by facility.
 - A note's files "+ Create" shows for non-authors and the database refuses the write.
 - Event rule test/replay: no function (bd 427).
 
 ## Known limits
 
-- **Leftovers of the smoke suite.** None intended. Setup creates an incident and a handover and the
-  sweep deletes them with `GRAPHQL_ADMIN_SECRET` (an `org_admin` cannot delete either); the event
-  rule is put back by publishing its first version again and deleting the version the run made; the
-  watch-list entry is removed through the UI (and by the sweep if a step failed); the workspace
-  layout and the camera's recognition flag are restored. A run that dies before its sweep leaves an
-  `e2e-<timestamp>` incident or handover, a draft version of the first unusual-dwell rule, or a
-  camera with recognition on; clean them by hand.
-- Switching a camera's recognition on makes the backend manager open a session within 10 s; the
-  workspace test turns it off again at the end.
+- **Computed columns scan.** `detections.profile_id` / `person_erased` (migration 274) are SQL
+  functions over the identity and profile of each row: filtering a person's detections by them reads
+  about 140–180 ms at 23k detections on the dev stack (no index on the computed path). The
+  incidents' `rule_id` (migration 275) is a regex over `dedup_key`, also without an index. Fine for
+  the demo; a real deployment would store the columns (trigger-maintained) and index them.
+- **Camera identities from earlier test runs.** Before the I2 fix the workspace e2e (and earlier
+  manual recognition runs) switched recognition on for seeded cameras; the dev database holds about
+  70 `source = camera`, `unverified` identities created on 2026-10-22 (Loading Dock and Lobby
+  cameras). They are referenced by their detections, tracking sessions and events, and some may come
+  from the owner's own demo runs, so they were left in place (no safe criterion tells test runs
+  apart). `lifecycle_jobs` archives unknown identities over time; `pnpm seed --reset` removes them.
+  To list them: `select i.code, i.created_at from itap.identities i where i.source = 'camera' and
+  i.profile_id is null and i.created_at >= '2026-10-22'`.
+- **Erased person on a detection.** The dev seed has no erased person with detections (a full
+  erasure deletes the identities; only an erasure under a legal hold keeps them), so the console's
+  "erased" display is covered by the jsdom test and the SQL half by the backend integration test
+  `detection-person-fields.test.ts` in a disposable organization; the dev-stack suite does not
+  tombstone a seeded profile (irreversible).
+- **Member refusals on record forms (G48).** Saving an incident with an assignee, or a handover
+  with a recipient, who is no longer an active member shows "Validation failed" without the reason.
+- **Leftovers of the smoke suite.** None intended. Setup creates an incident, a handover and a
+  camera, and the sweep deletes them with `GRAPHQL_ADMIN_SECRET` (an `org_admin` cannot delete an
+  incident or a handover); the event rule is put back by publishing its first version again and
+  deleting the version the run made; the watch-list entry is removed through the UI (and by the
+  sweep if a step failed); the workspace layout is restored. A run that dies before its sweep leaves
+  an `e2e-<timestamp>` incident, handover or camera, or a draft version of the first unusual-dwell
+  rule; clean them by hand.
+- The workspace test's camera is `inactive` on a stream id the stream server lacks: the recognition
+  manager and the health check skip it, so it detects nothing and writes no health rows.
 
 ## Gates
 
