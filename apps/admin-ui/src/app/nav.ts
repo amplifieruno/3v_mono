@@ -30,6 +30,7 @@ export const NAV_ICONS = {
   preferences: 'UserCog',
   facilities: 'Building',
   areas: 'Layers',
+  floorPlans: 'Map',
 } as const;
 
 /**

@@ -55,8 +55,20 @@ person who stays in it that long raises a **loitering** event. The check runs
 every minute, so an event may come up to a minute after the threshold. Empty
 means no loitering check.
 
+## Shape and floor plan
+
+An area's **Shape** is its outline on a floor plan: a polygon or a circle,
+drawn in the form over the plan the area lies on (its own plan, else the plan
+of the nearest area it lies inside). A virtual zone is only its shape. See
+*Floor plans and area shapes* for drawing. An area that carries a floor plan
+shows it on a **Floor plan** tab, with the shapes of the areas inside it.
+
+## Sub-areas
+
+The **Sub-areas** tab lists the areas directly inside this one.
+
 ## Status and deleting
 
 **Active**, **Under maintenance** or **Inactive** (kept for its history). An
-area that still has areas inside it, devices, access points or a floor plan
-cannot be deleted; set it **Inactive** instead.
+area that still has areas inside it, devices or access points cannot be
+deleted; set it **Inactive** instead. Deleting an area deletes its floor plan.

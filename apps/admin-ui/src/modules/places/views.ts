@@ -1,4 +1,5 @@
 import { implementBlock } from '@burojs/react';
+import { floorPlanView } from '../../blocks/floor-plan/views';
 import { areaParentGuardBlock } from './area-parent-guard-block';
 import { AreaParentGuardView } from './area-parent-guard-view';
 import { areaTreeBlock } from './area-tree-block';
@@ -11,4 +12,5 @@ export const placesViews = [
   implementBlock(areaTreeBlock, { component: AreaTreeView }),
   implementBlock(areaParentGuardBlock, { component: AreaParentGuardView }),
   implementBlock(placesPlaceholderBlock, { component: PlacesPlaceholderView }),
+  floorPlanView,
 ] as const;

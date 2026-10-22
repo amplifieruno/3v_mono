@@ -76,6 +76,40 @@ export default {
       removedNote: 'This attribute no longer exists; remove the value to save.',
       remove: 'Remove the value of {{key}}',
     },
+    /** The floor plan under the plan-space inputs (`src/fields/plan-canvas.tsx`). */
+    planCanvas: {
+      'no-facility': 'Choose the facility first; the floor plan comes from it.',
+      pending: 'Loading the floor plan…',
+      error: 'The floor plan could not be loaded; the value is kept as it is.',
+      none: 'No floor plan covers this place yet. Add a floor plan to its floor (or an enclosing area) under Floor plans, then draw here.',
+      imageFailed: 'The floor plan image could not be loaded; the outline is drawn on a blank sheet.',
+    },
+    /** The area shape field (`src/fields/area-shape-impl.ts`). */
+    areaShape: {
+      tools: 'Shape tools',
+      polygon: 'Polygon',
+      circleMode: 'Circle',
+      undo: 'Remove last point',
+      clear: 'Clear shape',
+      canvas: 'Area shape on the floor plan {{plan}}',
+      hintPolygon: 'Click on the plan to add the outline points, in order.',
+      hintCircle: 'Click on the plan to place the centre, then click again to set the radius.',
+      points: 'Polygon, {{count}} points',
+      circle: 'Circle, radius {{radius}} px',
+      point: 'Point {{index}} (drag to move)',
+      center: 'Centre (drag to move)',
+    },
+    /** The plan position field (`src/fields/plan-position-impl.ts`). */
+    planPosition: {
+      canvas: 'Position on the floor plan {{plan}}',
+      hint: 'Click on the plan to place the point.',
+      at: 'x {{x}}, y {{y}} px',
+      clear: 'Clear position',
+    },
+    /** The image size field (`src/fields/image-size-impl.ts`). */
+    imageSize: {
+      use: 'Use the image’s {{size}} px',
+    },
     organizations: {
       title: 'Choose an organization',
       description: 'You are a member of several organizations. You can switch later from the sidebar.',
@@ -122,6 +156,21 @@ export default {
         notBoolean: '{{label}}: choose yes or no.',
         notDate: '{{label}}: enter a date as YYYY-MM-DD.',
         notOption: '{{label}}: pick one of the options.',
+      },
+      areaShape: {
+        notShape: 'A shape must be a polygon or a circle.',
+        unexpectedKeys: 'The shape has unexpected keys ({{keys}}).',
+        badCenter: 'A circle needs a centre point [x, y].',
+        badRadius: 'A circle needs a radius greater than 0.',
+        badPoint: 'Point {{index}} is not a pair of numbers.',
+        tooFewPoints: 'A shape needs at least 3 different points; add more points or clear the shape.',
+        outside: 'Point {{index}} ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
+        centerOutside:
+          'The circle’s centre ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
+      },
+      planPosition: {
+        notPoint: 'A position must be a point [x, y].',
+        outside: 'The position ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
       },
       number: {
         range: 'Enter a number from {{min}} to {{max}}.',

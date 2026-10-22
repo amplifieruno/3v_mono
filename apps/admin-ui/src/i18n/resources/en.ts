@@ -29,4 +29,7 @@ export default {
   area: {
     doc: { topics: { index: 'Areas and the area tree' } },
   },
+  floor_plan: {
+    doc: { topics: { index: 'Floor plans and area shapes' } },
+  },
 } satisfies TranslationBundle;

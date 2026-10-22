@@ -1,10 +1,9 @@
 import { type FieldPresentation, useCustomMutation, useT } from '@burojs/react';
 import { Button, cn } from '@burojs/ui-shadcn';
-import { useQuery } from '@tanstack/react-query';
 import { ExternalLink, FileLock } from 'lucide-react';
 import type * as React from 'react';
 import { openFile } from './open-file';
-import { presignStorageFile, useStorageTarget } from './storage-client';
+import { usePresignedUrl } from './presigned-url';
 import type { StorageFileMeta } from './storage-file-meta';
 
 export interface StorageFileViewProps {
@@ -12,9 +11,6 @@ export interface StorageFileViewProps {
   readonly meta: StorageFileMeta;
   readonly presentation: FieldPresentation;
 }
-
-/** A presigned URL is valid for its lifetime; refetch it a little before it ends. */
-const PRESIGN_MARGIN_MS = 10_000;
 
 const isImageField = (meta: StorageFileMeta): boolean => meta.accept?.trim().startsWith('image/') ?? false;
 
@@ -44,13 +40,7 @@ function SensitiveFile({ fileId }: { readonly fileId: string }): React.ReactElem
 /** A non-sensitive file through its storage presigned URL: an image preview or a link. */
 function PresignedFile({ fileId, meta, presentation }: StorageFileViewProps): React.ReactElement {
   const t = useT();
-  const target = useStorageTarget();
-  const presigned = useQuery({
-    queryKey: ['itap', 'storage-presign', fileId],
-    queryFn: () => presignStorageFile(fileId, target),
-    staleTime: (query) =>
-      query.state.data ? Math.max(0, query.state.data.expiresAt - Date.now() - PRESIGN_MARGIN_MS) : 0,
-  });
+  const presigned = usePresignedUrl(fileId);
   if (presigned.isError) return <span className="text-sm text-destructive">{t('console.storageFile.openFailed')}</span>;
   const url = presigned.data?.url;
   if (isImageField(meta)) {

@@ -15,8 +15,9 @@ import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, signInDev } fro
  * Areas of a facility created for the test in Nova Tower, through the console's provider as
  * `org_admin`: the facility read scope (what the sidebar picker sets) narrows the area list to
  * one facility and an empty selection lists all (Review Focus 1); moving an area under its own
- * sub-area is refused by the database's cycle guard (Review Focus 2), and the path the console's
- * form check reads marks that sub-area as inside the moved one. Everything created is deleted.
+ * sub-area is refused by the database's cycle guard (Review Focus 2), and the path the area
+ * form's advisory parent guard block (`itap:area-parent-guard`) reads marks that sub-area as
+ * inside the moved one. Everything created is deleted.
  */
 
 const IDENTITY = {
@@ -123,7 +124,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('areas against the dev stack (Nova Tower)', 
     const leaf = await createArea(`Leaf ${stamp}`, String(middle.id));
     expect(leaf).toMatchObject({ depth: 2, path: [top.id, middle.id, leaf.id] });
 
-    // What the form's parent check reads: the chosen parent's path holds the moved area.
+    // What the advisory area-parent-guard block reads: the chosen parent's path holds the moved area.
     expect(isInsideArea(leaf.path, String(top.id))).toBe(true);
     await expect(
       mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, input: { parent_id: leaf.id } }),

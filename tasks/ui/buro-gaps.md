@@ -211,24 +211,44 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   values) and a way for a field implementation to declare an async validator with access to the
   data runtime, or to report issues from its input.
 
-### G18. A check on a record form cannot see which record is being edited
+### G18. A form check cannot test the chosen value against a list read for it
 - **Need:** the area form refuses, on the "Inside" field and before any request, a parent that
   is the area itself or one of its own sub-areas (the database refuses it with `area_cycle`):
   the check must compare the chosen parent's `path` with the edited area's id.
 - **Framework (0.6.0):** on the `create`/`edit` surfaces a check's `CheckDI` has `values` and
   `saved`, which hold only the fields the user may edit (`id`, `path` and other system fields are
   dropped from the form state), and `record` is populated on the action and delete surfaces only
-  (`docs/checks-guide.md` §5). A portable check may read `record` (the same saved values) and the
-  screen's `with` sources, but has no membership test against a source list (`in` takes literals
-  only). A relation's `candidates` cannot exclude a subtree either (no array operator; a `record`
-  ref offers nothing on create). A server refusal never reaches the field (G14): Hasura answers
-  the trigger's `check_violation` as `permission-error` "Check constraint violation. area_cycle",
-  the form shows its generic alert. **[run]** (`tests/integration/areas.dev.test.ts`; message
-  measured with a direct `org_admin` request).
+  (`docs/checks-guide.md` §5). The edited id itself is reachable: a `with` source keyed by
+  `ref('route', 'id')` (the edit route's record id) can expose it, and the area's own row with it,
+  to a portable check. The real limits are elsewhere: a `with` source may not be keyed by `values`
+  (`source.values-input`), so nothing can read the chosen parent's row (its `path`) as the user
+  picks it, and the portable grammar has no membership operator against a list or array (`in`
+  takes literals only; the Hasura provider offers no array `contains` either). A relation's
+  `candidates` cannot exclude a subtree for the same reason. A server refusal never reaches the
+  field (G14): Hasura answers the trigger's `check_violation` as `permission-error` "Check
+  constraint violation. area_cycle", the form shows its generic alert. **[run]**
+  (`tests/integration/areas.dev.test.ts`; message measured with a direct `org_admin` request).
 - **Workaround:** block `itap:area-parent-guard` (`src/modules/places/area-parent-guard-*`)
   placed under the field in the area form: its props default to `ref('record', 'id')` and
   `ref('values', 'parent_id')`, it reads the chosen parent and says at once when its path holds
   the area. It does not block Save; the database guard refuses the write. Tested in
   `tests/modules/areas-page.test.tsx`.
-- **Expected from a framework:** the record being edited (or at least its id) in a form check's
-  context, or a check `anchor` result fed from a server refusal (G14).
+- **Expected from a framework:** a source keyed by form values (debounced) or a membership
+  operator (`contains` on an array field, `in` against a source list) in the portable grammar and
+  the Hasura provider, or a check `anchor` result fed from a server refusal (G14).
+
+### G19. A field input cannot set another field of the form
+- **Need:** a floor plan's `width_px` / `height_px` are filled from the uploaded image when empty;
+  the upload happens in the `image_file_id` input.
+- **Framework (0.6.0):** a field input gets `onChange` for its own value only; `form` (the live
+  values) is read-only, and no block or hook placed in a form can write values (no `setValue` in
+  the form context). **[code]** (`packages/react/src/fields/types.ts`, `forms/controller`).
+- **Workaround:** each size field has its own input (`imageSize({ axis, imageField })`,
+  `src/fields/image-size*.ts`) that reads the image named by `form[imageField]`, loads its natural
+  size and writes its own value when empty, or offers to take the image's size when it differs.
+  Tested in `tests/modules/floor-plans-page.test.tsx`.
+- **Expected from a framework:** a declared derivation (`derive: { from: ['image_file_id'], ... }`)
+  or a form-scoped `setValue` for a field implementation.
+- **Related (G17 again):** the plan-space fields (`areaShape()`, `planPosition()`) keep points on
+  the floor-plan image; the size comes from the plan the input resolved, so the input publishes it
+  per field channel (`src/fields/plan-size-registry.ts`) for the validator.

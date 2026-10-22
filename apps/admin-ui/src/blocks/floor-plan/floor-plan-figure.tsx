@@ -1,0 +1,100 @@
+import type * as React from 'react';
+import { PlanCanvas } from '../../fields/plan-canvas';
+import { shapeLabelPoint } from '../../fields/plan-geometry';
+import type { FloorPlanRow, PlanAccessPointRow, PlanAreaRow } from '../../fields/plan-rows';
+import { PlanShapeOutline } from '../../fields/plan-shape-outline';
+import { type FloorPlanT, isOverCapacity, occupancyText } from './floor-plan-occupancy';
+import { accessLevelStyle, accessPointIcon } from './floor-plan-style';
+
+export interface FloorPlanFigureProps {
+  readonly plan: FloorPlanRow;
+  /** The areas with a shape on this plan, outer ones first (path order). */
+  readonly areas: readonly PlanAreaRow[];
+  readonly accessPoints: readonly PlanAccessPointRow[];
+  readonly t: FloorPlanT;
+}
+
+/**
+ * The plan's image with its areas' shapes (outer ones under inner ones, coloured by access
+ * level, outlined red when over capacity), each labelled with its name and occupancy, and
+ * the access points as icons at their positions.
+ */
+export function FloorPlanFigure({
+  plan,
+  areas,
+  accessPoints,
+  t,
+}: FloorPlanFigureProps): React.ReactElement {
+  const unit = Math.max(plan.size.width, plan.size.height);
+  const font = unit / 70;
+  const icon = unit / 45;
+  return (
+    <PlanCanvas
+      size={plan.size}
+      imageFileId={plan.image_file_id}
+      label={t('drawing', { params: { name: plan.name } })}
+      testId="floor-plan-drawing"
+    >
+      {areas.map((area) =>
+        area.shape ? (
+          <PlanShapeOutline
+            key={area.id}
+            shape={area.shape}
+            title={`${area.name}: ${occupancyText(area, t)}`}
+            className={`${accessLevelStyle(area.access_level).shape} ${isOverCapacity(area) ? 'stroke-destructive stroke-[3]' : 'stroke-2'}`}
+          />
+        ) : null,
+      )}
+      {areas.map((area) => {
+        if (!area.shape || area.id === plan.area_id) return null;
+        const [x, y] = shapeLabelPoint(area.shape);
+        return (
+          <text
+            key={area.id}
+            x={x}
+            y={y}
+            fontSize={font}
+            textAnchor="middle"
+            data-testid={`floor-plan-label:${area.id}`}
+            className="pointer-events-none fill-foreground stroke-background font-medium [paint-order:stroke]"
+            strokeWidth={font / 4}
+          >
+            <tspan x={x}>{area.name}</tspan>
+            <tspan
+              x={x}
+              dy={font * 1.2}
+              className={isOverCapacity(area) ? 'fill-destructive' : undefined}
+            >
+              {occupancyText(area, t)}
+            </tspan>
+          </text>
+        );
+      })}
+      {accessPoints.map((point) => {
+        if (!point.position) return null;
+        const Icon = accessPointIcon(point.kind);
+        const [x, y] = point.position;
+        return (
+          <g key={point.id} data-testid={`floor-plan-access-point:${point.id}`}>
+            <title>{point.name}</title>
+            <circle
+              cx={x}
+              cy={y}
+              r={icon * 0.75}
+              className="fill-background stroke-primary stroke-2"
+              vectorEffect="non-scaling-stroke"
+            />
+            <Icon
+              x={x - icon / 2}
+              y={y - icon / 2}
+              width={icon}
+              height={icon}
+              className="text-primary"
+              aria-hidden
+            />
+          </g>
+        );
+      })}
+    </PlanCanvas>
+  );
+}

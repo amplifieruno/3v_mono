@@ -65,6 +65,7 @@ export function AreaTreeRow({
         {area.capacity === null
           ? t('occupancyOnly', { params: { occupancy } })
           : t('occupancy', { params: { occupancy, capacity: area.capacity } })}
+        {over ? <span className="sr-only"> {t('overCapacity')}</span> : null}
       </span>
       <Button asChild variant="ghost" size="icon" className="size-6">
         <Link href={addInsideHref} aria-label={t('addInside', name)} title={t('addInside', name)}>

@@ -1,4 +1,4 @@
-import { defineResource, ref } from '@burojs/core';
+import { defineResource, ref, relatedList, source } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { enumField } from '../../enums/field';
@@ -10,7 +10,11 @@ import {
   AREA_TYPES,
   AREA_TYPE_ENUM,
 } from '../../enums/places';
+import { floorPlanBlock } from '../../blocks/floor-plan/floor-plan-block';
+import { resourceByName } from '../../data/resource-by-name';
+import { areaShape } from '../../fields/area-shape';
 import { rangeValidator } from '../../fields/bounded-number';
+import { FLOOR_PLAN_RESOURCE } from '../../fields/plan-rows';
 import { areaParentGuardBlock } from './area-parent-guard-block';
 import { FACILITY_RESOURCE } from './facility';
 
@@ -18,8 +22,7 @@ export const AREA_RESOURCE = 'area';
 
 /**
  * Columns of `itap.areas` (and its computed `current_occupancy`) the `org_admin` role reads;
- * the module's `index.ts` mapping selects these. `shape` (floor-plan geometry) joins with the
- * floor plans.
+ * the module's `index.ts` mapping selects these.
  */
 export const areaFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
@@ -110,6 +113,16 @@ export const areaFields = {
       },
     },
   }),
+  shape: areaShape({
+    texts: {
+      label: 'Shape',
+      description: 'Drawn on the floor plan of this area, or of the nearest area it lies inside.',
+      doc: {
+        summary:
+          'The area’s outline on its floor plan, a polygon or a circle in the plan’s pixels, shown on the floor plan with the area’s occupancy; a virtual zone (a geofence) is only its shape. An area with a floor plan of its own is drawn on that plan, any other area on the plan of the nearest area it lies inside. Every point must lie on the plan image.',
+      },
+    },
+  }),
   path: f.json({
     system: true,
     in: [],
@@ -179,12 +192,52 @@ export const area = defineResource(AREA_RESOURCE, {
       filters: { fields: ['area_type', 'access_level', 'status', 'facility_id'] },
     },
     show: {
+      with: {
+        // The plan this area carries itself (a floor, a parking level), if any.
+        plan: source.list(resourceByName(FLOOR_PLAN_RESOURCE), {
+          where: [{ field: 'area_id', op: 'eq', value: ref('record', 'id') }],
+          limit: 1,
+          count: true,
+        }),
+      },
       header: (l) => [l.grid(['area_type', 'access_level', 'status'])],
       body: (l) => [
-        l.grid(['name', 'facility_id', 'parent_id']),
-        l.grid(['capacity', 'current_occupancy', 'loitering_threshold_seconds']),
-        'description',
-        l.grid(['depth', 'created_at', 'updated_at']),
+        l.tabs(
+          [
+            l.panel(
+              [
+                l.grid(['name', 'facility_id', 'parent_id']),
+                l.grid(['capacity', 'current_occupancy', 'loitering_threshold_seconds']),
+                'description',
+                'shape',
+                l.grid(['depth', 'created_at', 'updated_at']),
+              ],
+              { key: 'details', texts: 'Details' },
+            ),
+            l.panel(
+              [l.place(floorPlanBlock, { key: 'floor-plan', props: { areaId: l.ref('record', 'id') } })],
+              {
+                key: 'floor_plan',
+                texts: 'Floor plan',
+                when: l.compare(l.ref('plan', 'total'), 'gt', 0),
+              },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(AREA_RESOURCE)), {
+                  key: 'sub-areas',
+                  props: {
+                    where: [{ field: 'parent_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['name', 'area_type', 'access_level', 'status', 'capacity', 'current_occupancy'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'sub_areas', texts: 'Sub-areas' },
+            ),
+          ],
+          { key: 'sections' },
+        ),
       ],
     },
     edit: {
@@ -195,6 +248,7 @@ export const area = defineResource(AREA_RESOURCE, {
         l.grid(['access_level', 'status']),
         l.grid(['capacity', 'loitering_threshold_seconds']),
         'description',
+        'shape',
       ],
     },
   },
