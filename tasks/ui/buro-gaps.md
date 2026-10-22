@@ -171,3 +171,12 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** the record form runs the field's declared constraints, with
   range-aware default messages; a provider hook mapping a server refusal (constraint name) to a
   field issue, rendered on the field as flows already do.
+
+### G15. The list search box names only the first search field
+- **Need:** the companies list searches name, contact email and cost center; the box should say so.
+- **Framework (0.6.0):** `filter-region.tsx` builds the placeholder from the first visible field of
+  `views.list.search.fields` only ("Search by Name…"); a resolver gets the generic "Search". There
+  is no per-list placeholder text. **[run]** seen in the browser on `/companies`.
+- **Workaround:** none in code; the companies article says what the search box looks in.
+- **Expected from a framework:** a placeholder naming every searched field ("Search by name,
+  contact email, cost center…") or a `texts` slot for the list's search placeholder.

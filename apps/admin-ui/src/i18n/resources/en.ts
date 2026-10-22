@@ -14,4 +14,10 @@ export default {
   organization_settings: {
     doc: { topics: { index: 'Organization settings' } },
   },
+  company: {
+    doc: { topics: { index: 'Companies' } },
+  },
+  work_schedule: {
+    doc: { topics: { index: 'Work schedules and time windows' } },
+  },
 } satisfies TranslationBundle;

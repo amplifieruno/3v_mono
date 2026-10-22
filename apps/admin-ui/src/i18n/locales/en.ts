@@ -19,7 +19,7 @@ export default {
       title: 'Could not load your organizations',
       body: 'The server could not be reached. Check the connection and try again.',
     },
-    /** The storage file field (`src/fields/storage-file-impl.tsx`). */
+    /** The storage file field (`src/fields/storage-file-impl.ts`). */
     storageFile: {
       upload: 'Upload',
       replace: 'Replace',
@@ -33,6 +33,28 @@ export default {
       refused: 'Storage refused the file ({{status}}). {{message}}',
       failed: 'The upload failed. Check the connection and try again.',
       openFailed: 'The file could not be opened.',
+    },
+    /** The time zone field (`src/fields/timezone-impl.ts`). */
+    timezone: {
+      placeholder: 'Select a time zone…',
+      search: 'Search time zones',
+      empty: 'No time zone matches.',
+      unknown: 'Unknown time zone',
+    },
+    /** The time window field (`src/fields/time-windows-impl.ts`). */
+    timeWindows: {
+      add: 'Add window',
+      remove: 'Remove window {{index}}',
+      window: 'Window {{index}}',
+      days: 'Days of window {{index}}',
+      from: 'From',
+      to: 'To',
+      timeHint: 'HH:MM',
+      overnight: 'overnight',
+      endsNextDay: 'Ends the next day',
+      daily: 'Daily',
+      none: 'No windows',
+      invalid: 'Contains an invalid window',
     },
     organizations: {
       title: 'Choose an organization',

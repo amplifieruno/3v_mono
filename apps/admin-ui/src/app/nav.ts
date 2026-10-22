@@ -24,6 +24,8 @@ export const NAV_ICONS = {
   invite: 'UserPlus',
   revoke: 'Ban',
   settings: 'Settings',
+  companies: 'Briefcase',
+  workSchedules: 'CalendarClock',
 } as const;
 
 /**

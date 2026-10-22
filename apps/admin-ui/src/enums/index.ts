@@ -1,4 +1,5 @@
 import type { EnumDef } from '@burojs/core';
+import { companyKindEnum, companyStatusEnum, ORGANIZATION_ENUM_TABLES } from './organization';
 import { facilityStatusEnum, PLACES_ENUM_TABLES } from './places';
 import {
   invitationStatusEnum,
@@ -14,6 +15,8 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   memberRoleEnum,
   memberStatusEnum,
   invitationStatusEnum,
+  companyKindEnum,
+  companyStatusEnum,
   facilityStatusEnum,
 ];
 
@@ -23,5 +26,6 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
  */
 export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...TENANCY_ENUM_TABLES,
+  ...ORGANIZATION_ENUM_TABLES,
   ...PLACES_ENUM_TABLES,
 };
