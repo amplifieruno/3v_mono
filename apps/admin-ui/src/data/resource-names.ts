@@ -71,3 +71,7 @@ export const ON_CALL_SCHEDULE_RESOURCE = 'on_call_schedule';
 export const ON_CALL_SCHEDULE_MEMBER_RESOURCE = 'on_call_schedule_member';
 export const NOTIFICATION_SUBSCRIPTION_RESOURCE = 'notification_subscription';
 export const NOTIFICATION_DELIVERY_RESOURCE = 'notification_delivery';
+export const USER_NOTIFICATION_RESOURCE = 'user_notification';
+export const WEBHOOK_SUBSCRIPTION_RESOURCE = 'webhook_subscription';
+export const WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE = 'webhook_subscription_event_type';
+export const WEBHOOK_DELIVERY_RESOURCE = 'webhook_delivery';

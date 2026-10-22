@@ -25,7 +25,7 @@ export const deliveryReportBlock = defineBlock('itap:delivery-report', {
     ack_rate: 'Ack rate',
     avg_response: 'Avg response',
     escalations: 'Escalations',
-    note: 'Read {{time}}. Rates and response times are for in-app notifications; digest items are counted once, in their digest.',
+    note: 'Read {{time}}. Rates and response times are for in-app notifications; digest items are counted once, in their digest. The webhook row counts webhook deliveries, listed under Webhook deliveries rather than in the delivery log.',
   },
   props: {
     period: prop(z.enum(REPORT_PERIODS)).default('7d'),

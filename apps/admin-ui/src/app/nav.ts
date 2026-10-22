@@ -94,6 +94,11 @@ export const NAV_ICONS = {
   subscriptions: 'BellPlus',
   deliveries: 'MailCheck',
   deliveryReport: 'ClipboardList',
+  inbox: 'Inbox',
+  markRead: 'MailOpen',
+  markAllRead: 'Mails',
+  webhooks: 'Webhook',
+  webhookDeliveries: 'Waypoints',
 } as const;
 
 /**

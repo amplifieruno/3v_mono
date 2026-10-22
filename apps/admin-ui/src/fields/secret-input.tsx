@@ -8,14 +8,16 @@ import type { SecretMeta } from './secret-meta';
  * read) and reports an empty box as `undefined`, so the form leaves the field out of
  * the payload and the stored secret stays as it is. On a stored record (an edit form: the
  * record has an `id`) "Remove the stored value" reports `null`, which the payload carries and
- * the nullable column stores; "Keep the stored value" undoes that.
+ * the nullable column stores; "Keep the stored value" undoes that. A secret that must stay set
+ * (`removable: false`, a `NOT NULL` column) offers no removal.
  */
 export function SecretInput(props: ScalarInputProps<unknown, SecretMeta>): React.ReactElement {
-  const { value, onChange, onBlur, disabled, readOnly, accessibility, testIds, issues, record } = props;
+  const { value, onChange, onBlur, disabled, readOnly, accessibility, testIds, issues, record, meta } = props;
   const t = useT();
   const locked = disabled === true || readOnly === true;
   const removing = value === null;
   const stored = record !== undefined && record.id !== undefined && record.id !== null;
+  const removable = meta?.removable !== false;
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -32,7 +34,7 @@ export function SecretInput(props: ScalarInputProps<unknown, SecretMeta>): React
           onChange={(event) => onChange?.(event.target.value === '' ? undefined : event.target.value)}
           onBlur={onBlur}
         />
-        {stored && !locked ? (
+        {stored && removable && !locked ? (
           <Button
             type="button"
             variant="ghost"

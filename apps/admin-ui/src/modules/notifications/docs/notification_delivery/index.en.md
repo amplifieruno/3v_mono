@@ -48,5 +48,9 @@ them, and a notification rule and a subscription have a **Deliveries** tab.
 The **Delivery report** page counts the deliveries of the last 24 hours,
 7 or 30 days: headline figures, then a row per channel with the counts by
 status, acknowledgements, and for in-app notifications the share
-acknowledged and the average time to acknowledge. Webhook deliveries are
-counted on the webhook row; digest items count once, in their digest.
+acknowledged and the average time to acknowledge. Digest items count once,
+in their digest.
+
+The **webhook** row counts webhook deliveries (calls to other systems).
+This log does not list them: they are under **Webhook deliveries**, and on
+each webhook's **Deliveries** tab.

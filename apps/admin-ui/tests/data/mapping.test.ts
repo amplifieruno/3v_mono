@@ -58,6 +58,8 @@ describe('selectFieldsOf', () => {
     ]);
     expect(ITAP_TABLES.device?.selectFields).not.toContain('password');
     expect(ITAP_TABLES.device?.selectFields).toContain('username');
+    expect(ITAP_TABLES.webhook_subscription?.selectFields).not.toContain('secret');
+    expect(ITAP_TABLES.webhook_subscription?.selectFields).toContain('url');
   });
 
   it('should mark a secret sensitive, so a typed value never lands in a draft or an audit event', async () => {
@@ -70,7 +72,7 @@ describe('selectFieldsOf', () => {
 });
 
 describe('append-only logs', () => {
-  const LOGS = ['device_health_metric', 'device_event', 'detection', 'tracking_session', 'identity_location', 'incident_activity', 'notification_delivery'];
+  const LOGS = ['device_health_metric', 'device_event', 'detection', 'tracking_session', 'identity_location', 'incident_activity', 'notification_delivery', 'webhook_delivery'];
 
   it('should page the logs by cursor and count them only on demand', async () => {
     await app.ready;

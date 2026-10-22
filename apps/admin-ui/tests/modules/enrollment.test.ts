@@ -141,8 +141,11 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function and shift handover function', () => {
+  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function and inbox function', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
+      'inbox.acknowledgeNotification',
+      'inbox.markAllNotificationsRead',
+      'inbox.markNotificationRead',
       'monitoring.acknowledgeIncident',
       'monitoring.acknowledgeShiftHandover',
       'monitoring.addOpenIncidentsToHandover',

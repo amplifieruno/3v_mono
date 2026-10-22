@@ -1,5 +1,7 @@
 import { generateRouteDescriptors, isCustomPageRoute, useApp } from '@burojs/react';
 import {
+  AppActions,
+  AppHeader,
   AppShell,
   AppSidebar,
   DocPanel,
@@ -7,6 +9,7 @@ import {
   type LinkComponentProps,
   LinkComponentProvider,
   NavAreaPage,
+  RefreshButton,
 } from '@burojs/ui-shadcn';
 import * as React from 'react';
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes } from 'react-router';
@@ -17,6 +20,7 @@ import { LOGIN_PATH, ORGANIZATIONS_PATH, RequireAuth } from '../auth/require-aut
 import { authProvider, tokenStore } from '../auth/session';
 import { HOME_PATH, useConsoleBrand } from './brand';
 import { FacilityPicker } from './facility-picker';
+import { InboxBell } from './inbox-bell';
 import { OrganizationSwitcher } from './organization-switcher';
 import { ReactRouterAdapter } from './router-adapter';
 import { AppRuntime } from './runtime';
@@ -33,9 +37,19 @@ const RouterLink: LinkComponent = React.forwardRef<HTMLAnchorElement, LinkCompon
   );
 });
 
+/** The header's right-hand controls: the inbox bell, then the kit's actions and refresh. */
+const headerActions = (
+  <>
+    <InboxBell />
+    <AppActions />
+    <RefreshButton />
+  </>
+);
+
 /**
  * The application frame for a signed-in user inside an organization: the
- * organization switcher heads the sidebar, the facility picker sits under it.
+ * organization switcher heads the sidebar, the facility picker sits under it,
+ * and the header carries the inbox bell.
  */
 function ConsoleShell(): React.ReactElement {
   const brand = useConsoleBrand();
@@ -45,6 +59,7 @@ function ConsoleShell(): React.ReactElement {
         brand={brand}
         loginPath={LOGIN_PATH}
         docPanel={<DocPanel />}
+        header={<AppHeader actions={headerActions} />}
         sidebar={<AppSidebar header={<OrganizationSwitcher />} filters={<FacilityPicker />} />}
       >
         <Outlet />

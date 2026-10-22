@@ -57,7 +57,13 @@ export const notificationDeliveryFields = {
   channel: enumField(NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_ENUM, {
     system: true,
     in: [...shown],
-    texts: { label: 'Channel', doc: { summary: 'How it travels: in-app, email, SMS or push.' } },
+    texts: {
+      label: 'Channel',
+      doc: {
+        summary:
+          'How it travels: in-app, email, SMS or push. Calls to other systems are not listed here: they are webhook deliveries, in a log of their own.',
+      },
+    },
   }),
   priority: enumField(NOTIFICATION_PRIORITIES, NOTIFICATION_PRIORITY_ENUM, {
     system: true,

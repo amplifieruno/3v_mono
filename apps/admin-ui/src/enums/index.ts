@@ -85,6 +85,7 @@ import {
   notificationDigestModeEnum,
   notificationPriorityEnum,
   personChannelEnum,
+  webhookDeliveryStatusEnum,
 } from './notifications';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
@@ -144,6 +145,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   notificationDeliveryOriginEnum,
   personChannelEnum,
   addressChannelEnum,
+  webhookDeliveryStatusEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */

@@ -60,6 +60,13 @@ describe('in-app inbox', () => {
     // Owner may mark unread again through the update permission.
     const unread = await updateByPk<{ read_at: string | null }>(bob, 'user_notifications', bobs[0].id, { read_at: null }, 'read_at');
     expect(unread?.read_at).toBeNull();
+    // No ids ("Mark all read"): every unread row of the caller only; another member's unread row stays unread.
+    const markAll = `mutation { mark_notifications_read(args: {p_ids: null}) { id read_at } }`;
+    expect((await w.a.request<{ mark_notifications_read: InboxRow[] }>(markAll)).mark_notifications_read).toEqual([]);
+    expect((await inboxOf(bob))[0].read_at).toBeNull();
+    const all = await bob.request<{ mark_notifications_read: InboxRow[] }>(markAll);
+    expect(all.mark_notifications_read.map((n) => n.id)).toEqual([bobs[0].id]);
+    expect(all.mark_notifications_read[0].read_at).not.toBeNull();
   });
 
   it('should keep deliveries read-only for org_admin and isolate organizations', async () => {

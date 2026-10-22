@@ -159,6 +159,14 @@ export default {
       segmentAtEvent: '{{name}} (members when the event happens)',
       other: '{{key}}: {{value}}',
     },
+    /** The header bell (`src/app/inbox-bell.tsx`). */
+    inbox: {
+      bell: 'Notifications: {{count}} unread',
+      title: 'Notifications ({{count}} unread)',
+      empty: 'Your inbox is empty.',
+      failed: 'The inbox could not be read.',
+      open: 'Open the inbox',
+    },
     /** The write-only secret field (`src/fields/secret-impl.ts`). */
     secret: {
       hidden: 'Not shown',
@@ -281,6 +289,21 @@ export default {
       },
       text: {
         blank: 'Enter some text, not only spaces.',
+      },
+      secret: {
+        required: 'Enter a secret: a new record needs one.',
+      },
+      webhookSecret: {
+        length: 'Enter a secret of {{min}} to {{max}} characters.',
+      },
+      webhookUrl: {
+        format:
+          'Enter an http:// or https:// address with a host, without spaces and at most 2048 characters, such as https://siem.example.com/hooks/itap.',
+        credentials: 'Leave the user name and password out of the address: every call is signed with the secret instead.',
+        blocked:
+          'Link-local and cloud metadata addresses (169.254.x.x, fe80::, 0.0.0.0) are never called: enter the receiving system’s address.',
+        private:
+          'A loopback or private network address: the platform calls it only where private targets are allowed (development). Elsewhere each delivery fails with “blocked_address” and is not retried.',
       },
       color: {
         hex: 'Enter a colour as #rrggbb, such as #d97706.',

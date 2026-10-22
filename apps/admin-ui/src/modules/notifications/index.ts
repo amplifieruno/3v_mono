@@ -27,6 +27,10 @@ import {
   RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE,
   RECIPIENT_GROUP_RESOURCE,
   RECIPIENT_GROUP_USER_MEMBER_RESOURCE,
+  USER_NOTIFICATION_RESOURCE,
+  WEBHOOK_DELIVERY_RESOURCE,
+  WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE,
+  WEBHOOK_SUBSCRIPTION_RESOURCE,
 } from '../../data/resource-names';
 import {
   conditionReferencesOperation,
@@ -35,6 +39,13 @@ import {
 import type { ConsoleModule } from '../module';
 import { deliveryReportPage } from './delivery-report-page';
 import { escalationPolicy, escalationPolicyFields } from './escalation-policy';
+import {
+  INBOX_OPERATIONS,
+  acknowledgeNotification,
+  inboxSummary,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from './inbox-ops';
 import {
   escalationGroupStep,
   escalationGroupStepFields,
@@ -62,13 +73,22 @@ import {
   recipientGroupUserMember,
   recipientGroupUserMemberFields,
 } from './recipient-group-members';
+import { userNotification, userNotificationFields } from './user-notification';
+import { webhookDelivery, webhookDeliveryFields } from './webhook-delivery';
+import {
+  webhookSubscription,
+  webhookSubscriptionEventType,
+  webhookSubscriptionEventTypeFields,
+  webhookSubscriptionFields,
+} from './webhook-subscription';
 
 /**
  * Notifications: who is told what, how and when. Notification rules (event types, conditions,
  * channels, recipients, template, priority, digests) with their dry-run test, notification
  * templates, recipient groups (people and external addresses), escalation policies (group and
  * on-call steps) and on-call schedules (rotation, who is on call now); each member's own
- * subscriptions, the delivery log (read only) and the delivery report per channel and period.
+ * subscriptions, the delivery log (read only) and the delivery report per channel and period;
+ * each member's inbox (the header bell) and the webhook subscriptions with their delivery log.
  */
 export const notificationsModule = {
   name: 'notifications-module',
@@ -95,6 +115,14 @@ export const notificationsModule = {
     deliveryReportFacts,
     deliveryReportBlock,
     deliveryReportPage,
+    userNotification,
+    inboxSummary,
+    markNotificationRead,
+    markAllNotificationsRead,
+    acknowledgeNotification,
+    webhookSubscription,
+    webhookSubscriptionEventType,
+    webhookDelivery,
   ],
   tables: {
     [NOTIFICATION_RULE_RESOURCE]: hasuraTable('notification_rules', { selectFields: selectFieldsOf(notificationRuleFields) }),
@@ -133,6 +161,22 @@ export const notificationsModule = {
       orderByField: 'created_at',
       noAggregate: true,
     }),
+    [USER_NOTIFICATION_RESOURCE]: hasuraTable('user_notifications', { selectFields: selectFieldsOf(userNotificationFields) }),
+    [WEBHOOK_SUBSCRIPTION_RESOURCE]: hasuraTable('webhook_subscriptions', { selectFields: selectFieldsOf(webhookSubscriptionFields) }),
+    [WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE]: hasuraTable('webhook_subscription_event_types', {
+      selectFields: selectFieldsOf(webhookSubscriptionEventTypeFields),
+    }),
+    [WEBHOOK_DELIVERY_RESOURCE]: hasuraTable('webhook_deliveries', {
+      selectFields: selectFieldsOf(webhookDeliveryFields),
+      orderByField: 'created_at',
+      noAggregate: true,
+    }),
   },
-  operations: [conditionReferencesOperation, testNotificationRuleOperation, userNamesOperation, ...DELIVERY_REPORT_OPERATIONS],
+  operations: [
+    conditionReferencesOperation,
+    testNotificationRuleOperation,
+    userNamesOperation,
+    ...DELIVERY_REPORT_OPERATIONS,
+    ...INBOX_OPERATIONS,
+  ],
 } as const satisfies ConsoleModule;

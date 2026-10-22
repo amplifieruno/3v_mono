@@ -123,7 +123,8 @@ const reads = [resourceByName(NOTIFICATION_DELIVERY_RESOURCE)];
 /**
  * `delivery_report(hasura_session, p_from, p_to)` for the last 24 hours, 7 or 30 days: per channel,
  * the deliveries created in the period by status, acknowledgements, the in-app acknowledgement rate
- * and response time, and escalation pages. The webhook row counts webhook deliveries. Digest items
+ * and response time, and escalation pages. The webhook row counts webhook deliveries
+ * (`webhook_deliveries`), which the delivery log does not list (they have a log of their own). Digest items
  * are not in the totals (each is carried by its digest). Other members' subscription deliveries
  * are not counted, as the log does not list them.
  */

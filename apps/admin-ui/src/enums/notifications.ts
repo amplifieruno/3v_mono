@@ -12,6 +12,7 @@ export const PERSON_CHANNEL_ENUM = 'notification_person_channel';
 export const ADDRESS_CHANNEL_ENUM = 'notification_address_channel';
 export const NOTIFICATION_DELIVERY_STATUS_ENUM = 'notification_delivery_status';
 export const NOTIFICATION_DELIVERY_ORIGIN_ENUM = 'notification_delivery_origin';
+export const WEBHOOK_DELIVERY_STATUS_ENUM = 'webhook_delivery_status';
 
 /** Every channel a notification can travel on (`itap.notification_channels`). */
 export const NOTIFICATION_CHANNELS = ['in_app', 'email', 'sms', 'push', 'webhook'] as const;
@@ -148,10 +149,35 @@ export const notificationDeliveryOriginEnum = defineEnum({
   },
 });
 
+/** Where a webhook delivery is in its life (`itap.webhook_delivery_statuses`). */
+export const WEBHOOK_DELIVERY_STATUSES = ['pending', 'sent', 'failed', 'retrying', 'dead_letter'] as const;
+
+export const webhookDeliveryStatusEnum = defineEnum({
+  name: WEBHOOK_DELIVERY_STATUS_ENUM,
+  values: enumValues(WEBHOOK_DELIVERY_STATUSES, {
+    pending: 'secondary',
+    sent: 'success',
+    failed: 'destructive',
+    retrying: 'warning',
+    dead_letter: 'destructive',
+  }),
+  texts: {
+    pending: { label: 'Pending', doc: { summary: 'Waiting for its first attempt.' } },
+    sent: { label: 'Sent', doc: { summary: 'The receiving system answered with a 2xx status.' } },
+    failed: {
+      label: 'Failed',
+      doc: { summary: 'Not sent and not retried: the subscription is switched off or the address is blocked (blocked_address).' },
+    },
+    retrying: { label: 'Retrying', doc: { summary: 'An attempt failed (an error status, a timeout); another is due at the next attempt time.' } },
+    dead_letter: { label: 'Dead letter', doc: { summary: 'Given up after the last attempt.' } },
+  },
+});
+
 /** Each enum above by the Hasura enum table holding its values. */
 export const NOTIFICATION_ENUM_TABLES: Readonly<Record<string, string>> = {
   [NOTIFICATION_CHANNEL_ENUM]: 'notification_channels',
   [NOTIFICATION_PRIORITY_ENUM]: 'notification_priorities',
   [NOTIFICATION_DIGEST_MODE_ENUM]: 'notification_digest_modes',
   [NOTIFICATION_DELIVERY_STATUS_ENUM]: 'notification_delivery_statuses',
+  [WEBHOOK_DELIVERY_STATUS_ENUM]: 'webhook_delivery_statuses',
 };

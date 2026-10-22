@@ -830,3 +830,17 @@ migration `1792365700277`.
   (email, SMS), console-only (`CONSOLE_ONLY_ENUMS`); the channel fields bind them.
 - **Expected from a framework:** the picker offers the intersection of the enum and the field's
   declared values (or an `options` filter on the field).
+
+### G53. A field cannot be required on create only
+- **Need:** a webhook's signing secret (`webhook_subscriptions.secret`, `NOT NULL`) is write-only:
+  the create form must refuse an empty box, while the edit form starts empty (the secret is never
+  read back) and an empty box there means "keep the stored one".
+- **Framework (0.6.0):** `required` is a boolean or a predicate `(ctx, values)`; the form
+  controller passes its `ctx` but no form mode, and a field validator gets `{ values, field }`
+  only (`ValidationContext`). Nothing tells a create form from an edit form. **[code]**
+- **Workaround:** `secret({ required: true })` validates with the form values: no `id` among them
+  (a create form) and an empty box is refused (`validation.itap.secret.required`); an edit form's
+  values carry the record's `id`, so the box may stay empty. The input hides "Remove the stored
+  value" for such a secret (`meta.removable: false`), since `null` would break the `NOT NULL`.
+- **Expected from a framework:** `required: 'create'` (or the form mode in the predicate and
+  validator context), and a write-only field kind with "keep / replace / remove" built in.

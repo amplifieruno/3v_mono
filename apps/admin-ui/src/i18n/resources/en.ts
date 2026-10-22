@@ -150,4 +150,10 @@ export default {
   notification_delivery: {
     doc: { topics: { index: 'Deliveries: origin, status, retries and the delivery report' } },
   },
+  user_notification: {
+    doc: { topics: { index: 'Inbox: the bell, reading and acknowledging' } },
+  },
+  webhook_subscription: {
+    doc: { topics: { index: 'Webhooks: signed requests, allowed addresses and deliveries' } },
+  },
 } satisfies TranslationBundle;
