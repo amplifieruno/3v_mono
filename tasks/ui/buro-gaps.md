@@ -180,3 +180,16 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Workaround:** none in code; the companies article says what the search box looks in.
 - **Expected from a framework:** a placeholder naming every searched field ("Search by name,
   contact email, cost center…") or a `texts` slot for the list's search placeholder.
+
+### G16. A current-record screen has no heading of its own
+- **Need:** the "My preferences" page shows the signed-in user's `user_settings` row as a form;
+  the record has no name, so its heading should be the page's ("My preferences") or none.
+- **Framework (0.6.0):** `<RecordScreen>` always draws the record title from `recordTitle(record)`
+  → `record[displayField]` → `#<id>`, plus the copyable id; the default display field is the first
+  non-system string field, so the heading read `de` (the language code). There is no prop to hide
+  or replace the heading, and `recordTitle` has no translation context for a fixed text. **[run]**
+  seen in the browser on `/preferences`.
+- **Workaround:** `userSettings.recordTitle` composes the values themselves (`de · Europe/Berlin`,
+  `—` for an empty one), so the heading is data, not an English literal.
+- **Expected from a framework:** a `title`/`hideTitle` prop on `<RecordScreen>` (or the G13
+  current-record view kind with the page title as heading).

@@ -26,6 +26,8 @@ export const NAV_ICONS = {
   settings: 'Settings',
   companies: 'Briefcase',
   workSchedules: 'CalendarClock',
+  customAttributes: 'ListPlus',
+  preferences: 'UserCog',
 } as const;
 
 /**

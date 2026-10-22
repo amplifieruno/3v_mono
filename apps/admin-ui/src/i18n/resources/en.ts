@@ -20,4 +20,7 @@ export default {
   work_schedule: {
     doc: { topics: { index: 'Work schedules and time windows' } },
   },
+  custom_attribute_definition: {
+    doc: { topics: { index: 'Custom attributes' } },
+  },
 } satisfies TranslationBundle;

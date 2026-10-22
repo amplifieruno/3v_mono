@@ -1,10 +1,12 @@
 import { defineEnum } from '@burojs/core';
 import { enumValues } from './values';
 
-/* Organization enums (companies); values are the rows of the Hasura enum tables in `ORGANIZATION_ENUM_TABLES`. */
+/* Organization enums (companies, custom attribute definitions); values are the rows of the Hasura enum tables in `ORGANIZATION_ENUM_TABLES`. */
 
 export const COMPANY_KIND_ENUM = 'company_kind';
 export const COMPANY_STATUS_ENUM = 'company_status';
+export const CUSTOM_ATTRIBUTE_ENTITY_ENUM = 'custom_attribute_entity';
+export const CUSTOM_ATTRIBUTE_TYPE_ENUM = 'custom_attribute_type';
 
 export const COMPANY_KINDS = [
   'tenant',
@@ -51,8 +53,45 @@ export const companyStatusEnum = defineEnum({
   },
 });
 
+export const CUSTOM_ATTRIBUTE_ENTITIES = ['profile', 'identity', 'facility', 'device'] as const;
+export const CUSTOM_ATTRIBUTE_TYPES = ['string', 'number', 'boolean', 'date', 'enum'] as const;
+
+export const customAttributeEntityEnum = defineEnum({
+  name: CUSTOM_ATTRIBUTE_ENTITY_ENUM,
+  values: enumValues(CUSTOM_ATTRIBUTE_ENTITIES, {
+    profile: 'info',
+    identity: 'secondary',
+    facility: 'default',
+    device: 'default',
+  }),
+  texts: { profile: 'Profile', identity: 'Identity', facility: 'Facility', device: 'Device' },
+});
+
+export const customAttributeTypeEnum = defineEnum({
+  name: CUSTOM_ATTRIBUTE_TYPE_ENUM,
+  values: enumValues(CUSTOM_ATTRIBUTE_TYPES, {
+    string: 'secondary',
+    number: 'secondary',
+    boolean: 'secondary',
+    date: 'secondary',
+    enum: 'info',
+  }),
+  texts: {
+    string: 'Text',
+    number: 'Number',
+    boolean: { label: 'Yes / no', doc: { summary: 'A checkbox: true or false.' } },
+    date: { label: 'Date', doc: { summary: 'A calendar date, stored as YYYY-MM-DD.' } },
+    enum: {
+      label: 'Select',
+      doc: { summary: 'One value picked from the attribute’s list of options.' },
+    },
+  },
+});
+
 /** Each organization enum by the Hasura enum table (GraphQL `custom_name`) holding its values. */
 export const ORGANIZATION_ENUM_TABLES: Readonly<Record<string, string>> = {
   [COMPANY_KIND_ENUM]: 'company_kinds',
   [COMPANY_STATUS_ENUM]: 'company_statuses',
+  [CUSTOM_ATTRIBUTE_ENTITY_ENUM]: 'custom_attribute_entities',
+  [CUSTOM_ATTRIBUTE_TYPE_ENUM]: 'custom_attribute_types',
 };

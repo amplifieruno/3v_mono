@@ -56,6 +56,11 @@ export default {
       none: 'No windows',
       invalid: 'Contains an invalid window',
     },
+    /** The list-of-texts field (`src/fields/string-list-impl.ts`); `item` is lowercase (`option`). */
+    stringList: {
+      add: 'Add {{item}}',
+      remove: 'Remove {{item}} {{index}}',
+    },
     organizations: {
       title: 'Choose an organization',
       description: 'You are a member of several organizations. You can switch later from the sidebar.',
