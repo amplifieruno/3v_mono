@@ -80,9 +80,21 @@ describe('operator workspaces', () => {
       }),
       'user_id',
     );
-    // One default per user.
-    const second = await expectError(insertOne(s.a, 'operator_workspaces', { name: 'Floor 2', is_default: true }));
-    expect(second.message).toMatch(/operator_workspaces_one_default_key|unique|Uniqueness/i);
+    // One default per user: a new default takes it from the previous one (migration 277), never two.
+    const second = await insertOne<{ id: string; is_default: boolean }>(
+      s.a,
+      'operator_workspaces',
+      { name: 'Floor 2', is_default: true },
+      'id is_default',
+    );
+    expect(second.is_default).toBe(true);
+    const mine = await s.a.request<{ operator_workspaces: { id: string; is_default: boolean }[] }>(
+      `query { operator_workspaces(order_by: {name: asc}) { id is_default } }`,
+    );
+    expect(mine.operator_workspaces).toEqual([
+      { id: second.id, is_default: true },
+      { id: ws.id, is_default: false },
+    ]);
     const b = asOrgAdmin(s.other.id, s.orgB.id);
     expect((await b.request<{ operator_workspaces: unknown[] }>(`query { operator_workspaces { id } }`)).operator_workspaces).toEqual([]);
   });
