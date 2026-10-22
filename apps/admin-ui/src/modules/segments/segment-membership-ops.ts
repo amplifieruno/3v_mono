@@ -42,8 +42,11 @@ export const segmentMembersInput = z.object({
 
 export type SegmentMembersInput = z.infer<typeof segmentMembersInput>;
 
-/** How many memberships an add answered (open manual ones) or a remove closed. */
+/** How many memberships an add opened (new or pinned members) or a remove closed. */
 export const membersChanged = z.object({ count: z.number().int() });
+
+/** What an add did: memberships it opened, and chosen ones who were already members by hand (left as they were). */
+export const membersAdded = membersChanged.extend({ kept: z.number().int() });
 
 const variables = (input: unknown) => {
   const { segmentId, subjectIds } = input as SegmentMembersInput;
@@ -54,6 +57,17 @@ const countOf = (field: string) => (data: unknown) => {
   const rows = rootOf(data, field);
   return { count: Array.isArray(rows) ? rows.length : 0 };
 };
+
+/**
+ * The answer of `add_segment_members` (every open manual membership of the ids) split by `opened_now`:
+ * the rows this call opened, and the ones that were open before it.
+ */
+export function addedOf(data: unknown): z.infer<typeof membersAdded> {
+  const rows = rootOf(data, 'add_segment_members');
+  const list = Array.isArray(rows) ? (rows as readonly unknown[]) : [];
+  const count = list.filter((row) => typeof row === 'object' && row !== null && (row as { opened_now?: unknown }).opened_now === true).length;
+  return { count, kept: list.length - count };
+}
 
 /** Refreshed by any membership change: the segment (member count), its members and its figures. */
 const MEMBERSHIP_EFFECTS = [
@@ -67,7 +81,8 @@ const MEMBERSHIP_EFFECTS = [
  * `add_segment_members(hasura_session, p_segment, p_ids)`: opens a manual membership for each
  * person or face without an open one. Someone who is a member by rule is pinned: the rule
  * membership ends and a manual one starts at the same instant (the daily figures count neither).
- * Someone already added by hand stays as they are. Answers the open manual memberships of the ids.
+ * Someone already added by hand stays as they are. Answers the open manual memberships of the ids;
+ * `opened_now` (true only inside this call's transaction) tells the ones it opened.
  */
 export const addSegmentMembersOperation = hasuraOperation(
   SEGMENTS_BINDING,
@@ -75,10 +90,10 @@ export const addSegmentMembersOperation = hasuraOperation(
   {
     kind: 'mutation',
     document: `mutation AddSegmentMembers($segment: uuid!, $ids: _uuid!) {
-  add_segment_members(args: { p_segment: $segment, p_ids: $ids }) { id source }
+  add_segment_members(args: { p_segment: $segment, p_ids: $ids }) { id source opened_now }
 }`,
     variables,
-    mapResult: countOf('add_segment_members'),
+    mapResult: addedOf,
   },
   sqlRefusals(ADD_SEGMENT_MEMBERS_REFUSALS),
 );
@@ -87,7 +102,7 @@ export const addSegmentMembersOperation = hasuraOperation(
 export const addSegmentMembers = defineMutation('itap:add-segment-members', {
   binding: addSegmentMembersOperation.binding,
   input: schema(segmentMembersInput),
-  output: schema(membersChanged),
+  output: schema(membersAdded),
   effects: MEMBERSHIP_EFFECTS,
 });
 

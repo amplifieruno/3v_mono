@@ -98,7 +98,7 @@ function addMembersFlow(name: string, target: SegmentTarget) {
   return {
     texts: {
       label: 'Add members',
-      notify: 'Added by hand: {{count}}.',
+      notify: 'Added by hand: {{count}}. Already added by hand before (left as they were): {{kept}}.',
       doc: {
         summary:
           'Adds people or faces to the segment by hand, several at once. They stay members until removed by hand, even when a dynamic segment’s conditions no longer match them.',
@@ -120,7 +120,7 @@ function addMembersFlow(name: string, target: SegmentTarget) {
       },
       onUnknown: { check: addApplied(name) },
     },
-    then: { notify: { params: { count: ref('result', 'count') } } },
+    then: { notify: { params: { count: ref('result', 'count'), kept: ref('result', 'kept') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, typeof fields>;
 }
 

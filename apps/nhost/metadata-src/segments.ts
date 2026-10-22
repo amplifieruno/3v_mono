@@ -33,6 +33,8 @@ export const segmentTables: TableSpec[] = [
     // Membership history: manual rows via add_segment_members / remove_segment_members, rule rows via the evaluator.
     name: 'segment_members',
     profile: 'tenant_read',
+    // For the console's "Add members": in add_segment_members' answer, the rows that call opened.
+    computedFields: [{ name: 'opened_now', function: 'segment_member_opened_now' }],
   },
   {
     // is_system templates are seeded: visible, never edited or deleted by org_admin.

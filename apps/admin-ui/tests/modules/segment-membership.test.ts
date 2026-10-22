@@ -12,6 +12,7 @@ import { ACTION_REFUSALS } from '../../src/modules';
 import { evaluateNowFlow } from '../../src/modules/segments/segment-flows';
 import { addApplied, evaluationApplied, removeApplied } from '../../src/modules/segments/segment-membership-checks';
 import { addToSegmentFlow } from '../../src/modules/segments/segment-membership-flows';
+import { addedOf } from '../../src/modules/segments/segment-membership-ops';
 import { previewRefusal, previewSnapshot, sameSnapshot, unnamedMatches } from '../../src/modules/segments/segment-preview-format';
 
 /**
@@ -88,11 +89,18 @@ describe('evaluate now', () => {
 
 describe('add members', () => {
   it('should send the chosen people of a profile segment', async () => {
-    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 2 })] }).open();
+    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 2, kept: 0 })] }).open();
     flow.fill({ subject_ids: [PERSON, OTHER] });
     await flow.submit();
     flow.assertOutcome('success');
     expect(flow.submitted[0]?.call).toMatchObject({ input: { segmentId: SEGMENT, subjectIds: [PERSON, OTHER] } });
+  });
+
+  it('should count only the memberships the call opened, not the ones already open by hand', () => {
+    const rows = [{ id: 'a', opened_now: false }, { id: 'b', opened_now: true }, { id: 'c', opened_now: true }];
+    expect(addedOf({ add_segment_members: rows })).toEqual({ count: 2, kept: 1 });
+    expect(addedOf({ add_segment_members: [{ id: 'a', opened_now: false }] })).toEqual({ count: 0, kept: 1 });
+    expect(addedOf({})).toEqual({ count: 0, kept: 0 });
   });
 
   it('should offer each target its own flow, also on a dynamic segment, never on an archived one', async () => {
@@ -103,7 +111,7 @@ describe('add members', () => {
   });
 
   it('should check a lost answer by whether the first one sent is a manual member now', async () => {
-    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 1 })] }).open();
+    const flow = await flowOn(SEGMENT_RESOURCE, 'add_profiles', manual, { 'itap:add-segment-members': [answer({ count: 1, kept: 0 })] }).open();
     flow.fill({ subject_ids: [OTHER] });
     await flow.submit();
     const filters: unknown[] = [];
@@ -119,7 +127,7 @@ describe('add members', () => {
 describe('add to segment', () => {
   it('should add this profile to the chosen segment', async () => {
     const person = { id: PERSON, processing_restricted: false };
-    const flow = await flowOn(PROFILE_RESOURCE, 'add_to_segment', person, { 'itap:add-segment-members': [answer({ count: 1 })] }).open();
+    const flow = await flowOn(PROFILE_RESOURCE, 'add_to_segment', person, { 'itap:add-segment-members': [answer({ count: 1, kept: 0 })] }).open();
     flow.fill({ segment_id: SEGMENT });
     await flow.submit();
     flow.assertOutcome('success');

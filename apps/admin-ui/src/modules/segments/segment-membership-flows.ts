@@ -46,7 +46,8 @@ export function addToSegmentFlow(target: SegmentTarget) {
   return {
     texts: {
       label: 'Add to segment',
-      notify: 'Added to the segment.',
+      // kept 1: already a member by hand, nothing was changed.
+      notify: 'Added to the segment by hand: {{count}}. Already a member by hand (left as it was): {{kept}}.',
       doc: {
         summary: `Adds ${WHO[target]} to a manual or dynamic segment by hand; the membership lasts until it is removed by hand.`,
       },
@@ -67,7 +68,7 @@ export function addToSegmentFlow(target: SegmentTarget) {
       },
       onUnknown: { check: addApplied(ADD_TO_SEGMENT_FLOW) },
     },
-    then: { notify: true },
+    then: { notify: { params: { count: ref('result', 'count'), kept: ref('result', 'kept') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, typeof fields>;
 }
 
@@ -84,7 +85,8 @@ export function removeFromSegmentFlow(target: SegmentTarget) {
     texts: {
       label: 'Remove from segment',
       confirm: `Remove ${WHO[target]} from the segment? The membership ends now and stays in the history.`,
-      notify: 'Removed from the segment.',
+      // 0 when someone else ended it (or it was pinned again) in the meantime: nothing was changed.
+      notify: 'Memberships ended: {{count}}. 0 means it had already ended and nothing was changed.',
       doc: {
         summary:
           'Ends a membership added by hand; it stays in the history. On a dynamic segment whose conditions still match, the next evaluation adds them back by rule.',
@@ -102,6 +104,6 @@ export function removeFromSegmentFlow(target: SegmentTarget) {
       input: ({ record }) => ({ segmentId: String(record?.segment_id ?? ''), subjectIds: [String(record?.[subject] ?? '')] }),
       onUnknown: { check: removeApplied(target) },
     },
-    then: { notify: true },
+    then: { notify: { params: { count: ref('result', 'count') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 }

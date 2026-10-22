@@ -174,7 +174,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('segment preview, evaluation and membership 
     expect(evaluated.member_count).toBeGreaterThanOrEqual(1);
     expect((await open(dynamicId, person.id)).map((row) => row.source)).toEqual(['rule']);
 
-    expect(await custom('mutation', 'addSegmentMembers', { segmentId: dynamicId, subjectIds: [person.id] })).toEqual({ count: 1 });
+    expect(await custom('mutation', 'addSegmentMembers', { segmentId: dynamicId, subjectIds: [person.id] })).toEqual({ count: 1, kept: 0 });
     const [pinned] = await open(dynamicId, person.id);
     expect(pinned).toMatchObject({ source: 'manual', added_by: expect.any(String) });
     // The rule membership ended at the instant the manual one began.
@@ -185,30 +185,37 @@ describe.skipIf(!DEV_STACK_ENABLED)('segment preview, evaluation and membership 
   it('should add, remove and add again by hand, keeping the history', async () => {
     manualId = await segmentNamed(MANUAL_NAME, { kind: 'manual', target: 'profiles' });
     const before = (await memberships(manualId, person.id)).length;
-    expect(await custom('mutation', 'addSegmentMembers', { segmentId: manualId, subjectIds: [person.id, other.id] })).toEqual({ count: 2 });
+    expect(await custom('mutation', 'addSegmentMembers', { segmentId: manualId, subjectIds: [person.id, other.id] })).toEqual({ count: 2, kept: 0 });
     expect((await open(manualId, person.id)).map((row) => row.source)).toEqual(['manual']);
+    // Adding a manual member again opens nothing: the answer counts them as kept, not added.
+    expect(await custom('mutation', 'addSegmentMembers', { segmentId: manualId, subjectIds: [person.id] })).toEqual({ count: 0, kept: 1 });
+    expect(await memberships(manualId, person.id)).toHaveLength(before + 1);
 
     expect(await custom('mutation', 'removeSegmentMembers', { segmentId: manualId, subjectIds: [person.id] })).toEqual({ count: 1 });
     expect(await open(manualId, person.id)).toEqual([]);
+    // Removing again closes nothing, and says so.
+    expect(await custom('mutation', 'removeSegmentMembers', { segmentId: manualId, subjectIds: [person.id] })).toEqual({ count: 0 });
     const ended = (await memberships(manualId, person.id)).filter((row) => row.removed_at !== null);
     expect(ended.some((row) => typeof row.removed_by === 'string')).toBe(true);
 
-    expect(await custom('mutation', 'addSegmentMembers', { segmentId: manualId, subjectIds: [person.id] })).toEqual({ count: 1 });
+    expect(await custom('mutation', 'addSegmentMembers', { segmentId: manualId, subjectIds: [person.id] })).toEqual({ count: 1, kept: 0 });
     expect(await memberships(manualId, person.id)).toHaveLength(before + 2);
     expect(await open(manualId, other.id)).toHaveLength(1);
   });
 
-  it('should read the refusals of an archived segment and of evaluating a manual one as sentences', async () => {
-    const archived = (await graphql('{ segments(where: { status: { _eq: archived } }, limit: 1) { id } }')).segments as Row[];
-    if (archived[0] !== undefined) {
-      await expect(custom('mutation', 'addSegmentMembers', { segmentId: archived[0].id, subjectIds: [person.id] })).rejects.toMatchObject({
-        kind: 'validation',
-        code: 'segment_archived',
-      });
-    }
-    await expect(custom('mutation', 'evaluateSegment', { segmentId: manualId })).rejects.toMatchObject({
+  it('should read the refusals of evaluating a manual segment and of adding to an archived one as sentences', async () => {
+    // Its own fixture (reactivated, emptied): independent of the tests before it.
+    const segmentId = await segmentNamed(MANUAL_NAME, { kind: 'manual', target: 'profiles' });
+    manualId = segmentId;
+    await expect(custom('mutation', 'evaluateSegment', { segmentId })).rejects.toMatchObject({
       kind: 'validation',
       code: 'segment_not_dynamic',
     });
+    await graphql('mutation ($id: uuid!) { update_segments_by_pk(pk_columns: { id: $id }, _set: { status: archived }) { id } }', { id: segmentId });
+    await expect(custom('mutation', 'addSegmentMembers', { segmentId, subjectIds: [person.id] })).rejects.toMatchObject({
+      kind: 'validation',
+      code: 'segment_archived',
+    });
+    expect(await open(segmentId, person.id)).toEqual([]);
   });
 });

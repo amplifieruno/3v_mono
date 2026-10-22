@@ -58,6 +58,12 @@ object_relationships:
           organization_id: organization_id
           segment_id: id
           target: target
+computed_fields:
+  - name: opened_now
+    definition:
+      function:
+        schema: itap
+        name: segment_member_opened_now
 select_permissions:
   - role: org_admin
     permission:
@@ -75,6 +81,8 @@ select_permissions:
         - source
         - target
         - updated_at
+      computed_fields:
+        - opened_now
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
