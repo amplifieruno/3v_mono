@@ -400,6 +400,10 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Workaround:** the apply-template sentence is count-neutral ("Areas created: 1, at the top
   level: 1 (Lobby).").
 - **Expected from a framework:** `then.notify: { params, count: ref('result', 'created') }`.
+- **Phase 7 Task 4:** the segment membership flows say the counts in count-neutral sentences
+  ("Added by hand: 1. Already added by hand before (left as they were): 0.", "Memberships ended:
+  0. 0 means it had already ended and nothing was changed."): a zero case cannot pick its own
+  sentence either.
 
 
 ### G24. No write-only field (a column the role may write but never select)
@@ -893,3 +897,16 @@ migration `1792365700277`.
   review's button and the answer replaces it in the dialog.
 - **Expected from a framework:** a `then.open: { block }` on a hostless flow opens a host for the
   answer (or `checkApp` reports the block as unreachable).
+
+### G56. A closed enum select shows the chosen option's help text in its trigger
+- **Need:** a form's enum select (segment kind, target, status; every enum whose values carry
+  `doc.summary`) shows the chosen value's label when closed; the help belongs in the open list.
+- **Framework (0.6.0):** `EnumPicker` renders each `SelectItem` with the label and, below it, the
+  value's doc summary in one child; Radix clones the item's text into the trigger on selection,
+  so the closed trigger shows label and summary, overflowing the box (seen in the phase 7 demo on
+  the segment create form). **[run]** (`ui-shadcn/src/enum/enum-picker.tsx`, the comment above
+  `optionDoc` already notes the cloning).
+- **Workaround:** none (cosmetic); the e2e suites select options by a label prefix.
+- **Expected from a framework:** the summary outside `SelectItemText` (Radix `ItemText` for the
+  label only), so the trigger shows the label.
+
