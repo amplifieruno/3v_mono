@@ -42,6 +42,11 @@ export interface MergeEffect {
   readonly pendingVerifications: number;
   /** The profile the kept identity takes over (it had none and a merged one had one). */
   readonly inheritedProfile: string | null;
+  /**
+   * The merged identity whose primary flag the kept one takes over (it was not its profile's
+   * primary identity and a merged one was), whether or not it already shared the profile.
+   */
+  readonly inheritedPrimaryFrom: string | null;
 }
 
 /** The refusals of `merge_identities` that the rows already show, in the order it checks them. */
@@ -66,5 +71,8 @@ export function mergeEffect(target: MergeIdentity, sources: readonly MergeIdenti
     openPairs: sum((row) => row.open_pairs),
     pendingVerifications: sum((row) => row.pending_verifications),
     inheritedProfile: target.profile_id === null ? (sources.find((row) => row.profile !== null)?.profile ?? null) : null,
+    inheritedPrimaryFrom: target.is_primary_for_profile
+      ? null
+      : (sources.find((row) => row.is_primary_for_profile)?.code ?? null),
   };
 }

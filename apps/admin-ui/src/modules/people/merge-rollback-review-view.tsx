@@ -1,5 +1,6 @@
 import { type BlockViewProps, useCustomQuery } from '@burojs/react';
 import { EnumBadge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@burojs/ui-shadcn';
+import { TriangleAlert } from 'lucide-react';
 import type * as React from 'react';
 import { IDENTITY_STATUS_ENUM } from '../../enums/identities';
 import { PhotoThumb } from '../../fields/photo-thumb';
@@ -19,6 +20,12 @@ export function MergeRollbackReviewView({ props, t }: RollbackProps): React.Reac
   const target = merge.target.code;
   return (
     <div className="flex flex-col gap-3" data-testid="merge-rollback-review">
+      {merge.target.status === 'merged' ? (
+        <p role="alert" className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {t('targetMerged', { params: { target } })}
+        </p>
+      ) : null}
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>

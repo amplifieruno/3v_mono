@@ -30,7 +30,8 @@ After a review step and a confirmation the rollback runs. The platform
 refuses, saying why and changing nothing, when:
 
 - the kept identity was itself merged into another one later: merges are
-  undone newest first, so roll back that later merge first;
+  undone newest first, so roll back that later merge first (the dialog
+  warns about this before you send);
 - photos or templates the merge moved have left the kept identity since (for
   example by a split): the merge can no longer be undone exactly;
 - the merge was already rolled back.

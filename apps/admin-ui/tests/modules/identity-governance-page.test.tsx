@@ -47,13 +47,14 @@ const IDENTITY = {
 const count = (n: number) => ({ aggregate: { count: n } });
 
 /** One identity as the merge review reads it. */
-const previewRow = (id: string, code: string, profile: { code: string } | null) => ({
+const previewRow = (id: string, code: string, profile: { code: string } | null, primary = false) => ({
   id,
   code,
   status: 'unverified',
   is_synthetic: false,
   primary_photo_file_id: null,
-  profile_id: profile === null ? null : `${code}-profile`,
+  profile_id: profile === null ? null : `${profile.code}-id`,
+  is_primary_for_profile: primary,
   profile: profile === null ? null : { ...profile, first_name: 'Anna', last_name: 'Petrova', processing_restricted: false },
   identity_photos_aggregate: count(2),
   identity_embeddings_aggregate: count(2),
@@ -92,6 +93,10 @@ const PAIR_ROW = {
 
 /** Whether the merge review finds two different profiles (set per test). */
 let conflicting = false;
+/** Whether the kept identity already shares the other's profile, which is its primary identity (set per test). */
+let sharedPrimary = false;
+/** Whether the merge's kept identity was merged away later (set per test). */
+let targetMerged = false;
 
 async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -139,8 +144,12 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
     return hasuraResponse({
       data: {
         identities: [
-          previewRow(KEPT, 'IDENTITY-00001', conflicting ? { code: 'PROFILE-00001' } : null),
-          previewRow(OTHER, 'IDENTITY-00002', { code: 'PROFILE-00002' }),
+          previewRow(
+            KEPT,
+            'IDENTITY-00001',
+            conflicting ? { code: 'PROFILE-00001' } : sharedPrimary ? { code: 'PROFILE-00002' } : null,
+          ),
+          previewRow(OTHER, 'IDENTITY-00002', { code: 'PROFILE-00002' }, sharedPrimary),
         ],
       },
     });
@@ -154,7 +163,7 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
             status: 'completed',
             inherited_primary: false,
             inherited_profile: { code: 'PROFILE-00002', first_name: 'Anna', last_name: 'Petrova' },
-            target_identity: previewRow(KEPT, 'IDENTITY-00001', null),
+            target_identity: { ...previewRow(KEPT, 'IDENTITY-00001', null), status: targetMerged ? 'merged' : 'unverified' },
             identity_merge_sources: [
               { previous_status: 'unverified', previous_is_primary: true, previous_profile: { code: 'PROFILE-00002', first_name: 'Anna', last_name: 'Petrova' }, source_identity: { ...previewRow(OTHER, 'IDENTITY-00002', null), status: 'merged' } },
             ],
@@ -189,6 +198,8 @@ beforeAll(installDomShims);
 
 beforeEach(() => {
   conflicting = false;
+  sharedPrimary = false;
+  targetMerged = false;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -240,6 +251,17 @@ describe('merging', () => {
     expect(await within(dialog).findByTestId('identity-merge-moves')).toBeDefined();
   });
 
+  it('should say the kept identity takes over the primary flag when it already shares the profile', async () => {
+    sharedPrimary = true;
+    renderAt(`/identity-duplicates/${PAIR}`);
+    fireEvent.click(await screen.findByRole('button', { name: /^Merge identities$/ }));
+    const moves = await within(await screen.findByRole('dialog')).findByTestId('identity-merge-moves');
+    expect(moves.textContent).toContain(
+      'IDENTITY-00001 becomes the primary identity of Anna Petrova (PROFILE-00002), as IDENTITY-00002 was.',
+    );
+    expect(moves.textContent).not.toContain('takes over the profile');
+  });
+
   it('should say why the merge would be refused when the two belong to different profiles', async () => {
     conflicting = true;
     renderAt(`/identity-duplicates/${PAIR}`);
@@ -262,5 +284,22 @@ describe('roll back', () => {
     const review = await within(dialog).findByTestId('merge-rollback-review');
     expect(within(review).getByText('IDENTITY-00002')).toBeDefined();
     expect(review.textContent).toContain('(primary identity)');
+  });
+
+  it('should warn before sending when the kept identity was merged away later', async () => {
+    targetMerged = true;
+    renderAt(`/identity-merges/${MERGE}`);
+    fireEvent.click(await screen.findByRole('button', { name: /^Roll back$/ }));
+    const dialog = await screen.findByRole('dialog');
+    const warning = await within(dialog).findByRole('alert');
+    expect(warning.textContent).toContain('IDENTITY-00001 was itself merged into another identity later');
+  });
+
+  it('should not warn when the kept identity stands', async () => {
+    renderAt(`/identity-merges/${MERGE}`);
+    fireEvent.click(await screen.findByRole('button', { name: /^Roll back$/ }));
+    const dialog = await screen.findByRole('dialog');
+    await within(dialog).findByTestId('merge-rollback-effects');
+    expect(within(dialog).queryByText(/was itself merged/)).toBeNull();
   });
 });

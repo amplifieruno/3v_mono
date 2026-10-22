@@ -18,7 +18,9 @@ can be edited (reviewer, reason); a decided one is kept as it is.
 
 - **Approve** confirms the identity: it becomes **Verified**. A reason is
   optional.
-- **Reject** needs a reason: the identity goes back to **Unverified**.
+- **Reject** needs a reason. An identity in **Pending verification** goes
+  back to **Unverified**; an identity with any other status keeps it (a
+  verified identity stays **Verified**).
 
 Both record who decided and when, and write the audit log. A suspended or
 archived identity cannot be approved (set it back to unverified first, or

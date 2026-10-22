@@ -106,8 +106,9 @@ const DECIDED_RULES: Rule[] = [
 
 /**
  * Verification requests: an administrator confirms who an identity is ("Approve", the identity
- * becomes verified) or says it could not be confirmed ("Reject" with a reason, back to
- * unverified). Asked for from the identity's Verification tab or here; never deleted.
+ * becomes verified) or says it could not be confirmed ("Reject" with a reason: a pending
+ * verification identity goes back to unverified, any other keeps its status). Asked for from the
+ * identity's Verification tab or here; never deleted.
  */
 export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE, {
   texts: {
@@ -115,7 +116,7 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
     labelPlural: 'Verification requests',
     doc: {
       summary:
-        'A request to confirm who an identity is, for example by checking an ID card against its photos. Approving makes the identity verified; rejecting sends it back to unverified.',
+        'A request to confirm who an identity is, for example by checking an ID card against its photos. Approving makes the identity verified; rejecting sends a pending verification identity back to unverified.',
     },
   },
   basePath: '/verification-requests',
@@ -156,7 +157,10 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
         texts: {
           label: 'Reject',
           notify: 'Request rejected.',
-          doc: { summary: 'Records that the identity could not be confirmed, with the reason: it goes back to unverified.' },
+          doc: {
+            summary:
+              'Records that the identity could not be confirmed, with the reason. A Pending verification identity goes back to unverified; any other status (verified, suspended, archived) is kept.',
+          },
         },
         icon: NAV_ICONS.reject,
         variant: 'destructive',

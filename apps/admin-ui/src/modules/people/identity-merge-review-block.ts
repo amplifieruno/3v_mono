@@ -30,6 +30,7 @@ export const identityMergeReviewBlock = defineBlock('itap:identity-merge-review'
     moves:
       '{{photos}} photos, {{templates}} face templates and {{entries}} watch-list entries move to {{target}}. {{sources}} will be marked merged: frozen with their history, left out of matching and unlinked from any profile.',
     inherits: '{{target}} takes over the profile {{profile}}.',
+    inheritsPrimary: '{{target}} becomes the primary identity of {{profile}}, as {{source}} was.',
     closes:
       'Their open duplicate pairs ({{pairs}}) close as merged and their pending verification requests ({{verifications}}) are cancelled.',
     rollback:

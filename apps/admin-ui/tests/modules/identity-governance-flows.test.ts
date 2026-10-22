@@ -10,6 +10,7 @@ import {
   VERIFICATION_REQUEST_RESOURCE,
 } from '../../src/data/resource-names';
 import { ACTION_REFUSALS } from '../../src/modules';
+import { mergeIntoApplied, mergeIntoFlow } from '../../src/modules/people/identity-governance-flows';
 import { PEOPLE_BINDING } from '../../src/modules/people/profile-activity';
 
 /**
@@ -58,6 +59,31 @@ describe('merge into this identity', () => {
     expect(flow.submitted[0]?.call).toMatchObject({
       input: { targetId: KEPT, sourceIds: [OTHER, THIRD], reason: 'Same person, two cameras' },
     });
+  });
+
+  it('should check a lost answer by whether the first identity sent is now merged', async () => {
+    const send = mergeIntoFlow.submit.input as (ctx: unknown) => unknown;
+    send({ values: { source_ids: [OTHER, THIRD], reason: null }, record: kept });
+    const reads: unknown[] = [];
+    const check = (status: string | null, record: Record<string, unknown> = kept) =>
+      mergeIntoApplied({
+        record,
+        args: {},
+        key: 'k',
+        signal: new AbortController().signal,
+        data: {
+          one: async (_resource: unknown, params: unknown) => {
+            reads.push(params);
+            return { data: status === null ? null : { id: OTHER, status } };
+          },
+        } as never,
+      });
+    expect(await check('merged')).toBe('applied');
+    expect(reads[0]).toEqual({ id: OTHER });
+    expect(await check('unverified')).toBe('not-applied');
+    expect(await check(null)).toBe('unknown');
+    // Nothing was sent from this identity: no basis for an answer.
+    expect(await check('merged', { ...kept, id: THIRD })).toBe('unknown');
   });
 
   it('should not send without an identity to merge', async () => {

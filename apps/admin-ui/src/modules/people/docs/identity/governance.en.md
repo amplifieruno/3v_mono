@@ -19,14 +19,24 @@ pending verifications) and says what the merge does:
   memberships move to the kept identity;
 - they become **Merged**: frozen with their history, left out of matching and
   unlinked from their profile;
-- the kept identity takes over their profile when it had none;
+- the kept identity takes over their profile when it had none, and becomes
+  the profile's primary identity when a merged one was (also when it already
+  shared the profile);
 - their open duplicate pairs close and their pending verification requests
   are cancelled.
 
-The platform never moves a face to another person silently: identities linked
-to two different profiles are refused (unlink one first, or merge the two
-profiles). The comparison says so before you send. After a review step and a
-confirmation, the merge runs. It is recorded in **People → Identity merges**
+The platform refuses a merge, and the comparison says so before you send,
+when:
+
+- an identity is already merged into another one;
+- the identities are linked to two different profiles: the platform never
+  moves a face to another person silently (unlink one first, or merge the two
+  profiles);
+- a synthetic test identity would be merged with a real one;
+- the processing of a merged identity's person is restricted (lift the
+  restriction first).
+
+After a review step and a confirmation, the merge runs. It is recorded in **People → Identity merges**
 and can be rolled back.
 
 A merge of several identities selected in the list is not offered: the list's

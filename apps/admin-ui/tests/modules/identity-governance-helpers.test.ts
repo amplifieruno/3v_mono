@@ -19,6 +19,7 @@ const identity = (id: string, over: Partial<MergeIdentity> = {}): MergeIdentity 
   is_synthetic: false,
   primary_photo_file_id: null,
   profile_id: null,
+  is_primary_for_profile: false,
   profile: null,
   profile_restricted: false,
   photos: 2,
@@ -58,8 +59,19 @@ describe('merge planning', () => {
       openPairs: 2,
       pendingVerifications: 0,
       inheritedProfile: 'Ivan (PROFILE-2)',
+      inheritedPrimaryFrom: null,
     });
     expect(mergeEffect(identity('1', { profile_id: 'p1' }), [identity('2', { profile: 'x' })]).inheritedProfile).toBeNull();
+  });
+
+  it('should name the merged identity whose primary flag the kept one takes over', () => {
+    const primary = identity('2', { profile_id: 'p1', is_primary_for_profile: true });
+    // The kept identity already shares the profile: no profile is taken over, the primary flag is.
+    const shared = mergeEffect(identity('1', { profile_id: 'p1' }), [primary]);
+    expect(shared).toMatchObject({ inheritedProfile: null, inheritedPrimaryFrom: 'IDENTITY-2' });
+    // The kept identity is already primary: nothing to take over.
+    expect(mergeEffect(identity('1', { profile_id: 'p1', is_primary_for_profile: true }), [primary]).inheritedPrimaryFrom).toBeNull();
+    expect(mergeEffect(identity('1'), [identity('2')]).inheritedPrimaryFrom).toBeNull();
   });
 });
 

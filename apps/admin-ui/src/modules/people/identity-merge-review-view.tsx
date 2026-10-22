@@ -76,6 +76,17 @@ function Effect({ target, sources, t }: {
       {effect.inheritedProfile === null ? null : (
         <p>{t('inherits', { params: { target: target.code, profile: effect.inheritedProfile } })}</p>
       )}
+      {effect.inheritedPrimaryFrom === null ? null : (
+        <p>
+          {t('inheritsPrimary', {
+            params: {
+              target: target.code,
+              profile: target.profile ?? effect.inheritedProfile ?? '',
+              source: effect.inheritedPrimaryFrom,
+            },
+          })}
+        </p>
+      )}
       <p>{t('closes', { params: { pairs: effect.openPairs, verifications: effect.pendingVerifications } })}</p>
       <p className="text-muted-foreground">{t('rollback')}</p>
     </div>

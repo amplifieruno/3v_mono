@@ -1,6 +1,7 @@
-import { type FlowConfig, type Layout, type ScreenRef, cond, ref } from '@burojs/core';
+import { type FlowConfig, type FlowUnknownCheck, type Layout, type ScreenRef, cond, ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
+import { resourceByName } from '../../data/resource-by-name';
 import { IDENTITY_RESOURCE } from '../../data/resource-names';
 import { carriedId } from '../../fields/carried-id';
 import { splitPhotos } from '../../fields/split-photos';
@@ -39,6 +40,31 @@ const mergeIntoFields = {
     texts: { label: 'Reason', doc: { summary: 'Why they are the same person; kept on the merge and in the audit log.' } },
   }),
   target_id: carriedId('Identity'),
+};
+
+/**
+ * The first identity each kept identity's last merge sent, by the kept identity's id: what
+ * "Check again" after a lost answer reads, since a check sees the record, not the values
+ * (`tasks/ui/buro-gaps.md` G12). Filled when the input is built, just before sending.
+ */
+const sentFirstSource = new Map<string, string>();
+
+/**
+ * Check again for {@link mergeIntoFlow}: the merge ran when the first identity it sent is now
+ * merged (the function merges all or nothing). Unknown when nothing was recorded for this
+ * identity (the console was reloaded) or the identity cannot be read.
+ */
+export const mergeIntoApplied: FlowUnknownCheck = async ({ record, data }) => {
+  const targetId = record?.id;
+  const sourceId = typeof targetId === 'string' ? sentFirstSource.get(targetId) : undefined;
+  if (sourceId === undefined) return 'unknown';
+  try {
+    const { data: row } = await data.one(resourceByName(IDENTITY_RESOURCE) as never, { id: sourceId } as never);
+    if (row === null || row === undefined) return 'unknown';
+    return (row as Readonly<Record<string, unknown>>).status === 'merged' ? 'applied' : 'not-applied';
+  } catch {
+    return 'unknown';
+  }
 };
 
 /** The kept identity in the review, which reads the flow's values as its record (G35). */
@@ -86,11 +112,13 @@ export const mergeIntoFlow = {
   submit: {
     mutation: mergeIdentities,
     retry: 'never',
-    input: ({ values, record }) => ({
-      targetId: String(record?.id ?? ''),
-      sourceIds: Array.isArray(values.source_ids) ? values.source_ids.map(String) : [],
-      reason: typeof values.reason === 'string' ? values.reason : null,
-    }),
+    input: ({ values, record }) => {
+      const targetId = String(record?.id ?? '');
+      const sourceIds = Array.isArray(values.source_ids) ? values.source_ids.map(String) : [];
+      if (sourceIds[0] !== undefined) sentFirstSource.set(targetId, sourceIds[0]);
+      return { targetId, sourceIds, reason: typeof values.reason === 'string' ? values.reason : null };
+    },
+    onUnknown: { check: mergeIntoApplied },
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof mergeIntoFields>;

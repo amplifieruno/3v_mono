@@ -43,7 +43,10 @@ export const verificationStatusEnum = defineEnum({
     approved: { label: 'Approved', doc: { summary: 'A reviewer confirmed the identity: it is verified.' } },
     rejected: {
       label: 'Rejected',
-      doc: { summary: 'A reviewer could not confirm the identity; it went back to unverified.' },
+      doc: {
+        summary:
+          'A reviewer could not confirm the identity; it went back to unverified if it was pending verification, otherwise it kept its status.',
+      },
     },
     cancelled: {
       label: 'Cancelled',

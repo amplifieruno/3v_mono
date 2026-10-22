@@ -29,6 +29,7 @@ const previewRow = z.object({
   is_synthetic: z.boolean(),
   primary_photo_file_id: z.string().nullable(),
   profile_id: z.string().nullable(),
+  is_primary_for_profile: z.boolean(),
   profile: profileRef.nullable(),
   identity_photos_aggregate: count,
   identity_embeddings_aggregate: count,
@@ -46,6 +47,7 @@ export const mergeIdentity = z.object({
   is_synthetic: z.boolean(),
   primary_photo_file_id: z.string().nullable(),
   profile_id: z.string().nullable(),
+  is_primary_for_profile: z.boolean(),
   profile: z.string().nullable(),
   profile_restricted: z.boolean(),
   photos: z.number(),
@@ -69,6 +71,7 @@ export function mergeIdentityOf(row: unknown): MergeIdentity | null {
     is_synthetic: d.is_synthetic,
     primary_photo_file_id: d.primary_photo_file_id,
     profile_id: d.profile_id,
+    is_primary_for_profile: d.is_primary_for_profile,
     profile: d.profile === null ? null : `${d.profile.first_name} ${d.profile.last_name} (${d.profile.code})`,
     profile_restricted: d.profile?.processing_restricted === true,
     photos: d.identity_photos_aggregate.aggregate.count,
@@ -88,6 +91,7 @@ export const MERGE_IDENTITY_FIELDS = `id
   is_synthetic
   primary_photo_file_id
   profile_id
+  is_primary_for_profile
   profile { code first_name last_name processing_restricted }
   identity_photos_aggregate { aggregate { count } }
   identity_embeddings_aggregate { aggregate { count } }

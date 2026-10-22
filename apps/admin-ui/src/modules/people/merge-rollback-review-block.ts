@@ -4,7 +4,8 @@ import { z } from 'zod';
 /**
  * What rolling a merge back restores (`itap:merge-rollback-review`): the kept identity, each
  * merged identity with the status and profile link it gets back, what leaves the kept identity
- * and the duplicate pairs that reopen. Placed in "Roll back" on an identity merge and on the
+ * and the duplicate pairs that reopen; it warns when the kept identity was merged away later (the
+ * rollback would be refused). Placed in "Roll back" on an identity merge and on the
  * merge's page.
  */
 export const mergeRollbackReviewBlock = defineBlock('itap:merge-rollback-review', {
@@ -26,6 +27,8 @@ export const mergeRollbackReviewBlock = defineBlock('itap:merge-rollback-review'
     pairs: '{{count}} duplicate pairs the merge closed reopen.',
     cancelled: 'Verification requests the merge cancelled stay cancelled.',
     done: 'This merge was rolled back.',
+    targetMerged:
+      '{{target}} was itself merged into another identity later: merges are undone newest first, so this rollback would be refused. Roll back that later merge first (Merges tab of {{target}}).',
   },
   props: {
     mergeId: prop(z.string().nullable().optional()).default(null),

@@ -78,7 +78,10 @@ export const approveVerification = defineMutation('itap:approve-verification', {
   effects,
 });
 
-/** Rejects a pending request with the reason: the identity goes back to `unverified`. */
+/**
+ * Rejects a pending request with the reason. Only a `pending_verification` identity goes back to
+ * `unverified`; an identity with any other status (verified, suspended, archived) keeps it.
+ */
 export const rejectVerification = defineMutation('itap:reject-verification', {
   binding: rejectVerificationOperation.binding,
   input: schema(decideVerificationInput),

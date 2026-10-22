@@ -27,11 +27,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   { code: 'flow.unknown-unhandled', location: 'profile toolbar.item.0.submit' },
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.0.submit' },
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.resource.0.submit' },
-  // `merge_into`, `split`, `add_relationship`: the check sees neither the chosen identities, the
-  // chosen photos nor the other identity (G12). Nothing is resent; the unknown screen tells the user
-  // to look at the identity's Merges or Relationships tab (or the new identity) first. A second
-  // send would be refused anyway (already merged, photos gone, pair exists).
-  { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.1.submit' },
+  // `split`, `add_relationship`: the check sees neither the chosen photos nor the other identity
+  // (G12). Nothing is resent; the unknown screen tells the user to look at the new identity or the
+  // Relationships tab first. A second send would be refused anyway (photos gone, pair exists).
+  // (`merge_into` has a check: it remembers the first identity it sent, `mergeIntoApplied`.)
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.2.submit' },
   { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.3.submit' },
 ];
