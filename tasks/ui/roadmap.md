@@ -12,7 +12,7 @@ and ends. Branch `feat/ui-console`.
 | 3 ✅ | Devices | devices, device areas, health metrics, device events, live camera block (stream-server + Socket.io detections), `recognition_start/stop/status` (done, `summary-03-devices.md`) | 2 |
 | 4 ✅ | People | profiles (documents via `upload_profile_document`/`open_file`, consent, restriction, duplicates), identities (photos, enrollment, merge/rollback/split, duplicates, verification, relationships), visits (check-in/out) (done, `summary-04-people.md`) | 2, 3 |
 | 5 ✅ | Monitoring | detections, tracking sessions, identity locations, occupancy, events, event rules (versions, test), incidents (lifecycle, notes, activities), watch lists, shift handovers, operator workspace (done, `summary-05-monitoring.md`) | 4 |
-| 6 | Notifications | rules, templates, recipient groups, escalation policies, on-call, subscriptions, user inbox, deliveries, webhooks (+ deliveries) | 5 |
+| 6 ✅ | Notifications | rules, templates, recipient groups, escalation policies, on-call, subscriptions, user inbox, deliveries, webhooks (+ deliveries) (done, `summary-06-notifications.md`) | 5 |
 | 7 | Segments | segments manual/dynamic, conditions editor over `segment_fields`, `preview_segment`/`evaluate_segment`, members history, daily stats, templates | 4 |
 | 8 | Analytics | dashboards (renderer + editor), occupancy/flow/heatmap/timeline blocks, reports (templates, schedules, files, retry), stats views | 5, 7 |
 | 9 | Search & bulk | `search_faces` (upload + webcam capture), results, saved searches, bulk jobs (+ rows, retry/cancel) | 4 |
