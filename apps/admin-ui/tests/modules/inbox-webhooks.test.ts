@@ -90,10 +90,25 @@ describe('webhook address', () => {
     expect(severity('http://169.254.169.254/')).toBe('error');
   });
 
+  it('should warn that ranges the sender never calls are saved but fail, as the sender (target.ts) classifies them', () => {
+    for (const url of ['http://0.1.2.3/', 'http://[::]/', 'http://[::ffff:a9fe:101]/', 'http://[::ffff:0.0.0.5]/', 'http://2852039166/', 'http://0/']) {
+      expect(webhookUrlProblem(url)?.code, url).toBe('webhookUrl.neverSent');
+      expect(severity(url), url).toBe('warning');
+    }
+    // The database still refuses its own literal forms.
+    expect(severity('http://0.0.0.0/')).toBe('error');
+    expect(webhookUrlProblem('http://8.8.8.8/')).toBeNull();
+    expect(webhookUrlProblem('http://134744072/')).toBeNull();
+  });
+
   it('should warn, not refuse, about loopback and private addresses the sender blocks outside development', () => {
     for (const url of ['http://localhost:3001/x', 'http://127.0.0.1/', 'http://10.1.2.3/', 'http://172.20.0.4/', 'http://192.168.1.1/', 'http://[::1]/', 'http://[fd00::1]/']) {
       expect(webhookUrlProblem(url)?.code, url).toBe('webhookUrl.private');
       expect(severity(url), url).toBe('warning');
+    }
+    // Written as a number or as an IPv4-mapped IPv6 address, the sender reads the same private host.
+    for (const url of ['http://2130706433/', 'http://0x7f.1/', 'http://[::ffff:7f00:1]/', 'http://[::ffff:10.0.0.1]/']) {
+      expect(webhookUrlProblem(url)?.code, url).toBe('webhookUrl.private');
     }
     // 172.32.x is public; a host name is only resolved by the sender.
     expect(webhookUrlProblem('http://172.32.0.1/')).toBeNull();

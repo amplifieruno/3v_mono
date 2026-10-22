@@ -21,14 +21,48 @@ function isLinkLocal(host: string): boolean {
   return /^169\.254\./.test(host) || /^0+\.0+\.0+\.0+$/.test(host) || /^fe[89ab][0-9a-f]:/.test(host) || /^::ffff:169\.254\./.test(host);
 }
 
-/** Loopback and private ranges the sender refuses unless private targets are allowed (`WEBHOOK_ALLOW_PRIVATE_TARGETS`). */
-function isPrivate(host: string): boolean {
-  if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^f[cd][0-9a-f]{0,2}:/.test(host)) return true;
-  const v4 = /^(?:::ffff:)?(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(host);
-  if (v4 === null) return false;
-  const a = Number(v4[1]);
-  const b = Number(v4[2]);
-  return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+/** The host as the sender reads it: the WHATWG parser turns numeric hosts (`2130706433`, `0x7f.1`) and IPv6 forms into one canonical text. */
+function senderHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  } catch {
+    return hostOf(url);
+  }
+}
+
+function isV4(host: string): boolean {
+  return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+}
+
+/** Dotted form of an IPv4-mapped IPv6 address (`::ffff:a.b.c.d` or `::ffff:hhhh:hhhh`), else null. */
+function mappedV4(host: string): string | null {
+  const mapped = /^::ffff:(.+)$/.exec(host)?.[1];
+  if (mapped === undefined) return null;
+  if (isV4(mapped)) return mapped;
+  const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(mapped);
+  if (hex === null) return null;
+  const high = parseInt(hex[1] ?? '0', 16);
+  const low = parseInt(hex[2] ?? '0', 16);
+  return [high >> 8, high & 0xff, low >> 8, low & 0xff].join('.');
+}
+
+function classifyV4(host: string): 'blocked' | 'private' | 'public' {
+  const [a = 0, b = 0] = host.split('.').map(Number);
+  if (a === 0 || (a === 169 && b === 254)) return 'blocked';
+  if (a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) return 'private';
+  return 'public';
+}
+
+/** The sender's own classification of a literal host (`apps/backend/src/webhooks/target.ts`); a host name is resolved only when sending. */
+function classify(host: string): 'blocked' | 'private' | 'public' {
+  if (host === 'localhost' || host.endsWith('.localhost')) return 'private';
+  if (isV4(host)) return classifyV4(host);
+  if (!host.includes(':')) return 'public';
+  const v4 = mappedV4(host);
+  if (v4 !== null) return classifyV4(v4);
+  if (host === '::' || /^fe[89ab][0-9a-f]:/.test(host)) return 'blocked';
+  if (host === '::1' || /^f[cd][0-9a-f]{0,2}:/.test(host)) return 'private';
+  return 'public';
 }
 
 /**
@@ -64,7 +98,15 @@ export function webhookUrlProblem(value: unknown): WebhookUrlProblem | null {
       text: 'Link-local and cloud metadata addresses (169.254.x.x, fe80::, 0.0.0.0) are never called: enter the receiving system’s address.',
     };
   }
-  if (isPrivate(host)) {
+  const kind = classify(senderHost(value));
+  if (kind === 'blocked') {
+    return {
+      severity: 'warning',
+      code: 'webhookUrl.neverSent',
+      text: 'This address is in a range the platform never calls (0.0.0.0/8, link-local or the unspecified IPv6 address, also written as a number or an IPv4-mapped address). It saves, but each delivery fails with “blocked_address”.',
+    };
+  }
+  if (kind === 'private') {
     return {
       severity: 'warning',
       code: 'webhookUrl.private',

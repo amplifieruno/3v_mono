@@ -175,9 +175,27 @@ describe.skipIf(!DEV_STACK_ENABLED)('inbox and webhooks against the dev stack', 
     );
     expect(state.incidents_by_pk).toMatchObject({ status: 'acknowledged', acknowledged_by: me });
     expect((state.notification_deliveries_by_pk as Row).acknowledged_at).toBeTruthy();
-    // Another member's notification is not the caller's to acknowledge.
-    const foreign = await send(documentOf(acknowledgeNotificationOperation), { notification: crypto.randomUUID() });
+    // Another member's real notification is not the caller's to acknowledge or mark.
+    const other = String(
+      ((await admin(
+        'query ($org: uuid!, $me: uuid!) { organization_members(where: { organization_id: { _eq: $org }, user_id: { _neq: $me } }, limit: 1) { user_id } }',
+        { org: organization, me },
+      )).organization_members as Row[])[0]?.user_id,
+    );
+    const foreignRow = String(
+      ((await admin('mutation ($o: user_notifications_insert_input!) { insert_user_notifications_one(object: $o) { id } }', {
+        o: { organization_id: organization, user_id: other, title: 'Foreign dev test', priority: 'low' },
+      })).insert_user_notifications_one as Row).id,
+    );
+    cleanups.push(() => admin('mutation ($id: uuid!) { delete_user_notifications_by_pk(id: $id) { id } }', { id: foreignRow }));
+    const foreign = await send(documentOf(acknowledgeNotificationOperation), { notification: foreignRow });
     expect(JSON.stringify(foreign.errors)).toContain('notification_not_found');
+    const marked = await send('mutation ($ids: _uuid!) { mark_notifications_read(args: { p_ids: $ids }) { id } }', { ids: `{${foreignRow}}` });
+    expect(JSON.stringify(marked.data?.mark_notifications_read ?? [])).not.toContain(foreignRow);
+    const untouched = (await admin('query ($id: uuid!) { user_notifications_by_pk(id: $id) { read_at acknowledged_at } }', { id: foreignRow }))
+      .user_notifications_by_pk as Row;
+    expect(untouched.read_at).toBeNull();
+    expect(untouched.acknowledged_at).toBeNull();
   }, 60_000);
 
   it('should refuse link-local and credentialed webhook addresses, save a private one and never read the secret back', async () => {
