@@ -10,17 +10,9 @@ import {
 import { EVENT_SEVERITIES, EVENT_SEVERITY_ENUM } from '../../enums/events';
 import { enumField } from '../../enums/field';
 import { WATCH_LIST_KINDS, WATCH_LIST_KIND_ENUM } from '../../enums/watch-lists';
-import { type FieldProblem, problemValidator } from '../../fields/field-issue';
+import { checkHexColor } from '../../fields/hex-color';
 import { checkNotBlank } from '../../fields/not-blank';
 import { IDENTITY_ENTRY_COLUMNS, PROFILE_ENTRY_COLUMNS } from './watch-list-entry-fields';
-
-/** `null` unless `value` is text that is no `#rrggbb` colour (`watch_lists_color_hex`); empty is no colour. */
-export function hexColorProblem(value: unknown): FieldProblem | null {
-  if (value === null || value === undefined || value === '') return null;
-  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/u.test(value)
-    ? null
-    : { code: 'color.hex', text: 'Enter a colour as #rrggbb, such as #d97706.' };
-}
 
 /** Columns of `itap.watch_lists` the `org_admin` role reads and writes. */
 export const watchListFields = {
@@ -48,7 +40,7 @@ export const watchListFields = {
   }),
   color: f.string({
     nullable: true,
-    validate: problemValidator(hexColorProblem),
+    validate: checkHexColor(),
     texts: { label: 'Colour', doc: { summary: 'How the list is marked on screens, as #rrggbb; empty for none.' } },
   }),
   description: f.text({ nullable: true, in: ['show', 'create', 'edit'], texts: 'Description' }),

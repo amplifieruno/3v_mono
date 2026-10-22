@@ -849,3 +849,19 @@ migration `1792365700277`.
   value" for such a secret (`meta.removable: false`), since `null` would break the `NOT NULL`.
 - **Expected from a framework:** `required: 'create'` (or the form mode in the predicate and
   validator context), and a write-only field kind with "keep / replace / remove" built in.
+
+### G54. The built-in Delete cannot say why the database refused it
+- **Need:** deleting a segment that is in use or has history is refused by a guard trigger
+  (`segment_referenced`, a `permission-error` envelope) or a NO ACTION foreign key
+  (`*_segment_fkey`, `constraint-violation`); the user must read which one and what to do
+  (archive instead), plan 07 Review Focus 5.
+- **Framework (0.6.0):** the built-in `delete` flow submits a resource delete
+  (`submit.delete`); its refusal keeps the provider's classification (`forbidden` / `conflict`)
+  and the dialog shows the generic sentence. A resource has no refusal reader for its own writes;
+  only custom mutations can be wrapped (`withActionRefusals`). **[code]**
+- **Workaround:** the segment declares its own `delete` flow (same name, so it replaces the
+  built-in) over a custom mutation `deleteSegment` (`delete_segments_by_pk`) bound with
+  `sqlRefusals(DELETE_SEGMENT_REFUSALS)`; Check again reads the segment back (`segmentDeleted`).
+  The dialog then shows the framework's "The server refused the values" line above the reason.
+- **Expected from a framework:** a per-resource refusal reader for create / update / delete (or
+  the provider's `details` rendered by the delete dialog), so a built-in write can say why.

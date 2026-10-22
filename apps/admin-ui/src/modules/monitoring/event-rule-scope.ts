@@ -6,6 +6,7 @@ import {
   EVENT_RULE_SCOPE_RESOURCE,
   EVENT_RULE_VERSION_RESOURCE,
   FACILITY_RESOURCE,
+  SEGMENT_RESOURCE,
 } from '../../data/resource-names';
 
 /** Columns of `itap.event_rule_version_scopes` the `org_admin` role reads; a row is added or removed, never changed. */
@@ -37,38 +38,40 @@ export const eventRuleScopeFields = {
       doc: { summary: 'An area the rule applies in, its sub-areas included.' },
     },
   }),
-  segment_id: f.uuid({
-    system: true,
+  segment_id: f.relation({
+    to: SEGMENT_RESOURCE,
     nullable: true,
-    in: ['list', 'show'],
+    write: 'create',
+    open: 'page',
+    providerOptions: { relationship: 'segment' },
     texts: {
       label: 'Segment',
       doc: {
         summary:
-          'A segment of people the rule applies to (membership at the event time). Segments are chosen on the segments pages; shown here by id.',
+          'A segment of people the rule applies to: the person or face of the event is a member at the event time. Places and segments combine: in one of the places and a member of one of the segments.',
       },
     },
   }),
   created_at: f.dateTime({ system: true, texts: 'Added', in: ['list'] }),
 };
 
-/** Exactly one place per row: a facility or an area (`event_rule_version_scopes_exactly_one_target`). */
+/** Exactly one target per row: a facility, an area or a segment (`event_rule_version_scopes_exactly_one_target`). */
 export const EVENT_RULE_SCOPE_CHECKS: Check[] = [
   {
     id: 'scopeExactlyOne',
     on: ['create'],
     severity: 'error',
     anchor: 'facility_id',
-    texts: 'Choose a facility or an area: one place per row.',
+    texts: 'Choose a facility, an area or a segment: one per row.',
     when: ({ values }) => {
-      const set = [values.facility_id, values.area_id].filter((value) => value !== null && value !== undefined && value !== '');
+      const set = [values.facility_id, values.area_id, values.segment_id].filter((value) => value !== null && value !== undefined && value !== '');
       return set.length !== 1;
     },
   },
 ];
 
 const SCOPE_TEXTS = {
-  label: 'Scope place',
+  label: 'Scope entry',
   labelPlural: 'Scope',
   doc: {
     summary:
@@ -93,7 +96,7 @@ export const eventRuleScope = defineResource(EVENT_RULE_SCOPE_RESOURCE, {
   views: {
     list: { page: false, columns: ['facility_id', 'area_id', 'segment_id', 'created_at'] },
     show: { page: false },
-    create: { body: (l) => ['version_id', l.grid(['facility_id', 'area_id'])] },
+    create: { body: (l) => ['version_id', l.grid(['facility_id', 'area_id', 'segment_id'])] },
   },
 });
 
@@ -102,7 +105,7 @@ export const eventRuleScope = defineResource(EVENT_RULE_SCOPE_RESOURCE, {
  * was in force never changes (the version's history must say where it applied).
  */
 export const eventRuleScopeHistory = defineResource(EVENT_RULE_SCOPE_HISTORY_RESOURCE, {
-  texts: { ...SCOPE_TEXTS, label: 'Scope place (history)' },
+  texts: { ...SCOPE_TEXTS, label: 'Scope entry (history)' },
   basePath: '/event-rule-scope-history',
   displayField: 'facility_id',
   data: { provider: 'hasura', scope: { facility: { field: 'facility_id', empty: 'shared' } } },

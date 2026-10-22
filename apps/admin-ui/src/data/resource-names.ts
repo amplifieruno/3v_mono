@@ -76,3 +76,6 @@ export const USER_NOTIFICATION_RESOURCE = 'user_notification';
 export const WEBHOOK_SUBSCRIPTION_RESOURCE = 'webhook_subscription';
 export const WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE = 'webhook_subscription_event_type';
 export const WEBHOOK_DELIVERY_RESOURCE = 'webhook_delivery';
+export const SEGMENT_RESOURCE = 'segment';
+export const SEGMENT_TEMPLATE_RESOURCE = 'segment_template';
+export const SEGMENT_DAILY_STAT_RESOURCE = 'segment_daily_stat';

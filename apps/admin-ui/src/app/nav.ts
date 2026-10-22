@@ -99,6 +99,9 @@ export const NAV_ICONS = {
   markAllRead: 'Mails',
   webhooks: 'Webhook',
   webhookDeliveries: 'Waypoints',
+  segments: 'Group',
+  segmentTemplates: 'LayoutTemplate',
+  createFromTemplate: 'CopyPlus',
 } as const;
 
 /**

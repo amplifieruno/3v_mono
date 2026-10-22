@@ -87,6 +87,13 @@ import {
   personChannelEnum,
   webhookDeliveryStatusEnum,
 } from './notifications';
+import {
+  SEGMENT_ENUM_TABLES,
+  segmentKindEnum,
+  segmentMemberSourceEnum,
+  segmentStatusEnum,
+  segmentTargetEnum,
+} from './segments';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -146,6 +153,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   personChannelEnum,
   addressChannelEnum,
   webhookDeliveryStatusEnum,
+  segmentKindEnum,
+  segmentTargetEnum,
+  segmentStatusEnum,
+  segmentMemberSourceEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -178,4 +189,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...INCIDENT_ENUM_TABLES,
   ...WATCH_LIST_ENUM_TABLES,
   ...NOTIFICATION_ENUM_TABLES,
+  ...SEGMENT_ENUM_TABLES,
 };

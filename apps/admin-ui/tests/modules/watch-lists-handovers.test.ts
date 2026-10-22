@@ -18,7 +18,7 @@ import { SHIFT_HANDOVER_CHECKS, SHIFT_HANDOVER_SAVED_VIEWS } from '../../src/mod
 import { HANDOVER_INCIDENT_COLUMNS } from '../../src/modules/monitoring/shift-handover-incidents';
 import { incidentsLinked } from '../../src/modules/monitoring/shift-handover-flows';
 import { HANDOVER_INCIDENT_EFFECTS } from '../../src/modules/monitoring/shift-handover-ops';
-import { hexColorProblem } from '../../src/modules/monitoring/watch-list';
+import { hexColorProblem } from '../../src/fields/hex-color';
 import { expectTranslated } from '../support/field-issues';
 
 /**

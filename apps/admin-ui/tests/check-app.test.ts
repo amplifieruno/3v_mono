@@ -37,6 +37,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // from here, and resending would queue a second report; the unknown screen tells the user to
   // check before trying again (the timeline records the report once it is generated).
   { code: 'flow.unknown-unhandled', location: 'incident toolbar.item.6.submit' },
+  // `create_segment` on a segment template: the check sees no submitted name (G12), and a template
+  // may have many segments; the unknown screen tells the user to look at the template's Segments
+  // tab first (a resend with the same name would be refused as a duplicate anyway).
+  { code: 'flow.unknown-unhandled', location: 'segment_template toolbar.item.0.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

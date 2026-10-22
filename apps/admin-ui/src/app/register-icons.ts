@@ -84,6 +84,8 @@ import {
   Mails,
   Webhook,
   Waypoints,
+  Group,
+  CopyPlus,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -173,6 +175,8 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Mails,
   Webhook,
   Waypoints,
+  Group,
+  CopyPlus,
 };
 
 /**

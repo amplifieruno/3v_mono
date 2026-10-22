@@ -7,6 +7,7 @@ import { organizationModule } from './organization';
 import { peopleModule } from './people';
 import { overviewModule } from './overview';
 import { placesModule } from './places';
+import { segmentsModule } from './segments';
 
 /**
  * Every module of the console, in sidebar order. A new module exports one
@@ -21,6 +22,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   peopleModule,
   monitoringModule,
   notificationsModule,
+  segmentsModule,
   filesModule,
 ];
 

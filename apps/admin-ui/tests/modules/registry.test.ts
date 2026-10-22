@@ -93,6 +93,9 @@ describe('module registries', () => {
       'photo-gallery.identityPhotos',
       'places.applyFacilityTemplate',
       'places.facilityOccupancyNow',
+      'segment-stats.segmentDailyStats',
+      'segments.createSegmentFromTemplate',
+      'segments.deleteSegment',
       'split-photos.splitParts',
       'storage_files.openFile',
     ]);

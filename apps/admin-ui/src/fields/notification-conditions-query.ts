@@ -2,7 +2,7 @@ import { defineQuery } from '@burojs/core';
 import { z } from 'zod';
 import { hasuraOperation, rootOf } from '../data/operations';
 import { resourceByName } from '../data/resource-by-name';
-import { AREA_RESOURCE, FACILITY_RESOURCE } from '../data/resource-names';
+import { AREA_RESOURCE, FACILITY_RESOURCE, SEGMENT_RESOURCE } from '../data/resource-names';
 import { schema } from '../data/schema';
 import type { ConditionReferences } from './notification-conditions-format';
 
@@ -48,8 +48,6 @@ export const notificationConditionReferences = defineQuery('itap:notification-co
   binding: conditionReferencesOperation.binding,
   input: schema(z.object({})),
   output: schema(conditionReferences),
-  // Segments are not a registered resource yet (their pages come with the segments phase), so a
-  // segment created or renamed elsewhere is not invalidated here: the choices refresh on the
-  // query's next fetch. Add the segment resource to `reads` when it exists.
-  reads: [resourceByName(FACILITY_RESOURCE), resourceByName(AREA_RESOURCE)],
+  // A facility, area or segment created or renamed elsewhere refreshes the choices.
+  reads: [resourceByName(FACILITY_RESOURCE), resourceByName(AREA_RESOURCE), resourceByName(SEGMENT_RESOURCE)],
 });

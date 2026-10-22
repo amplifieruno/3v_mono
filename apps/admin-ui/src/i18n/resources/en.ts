@@ -156,4 +156,10 @@ export default {
   webhook_subscription: {
     doc: { topics: { index: 'Webhooks: signed requests, allowed addresses and deliveries' } },
   },
+  segment: {
+    doc: { topics: { index: 'Segments: manual and dynamic, evaluation, trend and archiving' } },
+  },
+  segment_template: {
+    doc: { topics: { index: 'Segment templates: built-in conditions and creating segments' } },
+  },
 } satisfies TranslationBundle;

@@ -170,6 +170,8 @@ describe('enrollment refusals', () => {
       `${PEOPLE_BINDING}.rollbackMerge`,
       `${PEOPLE_BINDING}.splitIdentity`,
       `${PEOPLE_BINDING}.uploadProfileDocument`,
+      'segments.createSegmentFromTemplate',
+      'segments.deleteSegment',
     ]);
   });
 

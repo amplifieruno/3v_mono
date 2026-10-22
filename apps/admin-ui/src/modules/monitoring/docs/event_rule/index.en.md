@@ -56,10 +56,12 @@ matched them). A draft can be discarded with **Delete**.
 
 ## Scope
 
-A version's **Scope** tab lists where it applies: whole facilities, areas
-(with their sub-areas) or segments of people. One place per row; a version
-with no scope applies everywhere in the organization. Segments are chosen on
-the segments pages and shown here by id.
+A version's **Scope** tab lists where and to whom it applies: whole
+facilities, areas (with their sub-areas) or segments of people. One facility,
+area or segment per row. Places and segments combine: the event must happen
+in one of the places and be about a member of one of the segments (at the
+event time). A version with no scope applies everywhere in the organization,
+to everyone. A segment's own page lists the rule versions scoped to it.
 
 ## Incidents and events of a rule
 
