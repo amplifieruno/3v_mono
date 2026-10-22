@@ -52,6 +52,8 @@ grid, editor (add/remove/reorder widgets, kind → query → params form, positi
 contract validation, default dashboard as the landing page option. Commit `feat(ui): dashboards`.
 
 ### Task 3: Reports
+
+Carry-over from phase 6: turn `notification_deliveries.report_id` (raw id today) into a relation to the report resource.
 Report templates (system read-only), reports (create flow per type with parameter forms, facilities and
 segments links, period; status timeline; open file; retry), schedules (template, cron with a readable
 summary field type, timezone, recipient group, channel, active, last/next run). Commit `feat(ui): reports`.

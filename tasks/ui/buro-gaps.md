@@ -727,6 +727,11 @@ migration `1792365700277`.
   `watch_list_identity_entry`, each declaring only its own subject (required, `write: 'create'`); the
   all-entries resource `watch_list_entry` reads both subjects and has create off. The list's People and
   Identities tabs and the profile's and identity's Watch lists tabs place the matching one.
+  Phase 6 uses the same pattern twice: recipient group members (`recipient_group_user_member` /
+  `recipient_group_address_member`, `recipient_group_members_exactly_one_recipient`) and escalation steps
+  (`escalation_group_step` / `escalation_on_call_step`, `escalation_policy_steps_exactly_one_target`), each
+  twin list filtered by its own target `nnull`; the read-only `escalation_step` lists a policy's whole
+  sequence in step order with both targets.
 - **Expected from a framework:** a type keyed by a predicate over the record (`present(profile_id)`)
   whose create sends no discriminator, or a create-time choice between field groups.
 

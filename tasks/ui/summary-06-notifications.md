@@ -24,13 +24,16 @@ On-call schedules, My subscriptions, Deliveries, Delivery report, Webhooks, Webh
   choices read from the organization, areas follow the chosen facility, a stale id is flagged on its row.
 - **Audiences.** Recipient groups with people and external addresses as two resources over one table
   (G45, email or SMS for addresses), escalation policies with group steps and on-call steps (two resources
-  over `escalation_policy_steps`; "Passes at most" shown only while "repeat" is on), on-call schedules with a
+  over `escalation_policy_steps`, each on its own tab, plus a read-only `escalation_step` list of the whole
+  sequence in step order on the Steps tab; "Passes at most" shown only while "repeat" is on and then
+  required, `escalation_policies_repeat_bounded`), on-call schedules with a
   rotation list. Computed fields `on_call_schedules.on_call_user_id` / `shift_ends_at` show whom an on-call
   step would page now (it is the function the `escalate` cron calls).
-- **Subscriptions and deliveries.** "My subscriptions" (own rows only; switch off instead of delete, since a
-  delete would take the deliveries along), the append-only **Deliveries** log (cursor paging, manual count;
+- **Subscriptions and deliveries.** "My subscriptions" (own rows only, not narrowed by the sidebar facility;
+  switch off instead of delete, since a delete would take the deliveries along), the append-only **Deliveries** log (cursor paging, manual count;
   views Failed, Dead letters, Mine; computed `origin`, `title`, `to_me`, `escalation_policy_id`), the
-  **Delivery report** page (7 days / 24 hours / 30 days facts and a per-channel table), and Notifications tabs
+  **Delivery report** page (7 days / 24 hours / 30 days facts and a per-channel table from one shared read
+  of `delivery_report`), and Notifications tabs
   on rules, incidents and events.
 - **Inbox and bell.** `user_notification` (Mark read, Acknowledge, Mark all read; acknowledging an escalation
   page acknowledges its incident and rereads it and its timeline) and `InboxBell` in the header (unread
@@ -65,6 +68,19 @@ On-call schedules, My subscriptions, Deliveries, Delivery report, Webhooks, Webh
   `null` for a hidden field and the server ignored the value anyway.
 - Webhook address problems that the database accepts but the sender never sends to are warnings, not errors.
 - The test-rule dry run lists non-matching events too, with their reason; the e2e asserts both sides.
+- Exactly-one columns (a group member's user or address, a step's group or schedule) are twin resources
+  over one table rather than buro record types or conditional fields: record types need a discriminator
+  column that the create always sends (G45), and the tables have none (a generated column cannot be
+  inserted). One form with both targets shown by a `when` on a kind switch would need a kind column too, and
+  a resource field takes no predicate `required`, so "exactly one" would rest on extra checks and the
+  database refusal. Twins give each form its own required target and nothing else, and the database
+  CHECK stays the backstop. Each twin's list carries its `nnull` filter; an all-rows read resource with create
+  off shows the whole set (watch-list entries, escalation steps).
+- Final review wave: a repeating policy requires "Passes at most" (a form check mirroring the CHECK; the
+  help no longer promises endless repeats); "My subscriptions" drops the facility scope (a personal list,
+  exempt in the facility-scope guard test); the delivery report reads once per period for facts and table;
+  the private-address webhook warning says the delivery fails at once with `blocked_address: <address>`
+  without retries (non-retryable in `sendWebhook.ts` / `finish_webhook_delivery`).
 
 ## Found by the smoke suite
 
@@ -84,8 +100,7 @@ On-call schedules, My subscriptions, Deliveries, Delivery report, Webhooks, Webh
 
 - Restore read time fallback in the inbox dev test (the original read time is not preserved).
 - Validator casts (G14/G33 family).
-- `report_id` of a delivery is an id until the reports resource of phase 8; duplicate report calls on the
-  report page.
+- `report_id` of a delivery is an id until the reports resource of phase 8 (carried into plan 08, Task 3).
 - A computed title for subscriptions that have only filters.
 - Reordering steps and rotation members is by number (G51); the bell has no "Mark all read" of its own.
 
