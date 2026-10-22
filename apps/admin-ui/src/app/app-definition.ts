@@ -3,7 +3,7 @@ import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
 import { CONSOLE_MODULES } from '../modules';
 import { helpBlock } from './blocks';
-import { NAV_SECTIONS, organizationSection, overviewSection } from './nav';
+import { NAV_SECTIONS, organizationSection, overviewSection, placesSection } from './nav';
 import { helpPage } from './pages';
 
 /**
@@ -14,6 +14,7 @@ import { helpPage } from './pages';
 export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }) => {
   use(NAV_SECTIONS.overview, overviewSection);
   use(NAV_SECTIONS.organization, organizationSection);
+  use(NAV_SECTIONS.places, placesSection);
   use('help', helpPage, helpBlock);
   use('itap-enums', ...ITAP_ENUMS);
   for (const mod of CONSOLE_MODULES) use(mod.name, ...mod.uses);

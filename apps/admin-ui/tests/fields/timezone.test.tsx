@@ -83,6 +83,17 @@ describe('timezone zones', () => {
       expect(isTimezone(alias), alias).toBe(true);
     }
   });
+
+  it('should accept a stored legacy zone the browser knows but does not list', () => {
+    // `SystemV/EST5` resolves to itself and is not in `Intl.supportedValuesOf` (like `EST` or
+    // `CET` in browsers whose ICU keeps them): a record holding one stays savable; new picks
+    // come from the list anyway.
+    const zones = new Set(Intl.supportedValuesOf('timeZone'));
+    expect(zones.has('SystemV/EST5')).toBe(false);
+    expect(isTimezone('SystemV/EST5')).toBe(true);
+    expect(checkTimezone('SystemV/EST5')).toBeNull();
+    expect(timezoneOffset('SystemV/EST5', new Date('2026-07-01T12:00:00Z'))).toBe('UTC-05:00');
+  });
 });
 
 describe('timezone field', () => {

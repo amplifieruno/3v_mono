@@ -23,4 +23,7 @@ export default {
   custom_attribute_definition: {
     doc: { topics: { index: 'Custom attributes' } },
   },
+  facility: {
+    doc: { topics: { index: 'Facilities, operating hours and custom attributes' } },
+  },
 } satisfies TranslationBundle;

@@ -193,3 +193,20 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   `—` for an empty one), so the heading is data, not an English literal.
 - **Expected from a framework:** a `title`/`hideTitle` prop on `<RecordScreen>` (or the G13
   current-record view kind with the page title as heading).
+
+### G17. A field validator cannot read what its input loaded, nor the stored value
+- **Need:** the reusable `customFields({ entity })` field checks a record's `custom_fields` against
+  the organization's attribute definitions (required ones, value types) before any request, and,
+  like the database trigger, skips the check on an edit that leaves the value unchanged.
+- **Framework (0.6.0):** a field `validate` receives `(value, { values, field })` only
+  (`validation-runner.ts`): no data provider, no query cache, no record being edited, no mode. The
+  input reads the definitions (`useList`) and sees `record`, but has no way to contribute issues;
+  only a resource-level `validate` sees `initialValues` and `view`, which would make every resource
+  using the field wire it by hand. **[code]**
+- **Workaround:** the input publishes `{ definitions, stored }` per entity while mounted
+  (`src/fields/custom-fields-registry.ts`); the field's validator reads it on save and checks only
+  the shape when nothing is published (the server decides). Tested in
+  `tests/fields/custom-fields.test.ts` and `tests/modules/facilities-page.test.tsx`.
+- **Expected from a framework:** a validator context carrying the record being edited (or initial
+  values) and a way for a field implementation to declare an async validator with access to the
+  data runtime, or to report issues from its input.

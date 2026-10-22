@@ -28,13 +28,14 @@ export const NAV_ICONS = {
   workSchedules: 'CalendarClock',
   customAttributes: 'ListPlus',
   preferences: 'UserCog',
+  facilities: 'Building',
 } as const;
 
 /**
  * The sidebar sections, one per functional area of the console. A section is
  * grouping only: resources and pages keep their own paths. Every area is
- * declared here so later phases only register what they fill; this phase
- * registers `overview` and `organization`.
+ * declared here so later phases only register what they fill; the app
+ * definition registers the sections modules fill (`overview`, `organization`, `places`).
  */
 export const NAV_SECTIONS = {
   overview: 'overview',

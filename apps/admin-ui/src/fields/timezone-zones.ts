@@ -11,35 +11,27 @@ export interface TimezoneOption {
   readonly offset: string;
 }
 
-/** The zones the browser lists (canonical IANA names), or `null` where `Intl.supportedValuesOf` is missing. */
-let listed: ReadonlySet<string> | null | undefined;
-function listedZones(): ReadonlySet<string> | null {
-  if (listed === undefined) {
-    listed =
-      typeof Intl.supportedValuesOf === 'function'
-        ? new Set(Intl.supportedValuesOf('timeZone'))
-        : null;
-  }
-  return listed;
-}
+/** `+03:00`, `-0500` and `Etc/GMT±N`: offsets, whose sign PostgreSQL reads the POSIX way. */
+const OFFSET = /^(?:[+-]|Etc\/GMT[+-])/u;
 
 /**
- * Whether `value` names a time zone the browser knows (`Europe/Moscow`, `UTC`) or a stored
- * alias of one (`Asia/Kolkata`, `US/Eastern`): the name must resolve to `UTC` or to a zone
- * `Intl.supportedValuesOf` lists. Offsets (`+03:00`, `-0500`) and `Etc/GMT±N` are refused:
- * PostgreSQL reads a bare offset with the POSIX sign, the opposite of what it says.
+ * Whether `value` names a time zone the browser knows: `UTC`, a listed IANA zone
+ * (`Europe/Moscow`), an alias of one (`Asia/Calcutta`, `US/Eastern`) or a legacy zone the
+ * browser resolves without listing it (`EST`, `CET` in some ICU builds): a record that
+ * already holds such a zone stays savable, and new picks come from the list
+ * (`timezoneOptions`) anyway. Names the browser cannot resolve are refused, and so are
+ * offsets (`+03:00`, `-0500`, `Etc/GMT+3`): PostgreSQL reads them with the POSIX sign,
+ * the opposite of what they say.
  */
 export function isTimezone(value: unknown): value is string {
-  if (typeof value !== 'string' || value.trim() === '' || /^[+-]/u.test(value.trim())) return false;
+  if (typeof value !== 'string' || value.trim() === '' || OFFSET.test(value.trim())) return false;
   let resolved: string;
   try {
     resolved = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone;
   } catch {
     return false;
   }
-  if (/^[+-]/u.test(resolved)) return false;
-  const zones = listedZones();
-  return resolved === 'UTC' || zones === null || zones.has(resolved);
+  return !OFFSET.test(resolved);
 }
 
 /** `zone`'s offset from UTC at `at` (daylight saving included), `UTC+03:00`; `null` for an unknown zone. */

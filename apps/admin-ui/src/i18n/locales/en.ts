@@ -63,6 +63,19 @@ export default {
       /** A row's text box; `item` is capitalized here (`Option 2`). */
       row: '{{item}} {{index}}',
     },
+    /** The custom attribute values field (`src/fields/custom-fields-impl.ts`). */
+    customFields: {
+      loading: 'Loading custom attributes…',
+      failed: 'Custom attributes could not be loaded; the server checks the values on save.',
+      none: 'No custom attributes are defined for this kind of record.',
+      yes: 'Yes',
+      no: 'No',
+      unset: 'Not set',
+      kept: 'Kept values',
+      inactiveNote: 'Inactive attribute; kept as stored.',
+      removedNote: 'This attribute no longer exists; remove the value to save.',
+      remove: 'Remove the value of {{key}}',
+    },
     organizations: {
       title: 'Choose an organization',
       description: 'You are a member of several organizations. You can switch later from the sidebar.',
@@ -99,6 +112,16 @@ export default {
       },
       timezone: {
         unknown: 'Not a known time zone. Pick one from the list (for example Europe/Moscow).',
+      },
+      customFields: {
+        notObject: 'Custom fields must be an object of attribute values.',
+        undefinedKey: 'No custom attribute “{{key}}” exists any more; remove its value to save.',
+        required: '{{label}} is required.',
+        notText: '{{label}}: enter text.',
+        notNumber: '{{label}}: enter a number.',
+        notBoolean: '{{label}}: choose yes or no.',
+        notDate: '{{label}}: enter a date as YYYY-MM-DD.',
+        notOption: '{{label}}: pick one of the options.',
       },
       number: {
         range: 'Enter a number from {{min}} to {{max}}.',

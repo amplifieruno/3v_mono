@@ -38,7 +38,12 @@ describe('module registries', () => {
       .flatMap(([resource, byName]) => Object.keys(byName).map((name) => `${resource}.${name}`))
       .sort();
     expect(registered).toEqual(operations);
-    expect(operations).toEqual(['organization_invitation.inviteMember', 'overview.dashboardKpis', 'storage_files.openFile']);
+    expect(operations).toEqual([
+      'organization_invitation.inviteMember',
+      'overview.dashboardKpis',
+      'places.facilityOccupancyNow',
+      'storage_files.openFile',
+    ]);
   });
 
   it('should parse every operation document as one operation of its declared kind', () => {
