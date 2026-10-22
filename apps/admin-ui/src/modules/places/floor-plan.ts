@@ -6,7 +6,7 @@ import { rangeValidator } from '../../fields/bounded-number';
 import { imageSize } from '../../fields/image-size';
 import { FLOOR_PLAN_RESOURCE, PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
 import { storageFile } from '../../fields/storage-file';
-import { FACILITY_RESOURCE } from './facility';
+import { FACILITY_RESOURCE } from './resource-names';
 
 export { FLOOR_PLAN_RESOURCE };
 

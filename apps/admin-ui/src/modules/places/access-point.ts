@@ -13,8 +13,11 @@ import {
 } from '../../enums/places';
 import { planPosition } from '../../fields/plan-position';
 import { AREA_RESOURCE } from './area';
-import { FACILITY_RESOURCE } from './facility';
-import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE } from './resource-names';
+import {
+  ACCESS_POINT_DEVICE_RESOURCE,
+  ACCESS_POINT_RESOURCE,
+  FACILITY_RESOURCE,
+} from './resource-names';
 
 export { ACCESS_POINT_RESOURCE };
 

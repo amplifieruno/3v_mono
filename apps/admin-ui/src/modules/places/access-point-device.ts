@@ -2,8 +2,11 @@ import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { enumField } from '../../enums/field';
 import { ACCESS_POINT_DEVICE_ROLES, ACCESS_POINT_DEVICE_ROLE_ENUM } from '../../enums/places';
-import { FACILITY_RESOURCE } from './facility';
-import { ACCESS_POINT_DEVICE_RESOURCE, ACCESS_POINT_RESOURCE } from './resource-names';
+import {
+  ACCESS_POINT_DEVICE_RESOURCE,
+  ACCESS_POINT_RESOURCE,
+  FACILITY_RESOURCE,
+} from './resource-names';
 
 export { ACCESS_POINT_DEVICE_RESOURCE };
 

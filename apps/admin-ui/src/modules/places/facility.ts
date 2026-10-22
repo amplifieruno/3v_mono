@@ -11,9 +11,9 @@ import { timezone } from '../../fields/timezone';
 import { applyTemplateFlow } from './apply-template-flow';
 import { areaTreeBlock } from './area-tree-block';
 import { FACILITY_OCCUPANCY_ROWS, facilityOccupancyNow } from './occupancy';
-import { ACCESS_POINT_RESOURCE } from './resource-names';
+import { ACCESS_POINT_RESOURCE, FACILITY_RESOURCE } from './resource-names';
 
-export const FACILITY_RESOURCE = 'facility';
+export { FACILITY_RESOURCE };
 
 /** `facilities_contact_is_object`: the contact details are a JSON object (`{}` for none). */
 const checkContact = (value: unknown): string | null =>

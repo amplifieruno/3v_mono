@@ -6,3 +6,4 @@
 export const ACCESS_POINT_RESOURCE = 'access_point';
 export const ACCESS_POINT_DEVICE_RESOURCE = 'access_point_device';
 export const FACILITY_TEMPLATE_RESOURCE = 'facility_template';
+export const FACILITY_RESOURCE = 'facility';

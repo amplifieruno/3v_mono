@@ -16,7 +16,7 @@ import { areaShape } from '../../fields/area-shape';
 import { rangeValidator } from '../../fields/bounded-number';
 import { FLOOR_PLAN_RESOURCE } from '../../fields/plan-rows';
 import { areaParentGuardBlock } from './area-parent-guard-block';
-import { FACILITY_RESOURCE } from './facility';
+import { FACILITY_RESOURCE } from './resource-names';
 
 export const AREA_RESOURCE = 'area';
 
