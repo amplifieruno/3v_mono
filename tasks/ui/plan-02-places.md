@@ -27,8 +27,7 @@ conventions, §6.4 custom attributes).
   and the dev DB. System columns (`code`, `number`, `path`, `depth`, `areas_count`,
   `current_occupancy`) are `system`.
 - Shapes are in floor-plan pixel space: GeoJSON-like `{ type: 'Polygon', coordinates: [[[x,y],…]] }`
-  or `{ type: 'Circle', center: [x,y], radius }` (verify against the DB validation in the
-  data-layer migrations); positions `{ x, y }` in the same space (verify).
+  or `{ type: 'Circle', center: [x,y], radius }` (`itap.valid_shape`); positions `[x, y]` in the same space (`itap.valid_point`).
 - An area finds its floor plan through its floor ancestor (`floor_plans.area_id` is the floor).
 - Facility-dimension resources (areas, floor plans, access points, access point devices) declare
   `data.scope` with key `facility`; facilities themselves never do.
@@ -97,6 +96,8 @@ floor plan with fake data, dev-stack upload + shape save.
 **Commit:** `feat(ui): floor plans with drawn area shapes`.
 
 ### Task 4: Access points, bound devices, facility templates
+
+Carry-over from Task 3: add an `accessPoints: source.list(...)` data entry to the `itap:floor-plan` block (access points of the plan's areas, scoped like the areas read) and wire `position: planPosition({ areaField: 'area_id' })` on the access point resource.
 
 **Files:** `src/modules/places/access-point.ts` (resource: facility_id, area_id, from_area_id,
 name, kind, direction, position (`planPosition()`), is_entry_exit, face_credential, status;
