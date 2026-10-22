@@ -48,6 +48,10 @@ export const NAV_ICONS = {
   mergeProfiles: 'Merge',
   dismiss: 'X',
   reopen: 'RotateCcw',
+  identities: 'ScanFace',
+  createIdentity: 'UserPlus',
+  addPhotos: 'ImagePlus',
+  enrollFace: 'ScanFace',
 } as const;
 
 /**

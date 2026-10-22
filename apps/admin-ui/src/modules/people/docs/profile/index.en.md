@@ -65,7 +65,8 @@ holds:
 - the person's faces are left out of recognition, face authentication, search
   and dynamic segments;
 - their open tracking sessions and manual segment memberships are closed;
-- identities cannot be linked to or unlinked from the profile, and the profile
+- identities cannot be linked to or unlinked from the profile, no face can be
+  enrolled (**Enroll face** is disabled with the reason), and the profile
   cannot be merged with another;
 - nothing is deleted, and the profile's own fields can still be corrected.
 
@@ -80,14 +81,17 @@ memberships the restriction closed stay closed.
 An **erased** profile (a data subject's erasure request) is shown with a red
 box. Its personal data is gone and it stays as a tombstone for the history
 that points at it. The database refuses any change to it, so the console
-disables **Edit**, **Upload document**, the restriction flows and every field
+disables **Edit**, **Enroll face**, **Upload document**, the restriction flows and every field
 of the edit form, each with the reason. Its restriction is never lifted.
 
 ## The profile page
 
 - **Details**: the fields above, with the photo, the custom attributes and
   whether processing is restricted.
-- **Identities**: whether a face is linked and how many identities are.
+- **Identities**: the person's identities (tracked faces) with their photo,
+  status, link strength, last sighting and detection count; the primary one
+  is marked. **Enroll face** in the page header adds face photos for the
+  person (see *Identities*).
 - **Documents**: the person's documents; **Upload document** adds one and
   **Open file** opens it (audited). See *Profile documents*.
 - **Consent**: the person's consent decisions per purpose, recorded and

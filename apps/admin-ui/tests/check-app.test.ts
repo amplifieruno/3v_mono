@@ -20,7 +20,13 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // `upload_document`: a lost answer of `upload_profile_document` cannot be checked from the flow
   // (the check sees neither the title nor the file, G12), and resending would store a second copy;
   // the unknown screen tells the user to look at the profile's Documents tab first.
+  { code: 'flow.unknown-unhandled', location: 'profile toolbar.item.1.submit' },
+  // `enroll_face`, `add_photos`, `create_from_photos`: a lost answer of an enrollment action cannot
+  // be checked from the flow (the check sees no submitted photos, G12), and resending would add the
+  // photos twice; the unknown screen tells the user to look at the identity's Photos tab first.
   { code: 'flow.unknown-unhandled', location: 'profile toolbar.item.0.submit' },
+  { code: 'flow.unknown-unhandled', location: 'identity toolbar.item.0.submit' },
+  { code: 'flow.unknown-unhandled', location: 'identity toolbar.resource.0.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

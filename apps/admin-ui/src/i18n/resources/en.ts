@@ -67,6 +67,9 @@ export default {
   consent_record: {
     doc: { topics: { index: 'Consent: recording, withdrawing and its effects' } },
   },
+  identity: {
+    doc: { topics: { index: 'Identities: sources, photos, enrollment and the profile link' } },
+  },
   profile_duplicate_candidate: {
     doc: { topics: { index: 'Profile duplicates: comparing, merging, dismissing' } },
   },

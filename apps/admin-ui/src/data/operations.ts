@@ -1,4 +1,5 @@
 import type { HasuraCustomOperation } from '@burojs/hasura';
+import type { ActionRefusalReader } from './action-refusals';
 import { HASURA_PROVIDER } from './provider-name';
 
 /** Where a custom operation is bound: the registry key (resource) and the operation name. */
@@ -17,6 +18,8 @@ export interface HasuraOperationBinding {
 export interface HasuraOperationEntry {
   readonly binding: HasuraOperationBinding;
   readonly document: HasuraCustomOperation;
+  /** How the action's definite refusals read on the flow form (`./action-refusals.ts`), if it has any. */
+  readonly refusals?: ActionRefusalReader;
 }
 
 /** A custom operation under `resource`.`operation` with its GraphQL document. */
@@ -24,8 +27,13 @@ export function hasuraOperation(
   resource: string,
   operation: string,
   document: HasuraCustomOperation,
+  refusals?: ActionRefusalReader,
 ): HasuraOperationEntry {
-  return { binding: { provider: HASURA_PROVIDER, resource, operation }, document };
+  return {
+    binding: { provider: HASURA_PROVIDER, resource, operation },
+    document,
+    ...(refusals === undefined ? {} : { refusals }),
+  };
 }
 
 /** The named root field of a GraphQL answer, or `undefined`. */

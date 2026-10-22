@@ -1,6 +1,6 @@
 import { filesModule } from '../fields/open-file';
 import { devicesModule } from './devices';
-import { type ConsoleModule, collectOperations, collectTables } from './module';
+import { type ConsoleModule, collectOperations, collectRefusals, collectTables } from './module';
 import { organizationModule } from './organization';
 import { peopleModule } from './people';
 import { overviewModule } from './overview';
@@ -33,3 +33,6 @@ export const ITAP_TABLES = collectTables(CONSOLE_MODULES);
  * descriptor never supplies its own document.
  */
 export const HASURA_OPERATIONS = collectOperations(CONSOLE_MODULES);
+
+/** How the actions' definite refusals read on flow forms (`../data/action-refusals.ts`). */
+export const ACTION_REFUSALS = collectRefusals(CONSOLE_MODULES);

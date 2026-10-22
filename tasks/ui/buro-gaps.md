@@ -515,3 +515,22 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   already says which profile is erased or restricted.
 - **Expected from a framework:** async record-only checks evaluated for the pre-click state (with a
   pending state while they run).
+
+### G33. An Action's definite refusal reads as "may have been applied"
+- **Need:** "Enroll face" with photos that all fail the quality check keeps its form and says which
+  photo failed and why (Review Focus 1 of phase 4); a face that already belongs to an identity names
+  it. Nothing was written, so the user should fix the photos, not "check the record".
+- **Framework (0.6.0):** the Hasura provider classifies every error of a custom mutation over an
+  Action as `sent` or `protocol/graphql-error` (the envelope does not say whether the Action ran),
+  so the flow shows the unknown screen ("The request timed out. It may have been applied.") with
+  the generic text, and the server's message never reaches the form. **[run]**
+  (`createHasuraDataProvider` `graphqlError`; `flow-screen.tsx` `outcomeMessage`).
+- **Workaround:** a provider wrapper (`src/data/action-refusals.ts` `withActionRefusals`, an
+  extension point per design §10 call 1): a custom operation may declare a refusal reader
+  (`hasuraOperation(..., refusals)`); for the backend codes it names (answered with HTTP 400 before
+  any write) the wrapper rethrows a `validation` error whose `details.issues` land on the field the
+  input key comes from (`fileIds` → `photos`, M14). Other codes pass through unchanged. Used by the
+  three enrollment actions (`src/modules/people/enrollment-refusals.ts`).
+- **Expected from a framework:** a declared refusal contract on a custom mutation (codes that mean
+  "refused, nothing written", with their issue mapping), or a provider hook classifying Action
+  errors by `extensions.code` (the server half of G14's "one result/error model").

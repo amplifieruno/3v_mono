@@ -23,6 +23,12 @@ import {
   facilityStatusEnum,
   PLACES_ENUM_TABLES,
 } from './places';
+import {
+  IDENTITY_ENUM_TABLES,
+  identityPhotoKindEnum,
+  identitySourceEnum,
+  identityStatusEnum,
+} from './identities';
 import { accessLevelEnum, PEOPLE_ENUM_TABLES, profileStatusEnum, profileTypeEnum } from './people';
 import {
   candidateStatusEnum,
@@ -72,6 +78,9 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   consentMethodEnum,
   candidateStatusEnum,
   mergeKeepEnum,
+  identityStatusEnum,
+  identitySourceEnum,
+  identityPhotoKindEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -88,4 +97,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...DEVICES_ENUM_TABLES,
   ...PEOPLE_ENUM_TABLES,
   ...PEOPLE_RECORD_ENUM_TABLES,
+  ...IDENTITY_ENUM_TABLES,
 };

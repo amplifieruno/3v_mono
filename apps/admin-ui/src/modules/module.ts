@@ -1,5 +1,6 @@
 import type { CompatibilityDefinition } from '@burojs/core';
 import type { HasuraOperationRegistry } from '@burojs/hasura';
+import type { ActionRefusals, ActionRefusalReader } from '../data/action-refusals';
 import type { HasuraOperationEntry } from '../data/operations';
 import type { HasuraResourceMapping } from '../data/mapping';
 
@@ -45,6 +46,19 @@ export function collectOperations(modules: readonly ConsoleModule[]): HasuraOper
     for (const entry of mod.operations ?? []) {
       const byName = (out[entry.binding.resource] ??= {});
       addUnique(byName, entry.binding.operation, entry.document, `operation ${entry.binding.resource}`);
+    }
+  }
+  return out;
+}
+
+/** The refusal readers of every action that declares them, by `<resource>.<operation>`. */
+export function collectRefusals(modules: readonly ConsoleModule[]): ActionRefusals {
+  const out: Record<string, ActionRefusalReader> = {};
+  for (const mod of modules) {
+    for (const entry of mod.operations ?? []) {
+      if (entry.refusals !== undefined) {
+        addUnique(out, `${entry.binding.resource}.${entry.binding.operation}`, entry.refusals, 'refusal reader');
+      }
     }
   }
   return out;

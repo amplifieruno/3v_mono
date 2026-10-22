@@ -1,8 +1,14 @@
 import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { CONSENT_RECORD_RESOURCE, PROFILE_DOCUMENT_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
+import {
+  CONSENT_RECORD_RESOURCE,
+  IDENTITY_RESOURCE,
+  PROFILE_DOCUMENT_RESOURCE,
+  PROFILE_RESOURCE,
+} from '../../data/resource-names';
 import { uploadDocumentFlow } from './document-upload';
+import { enrollFaceFlow } from './enrollment-flows';
 import { PROFILE_ACTIVITY_ROWS, profileActivity } from './profile-activity';
 import { EMPLOYEE_FIELD_NAMES, profileFields } from './profile-fields';
 import { PROFILE_RULES } from './profile-rules';
@@ -31,8 +37,9 @@ export const PROFILE_CHECKS: Check[] = [
  * `profile_type`: visitors carry no employment fields, contractors and VIPs only some. Profiles
  * are never deleted (no delete permission): their lifecycle is the status. Restricted and erased
  * profiles say so above their details; an erased profile's fields and flows are disabled with the
- * reason (`./profile-rules.ts`), as the database refuses any change of it. Documents and consent
- * decisions are tabs of the profile; restricting processing is a flow of its menu.
+ * reason (`./profile-rules.ts`), as the database refuses any change of it. Identities, documents
+ * and consent decisions are tabs of the profile; enrolling a face and restricting processing are
+ * flows of its header and menu.
  */
 export const profile = defineResource(PROFILE_RESOURCE, {
   texts: {
@@ -58,6 +65,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
   rules: PROFILE_RULES,
   actions: (r) => ({
     item: [
+      r.action.flow('enroll_face', enrollFaceFlow),
       r.action.flow('upload_document', uploadDocumentFlow),
       r.action.flow('restrict_processing', restrictProcessingFlow),
       r.action.flow('lift_restriction', liftRestrictionFlow),
@@ -121,8 +129,27 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               ],
               { key: 'details', texts: 'Details' },
             ),
-            // Task 3 places the linked identities here (relatedList of `identity`).
-            l.panel([l.grid(['has_face', 'identities_count'])], { key: 'identities', texts: 'Identities' }),
+            l.panel(
+              [
+                'identities_count',
+                l.place(relatedList(resourceByName(IDENTITY_RESOURCE)), {
+                  key: 'profile-identities',
+                  props: {
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: [
+                      'primary_photo_file_id',
+                      'code',
+                      'status',
+                      'is_primary_for_profile',
+                      'link_strength',
+                      'last_seen_at',
+                      'detection_count',
+                    ],
+                  },
+                }),
+              ],
+              { key: 'identities', texts: 'Identities' },
+            ),
             l.panel(
               [
                 l.place(relatedList(resourceByName(PROFILE_DOCUMENT_RESOURCE)), {

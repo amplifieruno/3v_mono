@@ -23,3 +23,4 @@ export const PROFILE_RESOURCE = 'profile';
 export const PROFILE_DOCUMENT_RESOURCE = 'profile_document';
 export const CONSENT_RECORD_RESOURCE = 'consent_record';
 export const PROFILE_DUPLICATE_RESOURCE = 'profile_duplicate_candidate';
+export const IDENTITY_RESOURCE = 'identity';

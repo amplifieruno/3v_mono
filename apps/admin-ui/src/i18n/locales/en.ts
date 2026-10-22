@@ -42,6 +42,31 @@ export default {
       limits: '{{accept}}, up to {{max}}',
       unreadable: 'The file could not be read.',
     },
+    /** Face photos for the enrollment actions (`src/fields/face-photos-impl.ts`). */
+    facePhotos: {
+      chosen: 'Chosen photos',
+      photo: 'Photo {{index}}',
+      remove: 'Remove photo {{index}}',
+      upload: 'Upload photos',
+      count: '{{count}} chosen; {{min}} to {{max}} photos.',
+      limits: 'JPEG, PNG or WebP, up to {{max}} each',
+      tooMany: 'At most {{max}} photos: the rest were not added.',
+      wrongType: '{{name}} is not a JPEG, PNG or WebP image.',
+      tooLarge: '{{name}} is larger than {{max}}.',
+    },
+    /** The browser camera (`src/blocks/webcam-capture/webcam-capture.tsx`). */
+    webcam: {
+      start: 'Use camera',
+      take: 'Take photo',
+      stop: 'Stop camera',
+      preview: 'Camera picture',
+      starting: 'Waiting for the camera… allow it in the browser if asked.',
+      denied: 'The browser was not allowed to use the camera. Allow it in the site settings, or upload photos instead.',
+      missing: 'No camera was found on this device. Upload photos instead.',
+      busy: 'The camera is in use by another application. Close it and try again.',
+      unsupported: 'This browser offers no camera access here (it needs a secure https page). Upload photos instead.',
+      failed: 'The camera could not be started. Upload photos instead.',
+    },
     /** The time zone field (`src/fields/timezone-impl.ts`). */
     timezone: {
       placeholder: 'Select a time zone…',
@@ -166,6 +191,10 @@ export default {
         notText: '{{item}} {{index}} is not text.',
         blank: '{{item}} {{index}} is empty.',
         repeated: '{{item}} {{index}} repeats {{itemLower}} {{first}}.',
+      },
+      facePhotos: {
+        tooFew: 'Add at least {{min}} photos.',
+        tooMany: 'Use at most {{max}} photos; remove {{extra}}.',
       },
       timezone: {
         unknown: 'Not a known time zone. Pick one from the list (for example Europe/Moscow).',
