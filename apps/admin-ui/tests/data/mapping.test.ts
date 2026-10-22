@@ -1,6 +1,7 @@
 import { f } from '@burojs/field-types';
 import { describe, expect, it } from 'vitest';
 import { hasuraTable, selectFieldsOf } from '../../src/data/mapping';
+import { secret } from '../../src/fields/secret';
 import { ITAP_TABLES } from '../../src/modules';
 
 describe('hasuraTable', () => {
@@ -46,6 +47,15 @@ describe('selectFieldsOf', () => {
 
   it('should skip dotted names', () => {
     expect(selectFieldsOf({ id: f.uuid(), 'company_id.name': f.string() })).toEqual(['id']);
+  });
+
+  it('should skip write-only secrets, which the role may not select', () => {
+    expect(selectFieldsOf({ id: f.uuid(), username: f.string(), password: secret() })).toEqual([
+      'id',
+      'username',
+    ]);
+    expect(ITAP_TABLES.device?.selectFields).not.toContain('password');
+    expect(ITAP_TABLES.device?.selectFields).toContain('username');
   });
 });
 

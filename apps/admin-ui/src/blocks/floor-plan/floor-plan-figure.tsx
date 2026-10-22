@@ -1,8 +1,14 @@
 import type * as React from 'react';
 import { PlanCanvas } from '../../fields/plan-canvas';
 import { shapeLabelPoint } from '../../fields/plan-geometry';
-import type { FloorPlanRow, PlanAccessPointRow, PlanAreaRow } from '../../fields/plan-rows';
+import type {
+  FloorPlanRow,
+  PlanAccessPointRow,
+  PlanAreaRow,
+  PlanDeviceRow,
+} from '../../fields/plan-rows';
 import { PlanShapeOutline } from '../../fields/plan-shape-outline';
+import { FloorPlanDevices } from './floor-plan-devices';
 import { type FloorPlanT, isOverCapacity, occupancyText } from './floor-plan-occupancy';
 import { accessLevelStyle, accessPointIcon } from './floor-plan-style';
 
@@ -11,18 +17,21 @@ export interface FloorPlanFigureProps {
   /** The areas with a shape on this plan, outer ones first (path order). */
   readonly areas: readonly PlanAreaRow[];
   readonly accessPoints: readonly PlanAccessPointRow[];
+  /** The positioned devices on this plan; absent draws none. */
+  readonly devices?: readonly PlanDeviceRow[];
   readonly t: FloorPlanT;
 }
 
 /**
  * The plan's image with its areas' shapes (outer ones under inner ones, coloured by access
  * level, outlined red when over capacity), each labelled with its name and occupancy, and
- * the access points as icons at their positions.
+ * the access points and devices as icons at their positions.
  */
 export function FloorPlanFigure({
   plan,
   areas,
   accessPoints,
+  devices = [],
   t,
 }: FloorPlanFigureProps): React.ReactElement {
   const unit = Math.max(plan.size.width, plan.size.height);
@@ -70,6 +79,7 @@ export function FloorPlanFigure({
           </text>
         );
       })}
+      <FloorPlanDevices devices={devices} size={icon} t={t} />
       {accessPoints.map((point) => {
         if (!point.position) return null;
         const Icon = accessPointIcon(point.kind);

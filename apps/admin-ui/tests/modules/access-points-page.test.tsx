@@ -11,8 +11,9 @@ import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/conso
 /**
  * Access point screens: the list follows the sidebar facility picker, the form creates an
  * access point with its defaults and refuses leading from the area it leads into, the
- * Devices tab lists the bound devices by id with "+ Create", and the facility page lists its
- * access points and applies a template, warning about names that already exist there.
+ * Devices tab lists the bound devices by name with "+ Create" (a device of the same facility),
+ * the details show the bound devices as links, and the facility page lists its access points
+ * and applies a template, warning about names that already exist there.
  */
 
 const NOVA = '11111111-1111-4111-8111-111111111111';
@@ -47,6 +48,16 @@ const BINDING = {
   role: 'terminal',
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
+};
+
+const DEVICE_ROW = {
+  id: DEVICE,
+  facility_id: TOWER_F,
+  code: 'DEVICE-00001',
+  name: 'Lobby terminal',
+  device_type: 'access_terminal',
+  status: 'active',
+  health_status: 'unknown',
 };
 
 const FACILITY = {
@@ -111,6 +122,7 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   if (query.includes('facility_occupancy_now')) return hasuraResponse({ data: { facility_occupancy_now: [] } });
   if (query.includes('access_point_devices_by_pk')) return hasuraResponse({ data: { item: BINDING } });
   if (/\bitems: access_point_devices\(/.test(query)) return hasuraResponse({ data: { items: [BINDING] } });
+  if (/\bitems: devices\(/.test(query)) return hasuraResponse({ data: { items: [DEVICE_ROW] } });
   if (/\bitems: access_points\(/.test(query)) {
     const only = [TOWER_F, DEPOT_F].find((f) => text.includes(f));
     return hasuraResponse({ data: { items: POINTS.filter((p) => !only || p.facility_id === only) } });
@@ -184,17 +196,29 @@ describe('access point form', () => {
 });
 
 describe('access point page', () => {
-  it('should list the bound devices by id, offer to bind another and unbind one', async () => {
+  it('should show the bound devices as links on the details', async () => {
+    renderAt(`/access-points/${POINT}`);
+    const link = await screen.findByRole('link', { name: 'Lobby terminal' });
+    expect(link.getAttribute('href')).toBe(`/devices/${DEVICE}`);
+  });
+
+  it('should list the bound devices by name, offer to bind another and unbind one', async () => {
     renderAt(`/access-points/${POINT}?sections=devices`);
-    const cell = await screen.findByText(DEVICE);
-    const row = cell.closest('tr') as HTMLElement;
+    const row = await screen.findByRole('row', { name: /Lobby terminal/ });
     expect(within(row).getByText('Access terminal')).toBeDefined();
 
-    // "+ Create" binds a device to this access point, in its facility.
+    // "+ Create" binds a device of this access point's facility.
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.scrollIntoView ??= () => undefined;
     fireEvent.click(screen.getByRole('button', { name: /Create/ }));
-    const device = await screen.findByRole('textbox', { name: /^Device/ });
-    fireEvent.change(device, { target: { value: DEVICE } });
-    const sheet = device.closest('[role="dialog"]') as HTMLElement;
+    const sheet = await screen.findByRole('dialog');
+    fireEvent.click(await within(sheet).findByRole('combobox', { name: /^Device/ }));
+    fireEvent.click(await screen.findByRole('option', { name: /Lobby terminal/ }));
+    const deviceReads = vi
+      .mocked(fetch)
+      .mock.calls.map(([, init]) => String(init?.body))
+      .filter((body) => body.includes('items: devices('));
+    expect(deviceReads.some((body) => body.includes(TOWER_F))).toBe(true);
     fireEvent.click(within(sheet).getByRole('button', { name: /^(Create|Save)/ }));
     await waitFor(() => expect(mutations()).toHaveLength(1));
     expect(mutations()[0]?.variables?.object).toEqual({

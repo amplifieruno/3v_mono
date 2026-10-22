@@ -40,7 +40,8 @@ export const NAV_ICONS = {
  * The sidebar sections, one per functional area of the console. A section is
  * grouping only: resources and pages keep their own paths. Every area is
  * declared here so later phases only register what they fill; the app
- * definition registers the sections modules fill (`overview`, `organization`, `places`).
+ * definition registers the sections modules fill (`overview`, `organization`, `places`,
+ * `devices`).
  */
 export const NAV_SECTIONS = {
   overview: 'overview',

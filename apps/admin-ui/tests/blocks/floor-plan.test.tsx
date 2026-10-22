@@ -11,8 +11,8 @@ import { fakeAdminAuth, installDomShims } from '../support/console-dom';
 /**
  * The `itap:floor-plan` block with fake rows: the plan's image (presigned from storage), the
  * shapes of the plan's area and of the areas inside it only (other floors and shapeless areas
- * are left out), labels with occupancy (red past capacity), the legend linking each area, and
- * access points by kind when the block reads them.
+ * are left out), labels with occupancy (red past capacity), the legend linking each area,
+ * access points by kind, and devices by type and health with their coverage.
  */
 
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -123,6 +123,11 @@ const render = (data: Record<string, unknown>) =>
       noShapes: 'No shapes',
       size: '{{width}} × {{height}} px',
       scale: '1 px = {{scale}} m',
+      device: '{{name}} ({{health}})',
+      health_healthy: 'healthy',
+      health_warning: 'no frames',
+      health_critical: 'offline',
+      health_unknown: 'health unknown',
     },
   });
 
@@ -212,6 +217,58 @@ describe('floor plan block', () => {
     );
     expect(screen.queryByTestId(`floor-plan-access-point:${id(22)}`)).toBeNull();
     expect(screen.queryByTestId(`floor-plan-access-point:${id(23)}`)).toBeNull();
+  });
+
+  it('should draw the positioned devices of the plan’s areas by type and health', async () => {
+    const device = (n: number, more: Record<string, unknown>) => ({
+      id: id(n),
+      area_id: ROOM,
+      name: `Device ${n}`,
+      device_type: 'static_video_camera',
+      health_status: 'healthy',
+      position: [100, 100],
+      coverage: null,
+      ...more,
+    });
+    await render({
+      plans: { rows: [PLAN_ROW] },
+      areas: { rows: AREAS, total: AREAS.length },
+      devices: {
+        rows: [
+          device(30, {
+            name: 'Server room camera',
+            coverage: { type: 'Polygon', coordinates: [[[100, 100], [250, 60], [250, 140], [100, 100]]] },
+          }),
+          device(31, {
+            name: 'Lobby terminal',
+            device_type: 'access_terminal',
+            health_status: 'critical',
+            area_id: FLOOR,
+          }),
+          // Installed on floor 3: drawn on that floor's plan, not this one.
+          device(32, { area_id: OTHER_ROOM }),
+          // No area: no plan to draw it on.
+          device(33, { area_id: null }),
+        ],
+      },
+    });
+
+    const camera = await screen.findByTestId(`floor-plan-device:${id(30)}`);
+    expect(camera.querySelector('title')?.textContent).toBe('Server room camera (healthy)');
+    expect(camera.querySelector('svg')?.getAttribute('class')).toContain('lucide-cctv');
+    expect(camera.querySelector('circle')?.getAttribute('class')).toContain('stroke-emerald-600');
+    const terminal = screen.getByTestId(`floor-plan-device:${id(31)}`);
+    expect(terminal.querySelector('title')?.textContent).toBe('Lobby terminal (offline)');
+    expect(terminal.querySelector('svg')?.getAttribute('class')).toContain('lucide-scan-face');
+    expect(terminal.querySelector('circle')?.getAttribute('class')).toContain('stroke-destructive');
+    expect(screen.queryByTestId(`floor-plan-device:${id(32)}`)).toBeNull();
+    expect(screen.queryByTestId(`floor-plan-device:${id(33)}`)).toBeNull();
+    // The camera's coverage is drawn as a dashed outline.
+    const drawing = screen.getByRole('img', { name: 'Floor plan Floor 2 with its areas' });
+    const outlines = [...drawing.querySelectorAll('path')].filter((path) =>
+      path.getAttribute('class')?.includes('stroke-dasharray'),
+    );
+    expect(outlines).toHaveLength(1);
   });
 
   it('should leave out areas drawn on a nearer plan of their own', async () => {

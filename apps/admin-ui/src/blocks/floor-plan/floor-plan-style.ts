@@ -1,10 +1,15 @@
 import {
   ArrowLeftRight,
   ArrowUpDown,
+  Cctv,
   ConciergeBell,
   DoorOpen,
   Fence,
   type LucideIcon,
+  RadioTower,
+  ScanFace,
+  Thermometer,
+  Video,
 } from 'lucide-react';
 
 /** How an area's shape is filled and outlined, by access level (class names must be literal). */
@@ -38,3 +43,36 @@ const KIND_ICONS: Readonly<Record<string, LucideIcon>> = {
 };
 
 export const accessPointIcon = (kind: string): LucideIcon => KIND_ICONS[kind] ?? DoorOpen;
+
+/** The icon of a device by type (`device_types`). */
+const DEVICE_ICONS: Readonly<Record<string, LucideIcon>> = {
+  static_video_camera: Cctv,
+  ptz_camera: Video,
+  thermal_camera: Thermometer,
+  access_terminal: ScanFace,
+  sensor: RadioTower,
+};
+
+export const deviceIcon = (type: string): LucideIcon => DEVICE_ICONS[type] ?? RadioTower;
+
+interface HealthStyle {
+  readonly ring: string;
+  readonly icon: string;
+}
+
+const UNKNOWN_HEALTH: HealthStyle = { ring: 'stroke-slate-400', icon: 'text-slate-500' };
+
+/** A device marker's ring and icon colour by health (`device_health_statuses`; literal classes). */
+const HEALTH_CLASSES: Readonly<Record<string, HealthStyle>> = {
+  healthy: { ring: 'stroke-emerald-600', icon: 'text-emerald-700' },
+  warning: { ring: 'stroke-amber-500', icon: 'text-amber-600' },
+  critical: { ring: 'stroke-destructive', icon: 'text-destructive' },
+  unknown: UNKNOWN_HEALTH,
+};
+
+export const deviceHealthStyle = (health: string): HealthStyle =>
+  HEALTH_CLASSES[health] ?? UNKNOWN_HEALTH;
+
+/** The block text key naming a health status (an unknown value reads as Unknown). */
+export const healthTextKey = (health: string): string =>
+  Object.hasOwn(HEALTH_CLASSES, health) ? `health_${health}` : 'health_unknown';

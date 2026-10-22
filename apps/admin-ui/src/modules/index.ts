@@ -1,4 +1,5 @@
 import { filesModule } from '../fields/open-file';
+import { devicesModule } from './devices';
 import { type ConsoleModule, collectOperations, collectTables } from './module';
 import { organizationModule } from './organization';
 import { overviewModule } from './overview';
@@ -13,6 +14,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   overviewModule,
   organizationModule,
   placesModule,
+  devicesModule,
   filesModule,
 ];
 

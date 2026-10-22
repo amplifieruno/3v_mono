@@ -63,6 +63,10 @@ export default {
       /** A row's text box; `item` is capitalized here (`Option 2`). */
       row: '{{item}} {{index}}',
     },
+    /** The write-only secret field (`src/fields/secret-impl.ts`). */
+    secret: {
+      hidden: 'Not shown',
+    },
     /** The custom attribute values field (`src/fields/custom-fields-impl.ts`). */
     customFields: {
       loading: 'Loading custom attributes…',
@@ -202,6 +206,13 @@ export default {
       },
       accessPoint: {
         sameArea: 'Choose another area than the one it leads into, or none.',
+      },
+      device: {
+        ipAddress: 'Enter an IP address, such as 192.168.1.20 or fd00::20.',
+        streamCredentials:
+          'Leave the user name and password out of the address; enter them under Credentials.',
+        configurationNotObject:
+          'Enter a JSON object, such as {"rtsp_transport": "tcp"}, or {} for none.',
       },
       number: {
         range: 'Enter a number from {{min}} to {{max}}.',

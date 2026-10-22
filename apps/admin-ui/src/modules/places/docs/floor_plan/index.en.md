@@ -57,3 +57,9 @@ capacity is outlined in red. The list under the plan links to each area.
 Access points with a position are drawn as an icon of their kind (door,
 turnstile, gate, elevator, reception desk) on the plan of the area they lead
 into; hover one to see its name.
+
+Devices with a position are drawn as an icon of their type (camera, PTZ
+camera, thermal camera, access terminal, sensor) on the plan of their area,
+ringed green when healthy, amber when they deliver no frames, red when offline
+and grey when their health is unknown; a device's coverage is a dashed
+outline. Hover a device to see its name and health.

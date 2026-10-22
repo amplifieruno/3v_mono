@@ -5,6 +5,7 @@ import { customFieldsImplementations } from './custom-fields-impl';
 import { imageSizeImplementations } from './image-size-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
+import { secretImplementations } from './secret-impl';
 import { storageFileImplementations } from './storage-file-impl';
 import { stringListImplementations } from './string-list-impl';
 import { templateStructureImplementations } from './template-structure-impl';
@@ -17,9 +18,10 @@ import { timezoneImplementations } from './timezone-impl';
  * (`itap.time-windows`), lists of texts (`itap.string-list`), custom attribute
  * values (`itap.custom-fields`), floor-plan shapes and points (`itap.area-shape`,
  * `itap.plan-position`), image sizes (`itap.image-size`), facility template trees
- * (`itap.template-structure`) and relation selects read in a given record scope
- * (`itap.record-scoped-relation`). Handed to `<BuroProvider fieldImplementations>`
- * and to `checkApp`, which checks each literal `meta` against its schema.
+ * (`itap.template-structure`), relation selects read in a given record scope
+ * (`itap.record-scoped-relation`) and write-only secrets (`itap.secret`). Handed to
+ * `<BuroProvider fieldImplementations>` and to `checkApp`, which checks each literal `meta`
+ * against its schema.
  */
 export const itapFieldImplementations = composeFieldImplementations(
   shadcnFieldImplementations,
@@ -33,4 +35,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   imageSizeImplementations,
   templateStructureImplementations,
   recordScopedRelationImplementations,
+  secretImplementations,
 );

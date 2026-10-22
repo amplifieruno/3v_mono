@@ -41,4 +41,10 @@ export default {
   facility_template: {
     doc: { topics: { index: 'Facility templates and their structure' } },
   },
+  device: {
+    doc: { topics: { index: 'Devices, credentials, health and coverage' } },
+  },
+  device_area: {
+    doc: { topics: { index: 'Areas a device also covers' } },
+  },
 } satisfies TranslationBundle;

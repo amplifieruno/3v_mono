@@ -10,8 +10,8 @@ there:
   policies of the organization.
 - **Sensor**: reports the passage state, such as a door contact.
 
-Bindings are listed, added and removed on the access point's **Devices** tab;
-they have no page of their own. A device is bound at most once per access
+Bindings are listed, added and removed on the access point's **Devices** tab
+and on the device's **Access points** tab; they have no page of their own. A device is bound at most once per access
 point, and must belong to the access point's facility; the database refuses
 anything else. Only the role of an existing binding can be changed; to bind
 another device, add a new binding.

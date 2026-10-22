@@ -3,6 +3,14 @@ import { checkRange, rangeValidator } from '../../src/fields/bounded-number';
 import { problemIssue } from '../../src/fields/field-issue';
 import { checkStringList } from '../../src/fields/string-list';
 import { validateStringList } from '../../src/fields/string-list-format';
+import {
+  checkConfiguration,
+  checkIpAddress,
+  checkStreamUrl,
+  configurationProblem,
+  ipAddressProblem,
+  streamUrlProblem,
+} from '../../src/modules/devices/device-checks';
 import { checkFromArea, fromAreaProblem } from '../../src/modules/places/access-point';
 import { checkContact, contactProblem } from '../../src/modules/places/facility';
 import { expectTranslated, validatorResult } from '../support/field-issues';
@@ -78,5 +86,28 @@ describe('places check issues', () => {
     }
     expect(fromAreaProblem('a2', { area_id: 'a1' })).toBeNull();
     expect(fromAreaProblem(null, { area_id: 'a1' })).toBeNull();
+  });
+});
+
+describe('device check issues', () => {
+  it('should refuse what the devices table refuses with translatable issues', async () => {
+    const cases = [
+      [ipAddressProblem, checkIpAddress, '10.0.0.300', 'device.ipAddress'],
+      [ipAddressProblem, checkIpAddress, 'camera-1', 'device.ipAddress'],
+      [streamUrlProblem, checkStreamUrl, 'rtsp://admin:pw@10.0.0.20/live', 'device.streamCredentials'],
+      [configurationProblem, checkConfiguration, ['tcp'], 'device.configurationNotObject'],
+    ] as const;
+    for (const [check, validate, value, code] of cases) {
+      const problem = check(value);
+      expect(problem?.code, JSON.stringify(value)).toBe(code);
+      if (problem === null) continue;
+      expect(await validatorResult(validate, value)).toEqual(problemIssue(problem));
+      await expectTranslated(problem);
+    }
+    for (const ip of ['10.0.0.20', '192.168.1.0/24', 'fd00::20', '::1', '', null]) {
+      expect(ipAddressProblem(ip), String(ip)).toBeNull();
+    }
+    expect(streamUrlProblem('rtsp://10.0.0.20/live?user=a@b')).toBeNull();
+    expect(configurationProblem({})).toBeNull();
   });
 });

@@ -2,11 +2,12 @@ import { type InferBlockData, resourceShowHref } from '@burojs/core';
 import { type BlockViewProps, useApp } from '@burojs/react';
 import type * as React from 'react';
 import {
-  accessPointsOnPlan,
   areasOnPlan,
   floorPlanOf,
+  placedOnPlan,
   planAccessPointOf,
   planAreaOf,
+  planDeviceOf,
   rowsOf,
 } from '../../fields/plan-rows';
 import type { floorPlanBlock } from './floor-plan-block';
@@ -15,15 +16,21 @@ import { FloorPlanLegend } from './floor-plan-legend';
 import { AREA_RESOURCE } from '../../data/resource-names';
 
 /**
- * The floor plan block's view (`itap:floor-plan`): the drawing, its size and scale, and the
- * legend of the areas on it, and the access points positioned on it.
+ * The floor plan block's view (`itap:floor-plan`): the drawing, its size and scale, the legend
+ * of the areas on it, and the access points and devices positioned on it.
  */
 export function FloorPlanView({
   data,
   t,
 }: BlockViewProps<typeof floorPlanBlock>): React.ReactElement {
   const app = useApp();
-  const { plans, areas, facilityPlans, accessPoints: pointRows } = data as Partial<InferBlockData<typeof floorPlanBlock>>;
+  const {
+    plans,
+    areas,
+    facilityPlans,
+    accessPoints: pointRows,
+    devices: deviceRows,
+  } = data as Partial<InferBlockData<typeof floorPlanBlock>>;
   const plan = floorPlanOf(plans?.rows[0]);
   if (plan === null || areas === undefined) {
     return <p className="text-sm text-muted-foreground">{t('none')}</p>;
@@ -31,12 +38,13 @@ export function FloorPlanView({
   const allAreas = rowsOf(areas.rows, planAreaOf);
   const facilityPlanRows = rowsOf(facilityPlans?.rows, floorPlanOf);
   const onPlan = areasOnPlan(allAreas, plan, facilityPlanRows);
-  const accessPoints = accessPointsOnPlan(
+  const accessPoints = placedOnPlan(
     rowsOf(pointRows?.rows, planAccessPointOf),
     allAreas,
     plan,
     facilityPlanRows,
   );
+  const devices = placedOnPlan(rowsOf(deviceRows?.rows, planDeviceOf), allAreas, plan, facilityPlanRows);
   const def = app.registry.get(AREA_RESOURCE);
   const hrefOf = (id: string): string =>
     resourceShowHref(app.registry, def, AREA_RESOURCE, id);
@@ -49,7 +57,13 @@ export function FloorPlanView({
         {t('size', { params: { width: plan.size.width, height: plan.size.height } })}
         {typeof scale === 'number' ? ` · ${t('scale', { params: { scale } })}` : null}
       </p>
-      <FloorPlanFigure plan={plan} areas={onPlan} accessPoints={accessPoints} t={t} />
+      <FloorPlanFigure
+        plan={plan}
+        areas={onPlan}
+        accessPoints={accessPoints}
+        devices={devices}
+        t={t}
+      />
       {onPlan.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('noShapes')}</p>
       ) : (

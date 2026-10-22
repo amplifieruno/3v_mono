@@ -12,3 +12,5 @@ export const FLOOR_PLAN_RESOURCE = 'floor_plan';
 export const ACCESS_POINT_RESOURCE = 'access_point';
 export const ACCESS_POINT_DEVICE_RESOURCE = 'access_point_device';
 export const FACILITY_TEMPLATE_RESOURCE = 'facility_template';
+export const DEVICE_RESOURCE = 'device';
+export const DEVICE_AREA_RESOURCE = 'device_area';

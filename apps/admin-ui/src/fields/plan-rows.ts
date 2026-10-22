@@ -48,6 +48,17 @@ export interface PlanAccessPointRow {
   readonly position: PlanPoint | null;
 }
 
+export interface PlanDeviceRow {
+  readonly id: string;
+  /** The area it is installed in; its plan (or the nearest enclosing area's) is the one it is drawn on. */
+  readonly area_id: string | null;
+  readonly name: string;
+  readonly device_type: string;
+  readonly health_status: string;
+  readonly position: PlanPoint | null;
+  readonly coverage: PlanShape | null;
+}
+
 type Row = Readonly<Record<string, unknown>>;
 
 const text = (value: unknown): string | null => (typeof value === 'string' ? value : null);
@@ -103,6 +114,21 @@ export function planAccessPointOf(row: Row): PlanAccessPointRow | null {
   };
 }
 
+/** A `devices` row with its parsed position and coverage, or `null` without an id. */
+export function planDeviceOf(row: Row): PlanDeviceRow | null {
+  const id = text(row.id);
+  if (!id) return null;
+  return {
+    id,
+    area_id: text(row.area_id),
+    name: text(row.name) ?? '',
+    device_type: text(row.device_type) ?? 'sensor',
+    health_status: text(row.health_status) ?? 'unknown',
+    position: parsePoint(row.position),
+    coverage: parseShape(row.coverage),
+  };
+}
+
 /** Parses each row with `parse`, dropping the ones it refuses. */
 export function rowsOf<T>(rows: unknown, parse: (row: Row) => T | null): T[] {
   if (!Array.isArray(rows)) return [];
@@ -134,15 +160,18 @@ export function areasOnPlan(
 }
 
 /**
- * The positioned access points drawn on `plan`: those whose area's nearest plan outwards (the
- * area itself first) is this one, the way the position input resolves the plan to click on.
+ * The positioned access points (or devices) drawn on `plan`: those whose area's nearest plan
+ * outwards (the area itself first) is this one, the way the position input resolves the plan
+ * to click on.
  */
-export function accessPointsOnPlan(
-  points: readonly PlanAccessPointRow[],
+export function placedOnPlan<
+  T extends { readonly area_id: string | null; readonly position: PlanPoint | null },
+>(
+  points: readonly T[],
   areas: readonly PlanAreaRow[],
   plan: FloorPlanRow,
   plans: readonly FloorPlanRow[],
-): PlanAccessPointRow[] {
+): T[] {
   const known = plans.some((candidate) => candidate.id === plan.id) ? plans : [...plans, plan];
   return points.filter(
     (point) =>

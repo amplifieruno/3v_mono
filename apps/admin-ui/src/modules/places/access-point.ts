@@ -17,6 +17,7 @@ import {
   ACCESS_POINT_DEVICE_RESOURCE,
   ACCESS_POINT_RESOURCE,
   AREA_RESOURCE,
+  DEVICE_RESOURCE,
   FACILITY_RESOURCE,
 } from '../../data/resource-names';
 
@@ -140,6 +141,23 @@ export const accessPointFields = {
       doc: { summary: 'Whether the passage is in use; set it inactive instead of deleting it to keep its history.' },
     },
   }),
+  devices: f.relationMany({
+    to: DEVICE_RESOURCE,
+    through: {
+      resource: ACCESS_POINT_DEVICE_RESOURCE,
+      sourceKey: 'access_point_id',
+      targetKey: 'device_id',
+    },
+    preview: 'chips',
+    open: 'page',
+    texts: {
+      label: 'Devices',
+      doc: {
+        summary:
+          'The cameras, terminals and sensors bound to the access point; bindings and their roles are changed on its Devices tab.',
+      },
+    },
+  }),
   created_at: f.dateTime({ system: true, texts: 'Created', in: ['show'] }),
   updated_at: f.dateTime({ system: true, texts: 'Updated', in: ['show'] }),
 };
@@ -183,6 +201,7 @@ export const accessPoint = defineResource(ACCESS_POINT_RESOURCE, {
                 l.grid(['name', 'facility_id']),
                 l.grid(['from_area_id', 'area_id']),
                 l.grid(['is_entry_exit', 'face_credential']),
+                'devices',
                 'position',
                 l.grid(['created_at', 'updated_at']),
               ],

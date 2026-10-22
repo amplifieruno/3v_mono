@@ -36,9 +36,10 @@ floor plan view then shows the access point with its kind's icon.
 
 The **Devices** tab lists the devices bound to the access point, each with its
 role: a **camera** watches it, an **access terminal** decides and opens it, a
-**sensor** reports its state. **Create** binds a device by its id (it must
-belong to the same facility, and is bound once per access point); a binding
-is removed from its row's menu. The devices themselves are managed under
-Devices; until that module is available a binding shows the device's id.
+**sensor** reports its state. **Create** binds a device chosen from the
+devices of the same facility (each is bound once per access point); a binding
+is removed from its row's menu. The details show the bound devices as links to
+their pages. The devices themselves are managed under **Devices**, where each
+device lists the access points it is bound to.
 
 The sidebar facility picker narrows the list to one facility.

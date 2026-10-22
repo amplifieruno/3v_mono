@@ -1,5 +1,6 @@
 import { isLinkField } from '@burojs/core';
 import type { ResourceMapping } from '@burojs/hasura';
+import { isWriteOnly } from '../fields/secret';
 
 /** One resource's Hasura mapping (`@burojs/hasura`'s `ResourceMapping`). */
 export type HasuraResourceMapping = ResourceMapping;
@@ -28,12 +29,13 @@ export function hasuraTable(
  * two lists cannot drift (a declared field missing from `selectFields` would
  * render empty forever). Field names equal column names. Links (many-to-many
  * through a junction) and dotted relation columns are not columns of the table
- * and are left out.
+ * and are left out, and so are write-only secrets (`secret(...)`, a column the role
+ * may write but not select).
  */
 export function selectFieldsOf(fields: Readonly<Record<string, unknown>>): string[] {
   return Object.entries(fields)
     .filter(([name, field]) => {
-      if (name.includes('.')) return false;
+      if (name.includes('.') || isWriteOnly(field)) return false;
       return !(
         typeof field === 'object' &&
         field !== null &&

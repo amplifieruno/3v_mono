@@ -330,3 +330,20 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   level: 1 (Lobby).").
 - **Expected from a framework:** `then.notify: { params, count: ref('result', 'created') }`.
 
+
+### G24. No write-only field (a column the role may write but never select)
+- **Need:** `devices.password`: writable by `org_admin`, never selectable; an edit form shows an
+  empty "new password" box and sends the column only when something is typed (plan 03 Review
+  Focus 3).
+- **Framework (0.6.0):** every declared field is selected (the Hasura mapping's `selectFields`
+  also make the mutation's returning set), and an edit payload carries every active field whose
+  value is not `undefined` (`buildPayload`, `forms/controller/payload.ts`), dirty or not. There
+  is no field option for "not read, sent only when entered"; `sensitive` only redacts audit
+  events. **[code]**
+- **Workaround:** `secret()` (`src/fields/secret*.ts(x)`): a nullable string with `in:
+  ['create', 'edit']`, `meta.writeOnly`, an input that reports an empty box as `undefined` (which
+  the payload omits), and `selectFieldsOf` leaving write-only fields out of the mapping. Tested in
+  `tests/modules/devices-page.test.tsx` (no select names it; an untouched or cleared box is not
+  sent; a typed one is).
+- **Expected from a framework:** `f.string({ writeOnly: true })` (or `read: 'never'`): never
+  selected, absent from show and list, and in a payload only when the user entered a value.

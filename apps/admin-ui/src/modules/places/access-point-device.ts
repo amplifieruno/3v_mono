@@ -1,16 +1,20 @@
-import { defineResource } from '@burojs/core';
+import { defineResource, ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { enumField } from '../../enums/field';
 import { ACCESS_POINT_DEVICE_ROLES, ACCESS_POINT_DEVICE_ROLE_ENUM } from '../../enums/places';
 import {
   ACCESS_POINT_DEVICE_RESOURCE,
   ACCESS_POINT_RESOURCE,
+  DEVICE_RESOURCE,
   FACILITY_RESOURCE,
 } from '../../data/resource-names';
 
+const sameFacility = [{ field: 'facility_id', op: 'eq', value: ref('values', 'facility_id') }] as const;
+
 /**
- * Columns of `itap.access_point_devices` the `org_admin` role reads. Until the devices module
- * registers the device resource (phase 3) a binding shows its device by id.
+ * Columns of `itap.access_point_devices` the `org_admin` role reads. Both keys are relations
+ * (with their Hasura relationship names), so the access point's and the device's links read
+ * across them.
  */
 export const accessPointDeviceFields = {
   id: f.uuid({ system: true, texts: 'ID', in: [] }),
@@ -27,17 +31,23 @@ export const accessPointDeviceFields = {
     to: ACCESS_POINT_RESOURCE,
     required: true,
     write: 'create',
+    open: 'page',
+    candidates: [...sameFacility],
+    providerOptions: { relationship: 'access_point' },
     texts: { label: 'Access point', doc: { summary: 'The passage the device serves.' } },
   }),
-  device_id: f.uuid({
+  device_id: f.relation({
+    to: DEVICE_RESOURCE,
     required: true,
     write: 'create',
+    open: 'page',
+    candidates: [...sameFacility],
+    providerOptions: { relationship: 'device' },
     texts: {
       label: 'Device',
-      description: 'The id of a device of the same facility.',
       doc: {
         summary:
-          'The camera, access terminal or sensor bound to the access point, by its id; it must belong to the access point’s facility, and is bound at most once per access point.',
+          'The camera, access terminal or sensor bound to the access point; it must belong to the access point’s facility, and is bound at most once per access point.',
       },
     },
   }),
@@ -58,8 +68,8 @@ export const accessPointDeviceFields = {
 
 /**
  * The devices bound to an access point (the junction `access_point_devices`). It has no page of
- * its own: the access point's Devices tab lists, adds and removes bindings. A device's own page
- * links back once the devices module exists (phase 3).
+ * its own: the access point's Devices tab and the device's Access points tab list, add and
+ * remove bindings, and both records show the other side as a read link.
  */
 export const accessPointDevice = defineResource(ACCESS_POINT_DEVICE_RESOURCE, {
   texts: {

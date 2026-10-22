@@ -1,5 +1,11 @@
 import type { EnumDef } from '@burojs/core';
 import {
+  DEVICES_ENUM_TABLES,
+  deviceHealthEnum,
+  deviceStatusEnum,
+  deviceTypeEnum,
+} from './devices';
+import {
   companyKindEnum,
   companyStatusEnum,
   customAttributeEntityEnum,
@@ -41,6 +47,9 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   accessPointKindEnum,
   accessPointDirectionEnum,
   accessPointDeviceRoleEnum,
+  deviceTypeEnum,
+  deviceStatusEnum,
+  deviceHealthEnum,
 ];
 
 /**
@@ -51,4 +60,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...TENANCY_ENUM_TABLES,
   ...ORGANIZATION_ENUM_TABLES,
   ...PLACES_ENUM_TABLES,
+  ...DEVICES_ENUM_TABLES,
 };

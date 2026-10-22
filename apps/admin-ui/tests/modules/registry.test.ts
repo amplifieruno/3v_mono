@@ -98,7 +98,7 @@ describe('module registries', () => {
       .filter((resource) => resource.name !== FACILITY_RESOURCE)
       .filter((resource) => Object.hasOwn(resource.fields ?? {}, 'facility_id'));
     expect(bound.map((resource) => resource.name)).toEqual(
-      expect.arrayContaining(['area', 'floor_plan', 'access_point', 'access_point_device']),
+      expect.arrayContaining(['area', 'floor_plan', 'access_point', 'access_point_device', 'device', 'device_area']),
     );
     const unscoped = bound
       .filter((resource) => resource.data?.scope?.facility?.field !== 'facility_id')
