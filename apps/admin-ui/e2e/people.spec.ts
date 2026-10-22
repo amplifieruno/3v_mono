@@ -253,7 +253,11 @@ test.describe.serial('people smoke', () => {
   async function createIdentityFrom(photo: string): Promise<{ identityId: string; refusal: string }> {
     await page.goto('/identities');
     await page.getByTestId('list-flow:identity:create_from_photos').click();
+    const uploaded = page.waitForResponse((response) => response.url().includes('/storage') && response.request().method() === 'POST');
     await dialogs().locator('input[type=file]').first().setInputFiles(photo);
+    // The photo is stored and chosen before the form is sent (a click while it uploads sends nothing).
+    await uploaded;
+    await expect(dialogs().getByRole('button', { name: 'Remove photo 1' })).toBeVisible();
     const answered = page.waitForResponse(
       (response) => response.url().includes('/v1/graphql') && (response.request().postData() ?? '').includes('create_identity_from_photos'),
       { timeout: 60_000 },
@@ -272,6 +276,8 @@ test.describe.serial('people smoke', () => {
 
   test('should refuse a known face, then create an identity from a new one with its per-photo result', async () => {
     test.skip(!(await insightfaceUp()), 'insightface is down: no face analysis');
+    // Up to three analyses in a row (a refusal, then up to two creations of about 20 s each).
+    test.setTimeout(180_000);
     // A crop of a seeded "unknown" person (backend/seed-assets/faces), already an identity.
     const known = new URL('../../backend/seed-assets/faces/person-10/1.jpg', import.meta.url).pathname;
     const refused = await createIdentityFrom(known);
