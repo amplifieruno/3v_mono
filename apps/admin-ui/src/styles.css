@@ -1,1 +1,12 @@
 @import '@burojs/ui-shadcn/styles.css';
+
+/* A live camera detection box: opaque, then fading out at the end of its 2 s (BOX_FADE). */
+@keyframes live-box-fade {
+  0%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

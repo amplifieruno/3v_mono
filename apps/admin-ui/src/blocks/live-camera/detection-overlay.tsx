@@ -2,8 +2,14 @@ import { cn } from '@burojs/ui-shadcn';
 import type * as React from 'react';
 import type { DetectionMessage } from '../../realtime/detections';
 import { BOX_FILL, BOX_STROKE, boxKindOf, boxLabel } from './detection-label';
-import { BOX_LIFETIME_MS } from './use-detections';
 import type { LiveCameraT } from './live-camera-texts';
+
+/**
+ * Each box's own fade: a CSS animation (`@keyframes live-box-fade` in `src/styles.css`, opaque
+ * for 1.5 s, then out over 0.5 s; its length is `BOX_LIFETIME_MS`) that starts when the box's
+ * element is inserted, unlike an SVG `<animate>`, whose clock is the whole drawing's.
+ */
+export const BOX_FADE = 'animate-[live-box-fade_2s_linear_forwards]';
 
 export interface DetectionOverlayProps {
   readonly boxes: readonly DetectionMessage[];
@@ -14,7 +20,7 @@ export interface DetectionOverlayProps {
 /**
  * The faces recognised on the video: one box per detection in the frame's own pixels, drawn on
  * an SVG with the frame's size laid over the video (both letterboxed the same way), labelled,
- * and fading out over the last half second of its two.
+ * and fading out over the last half second of its two ({@link BOX_FADE}).
  */
 export function DetectionOverlay({ boxes, name, t }: DetectionOverlayProps): React.ReactElement | null {
   const frame = boxes.at(-1);
@@ -22,7 +28,6 @@ export function DetectionOverlay({ boxes, name, t }: DetectionOverlayProps): Rea
   const width = frame.frameWidth;
   const height = frame.frameHeight;
   const font = Math.max(12, Math.round(height / 28));
-  const seconds = BOX_LIFETIME_MS / 1000;
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -41,14 +46,12 @@ export function DetectionOverlay({ boxes, name, t }: DetectionOverlayProps): Rea
         const label = boxLabel(message, t);
         const above = y - font * 0.4;
         return (
-          <g key={message.detectionId} data-testid="live-box" data-kind={kind}>
-            <animate
-              attributeName="opacity"
-              values="1;1;0"
-              keyTimes="0;0.75;1"
-              dur={`${seconds}s`}
-              fill="freeze"
-            />
+          <g
+            key={message.detectionId}
+            data-testid="live-box"
+            data-kind={kind}
+            className={BOX_FADE}
+          >
             <title>
               {t('confidence', { params: { label, confidence: Math.round(message.confidence * 100) } })}
             </title>

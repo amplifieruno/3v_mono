@@ -100,7 +100,12 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
           store: deps.store,
           connect,
           onDetection,
-          onState: setState,
+          onState: (next) => {
+            setState(next);
+            // Boxes drawn under a stream that is no longer live (an organization switch, a
+            // failure, a reconnect) are not current any more.
+            if (next.status !== 'live') setBoxes([]);
+          },
         });
         close = () => stream.close();
       },

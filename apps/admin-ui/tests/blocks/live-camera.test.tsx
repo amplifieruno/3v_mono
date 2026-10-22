@@ -9,7 +9,12 @@ import {
 } from '../../src/blocks/live-camera/live-camera-panel';
 import { LIVE_CAMERA_TEXTS } from '../../src/blocks/live-camera/live-camera-texts';
 import { livePlaylistUrl, streamIdOf } from '../../src/blocks/live-camera/stream-url';
-import { STREAM_RETRY_MS, STREAM_START_TIMEOUT_MS } from '../../src/blocks/live-camera/use-stream-playback';
+import { BOX_FADE } from '../../src/blocks/live-camera/detection-overlay';
+import {
+  STREAM_RETRY_MS,
+  STREAM_STALL_MS,
+  STREAM_START_TIMEOUT_MS,
+} from '../../src/blocks/live-camera/use-stream-playback';
 import type { DetectionMessage, DetectionSocket } from '../../src/realtime/detections';
 import { installDomShims } from '../support/console-dom';
 
@@ -52,12 +57,17 @@ interface Harness {
   readonly deps: LiveCameraDeps;
   readonly attached: { url: string; events: StreamEvents; destroyed: boolean }[];
   /** The server side of the latest socket: accept the join, push detections. */
-  readonly server: { accept(ack?: unknown): void; push(payload: unknown): void };
+  readonly server: { accept(ack?: unknown): void; push(payload: unknown): void; drop(reason: string): void };
 }
 
 function harness(): Harness {
   const attached: Harness['attached'] = [];
-  let handlers: { connect?: () => void; detection?: (payload: unknown) => void; ack?: (r: unknown) => void } = {};
+  let handlers: {
+    connect?: () => void;
+    detection?: (payload: unknown) => void;
+    ack?: (r: unknown) => void;
+    disconnect?: (reason: string) => void;
+  } = {};
   const attach: StreamAttacher = async (_video, url, events) => {
     const entry = { url, events, destroyed: false };
     attached.push(entry);
@@ -68,7 +78,7 @@ function harness(): Harness {
     return {
       onConnect: (handler) => void (handlers.connect = handler),
       onConnectError: () => undefined,
-      onDisconnect: () => undefined,
+      onDisconnect: (handler) => void (handlers.disconnect = handler),
       onDetection: (handler) => void (handlers.detection = handler),
       join: (_deviceId, ack) => void (handlers.ack = ack),
       close: () => undefined,
@@ -81,6 +91,9 @@ function harness(): Harness {
       accept(ack = { ok: true }) {
         handlers.connect?.();
         handlers.ack?.(ack);
+      },
+      drop(reason) {
+        handlers.disconnect?.(reason);
       },
       push(payload) {
         handlers.detection?.(payload);
@@ -238,5 +251,63 @@ describe('live camera view', () => {
     await flush();
     expect(screen.getByText(LIVE_CAMERA_TEXTS.error_unavailable)).toBeDefined();
     expect(screen.getByText('Detections unavailable')).toBeDefined();
+  });
+  /** Mounts a playing view with a live detection stream. */
+  async function playing(h: Harness): Promise<HTMLVideoElement> {
+    render(<LiveCameraPanel device={DEVICE} deps={h.deps} t={t} />);
+    await flush();
+    const video = screen.getByLabelText('Live video of Entrance camera', { selector: 'video' }) as HTMLVideoElement;
+    act(() => void video.dispatchEvent(new Event('playing')));
+    act(() => h.server.accept());
+    return video;
+  }
+
+  it('should fade each box from its own insertion, also boxes arriving long after the view opened', async () => {
+    const h = harness();
+    await playing(h);
+    act(() => h.server.push(message({ detectionId: 'd-1' })));
+    const first = screen.getByTestId('live-box');
+    expect(first.getAttribute('class')).toBe(BOX_FADE);
+    // No SVG <animate>: its clock is the drawing's, so a box added after 2 s would start faded.
+    expect(first.querySelector('animate')).toBeNull();
+
+    // Recognition keeps running: frames 10 s later still get a fresh, fully visible box.
+    for (let second = 1; second <= 10; second += 1) {
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      act(() =>
+        h.server.push(
+          message({ detectionId: `d-${second + 1}`, detectedAt: `2026-10-22T10:00:${String(second).padStart(2, '0')}.000Z` }),
+        ),
+      );
+    }
+    const late = screen.getByTestId('live-box');
+    expect(late.getAttribute('class')).toBe(BOX_FADE);
+    expect(late.querySelector('text')?.textContent).toBe('ID-0001');
+    expect(screen.getAllByTestId('live-box')).toHaveLength(1);
+  });
+
+  it('should clear the drawn boxes when the detection stream stops being live', async () => {
+    const h = harness();
+    await playing(h);
+    act(() => h.server.push(message({ detectionId: 'd-1' })));
+    expect(screen.getAllByTestId('live-box')).toHaveLength(1);
+    act(() => h.server.drop('io server disconnect'));
+    expect(screen.getByText('Detections reconnecting')).toBeDefined();
+    expect(screen.queryByTestId('live-box')).toBeNull();
+  });
+
+  it('should count a stream that stalls too long as unavailable, but not a short stall', async () => {
+    const h = harness();
+    const video = await playing(h);
+    act(() => void video.dispatchEvent(new Event('waiting')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS - 1_000));
+    act(() => void video.dispatchEvent(new Event('playing')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS));
+    expect(screen.getByText('Stream live')).toBeDefined();
+
+    act(() => void video.dispatchEvent(new Event('stalled')));
+    await act(() => vi.advanceTimersByTimeAsync(STREAM_STALL_MS));
+    expect(screen.getByText('Stream unavailable')).toBeDefined();
+    expect(screen.getByText('Stream down')).toBeDefined();
   });
 });

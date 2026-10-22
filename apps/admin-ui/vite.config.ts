@@ -34,7 +34,8 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      '/streams': {
+      // A regex key: only `/streams/…`, never an app route that merely starts with `/streams`.
+      '^/streams/': {
         target: 'http://localhost:8888',
         changeOrigin: true,
       },
