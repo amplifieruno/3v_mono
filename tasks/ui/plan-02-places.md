@@ -52,6 +52,8 @@ conventions, §6.4 custom attributes).
 
 ### Task 1: Facilities (CRUD, occupancy facts) and the reusable `customFields` field type
 
+Carry-over (rulings-01): `isTimezone` must accept a stored zone the record already holds even if ICU does not list it (only new picks are limited to the list). `operating_hours` uses `timeWindows({ emptyText: 'Always open' })` (empty = no after-hours check).
+
 **Files:** `src/modules/places/facility.ts` (rewrite: full CRUD; name, code (system), address,
 latitude, longitude, timezone (`timezone()`), operating_hours (`timeWindows({ emptyText: 'Always open' })`), contact (json),
 custom_fields (`customFields({ entity: 'facility' })`), status, areas_count, current_occupancy;
