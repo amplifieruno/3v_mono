@@ -49,6 +49,8 @@ dedup), §6.0 (versioned entities).
 ---
 
 ### Task 1: Detections, tracking sessions, locations, occupancy
+
+Carry-overs from phase 3 (`summary-03-devices.md`): before the operator workspace reuses `openDetectionStream`, multiplex detection rooms over one socket per session (the backend accepts several `join-device` on one socket) and add a "Reconnect" action after repeated `unauthorized` refusals. Do this in Task 1 so Task 4 builds on it.
 Resources `detection` (thumbnail via `storageFile` display, identity/profile/device/area relations,
 confidence, new-identity flag; filters by facility/area/device/time/known-unknown; saved views),
 `tracking_session` (path tab = timeline of `identity_location`), `identity_location`, `area_occupancy`

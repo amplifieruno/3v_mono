@@ -54,6 +54,9 @@ Reproduce with the skipped phase-0 test (unskip), fix in the data layer (storage
 trigger on `storage.files` metadata — choose what works with hasura-storage 0.7.2 writing metadata
 after insert), migration + regenerated metadata + test, close the bd issue. Commit `fix(hasura): …`.
 
+### Task 0b: buro alignment (answers from the buro team, `.superpowers/sdd/buro-answers-2026-10-22.md`)
+Adopt 0.6 patterns the buro team pointed out, where they replace our workarounds without loss: (a) G16 — a record frame without `<RecordTitle/>` for the current-record pages (organization profile, settings, preferences) instead of the `recordTitle` composition; (b) G17 — move the `customFields` save-blocking check to a resource-level async `validate(values, ctx)` (skip when `!ctx.dirty.custom_fields` on edit) via a small shared helper each resource using `customFields` calls, and drop the module-level snapshot registry if the result is equivalent; (c) G19 — `useFormControl().setValues` in the floor-plan image input to fill width/height on record screens (keep the size inputs' fallback only if still needed). Update `buro-gaps.md` statuses. Commit `refactor(ui): adopt buro 0.6 patterns for current-record frames, resource validation and derived sizes`.
+
 ### Task 1: Profiles core
 Resource `profile`: record `types` by `profile_type` (employee: employee_id, department, job_title,
 work_schedule_id; visitor: host/company; contractor: company, end_date; vip), first/last name, email,
