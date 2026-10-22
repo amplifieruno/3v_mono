@@ -4,7 +4,8 @@ Plan: `plan-08-analytics.md`. Spec: `design.md` §10 call 3; data model `tasks/d
 §8.3–§8.4. Framework gaps: `buro-gaps.md` (G57–G62). Branch `feat/ui-console`, base `0e8786e`:
 analytic blocks and stats `e3e4c7b` + review fixes `12fb2a8`, dashboard console fields (data layer)
 `3498092`, dashboards `25898f6` + review fixes `fff900f`, reports `8e4e724`, report `requested_by_me`
-(data layer) `0b2dacd` + review fixes `33578b2`, then the analytics smoke suite and this summary.
+(data layer) `0b2dacd` + review fixes `33578b2`, dev-stack test pagination fix `a8dcacc`, the analytics
+smoke suite `1449a96` and this summary.
 Demo video: `playwright-output/phase-08-analytics.webm` (the Analytics page for Nova Tower with the
 7-day and 30-day tabs, the seeded shared "Security overview" dashboard, a new dashboard built in the
 editor with two widgets (one refused first with its reason, then fixed) and its live preview, saved and
