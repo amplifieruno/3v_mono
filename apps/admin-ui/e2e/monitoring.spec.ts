@@ -99,10 +99,14 @@ test.describe.serial('monitoring smoke', () => {
     await dialogs().getByRole('combobox').fill(area);
     await dialogs().getByRole('option', { name: area, exact: true }).click();
     await page.keyboard.press('Escape');
-    await expect.poll(async () => new Set((await cells.allTextContents()).map((text) => text.trim())).size).toBe(1);
-    const after = (await cells.allTextContents()).map((text) => text.trim());
-    expect(after.length).toBeGreaterThan(0);
-    expect(after.every((name) => name === area)).toBe(true);
+    // Rows of that area only (the list is empty for an instant while it reloads with the filter).
+    let after: string[] = [];
+    await expect
+      .poll(async () => {
+        after = (await cells.allTextContents()).map((text) => text.trim());
+        return after.length > 0 && after.every((name) => name === area);
+      })
+      .toBe(true);
     // The database agrees: the area has detections and the first listed one is in it.
     const count = await graphql<{ detections_aggregate: { aggregate: { count: number } } }>(
       'query ($name: String!) { detections_aggregate(where: {area: {name: {_eq: $name}}}) { aggregate { count } } }',
