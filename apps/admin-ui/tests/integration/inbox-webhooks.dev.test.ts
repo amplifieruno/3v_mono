@@ -117,15 +117,27 @@ describe.skipIf(!DEV_STACK_ENABLED)('inbox and webhooks against the dev stack', 
     expect(mineUnread.length).toBeGreaterThan(0);
     expect(otherUnread.length).toBeGreaterThan(0);
 
+    // The crons may add notifications while the test runs (fan-out, escalation, digests), so the
+    // checks are about the rows read above and about ownership, not about exact global counts.
     const before = await graphql(documentOf(inboxSummaryOperation));
-    expect((before.unread as { aggregate: { count: number } }).aggregate.count).toBe(mineUnread.length);
+    expect((before.unread as { aggregate: { count: number } }).aggregate.count).toBeGreaterThanOrEqual(mineUnread.length);
 
-    const marked = (await graphql(documentOf(markAllNotificationsReadOperation))).mark_notifications_read as Row[];
-    expect(marked.map((row) => String(row.id)).sort()).toEqual([...mineUnread].sort());
-    expect(await unreadOf(me)).toEqual([]);
-    expect((await unreadOf(other)).sort()).toEqual([...otherUnread].sort());
+    const marked = ((await graphql(documentOf(markAllNotificationsReadOperation))).mark_notifications_read as Row[]).map((row) => String(row.id));
+    expect(marked).toEqual(expect.arrayContaining(mineUnread));
+    // Nothing marked belongs to another member: every marked row is the signed-in member's.
+    const owners = (
+      (await admin('query ($ids: [uuid!]!) { user_notifications(where: { id: { _in: $ids } }) { user_id } }', { ids: marked }))
+        .user_notifications as Row[]
+    ).map((row) => String(row.user_id));
+    expect(owners).toHaveLength(marked.length);
+    expect(new Set(owners)).toEqual(new Set([me]));
+    expect(marked.filter((id) => otherUnread.includes(id))).toEqual([]);
+    const mineLeft = await unreadOf(me);
+    expect(mineLeft.filter((id) => mineUnread.includes(id))).toEqual([]);
+    expect(await unreadOf(other)).toEqual(expect.arrayContaining(otherUnread));
+    // The bell's count matches: at most what is unread now (only newer arrivals can be).
     const after = await graphql(documentOf(inboxSummaryOperation));
-    expect((after.unread as { aggregate: { count: number } }).aggregate.count).toBe(0);
+    expect((after.unread as { aggregate: { count: number } }).aggregate.count).toBeLessThanOrEqual((await unreadOf(me)).length);
     // The inbox lists the member's own rows only.
     const listed = (await graphql('{ user_notifications(limit: 500) { user_id } }')).user_notifications as Row[];
     expect(new Set(listed.map((row) => row.user_id))).toEqual(new Set([me]));

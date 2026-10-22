@@ -98,10 +98,10 @@ test.describe.serial('notifications smoke', () => {
   }
 
   test('should create a notification rule with a condition, an event type and a channel, and test it without creating a delivery', async () => {
-    const deliveriesBefore = await count('notification_deliveries', '{}');
-    const inboxBefore = await count('user_notifications', '{}');
     await page.goto('/notification-rules/create');
     await page.getByTestId('form-field-input:notification_rule:create:name').fill(`${RUN} rule`);
+    // Switched off, so the live fan-out never uses it while the run lasts; a test works all the same.
+    await page.getByTestId('form-field-input:notification_rule:create:is_active').click();
     await page.getByRole('combobox', { name: 'Minimum severity' }).click();
     await page.getByRole('option', { name: 'High', exact: true }).click();
     await page.getByTestId('form-submit:notification_rule:create').click();
@@ -113,12 +113,13 @@ test.describe.serial('notifications smoke', () => {
       run: () => graphql('mutation ($id: uuid!) { delete_notification_rules_by_pk(id: $id) { id } }', { id }),
     });
     const rule = (
-      await graphql<{ notification_rules_by_pk: { name: string; conditions: Row } }>(
-        'query ($id: uuid!) { notification_rules_by_pk(id: $id) { name conditions } }',
+      await graphql<{ notification_rules_by_pk: { name: string; conditions: Row; is_active: boolean } }>(
+        'query ($id: uuid!) { notification_rules_by_pk(id: $id) { name conditions is_active } }',
         { id },
       )
     ).notification_rules_by_pk;
     expect(rule.name).toBe(`${RUN} rule`);
+    expect(rule.is_active).toBe(false);
     expect(rule.conditions).toEqual({ min_severity: 'high' });
 
     await page.getByRole('tab', { name: 'Event types' }).click();
@@ -168,10 +169,16 @@ test.describe.serial('notifications smoke', () => {
     }
     await expect(page.getByTestId('rule-test-summary')).toContainText(String(matches.length));
     await page.keyboard.press('Escape');
-    // A test is a dry run: nothing was delivered or put in an inbox.
+    // A test is a dry run: the rule delivered nothing (so nothing reached an inbox through it) and
+    // never counts as triggered. Scoped to this rule: the crons keep delivering for the seed meanwhile.
     expect(await count('notification_deliveries', `{rule_id: {_eq: "${id}"}}`)).toBe(0);
-    expect(await count('notification_deliveries', '{}')).toBe(deliveriesBefore);
-    expect(await count('user_notifications', '{}')).toBe(inboxBefore);
+    const after = (
+      await graphql<{ notification_rules_by_pk: { last_triggered_at: string | null } }>(
+        'query ($id: uuid!) { notification_rules_by_pk(id: $id) { last_triggered_at } }',
+        { id },
+      )
+    ).notification_rules_by_pk;
+    expect(after.last_triggered_at).toBeNull();
   });
 
   let groupId = '';
@@ -226,6 +233,7 @@ test.describe.serial('notifications smoke', () => {
       run: () => graphql('mutation ($id: uuid!) { delete_escalation_policies_by_pk(id: $id) { id } }', { id: policyId }),
     });
 
+    await page.getByRole('tab', { name: 'Group steps' }).click();
     await page.getByTestId('list-create:escalation_group_step').click();
     await page.getByTestId('form-field-input:escalation_group_step:create:step_no').fill('1');
     await page.getByTestId('form-field-input:escalation_group_step:create:after_minutes').fill('7');
@@ -242,6 +250,11 @@ test.describe.serial('notifications smoke', () => {
         return data.escalation_policy_steps;
       })
       .toEqual([{ step_no: 1, after_minutes: 7, recipient_group_id: groupId, channel: 'in_app' }]);
+    // The Steps tab lists the whole sequence, naming the group the step pages.
+    await page.getByRole('tab', { name: 'Steps', exact: true }).click();
+    const step = page.locator('[data-testid^="list-row:escalation_step:"]');
+    await expect(step).toHaveCount(1);
+    await expect(step.locator(`[data-testid="relation-display:recipient_group:${groupId}"]`)).toBeVisible();
   });
 
   test('should show who is on call now on a seeded schedule', async () => {
@@ -260,12 +273,14 @@ test.describe.serial('notifications smoke', () => {
     await expect(page.locator('[data-testid^="list-row:on_call_schedule_member:"]').first()).toBeVisible();
   });
 
-  test('should create a personal subscription and switch it off', async () => {
+  test('should create a personal subscription switched off and change its channel', async () => {
     await page.goto('/my-subscriptions/create');
     await page.getByTestId('form-field-input:notification_subscription:create:event_type').click();
     await page.getByRole('option', { name: /^Unknown person\b/ }).click();
     await page.getByTestId('form-field-input:notification_subscription:create:channel').click();
     await page.getByRole('option', { name: /^In-app\b/ }).click();
+    // Created switched off: an active one would put new rows in the inbox while the run lasts.
+    await page.getByTestId('form-field-input:notification_subscription:create:is_active').click();
     await page.getByTestId('form-submit:notification_subscription:create').click();
     await expect(page).toHaveURL(/\/my-subscriptions\/[0-9a-f-]{36}$/);
     const id = page.url().split('/').pop() ?? '';
@@ -274,19 +289,22 @@ test.describe.serial('notifications smoke', () => {
       name: 'delete the subscription',
       run: () => asAdmin('mutation ($id: uuid!) { delete_notification_subscriptions_by_pk(id: $id) { id } }', { id }),
     });
-    const state = async (): Promise<{ user_id: string; event_type: string; is_active: boolean }> =>
+    type State = { user_id: string; event_type: string; channel: string; is_active: boolean };
+    const state = async (): Promise<State> =>
       (
-        await graphql<{ notification_subscriptions_by_pk: { user_id: string; event_type: string; is_active: boolean } }>(
-          'query ($id: uuid!) { notification_subscriptions_by_pk(id: $id) { user_id event_type is_active } }',
+        await graphql<{ notification_subscriptions_by_pk: State }>(
+          'query ($id: uuid!) { notification_subscriptions_by_pk(id: $id) { user_id event_type channel is_active } }',
           { id },
         )
       ).notification_subscriptions_by_pk;
-    expect(await state()).toEqual({ user_id: me, event_type: 'detection_unknown', is_active: true });
+    expect(await state()).toEqual({ user_id: me, event_type: 'detection_unknown', channel: 'in_app', is_active: false });
 
     await page.goto(`/my-subscriptions/${id}/edit`);
-    await page.getByTestId('form-field-input:notification_subscription:edit:is_active').click();
+    await page.getByTestId('form-field-input:notification_subscription:edit:channel').click();
+    await page.getByRole('option', { name: /^Email\b/ }).click();
     await page.getByTestId('form-submit:notification_subscription:edit').click();
-    await expect.poll(async () => (await state()).is_active).toBe(false);
+    await expect.poll(async () => (await state()).channel).toBe('email');
+    expect((await state()).is_active).toBe(false);
   });
 
   test('should list only failed or retrying deliveries in the Failed view', async () => {
@@ -339,21 +357,40 @@ test.describe.serial('notifications smoke', () => {
       name: 'delete the inbox notification',
       run: () => asAdmin('mutation ($id: uuid!) { delete_user_notifications_by_pk(id: $id) { id } }', { id }),
     });
+    // The crons may add notifications for the admin at any time: the bell is compared with the
+    // unread count read at the same moment, and the marked row is checked by its id.
     const unread = (): Promise<number> => count('user_notifications', `{user_id: {_eq: "${me}"}, read_at: {_is_null: true}}`);
-    const before = await unread();
-    expect(before).toBeGreaterThan(0);
+    const shown = (n: number): string => (n > 99 ? '99+' : String(n));
     await page.goto('/inbox');
     const badge = page.getByTestId('inbox-bell:count');
-    await expect(badge).toHaveText(before > 99 ? '99+' : String(before));
+    const bellMatches = async (): Promise<boolean> => {
+      const n = await unread();
+      return n > 0 && (await badge.textContent())?.trim() === shown(n);
+    };
+    await expect.poll(bellMatches, { timeout: 15_000 }).toBe(true);
     await page.getByTestId('inbox-bell').click();
     await expect(page.getByTestId('inbox-bell:item').filter({ hasText: `${RUN} inbox` })).toBeVisible();
     await page.keyboard.press('Escape');
 
     const row = page.getByTestId(`list-row:user_notification:${id}`);
     await expect(row).toBeVisible();
+    const readAt = async (): Promise<string | null> =>
+      (
+        await asAdmin<{ user_notifications_by_pk: { read_at: string | null } }>(
+          'query ($id: uuid!) { user_notifications_by_pk(id: $id) { read_at } }',
+          { id },
+        )
+      ).user_notifications_by_pk.read_at;
+    expect(await readAt()).toBeNull();
     await row.getByRole('button', { name: 'Mark read', exact: true }).click();
-    await expect.poll(unread).toBe(before - 1);
-    await expect(badge).toHaveText(before - 1 > 99 ? '99+' : String(before - 1));
+    await expect.poll(readAt).not.toBeNull();
+    // The bell follows: it shows what is unread now (the marked row no longer among it).
+    await expect
+      .poll(async () => {
+        const n = await unread();
+        return (await badge.count()) === 0 ? n === 0 : (await badge.textContent())?.trim() === shown(n);
+      }, { timeout: 15_000 })
+      .toBe(true);
   });
 
   test('should warn about a private address, save a webhook with a secret and delete it', async () => {
@@ -363,6 +400,10 @@ test.describe.serial('notifications smoke', () => {
     await url.fill('http://2130706433/hook');
     await url.blur();
     await expect(page.getByText(/loopback or private network address/i).first()).toBeVisible();
+    // A public address clears the warning, so the next one cannot pass on a stale warning.
+    await url.fill('https://hooks.example.com/itap');
+    await url.blur();
+    await expect(page.getByText(/loopback or private network address/i)).toHaveCount(0);
     await url.fill(`http://10.0.0.5:8080/${RUN}`);
     await url.blur();
     await expect(page.getByText(/loopback or private network address/i).first()).toBeVisible();
