@@ -50,8 +50,10 @@ camera block's `load` so they stay out of the initial bundle). Charts: plain SVG
 
 ### Task 1: Devices resource (+ device areas link), enums, docs
 
+Carry-overs from phase 2: fill the device relation on `access_point_device` (bd 3v_mono-5t6) with a read link `f.relationMany({ through })` on access point; show devices on the `itap:floor-plan` block (data entry for positioned devices of the plan's areas, icon by device type and health). Use the shared `src/data/resource-names.ts`, the facility-scope guard test and the dev-stack globalSetup from the phase 2 final fixes; in `tests/support/dev-sessions.ts` import `NOVA_NAME` from `dev-hosts.ts` instead of the hard-coded organization name.
+
 Resource `device` (table `devices`): name, code (system), device_type, facility_id, area_id (candidates
-same facility), position (`planPosition()` from phase 2), coverage (json), stream_url, resolution, fps,
+same facility), position (`planPosition({ areaField: 'area_id' })`), coverage (`areaShape({ areaField: 'area_id' })` — check `itap.valid_shape` applies to device coverage), stream_url, resolution, fps,
 status, health_status/last_seen_at (system), manufacturer, model, firmware_version, ip_address,
 configuration (json), custom_fields (`customFields({ entity: 'device' })`), recognition_enabled
 (system — changed only through the flows), recognition_fps, username, password (secret write-only
