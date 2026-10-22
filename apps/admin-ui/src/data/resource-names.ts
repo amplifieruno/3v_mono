@@ -67,6 +67,7 @@ export const RECIPIENT_GROUP_USER_MEMBER_RESOURCE = 'recipient_group_user_member
 export const RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE = 'recipient_group_address_member';
 export const ESCALATION_GROUP_STEP_RESOURCE = 'escalation_group_step';
 export const ESCALATION_ON_CALL_STEP_RESOURCE = 'escalation_on_call_step';
+export const ESCALATION_STEP_RESOURCE = 'escalation_step';
 export const ON_CALL_SCHEDULE_RESOURCE = 'on_call_schedule';
 export const ON_CALL_SCHEDULE_MEMBER_RESOURCE = 'on_call_schedule_member';
 export const NOTIFICATION_SUBSCRIPTION_RESOURCE = 'notification_subscription';

@@ -44,6 +44,11 @@ const GROUP_ROW = { ...stamps, id: GROUP, name: 'Security team', description: nu
 const PEOPLE = [{ id: 'p1', group_id: GROUP, user_id: ANNA, channel: 'email', created_at: stamps.created_at }];
 const ADDRESSES = [{ id: 'a1', group_id: GROUP, external_address: '+441632960123', channel: 'sms', created_at: stamps.created_at }];
 
+const STEPS = [
+  { id: 's1', policy_id: POLICY, step_no: 10, after_minutes: 0, channel: 'in_app', recipient_group_id: GROUP, on_call_schedule_id: null, created_at: stamps.created_at },
+  { id: 's2', policy_id: POLICY, step_no: 20, after_minutes: 5, channel: 'sms', recipient_group_id: null, on_call_schedule_id: SCHEDULE, created_at: stamps.created_at },
+];
+
 interface GraphqlBody {
   readonly query: string;
   readonly variables?: Record<string, unknown>;
@@ -58,6 +63,7 @@ const bodies = (): GraphqlBody[] =>
 const mutations = (): GraphqlBody[] => bodies().filter((body) => body.query.trimStart().startsWith('mutation'));
 
 let scheduleRow: Record<string, unknown> = SCHEDULE_ROW;
+let policyRow: Record<string, unknown> = POLICY_ROW;
 
 async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
@@ -66,12 +72,15 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   }
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 2 } } } });
   if (query.includes('on_call_schedules_by_pk')) return hasuraResponse({ data: { item: scheduleRow } });
-  if (query.includes('escalation_policies_by_pk')) return hasuraResponse({ data: { item: POLICY_ROW } });
+  if (query.includes('escalation_policies_by_pk')) return hasuraResponse({ data: { item: policyRow } });
   if (query.includes('recipient_groups_by_pk')) return hasuraResponse({ data: { item: GROUP_ROW } });
   if (/\bitems: on_call_schedule_members\(/.test(query)) return hasuraResponse({ data: { items: ROTATION } });
   if (/\bitems: recipient_group_members\(/.test(query)) {
     return hasuraResponse({ data: { items: query.includes('external_address') ? ADDRESSES : PEOPLE } });
   }
+  if (/\bitems: escalation_policy_steps\(/.test(query)) return hasuraResponse({ data: { items: STEPS } });
+  if (/\bitems: recipient_groups\(/.test(query)) return hasuraResponse({ data: { items: [GROUP_ROW] } });
+  if (/\bitems: on_call_schedules\(/.test(query)) return hasuraResponse({ data: { items: [SCHEDULE_ROW] } });
   if (/\bitems: users\(/.test(query)) return hasuraResponse({ data: { items: USERS } });
   return hasuraResponse({ data: { items: [] } });
 }
@@ -87,6 +96,7 @@ beforeAll(installDomShims);
 
 beforeEach(() => {
   scheduleRow = SCHEDULE_ROW;
+  policyRow = POLICY_ROW;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -124,6 +134,48 @@ describe('escalation policy form', () => {
     // The hidden field is not written (nothing the CHECK could refuse); the database clears the
     // stored 3 when repeat turns off (trigger escalation_policies_clear_max_cycles, dev-stack test).
     expect(sent).not.toContain('max_cycles');
+  });
+  it('should refuse a repeating policy without a number of passes', async () => {
+    renderAt('/escalation-policies/create');
+    fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Night pages' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Repeat/ }));
+    expect(await screen.findByLabelText(/^Passes at most/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    // escalation_policies_repeat_bounded: a repeating policy needs its bound.
+    expect(await screen.findByText('Passes at most is required for a repeating policy.')).toBeDefined();
+    expect(mutations()).toHaveLength(0);
+  });
+
+  it('should start a policy switched back to repeat with no number of passes and refuse it empty', async () => {
+    policyRow = { ...POLICY_ROW, repeat: false, max_cycles: null };
+    renderAt(`/escalation-policies/${POLICY}/edit`);
+    const repeat = await screen.findByRole('checkbox', { name: /^Repeat/ });
+    await waitFor(() => expect((repeat as HTMLInputElement).getAttribute('aria-checked') ?? String((repeat as HTMLInputElement).checked)).toMatch(/false/));
+    fireEvent.click(repeat);
+    const passes = await screen.findByLabelText(/^Passes at most/);
+    expect((passes as HTMLInputElement).value).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: /^Save/ }));
+    expect(await screen.findByText('Passes at most is required for a repeating policy.')).toBeDefined();
+    expect(mutations()).toHaveLength(0);
+  });
+});
+
+describe('escalation policy page', () => {
+  it('should list all steps in step order, each with the group or schedule it pages', async () => {
+    renderAt(`/escalation-policies/${POLICY}`);
+    // The Steps tab holds the whole sequence; each kind is added on a tab of its own.
+    expect(await screen.findByRole('tab', { name: /^Steps/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /Group steps/ })).toBeDefined();
+    expect(screen.getByRole('tab', { name: /On-call steps/ })).toBeDefined();
+    expect((await screen.findAllByText('Security team')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Security on-call')).length).toBeGreaterThan(0);
+    const reads = bodies().filter((body) => /\bitems: escalation_policy_steps\(/.test(body.query));
+    // The all-steps read asks for both targets, sorted by step number, without a kind filter.
+    const all = reads.find((body) => body.query.includes('recipient_group_id') && body.query.includes('on_call_schedule_id'));
+    expect(all).toBeDefined();
+    const text = `${all?.query ?? ''} ${JSON.stringify(all?.variables)}`;
+    expect(text).toMatch(/step_no["\s:]*asc/);
+    expect(JSON.stringify(all?.variables)).not.toContain('_is_null');
   });
 });
 

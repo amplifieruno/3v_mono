@@ -4,12 +4,14 @@ import {
   ESCALATION_GROUP_STEP_RESOURCE,
   ESCALATION_ON_CALL_STEP_RESOURCE,
   ESCALATION_POLICY_RESOURCE,
+  ESCALATION_STEP_RESOURCE,
   ON_CALL_SCHEDULE_MEMBER_RESOURCE,
   ON_CALL_SCHEDULE_RESOURCE,
   RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE,
   RECIPIENT_GROUP_RESOURCE,
   RECIPIENT_GROUP_USER_MEMBER_RESOURCE,
 } from '../../src/data/resource-names';
+import { ESCALATION_POLICY_CHECKS } from '../../src/modules/notifications/escalation-policy';
 import { ADDRESS_MEMBER_CHECKS, addressProblem } from '../../src/modules/notifications/recipient-group-members';
 import { validatorResult } from '../support/field-issues';
 
@@ -82,6 +84,19 @@ describe('escalation policies', () => {
     expect(field(ESCALATION_GROUP_STEP_RESOURCE, 'on_call_schedule_id')).toBeUndefined();
     expect(field(ESCALATION_ON_CALL_STEP_RESOURCE, 'on_call_schedule_id')?.opts?.required).toBe(true);
     expect(field(ESCALATION_ON_CALL_STEP_RESOURCE, 'recipient_group_id')).toBeUndefined();
+  });
+
+  it('should read all steps of a policy, both targets, without writing any', () => {
+    expect(def(ESCALATION_STEP_RESOURCE).operations).toEqual({ create: false, edit: false, delete: false });
+    expect(field(ESCALATION_STEP_RESOURCE, 'recipient_group_id')).toBeDefined();
+    expect(field(ESCALATION_STEP_RESOURCE, 'on_call_schedule_id')).toBeDefined();
+  });
+
+  it('should refuse a repeating policy without a number of passes (escalation_policies_repeat_bounded)', () => {
+    const bounded = ESCALATION_POLICY_CHECKS.find((check) => check.id === 'repeatBounded')?.when as (ctx: { values: Record<string, unknown> }) => boolean;
+    expect(bounded({ values: { repeat: true, max_cycles: null } })).toBe(true);
+    expect(bounded({ values: { repeat: true, max_cycles: 3 } })).toBe(false);
+    expect(bounded({ values: { repeat: false, max_cycles: null } })).toBe(false);
   });
 
   it('should never page on a webhook', () => {

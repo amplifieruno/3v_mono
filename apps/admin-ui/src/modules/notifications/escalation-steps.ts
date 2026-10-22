@@ -4,6 +4,7 @@ import {
   ESCALATION_GROUP_STEP_RESOURCE,
   ESCALATION_ON_CALL_STEP_RESOURCE,
   ESCALATION_POLICY_RESOURCE,
+  ESCALATION_STEP_RESOURCE,
   ON_CALL_SCHEDULE_RESOURCE,
   RECIPIENT_GROUP_RESOURCE,
 } from '../../data/resource-names';
@@ -109,8 +110,52 @@ export const escalationOnCallStepFields = {
   }),
 };
 
+/**
+ * Every step of a policy, whichever it pages: both targets, read only (one of the two is empty on
+ * each row). The policy's Steps tab shows the whole sequence here, in step order across both kinds;
+ * steps are added, changed and removed through the two lists below it, each of which carries its own
+ * target (G45).
+ */
+export const escalationStepFields = {
+  ...common,
+  recipient_group_id: f.relation({
+    to: RECIPIENT_GROUP_RESOURCE,
+    nullable: true,
+    open: 'page',
+    texts: { label: 'Recipient group', doc: { summary: 'Set on a step that pages everyone in a recipient group.' } },
+  }),
+  on_call_schedule_id: f.relation({
+    to: ON_CALL_SCHEDULE_RESOURCE,
+    nullable: true,
+    open: 'page',
+    texts: { label: 'On-call schedule', doc: { summary: 'Set on a step that pages the person on call in a schedule.' } },
+  }),
+};
+
+export const STEP_COLUMNS = ['step_no', 'after_minutes', 'recipient_group_id', 'on_call_schedule_id', 'channel'] as const;
 export const GROUP_STEP_COLUMNS = ['step_no', 'after_minutes', 'recipient_group_id', 'channel'] as const;
 export const ON_CALL_STEP_COLUMNS = ['step_no', 'after_minutes', 'on_call_schedule_id', 'channel'] as const;
+
+/** All steps of a policy in order, on the policy's Steps tab; read only, no page of their own. */
+export const escalationStep = defineResource(ESCALATION_STEP_RESOURCE, {
+  texts: {
+    label: 'Escalation step',
+    labelPlural: 'All steps, in order',
+    doc: {
+      summary:
+        'The whole sequence of an escalation policy, group and on-call steps together, from the lowest step number up; each row names the group or the schedule it pages.',
+    },
+  },
+  basePath: '/escalation-steps',
+  displayField: 'step_no',
+  data: { provider: 'hasura' },
+  operations: { create: false, edit: false, delete: false },
+  fields: escalationStepFields,
+  views: {
+    list: { page: false, columns: [...STEP_COLUMNS], defaultSort: [{ field: 'step_no', direction: 'asc' }] },
+    show: { page: false },
+  },
+});
 
 /** The steps of a policy that page a recipient group, on the policy's Steps tab; no page of their own. */
 export const escalationGroupStep = defineResource(ESCALATION_GROUP_STEP_RESOURCE, {

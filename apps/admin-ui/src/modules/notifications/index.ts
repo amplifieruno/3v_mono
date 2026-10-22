@@ -2,7 +2,6 @@ import { deliveryReportBlock } from '../../blocks/delivery-report/delivery-repor
 import {
   DELIVERY_REPORT_OPERATIONS,
   deliveryReport,
-  deliveryReportFacts,
 } from '../../blocks/delivery-report/delivery-report-query';
 import { notificationRuleTestBlock } from '../../blocks/notification-rule-test/notification-rule-test-block';
 import {
@@ -16,6 +15,7 @@ import {
   ESCALATION_GROUP_STEP_RESOURCE,
   ESCALATION_ON_CALL_STEP_RESOURCE,
   ESCALATION_POLICY_RESOURCE,
+  ESCALATION_STEP_RESOURCE,
   NOTIFICATION_DELIVERY_RESOURCE,
   NOTIFICATION_RULE_CHANNEL_RESOURCE,
   NOTIFICATION_RULE_EVENT_TYPE_RESOURCE,
@@ -51,6 +51,8 @@ import {
   escalationGroupStepFields,
   escalationOnCallStep,
   escalationOnCallStepFields,
+  escalationStep,
+  escalationStepFields,
 } from './escalation-steps';
 import { notificationDelivery, notificationDeliveryFields } from './notification-delivery';
 import { notificationRule } from './notification-rule';
@@ -101,6 +103,7 @@ export const notificationsModule = {
     recipientGroupUserMember,
     recipientGroupAddressMember,
     escalationPolicy,
+    escalationStep,
     escalationGroupStep,
     escalationOnCallStep,
     onCallSchedule,
@@ -112,7 +115,6 @@ export const notificationsModule = {
     notificationSubscription,
     notificationDelivery,
     deliveryReport,
-    deliveryReportFacts,
     deliveryReportBlock,
     deliveryReportPage,
     userNotification,
@@ -146,6 +148,7 @@ export const notificationsModule = {
     [ESCALATION_GROUP_STEP_RESOURCE]: hasuraTable('escalation_policy_steps', {
       selectFields: selectFieldsOf(escalationGroupStepFields),
     }),
+    [ESCALATION_STEP_RESOURCE]: hasuraTable('escalation_policy_steps', { selectFields: selectFieldsOf(escalationStepFields) }),
     [ESCALATION_ON_CALL_STEP_RESOURCE]: hasuraTable('escalation_policy_steps', {
       selectFields: selectFieldsOf(escalationOnCallStepFields),
     }),

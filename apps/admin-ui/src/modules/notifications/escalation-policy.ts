@@ -1,4 +1,4 @@
-import { type Layout, defineResource, relatedList } from '@burojs/core';
+import { type Check, type Layout, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
@@ -6,11 +6,12 @@ import {
   ESCALATION_GROUP_STEP_RESOURCE,
   ESCALATION_ON_CALL_STEP_RESOURCE,
   ESCALATION_POLICY_RESOURCE,
+  ESCALATION_STEP_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
 } from '../../data/resource-names';
 import { rangeValidator } from '../../fields/bounded-number';
 import { checkNotBlank } from '../../fields/not-blank';
-import { GROUP_STEP_COLUMNS, ON_CALL_STEP_COLUMNS } from './escalation-steps';
+import { GROUP_STEP_COLUMNS, ON_CALL_STEP_COLUMNS, STEP_COLUMNS } from './escalation-steps';
 import { NOTIFICATION_RULE_COLUMNS } from './notification-rule';
 
 /** `escalation_policies_max_cycles_positive`: at least one pass. */
@@ -44,7 +45,7 @@ export const escalationPolicyFields = {
       label: 'Passes at most',
       doc: {
         summary:
-          'For a repeating policy: how many passes through the steps in all, the first included (3 = the first pass and two repeats). Empty: repeat until someone acknowledges. Switching Repeat off clears it.',
+          'Required for a repeating policy: how many passes through the steps in all, the first included (3 = the first pass and two repeats). A repeating policy always has a bound. Switching Repeat off clears it; switching it on again starts empty.',
       },
     },
   }),
@@ -53,6 +54,22 @@ export const escalationPolicyFields = {
 };
 
 type Fields = typeof escalationPolicyFields;
+
+/**
+ * `escalation_policies_repeat_bounded` (CHECK NOT repeat OR max_cycles IS NOT NULL): a repeating
+ * policy needs its number of passes. A resource field takes no predicate `required`, so the form
+ * refuses it with a check; "Passes at most" is on the form exactly while Repeat is on.
+ */
+export const ESCALATION_POLICY_CHECKS: Check[] = [
+  {
+    id: 'repeatBounded',
+    on: ['create', 'edit'],
+    severity: 'error',
+    anchor: 'max_cycles',
+    texts: 'Passes at most is required for a repeating policy.',
+    when: ({ values }) => values.repeat === true && (values.max_cycles === null || values.max_cycles === undefined || values.max_cycles === ''),
+  },
+];
 
 /**
  * The repeat settings: the number of passes only while the policy repeats (read from `values` or
@@ -85,6 +102,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
   displayField: 'name',
   data: { provider: 'hasura' },
   fields: escalationPolicyFields,
+  checks: ESCALATION_POLICY_CHECKS,
   views: {
     list: {
       columns: ['name', 'repeat', 'max_cycles'],
@@ -100,6 +118,17 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
           'description',
           l.tabs(
             [
+              // The whole sequence, both kinds in step order; read only.
+              l.panel(
+                [
+                  l.place(relatedList(resourceByName(ESCALATION_STEP_RESOURCE)), {
+                    key: 'policy-all-steps',
+                    props: { where: byPolicy, columns: [...STEP_COLUMNS], open: 'none' },
+                  }),
+                ],
+                { key: 'steps', texts: 'Steps' },
+              ),
+              // Adding, changing and removing: one list per kind, each carrying its own target (G45).
               l.panel(
                 [
                   l.place(relatedList(resourceByName(ESCALATION_GROUP_STEP_RESOURCE)), {
@@ -111,6 +140,11 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
                       open: 'none',
                     },
                   }),
+                ],
+                { key: 'group-steps', texts: 'Group steps' },
+              ),
+              l.panel(
+                [
                   l.place(relatedList(resourceByName(ESCALATION_ON_CALL_STEP_RESOURCE)), {
                     key: 'policy-on-call-steps',
                     props: {
@@ -120,7 +154,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
                     },
                   }),
                 ],
-                { key: 'steps', texts: 'Steps' },
+                { key: 'on-call-steps', texts: 'On-call steps' },
               ),
               l.panel(
                 [
