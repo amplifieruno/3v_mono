@@ -16,7 +16,8 @@ the page opens:
 - **Areas over capacity**: areas with a capacity that now hold more people than
   it, people in their sub-areas included.
 
-The tabs below hold the details, the area tree and the access points.
+The tabs below hold the details, the area tree and the facility's **access
+points** (each row opens the access point's page).
 
 ## Details
 
@@ -55,6 +56,22 @@ options of a select attribute.
 - A value whose attribute was **deleted** is kept too, but the database refuses
   to save custom attributes that still hold it: remove it with its remove
   button, or set the attribute inactive instead of deleting it.
+
+## Applying a template
+
+**Apply template** (on the facility page) creates the areas of a facility
+template in one step. Choose the **Template** and, if the areas belong inside
+an existing area (such as a floor), that area under **Inside**; leave it empty
+to create them at the facility's top level. The form shows the areas the
+template creates as a tree.
+
+Every area of the template is created, **even when an area of the same name
+already exists** there: nothing is skipped or merged, so applying the same
+template twice creates a second copy. The form warns before you apply when one
+of the template's top-level names already exists under the chosen area (or at
+the top level). After applying, the message says how many areas were created
+and names the top-level ones. Either the whole template is created or, on an
+error, nothing.
 
 ## Deleting a facility
 

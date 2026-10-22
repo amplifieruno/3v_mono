@@ -53,3 +53,7 @@ shows the image with every shaped area on it, coloured by access level
 (green public, amber restricted, orange secure, red classified), labelled with
 its name and how many people are inside against its capacity. An area over
 capacity is outlined in red. The list under the plan links to each area.
+
+Access points with a position are drawn as an icon of their kind (door,
+turnstile, gate, elevator, reception desk) on the plan of the area they lead
+into; hover one to see its name.

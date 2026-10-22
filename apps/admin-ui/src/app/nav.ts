@@ -31,6 +31,9 @@ export const NAV_ICONS = {
   facilities: 'Building',
   areas: 'Layers',
   floorPlans: 'Map',
+  accessPoints: 'DoorOpen',
+  facilityTemplates: 'LayoutTemplate',
+  applyTemplate: 'ListTree',
 } as const;
 
 /**

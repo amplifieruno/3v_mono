@@ -181,15 +181,23 @@ describe('floor plan block', () => {
     expect(within(legend).getByText('Over capacity')).toBeDefined();
   });
 
-  it('should draw access points by kind at their positions', async () => {
+  it('should draw the access points of the plan’s areas by kind at their positions', async () => {
     await render({
       plans: { rows: [PLAN_ROW] },
       areas: { rows: AREAS, total: AREAS.length },
       accessPoints: {
         rows: [
-          { id: id(20), name: 'Main door', kind: 'door', position: [600, 780] },
-          { id: id(21), name: 'Turnstile 1', kind: 'turnstile', position: [500, 400] },
-          { id: id(22), name: 'Unplaced', kind: 'gate', position: null },
+          { id: id(20), name: 'Main door', kind: 'door', area_id: FLOOR, position: [600, 780] },
+          {
+            id: id(21),
+            name: 'Turnstile 1',
+            kind: 'turnstile',
+            area_id: ROOM,
+            position: [500, 400],
+          },
+          { id: id(22), name: 'Unplaced', kind: 'gate', area_id: FLOOR, position: null },
+          // Leads into an area of floor 3: drawn on that floor's plan, not this one.
+          { id: id(23), name: 'Kitchen door', kind: 'door', area_id: OTHER_ROOM, position: [10, 10] },
         ],
       },
     });
@@ -203,6 +211,7 @@ describe('floor plan block', () => {
       'lucide-arrow-left-right',
     );
     expect(screen.queryByTestId(`floor-plan-access-point:${id(22)}`)).toBeNull();
+    expect(screen.queryByTestId(`floor-plan-access-point:${id(23)}`)).toBeNull();
   });
 
   it('should leave out areas drawn on a nearer plan of their own', async () => {

@@ -13,6 +13,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // submitted values, `tasks/ui/buro-gaps.md` G12); the unknown screen sends the administrator to
   // the Invitations list.
   { code: 'flow.unknown-unhandled', location: 'organization_invitation toolbar.resource.0.submit' },
+  // `apply_template`: a lost answer of `apply_facility_template` cannot be checked from the flow
+  // (the check sees neither the chosen template nor the parent, G12), and resending would create
+  // every area again; the unknown screen tells the user to look at the facility's areas first.
+  { code: 'flow.unknown-unhandled', location: 'facility toolbar.item.0.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

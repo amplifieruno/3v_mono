@@ -24,12 +24,21 @@ export default {
     doc: { topics: { index: 'Custom attributes' } },
   },
   facility: {
-    doc: { topics: { index: 'Facilities, operating hours and custom attributes' } },
+    doc: { topics: { index: 'Facilities, operating hours, custom attributes and templates' } },
   },
   area: {
     doc: { topics: { index: 'Areas and the area tree' } },
   },
   floor_plan: {
     doc: { topics: { index: 'Floor plans and area shapes' } },
+  },
+  access_point: {
+    doc: { topics: { index: 'Access points, positions and devices' } },
+  },
+  access_point_device: {
+    doc: { topics: { index: 'Devices bound to access points' } },
+  },
+  facility_template: {
+    doc: { topics: { index: 'Facility templates and their structure' } },
   },
 } satisfies TranslationBundle;

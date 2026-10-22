@@ -3,6 +3,7 @@ import { type BlockViewProps, useApp } from '@burojs/react';
 import type * as React from 'react';
 import {
   PLAN_AREA_RESOURCE,
+  accessPointsOnPlan,
   areasOnPlan,
   floorPlanOf,
   planAccessPointOf,
@@ -15,27 +16,27 @@ import { FloorPlanLegend } from './floor-plan-legend';
 
 /**
  * The floor plan block's view (`itap:floor-plan`): the drawing, its size and scale, and the
- * legend of the areas on it. Access points are drawn from an `accessPoints` list when the
- * block reads one (their resource comes with the access points).
+ * legend of the areas on it, and the access points positioned on it.
  */
 export function FloorPlanView({
   data,
   t,
 }: BlockViewProps<typeof floorPlanBlock>): React.ReactElement {
   const app = useApp();
-  const { plans, areas, facilityPlans } = data as Partial<InferBlockData<typeof floorPlanBlock>>;
+  const { plans, areas, facilityPlans, accessPoints: pointRows } = data as Partial<InferBlockData<typeof floorPlanBlock>>;
   const plan = floorPlanOf(plans?.rows[0]);
   if (plan === null || areas === undefined) {
     return <p className="text-sm text-muted-foreground">{t('none')}</p>;
   }
-  const onPlan = areasOnPlan(
-    rowsOf(areas.rows, planAreaOf),
+  const allAreas = rowsOf(areas.rows, planAreaOf);
+  const facilityPlanRows = rowsOf(facilityPlans?.rows, floorPlanOf);
+  const onPlan = areasOnPlan(allAreas, plan, facilityPlanRows);
+  const accessPoints = accessPointsOnPlan(
+    rowsOf(pointRows?.rows, planAccessPointOf),
+    allAreas,
     plan,
-    rowsOf(facilityPlans?.rows, floorPlanOf),
+    facilityPlanRows,
   );
-  const pointRows = (data as { readonly accessPoints?: { readonly rows?: unknown } }).accessPoints
-    ?.rows;
-  const accessPoints = rowsOf(pointRows, planAccessPointOf);
   const def = app.registry.get(PLAN_AREA_RESOURCE);
   const hrefOf = (id: string): string =>
     resourceShowHref(app.registry, def, PLAN_AREA_RESOURCE, id);

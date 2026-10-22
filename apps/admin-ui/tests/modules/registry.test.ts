@@ -41,6 +41,7 @@ describe('module registries', () => {
     expect(operations).toEqual([
       'organization_invitation.inviteMember',
       'overview.dashboardKpis',
+      'places.applyFacilityTemplate',
       'places.facilityOccupancyNow',
       'storage_files.openFile',
     ]);

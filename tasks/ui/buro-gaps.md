@@ -52,6 +52,10 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   (`relatedList({ link })`). Links are not form inputs; attach/detach "come later". **[code]**
 - **Workaround:** links for reading/filtering; edits through the junction resource (`relatedList` of
   the junction with create/delete) until link writes ship.
+- **Phase 2:** the access point's Devices tab is a `relatedList` of the junction
+  `access_point_device` (create seeded from its `where`, delete from the row menu; tested in
+  `tests/modules/access-points-page.test.tsx`). The read link `f.relationMany({ to: 'device',
+  through })` waits for the device resource (phase 3); until then a binding shows the device id.
 
 ### G6. Context picker slices load nothing; scope lives in two places
 - **Framework (0.6.0):** reads now honour a declared `data.scope` (`readScope`, sources
@@ -130,6 +134,9 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Workaround:** none: the warning is accepted in `tests/check-app.test.ts`. The token is shown
   once, so even a confirmed invitation would need revoking and re-inviting; the unknown screen
   tells the administrator to check the Invitations list.
+- **Also (phase 2):** the facility's `apply_template` flow: a lost answer of
+  `apply_facility_template` cannot be checked (the chosen template and parent are not in the
+  context), and a resend would create every area again; accepted the same way.
 - **Expected from a framework:** the submitted input (or the values) in the check context.
 
 ### G13. No current-record screen: a one-row resource needs a custom page
@@ -259,3 +266,23 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   `screens/sources.ts`); a buro change there breaks it at `defineResource` time (covered by
   `checkApp` and the area / floor plan screen tests). Expected: a public by-name target
   (`resourceRef('area')`) for sources and related lists.
+
+### G20. A flow form's layout is typed as a create screen, and its values start absent
+- **Need:** the facility's "Apply template" form places a preview block (`itap:template-overlap`)
+  that reads the flow's record (the facility id) and the chosen values (template, parent area).
+- **Framework (0.6.0):** at runtime a flow form's sources include `record` (the record the flow
+  runs on, `useFlowForm` `metaSources`) beside `values`, but the form body's `Layout` is typed
+  as a `create` screen (`BuiltinSource<'create'>` has no `record`), so `l.ref('record', 'id')`
+  is a type error, and the checker refuses a block prop *defaulting* to `ref('record', …)` in
+  that mode (`block.prop-source-missing`). Separately, a flow's values hold only `form.initial`
+  (field `default`s are not applied), so a `ref('values', f)` prop default of an untouched field
+  resolves to nothing and the placement fails ("the required prop … has no value"); a prop
+  cannot be both `.optional()` and `.default(ref)`. **[run]**
+  (`tests/modules/access-points-page.test.tsx`).
+- **Workaround:** the placement sets `facilityId: ref('record', 'id')` cast to
+  `ScreenRef<'record'>` (`src/modules/places/apply-template-flow.ts`), and `form.initial` gives
+  both fields a literal `null` (`{ kind: 'literal', value: null }`). Tested through the UI in
+  `tests/modules/access-points-page.test.tsx` (preview, warning, submit, notification).
+- **Expected from a framework:** a flow form layout typed with the flow's sources (`record` for
+  an item flow, `args`), and field `default`s seeding a flow's values, or `.optional()` allowed
+  with a ref default (missing = `undefined`).

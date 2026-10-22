@@ -1,10 +1,17 @@
 import { absent, defineBlock, prop, source } from '@burojs/core';
 import { z } from 'zod';
 import { resourceByName } from '../../data/resource-by-name';
-import { FLOOR_PLAN_RESOURCE, PLAN_AREA_RESOURCE } from '../../fields/plan-rows';
+import {
+  FLOOR_PLAN_RESOURCE,
+  PLAN_ACCESS_POINT_RESOURCE,
+  PLAN_AREA_RESOURCE,
+} from '../../fields/plan-rows';
 
 /** The most areas the plan reads at once (`source.list` allows 100); the count says when more exist. */
 export const FLOOR_PLAN_AREA_LIMIT = 100;
+
+/** The most access points the plan reads at once (`source.list` allows 100). */
+export const FLOOR_PLAN_ACCESS_POINT_LIMIT = 100;
 
 /** More floor plans than one facility holds; they decide which areas belong to which plan. */
 const FACILITY_PLANS_LIMIT = 100;
@@ -21,7 +28,8 @@ const facilityOf = (plans: unknown): string | null => {
  * area and of every area inside it (coloured by access level, labelled with occupancy against
  * capacity), and a legend linking each area. Props: `floorPlanId` (on the floor plan's page),
  * or `areaId` (on an area's page: the plan that area carries). Reads the plan, then its
- * facility's plans and areas (path order): an area is drawn only on its nearest plan. With no
+ * facility's plans, areas (path order) and positioned access points: an area, and an access
+ * point by the area it leads into, is drawn only on its nearest plan. With no
  * plan found the later reads are skipped (`absent()`, the block is not drawn). Resources are
  * named, not imported, because the area page places this block.
  */
@@ -70,6 +78,19 @@ export const floorPlanBlock = defineBlock('itap:floor-plan', {
             sort: [{ field: 'path', direction: 'asc' }],
             limit: FLOOR_PLAN_AREA_LIMIT,
             count: true,
+          });
+    },
+    accessPoints: ({ data }) => {
+      const facility = facilityOf(data.plans);
+      return facility === null
+        ? absent()
+        : source.list(resourceByName(PLAN_ACCESS_POINT_RESOURCE), {
+            where: [
+              { field: 'facility_id', op: 'eq', value: facility },
+              { field: 'position', op: 'nnull', value: null },
+            ],
+            sort: [{ field: 'name', direction: 'asc' }],
+            limit: FLOOR_PLAN_ACCESS_POINT_LIMIT,
           });
     },
   },

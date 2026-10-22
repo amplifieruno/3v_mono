@@ -106,6 +106,12 @@ export default {
       at: 'x {{x}}, y {{y}} px',
       clear: 'Clear position',
     },
+    /** The facility template structure display (`src/fields/template-structure-impl.ts`). */
+    templateStructure: {
+      tree: 'Areas the template creates',
+      capacity: 'capacity {{capacity}}',
+      count: 'Areas created when applied: {{count}}',
+    },
     /** The image size field (`src/fields/image-size-impl.ts`). */
     imageSize: {
       use: 'Use the image’s {{size}} px',
@@ -171,6 +177,22 @@ export default {
       planPosition: {
         notPoint: 'A position must be a point [x, y].',
         outside: 'The position ({{x}}, {{y}}) lies outside the floor plan ({{width}} × {{height}} px).',
+      },
+      templateStructure: {
+        notList:
+          'The structure must be a list of areas, such as [{"name": "Lobby", "area_type": "zone"}].',
+        empty: 'Add at least one area to the structure.',
+        notNode: 'Area {{node}} is not an object.',
+        unexpectedKeys:
+          'Area {{node}} has unexpected keys ({{keys}}); use name, area_type, access_level, capacity and children.',
+        noName: 'Area {{node}} needs a name.',
+        longName: 'Area {{node}}: the name is longer than {{max}} characters.',
+        badType: 'Area {{node}}: area_type must be one of {{types}}.',
+        badAccessLevel: 'Area {{node}}: access_level must be one of {{levels}}.',
+        badCapacity: 'Area {{node}}: capacity must be a whole number of at least 0.',
+        childrenNotList: 'Area {{node}}: children must be a list of areas.',
+        tooDeep: 'The structure is deeper than {{max}} levels.',
+        tooMany: 'The structure has more than {{max}} areas.',
       },
       number: {
         range: 'Enter a number from {{min}} to {{max}}.',

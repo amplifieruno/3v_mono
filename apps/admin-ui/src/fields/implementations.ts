@@ -6,6 +6,7 @@ import { imageSizeImplementations } from './image-size-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { storageFileImplementations } from './storage-file-impl';
 import { stringListImplementations } from './string-list-impl';
+import { templateStructureImplementations } from './template-structure-impl';
 import { timeWindowsImplementations } from './time-windows-impl';
 import { timezoneImplementations } from './timezone-impl';
 
@@ -14,7 +15,8 @@ import { timezoneImplementations } from './timezone-impl';
  * field (`itap.storage-file`), time zones (`itap.timezone`), weekly time windows
  * (`itap.time-windows`), lists of texts (`itap.string-list`), custom attribute
  * values (`itap.custom-fields`), floor-plan shapes and points (`itap.area-shape`,
- * `itap.plan-position`) and image sizes (`itap.image-size`). Handed to `<BuroProvider fieldImplementations>`
+ * `itap.plan-position`), image sizes (`itap.image-size`) and facility template trees
+ * (`itap.template-structure`). Handed to `<BuroProvider fieldImplementations>`
  * and to `checkApp`, which checks each literal `meta` against its schema.
  */
 export const itapFieldImplementations = composeFieldImplementations(
@@ -27,4 +29,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   areaShapeImplementations,
   planPositionImplementations,
   imageSizeImplementations,
+  templateStructureImplementations,
 );

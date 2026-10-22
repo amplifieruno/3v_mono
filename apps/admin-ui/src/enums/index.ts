@@ -7,6 +7,9 @@ import {
   ORGANIZATION_ENUM_TABLES,
 } from './organization';
 import {
+  accessPointDeviceRoleEnum,
+  accessPointDirectionEnum,
+  accessPointKindEnum,
   areaAccessLevelEnum,
   areaStatusEnum,
   areaTypeEnum,
@@ -35,6 +38,9 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   areaTypeEnum,
   areaAccessLevelEnum,
   areaStatusEnum,
+  accessPointKindEnum,
+  accessPointDirectionEnum,
+  accessPointDeviceRoleEnum,
 ];
 
 /**

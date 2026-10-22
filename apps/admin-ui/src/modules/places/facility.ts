@@ -1,15 +1,17 @@
-import { defineResource, facts } from '@burojs/core';
+import { defineResource, facts, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
+import { resourceByName } from '../../data/resource-by-name';
 import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
 import { rangeValidator } from '../../fields/bounded-number';
 import { customFields } from '../../fields/custom-fields';
 import { timeWindows } from '../../fields/time-windows';
 import { timezone } from '../../fields/timezone';
+import { applyTemplateFlow } from './apply-template-flow';
 import { areaTreeBlock } from './area-tree-block';
 import { FACILITY_OCCUPANCY_ROWS, facilityOccupancyNow } from './occupancy';
-import { placesPlaceholderBlock } from './placeholder-block';
+import { ACCESS_POINT_RESOURCE } from './resource-names';
 
 export const FACILITY_RESOURCE = 'facility';
 
@@ -160,6 +162,7 @@ export const facility = defineResource(FACILITY_RESOURCE, {
   displayField: 'name',
   data: { provider: 'hasura' },
   fields: facilityFields,
+  actions: (r) => ({ item: [r.action.flow('apply_template', applyTemplateFlow)] }),
   views: {
     list: {
       columns: ['code', 'name', 'status', 'timezone', 'areas_count', 'current_occupancy'],
@@ -201,9 +204,13 @@ export const facility = defineResource(FACILITY_RESOURCE, {
             }),
             l.panel(
               [
-                l.place(placesPlaceholderBlock, {
+                l.place(relatedList(resourceByName(ACCESS_POINT_RESOURCE)), {
                   key: 'access-points-list',
-                  props: { topic: 'access_points' },
+                  props: {
+                    where: [{ field: 'facility_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['name', 'kind', 'area_id', 'from_area_id', 'direction', 'is_entry_exit', 'status'],
+                    open: 'page',
+                  },
                 }),
               ],
               { key: 'access_points', texts: 'Access points' },

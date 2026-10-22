@@ -115,10 +115,76 @@ export const areaStatusEnum = defineEnum({
   },
 });
 
+export const ACCESS_POINT_KIND_ENUM = 'access_point_kind';
+
+export const ACCESS_POINT_KINDS = ['door', 'turnstile', 'gate', 'elevator', 'reception'] as const;
+
+export const accessPointKindEnum = defineEnum({
+  name: ACCESS_POINT_KIND_ENUM,
+  values: enumValues(ACCESS_POINT_KINDS, {
+    door: 'default',
+    turnstile: 'info',
+    gate: 'secondary',
+    elevator: 'outline',
+    reception: 'success',
+  }),
+  texts: {
+    door: 'Door',
+    turnstile: 'Turnstile',
+    gate: 'Gate',
+    elevator: 'Elevator',
+    reception: {
+      label: 'Reception desk',
+      doc: { summary: 'A staffed desk where visitors check in, not a physical barrier.' },
+    },
+  },
+});
+
+export const ACCESS_POINT_DIRECTION_ENUM = 'access_point_direction';
+
+export const ACCESS_POINT_DIRECTIONS = ['in', 'out', 'both'] as const;
+
+export const accessPointDirectionEnum = defineEnum({
+  name: ACCESS_POINT_DIRECTION_ENUM,
+  values: enumValues(ACCESS_POINT_DIRECTIONS, { in: 'info', out: 'secondary', both: 'outline' }),
+  texts: {
+    in: { label: 'Entry only', doc: { summary: 'People pass only into the area it leads to.' } },
+    out: { label: 'Exit only', doc: { summary: 'People pass only out of the area it leads to.' } },
+    both: 'Entry and exit',
+  },
+});
+
+export const ACCESS_POINT_DEVICE_ROLE_ENUM = 'access_point_device_role';
+
+export const ACCESS_POINT_DEVICE_ROLES = ['camera', 'terminal', 'sensor'] as const;
+
+export const accessPointDeviceRoleEnum = defineEnum({
+  name: ACCESS_POINT_DEVICE_ROLE_ENUM,
+  values: enumValues(ACCESS_POINT_DEVICE_ROLES, {
+    camera: 'info',
+    terminal: 'default',
+    sensor: 'outline',
+  }),
+  texts: {
+    camera: {
+      label: 'Camera',
+      doc: { summary: 'Watches the access point; its detections are placed at it.' },
+    },
+    terminal: {
+      label: 'Access terminal',
+      doc: { summary: 'Decides and opens the passage (badge, PIN or face); receives access policies.' },
+    },
+    sensor: { label: 'Sensor', doc: { summary: 'Reports the passage state, such as a door contact.' } },
+  },
+});
+
 /** Each places enum by the Hasura enum table (GraphQL `custom_name`) holding its values. */
 export const PLACES_ENUM_TABLES: Readonly<Record<string, string>> = {
   [FACILITY_STATUS_ENUM]: 'facility_statuses',
   [AREA_TYPE_ENUM]: 'area_types',
   [AREA_ACCESS_LEVEL_ENUM]: 'area_access_levels',
   [AREA_STATUS_ENUM]: 'area_statuses',
+  [ACCESS_POINT_KIND_ENUM]: 'access_point_kinds',
+  [ACCESS_POINT_DIRECTION_ENUM]: 'access_point_directions',
+  [ACCESS_POINT_DEVICE_ROLE_ENUM]: 'access_point_device_roles',
 };

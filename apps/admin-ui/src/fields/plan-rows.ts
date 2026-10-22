@@ -13,6 +13,7 @@ import {
  */
 export const FLOOR_PLAN_RESOURCE = 'floor_plan';
 export const PLAN_AREA_RESOURCE = 'area';
+export const PLAN_ACCESS_POINT_RESOURCE = 'access_point';
 
 export interface FloorPlanRow {
   readonly id: string;
@@ -37,6 +38,8 @@ export interface PlanAreaRow {
 
 export interface PlanAccessPointRow {
   readonly id: string;
+  /** The area it leads into; its plan (or the nearest enclosing area's) is the one it is drawn on. */
+  readonly area_id: string | null;
   readonly name: string;
   readonly kind: string;
   readonly position: PlanPoint | null;
@@ -90,6 +93,7 @@ export function planAccessPointOf(row: Row): PlanAccessPointRow | null {
   if (!id) return null;
   return {
     id,
+    area_id: text(row.area_id),
     name: text(row.name) ?? '',
     kind: text(row.kind) ?? 'door',
     position: parsePoint(row.position),
@@ -123,6 +127,25 @@ export function areasOnPlan(
       area.shape !== null &&
       area.path.includes(plan.area_id) &&
       planOfChain([...area.path].reverse(), known)?.id === plan.id,
+  );
+}
+
+/**
+ * The positioned access points drawn on `plan`: those whose area's nearest plan outwards (the
+ * area itself first) is this one, the way the position input resolves the plan to click on.
+ */
+export function accessPointsOnPlan(
+  points: readonly PlanAccessPointRow[],
+  areas: readonly PlanAreaRow[],
+  plan: FloorPlanRow,
+  plans: readonly FloorPlanRow[],
+): PlanAccessPointRow[] {
+  const known = plans.some((candidate) => candidate.id === plan.id) ? plans : [...plans, plan];
+  return points.filter(
+    (point) =>
+      point.position !== null &&
+      point.area_id !== null &&
+      planOfChain(areaChain(null, point.area_id, areas), known)?.id === plan.id,
   );
 }
 
