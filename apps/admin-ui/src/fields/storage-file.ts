@@ -30,6 +30,8 @@ export interface StorageFileOptions {
    */
   readonly displayOnly?: boolean;
   readonly texts?: FieldTexts;
+  /** The modes the field appears in (default every mode). */
+  readonly in?: readonly ('list' | 'show' | 'create' | 'edit')[];
 }
 
 /**
@@ -45,6 +47,7 @@ export function storageFile(opts: StorageFileOptions) {
     nullable: opts.nullable ?? true,
     ...(opts.displayOnly === true ? { write: 'never' as const } : {}),
     ...(opts.texts === undefined ? {} : { texts: opts.texts }),
+    ...(opts.in === undefined ? {} : { in: [...opts.in] }),
   });
   return {
     ...base,

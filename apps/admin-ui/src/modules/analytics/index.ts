@@ -18,6 +18,7 @@ import { incidentsList, incidentsListOperation } from '../../blocks/incidents-li
 import { kpisBlock } from '../../blocks/kpis/kpis-block';
 import { occupancySeriesBlock } from '../../blocks/occupancy-series/occupancy-series-block';
 import { occupancySeries, occupancySeriesOperation } from '../../blocks/occupancy-series/occupancy-series-query';
+import { reportStatusBlock } from '../../blocks/report-status/report-status-block';
 import { segmentTrendBlock } from '../../blocks/segment-trend/segment-trend-block';
 import { segmentTrend, segmentTrendOperation } from '../../blocks/segment-trend/segment-trend-query';
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
@@ -26,6 +27,11 @@ import {
   AREA_TRANSITION_RESOURCE,
   DASHBOARD_RESOURCE,
   FACILITY_DAILY_STAT_RESOURCE,
+  REPORT_FACILITY_RESOURCE,
+  REPORT_RESOURCE,
+  REPORT_SCHEDULE_RESOURCE,
+  REPORT_SEGMENT_RESOURCE,
+  REPORT_TEMPLATE_RESOURCE,
 } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
 import { analyticsPage } from './analytics-page';
@@ -34,6 +40,12 @@ import { areaTransition, areaTransitionFields } from './area-transition';
 import { dashboard } from './dashboard';
 import { dashboardFields } from './dashboard-fields';
 import { facilityDailyStat, facilityDailyStatFields } from './facility-daily-stat';
+import { report } from './report';
+import { reportFields } from './report-fields';
+import { REPORT_OPERATIONS, createReport, reportProgressQuery, retryReport } from './report-ops';
+import { reportSchedule, reportScheduleFields } from './report-schedule';
+import { reportFacility, reportFacilityFields, reportSegment, reportSegmentFields } from './report-targets';
+import { reportTemplate, reportTemplateFields } from './report-template';
 
 /**
  * Analytics: the stats the hourly aggregation computes (hourly figures per area, daily figures per
@@ -42,7 +54,10 @@ import { facilityDailyStat, facilityDailyStatFields } from './facility-daily-sta
  * device health, deliveries; `./widget-blocks.ts` lists them for dashboards), the Analytics page
  * composing them for the sidebar facility and a period, and dashboards: members' own grids of those
  * blocks (`./dashboard.ts`, the grid block `itap:dashboard-grid`, the editor field
- * `itap.dashboard-widgets`), one of which can be the landing page.
+ * `itap.dashboard-widgets`), one of which can be the landing page; and reports: requested by hand,
+ * by a schedule or from an incident, generated in the background and opened as files, with their
+ * templates and schedules (`./report*.ts`, the progress block `itap:report-status`, the cron field
+ * `itap.cron`).
  */
 export const analyticsModule = {
   name: 'analytics-module',
@@ -71,6 +86,15 @@ export const analyticsModule = {
     deviceHealthSummary,
     deviceHealthDay,
     readableRootFields,
+    report,
+    reportTemplate,
+    reportSchedule,
+    reportFacility,
+    reportSegment,
+    reportStatusBlock,
+    createReport,
+    retryReport,
+    reportProgressQuery,
   ],
   tables: {
     [AREA_HOURLY_STAT_RESOURCE]: hasuraTable('area_hourly_stats', {
@@ -86,6 +110,11 @@ export const analyticsModule = {
       orderByField: 'day',
     }),
     [DASHBOARD_RESOURCE]: hasuraTable('dashboards', { selectFields: selectFieldsOf(dashboardFields) }),
+    [REPORT_RESOURCE]: hasuraTable('reports', { selectFields: selectFieldsOf(reportFields) }),
+    [REPORT_TEMPLATE_RESOURCE]: hasuraTable('report_templates', { selectFields: selectFieldsOf(reportTemplateFields) }),
+    [REPORT_SCHEDULE_RESOURCE]: hasuraTable('report_schedules', { selectFields: selectFieldsOf(reportScheduleFields) }),
+    [REPORT_FACILITY_RESOURCE]: hasuraTable('report_facilities', { selectFields: selectFieldsOf(reportFacilityFields) }),
+    [REPORT_SEGMENT_RESOURCE]: hasuraTable('report_segments', { selectFields: selectFieldsOf(reportSegmentFields) }),
   },
   operations: [
     facilityZoneOperation,
@@ -97,5 +126,6 @@ export const analyticsModule = {
     deviceHealthSummaryOperation,
     deviceHealthDayOperation,
     readableFieldsOperation,
+    ...REPORT_OPERATIONS,
   ],
 } as const satisfies ConsoleModule;

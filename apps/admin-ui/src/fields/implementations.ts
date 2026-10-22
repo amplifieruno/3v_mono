@@ -1,6 +1,7 @@
 import { composeFieldImplementations } from '@burojs/react';
 import { shadcnFieldImplementations } from '@burojs/ui-shadcn';
 import { areaShapeImplementations } from './area-shape-impl';
+import { cronImplementations } from './cron-impl';
 import { customFieldsImplementations } from './custom-fields-impl';
 import { dashboardWidgetsImplementations } from './dashboard-widgets-impl';
 import { dateTimeImplementations } from './date-time-impl';
@@ -13,6 +14,7 @@ import { inlineFileImplementations } from './inline-file-impl';
 import { notificationConditionsImplementations } from './notification-conditions-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
+import { reportParametersImplementations } from './report-parameters-impl';
 import { secretImplementations } from './secret-impl';
 import { segmentConditionsImplementations } from './segment-conditions-impl';
 import { storageFileImplementations } from './storage-file-impl';
@@ -37,7 +39,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
  * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
  * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
- * (`itap.segment-conditions`) and a dashboard's widgets (`itap.dashboard-widgets`).
+ * (`itap.segment-conditions`) and a dashboard's widgets (`itap.dashboard-widgets`), a report schedule's cron with its sentence
+ * (`itap.cron`) and a report's or template's parameters (`itap.report-parameters`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -65,4 +68,6 @@ export const itapFieldImplementations = composeFieldImplementations(
   notificationConditionsImplementations,
   segmentConditionsImplementations,
   dashboardWidgetsImplementations,
+  cronImplementations,
+  reportParametersImplementations,
 );

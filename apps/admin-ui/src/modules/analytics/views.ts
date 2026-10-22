@@ -7,6 +7,7 @@ import { heatmapView } from '../../blocks/heatmap/views';
 import { incidentsListView } from '../../blocks/incidents-list/views';
 import { kpisView } from '../../blocks/kpis/views';
 import { occupancySeriesView } from '../../blocks/occupancy-series/views';
+import { reportStatusView } from '../../blocks/report-status/views';
 import { segmentTrendView } from '../../blocks/segment-trend/views';
 
 /** The views of the analytics module's blocks (kept apart from `./index.ts`, which stays React-free). */
@@ -21,4 +22,5 @@ export const analyticsViews = [
   deliveriesView,
   deviceHealthDayView,
   dashboardGridView,
+  reportStatusView,
 ] as const;

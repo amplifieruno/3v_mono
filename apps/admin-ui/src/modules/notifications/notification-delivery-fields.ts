@@ -6,6 +6,7 @@ import {
   NOTIFICATION_DELIVERY_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
   NOTIFICATION_SUBSCRIPTION_RESOURCE,
+  REPORT_RESOURCE,
   USER_RESOURCE,
 } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
@@ -124,11 +125,14 @@ export const notificationDeliveryFields = {
     providerOptions: { relationship: 'subscription' },
     texts: { label: 'Subscription', doc: { summary: 'Your subscription that matched, for a subscription delivery (only yours are listed).' } },
   }),
-  report_id: f.uuid({
+  report_id: f.relation({
+    to: REPORT_RESOURCE,
     system: true,
     nullable: true,
     in: [...showOnly],
-    texts: { label: 'Report', doc: { summary: 'The report that is ready, for a report delivery.' } },
+    open: 'page',
+    providerOptions: { relationship: 'report' },
+    texts: { label: 'Report', doc: { summary: 'The report that is ready, for a report delivery: its page opens the file.' } },
   }),
   event_id: f.relation({
     to: EVENT_RESOURCE,

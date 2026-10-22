@@ -2,7 +2,7 @@ import { defineMutation } from '@burojs/core';
 import { z } from 'zod';
 import { MONITORING_BINDING } from '../../blocks/occupancy-now/occupancy-query';
 import { type HasuraOperationEntry, hasuraOperation, rootOf } from '../../data/operations';
-import { INCIDENT_ACTIVITY_RESOURCE, INCIDENT_RESOURCE } from '../../data/resource-names';
+import { INCIDENT_ACTIVITY_RESOURCE, INCIDENT_RESOURCE, REPORT_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
 import { MEMBER_NOT_ACTIVE_REFUSAL, type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
 import { INCIDENT_DISPOSITIONS, REPORT_FORMATS } from '../../enums/incidents';
@@ -203,12 +203,12 @@ export const resolveIncident = incidentMutation('itap:resolve-incident', resolve
 export const closeIncident = incidentMutation('itap:close-incident', closeIncidentOperation, incidentIdInput);
 export const escalateIncident = incidentMutation('itap:escalate-incident', escalateIncidentOperation, escalateIncidentInput);
 
-/** Queues an incident report; the report is generated in the background and listed on the reports pages. */
+/** Queues an incident report; the report is generated in the background and listed on the incident's Reports tab and the reports pages. */
 export const generateIncidentReport = defineMutation('itap:generate-incident-report', {
   binding: generateIncidentReportOperation.binding,
   input: schema(incidentReportInput),
   output: schema(queuedReport.nullable()),
-  effects: [{ resource: INCIDENT_ACTIVITY_RESOURCE }],
+  effects: [{ resource: INCIDENT_ACTIVITY_RESOURCE }, { resource: REPORT_RESOURCE }],
 });
 
 /** The incident operations, for the module's registry. */

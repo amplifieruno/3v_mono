@@ -982,3 +982,35 @@ migration `1792365700277`.
 - **Expected from a framework:** a dynamic placement (`l.each(ref, item => l.place(...))` or a
   `renderBlock(block, props)` component that mounts a placement with its chrome, data and texts),
   and per-child grid placement on `l.grid` (column start, span and row span from a ref).
+
+### G61. A record page does not follow its record while the server moves it on
+- **Need:** a report's page (plan 08 Task 3) shows queued → generating → completed or failed as the
+  platform generates it (seconds), then its file link, or its error and Retry.
+- **Framework (0.6.0):** `refetchInterval` is a list option only (`views.list.refetchInterval`); the
+  show screen reads its record once (and again after a mutation's effects), push invalidation needs
+  a provider live channel (`ResourceMapping.live`, not set up for Hasura here), and there is no
+  public hook to invalidate a resource's reads from a block. **[code]**
+  (`core/src/types/resource.ts` `refetchInterval`, `core/src/data/push-invalidation.ts`,
+  `react/src/index.ts`).
+- **Workaround:** the progress block `itap:report-status` reads the report itself
+  (`reportProgress`, polling every 3 s while queued or generating) and, once the read status differs
+  from the status the page shows, invalidates every TanStack query whose key mentions the report id
+  (`useQueryClient`, the console's own client), so the record, its file panel, error panel and Retry
+  are read again.
+- **Expected from a framework:** `views.show.refetchInterval` (a number or a function of the record,
+  e.g. while its status is pending), or a `useInvalidate(resource, id)` hook for blocks.
+
+### G62. A link cannot be written with its record (targets frozen at insert)
+- **Need:** a report's facilities and segments (`report_facilities` / `report_segments`) must exist
+  when the report row is inserted: generation starts on the insert and the targets are frozen once
+  it leaves `queued` (`report_targets_frozen`).
+- **Framework (0.6.0):** a link (`f.relationMany({ through })`) is read only: never a form input and
+  never part of a create payload; the Hasura mapping has no nested-insert transform for a create.
+  **[doc]** (`field-types/README.md` "Limits of this version").
+- **Workaround:** the reports list's create is off; "New report" is a resource flow whose form has
+  plain `f.relationMany` columns (`facility_ids`, `segment_ids`) and whose custom mutation
+  `createReport` inserts the report with nested `report_facilities` / `report_segments` in one
+  statement. Per-type parts of the form are `when`s on the chosen type (record types would need the
+  same nested write).
+- **Expected from a framework:** writable links on create (nested junction rows in the provider's
+  create), or a create view whose submit can be bound to a custom mutation.

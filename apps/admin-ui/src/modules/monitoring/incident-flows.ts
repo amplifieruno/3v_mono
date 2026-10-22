@@ -215,12 +215,12 @@ const reportFields = {
 /**
  * "Generate incident report": `generate_incident_report` queues a report of the incident (its
  * timeline and notes), generated in the background; the timeline records it once it is ready.
- * The reports pages come with a later phase, so the message names the report's code.
+ * The message names the report's code; the incident's Reports tab lists it, with its file once generated.
  */
 export const generateReportFlow = {
   texts: {
     label: 'Generate incident report',
-    notify: 'Report {{code}} is queued. It is generated in the background and listed on the Reports pages (coming in a later release).',
+    notify: 'Report {{code}} is queued. It is generated in the background; the incident’s Reports tab and Analytics › Reports list it.',
     doc: {
       summary:
         'Queues a report of the incident with its timeline and notes, as PDF, Excel, CSV or JSON; the timeline records it once it is generated.',

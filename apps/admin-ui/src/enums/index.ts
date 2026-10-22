@@ -94,6 +94,15 @@ import {
   segmentStatusEnum,
   segmentTargetEnum,
 } from './segments';
+import {
+  REPORT_CHANNEL_ENUM,
+  REPORT_ENUM_TABLES,
+  REPORT_PERIOD_ENUM,
+  reportChannelEnum,
+  reportPeriodEnum,
+  reportStatusEnum,
+  reportTypeEnum,
+} from './reports';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -157,6 +166,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   segmentTargetEnum,
   segmentStatusEnum,
   segmentMemberSourceEnum,
+  reportTypeEnum,
+  reportStatusEnum,
+  reportChannelEnum,
+  reportPeriodEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -168,6 +181,9 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   // Subsets of notification_channels for the channel pickers (G52).
   PERSON_CHANNEL_ENUM,
   ADDRESS_CHANNEL_ENUM,
+  // The channels a report schedule delivers on (G52), and a template's `parameters.period` (a jsonb key).
+  REPORT_CHANNEL_ENUM,
+  REPORT_PERIOD_ENUM,
 ]);
 
 /**
@@ -190,4 +206,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...WATCH_LIST_ENUM_TABLES,
   ...NOTIFICATION_ENUM_TABLES,
   ...SEGMENT_ENUM_TABLES,
+  ...REPORT_ENUM_TABLES,
 };

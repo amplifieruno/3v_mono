@@ -11,6 +11,7 @@ import {
   INCIDENT_NOTE_RESOURCE,
   INCIDENT_RESOURCE,
   NOTIFICATION_DELIVERY_RESOURCE,
+  REPORT_RESOURCE,
 } from '../../data/resource-names';
 import { severitiesFrom } from '../../enums/events';
 import { INCIDENT_ACTIVITY_COLUMNS } from './incident-activity';
@@ -215,6 +216,15 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
                   }),
                 ],
                 { key: 'deliveries', texts: 'Notifications' },
+              ),
+              l.panel(
+                [
+                  l.place(relatedList(resourceByName(REPORT_RESOURCE)), {
+                    key: 'incident-reports',
+                    props: { where: [...byIncident], columns: ['code', 'format', 'status', 'created_at', 'generated_at'], open: 'page' },
+                  }),
+                ],
+                { key: 'reports', texts: 'Reports' },
               ),
             ],
             { key: 'sections' },

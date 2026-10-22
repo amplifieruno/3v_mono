@@ -174,4 +174,10 @@ export default {
   dashboard: {
     doc: { topics: { index: 'Dashboards: widgets, sharing, the landing page and what is refused' } },
   },
+  report: {
+    doc: { topics: { index: 'Reports: types, periods, generation, files, Retry, templates and schedules' } },
+  },
+  report_schedule: {
+    doc: { topics: { index: 'Report schedules: the cron, time zones, runs and failures' } },
+  },
 } satisfies TranslationBundle;

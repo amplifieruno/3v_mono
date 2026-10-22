@@ -111,6 +111,11 @@ export const NAV_ICONS = {
   dailyStats: 'CalendarRange',
   areaTransitions: 'Shuffle',
   dashboards: 'LayoutGrid',
+  reports: 'FileChartColumn',
+  reportTemplates: 'FileStack',
+  reportSchedules: 'CalendarClock',
+  newReport: 'FilePlus',
+  retryReport: 'RotateCcw',
 } as const;
 
 /**
