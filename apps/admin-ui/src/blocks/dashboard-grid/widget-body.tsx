@@ -10,6 +10,8 @@ export interface WidgetBodyProps {
   /** The block's props from the widget's settings (facility already filled in). */
   readonly props: Readonly<Record<string, unknown>>;
   readonly loading: string;
+  /** The tile's note for a read that failed. */
+  readonly failed: React.ReactElement;
   /** Draws a refusal of the block's own prop schemas. */
   readonly invalid: (reason: string) => React.ReactElement;
 }
@@ -20,7 +22,7 @@ export interface WidgetBodyProps {
  * (`validatePlacementProps`, as a placement mounts), its registered view (`./widget-views.ts`) and its
  * texts as a placement would hand them; the blocks with `data` entries get them read here.
  */
-export function WidgetBody({ entry, props, loading, invalid }: WidgetBodyProps): React.ReactElement {
+export function WidgetBody({ entry, props, loading, failed, invalid }: WidgetBodyProps): React.ReactElement {
   const { block } = ANALYTIC_BLOCKS[entry];
   const id = formatEntityRef(block.ref);
   const t = useBlockT(id);
@@ -34,7 +36,7 @@ export function WidgetBody({ entry, props, loading, invalid }: WidgetBodyProps):
   if (checked.status === 'pending') return <p className="text-sm text-muted-foreground">{loading}</p>;
   const View = WIDGET_VIEWS[entry].component as WidgetBlockView | undefined;
   if (View === undefined) return invalid(`${id} has no view`);
-  const data = { View, props: checked.props, t, loading };
+  const data = { View, props: checked.props, t, loading, failed };
   if (entry === 'occupancyNow') return <OccupancyNowWidget {...data} />;
   if (entry === 'deviceHealthChart') return <HealthChartWidget {...data} />;
   return <PlainWidget {...data} />;

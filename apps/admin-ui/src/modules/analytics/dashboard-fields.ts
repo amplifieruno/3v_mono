@@ -1,4 +1,4 @@
-import type { Rule } from '@burojs/core';
+import { type Rule, isRecordProbe } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { USER_RESOURCE } from '../../data/resource-names';
 import { dashboardWidgetsField } from '../../fields/dashboard-widgets';
@@ -91,6 +91,13 @@ export const DASHBOARD_RULES: Rule[] = [
     when: (ctx) => someoneElses(ctx.record),
     fallback: 'disable',
     reason: NOT_OWNER_REASON,
+  },
+  {
+    // "On my Dashboard page" is the owner's landing choice: meaningless on a dashboard shared with
+    // you, and unknown for "every row" (a list column, a filter, an export), so shown on your own only.
+    target: { kind: 'field', name: 'is_default' },
+    deny: 'view',
+    when: (ctx) => isRecordProbe(ctx.record) || someoneElses(ctx.record),
   },
 ];
 

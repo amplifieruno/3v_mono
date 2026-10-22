@@ -13,6 +13,8 @@ export interface WidgetDataProps {
   readonly props: Readonly<Record<string, unknown>>;
   readonly t: BlockT;
   readonly loading: string;
+  /** The tile's note for a read that failed (in place of the widget). */
+  readonly failed: React.ReactElement;
 }
 
 /** A view's props as `BlockViewProps<unknown>` (the dashboard holds every block's props as a record). */
@@ -33,12 +35,13 @@ const listOf = (read: { readonly data?: unknown }) => {
  * `itap:occupancy-now`'s `data` (the facility's floor plans and areas, as its placement reads them
  * with `source.list`), read here for a view the dashboard draws itself (gap G60).
  */
-export function OccupancyNowWidget({ View, props, t, loading }: WidgetDataProps): React.ReactElement {
+export function OccupancyNowWidget({ View, props, t, loading, failed }: WidgetDataProps): React.ReactElement {
   const facilityId = typeof props.facilityId === 'string' ? props.facilityId : '';
   const filter = { field: 'facility_id', op: 'eq', value: facilityId } as const;
   const pagination = { kind: 'offset', page: 1, pageSize: PLAN_AREA_LIMIT } as const;
   const plans = useList(FLOOR_PLAN_RESOURCE, { scope: 'none', filter, sort: [{ field: 'name', direction: 'asc' }], pagination });
   const areas = useList(AREA_RESOURCE, { scope: 'none', filter, sort: [{ field: 'path', direction: 'asc' }], pagination });
+  if (plans.isError || areas.isError) return failed;
   const data = { plans: listOf(plans), areas: listOf(areas) };
   if (data.plans === undefined || data.areas === undefined) return <p className="text-sm text-muted-foreground">{loading}</p>;
   return <View {...viewProps(props, data, t)} />;

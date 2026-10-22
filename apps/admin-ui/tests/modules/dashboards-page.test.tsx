@@ -43,6 +43,8 @@ const READABLE = ['dashboard_kpis', 'area_hourly_stats', 'occupancy_series', 'fa
 
 let board: Record<string, unknown>;
 let landing: unknown[];
+/** Whether the floor plans read fails (a read error, not "no access"). */
+let plansFail: boolean;
 
 const row = (overrides: Record<string, unknown> = {}) => ({
   id: BOARD,
@@ -90,6 +92,7 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   if (query.includes('dashboards_by_pk')) return hasuraResponse({ data: { item: board } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 0 } } } });
   if (/\bitems: dashboards\(/.test(query)) return hasuraResponse({ data: { items: [board] } });
+  if (plansFail && /\bitems: floor_plans\(/.test(query)) return hasuraResponse({ errors: [{ message: 'database unavailable', extensions: { code: 'unexpected' } }] });
   if (/\bitems: facilities\(/.test(query)) {
     return hasuraResponse({ data: { items: [{ id: FACILITY, code: 'FAC-1', name: 'Nova Tower', status: 'active' }] } });
   }
@@ -118,6 +121,7 @@ beforeEach(() => {
   localStorage.clear();
   board = row();
   landing = [];
+  plansFail = false;
   vi.stubGlobal('fetch', vi.fn(serve));
 });
 
@@ -158,6 +162,15 @@ describe('dashboard page', () => {
     expect(screen.queryByTestId('dashboard-tile:choose-facility')).toBeNull();
   });
 
+  it('should say the occupancy-now tile failed when its floor plans cannot be read, not keep reading', async () => {
+    localStorage.setItem(`itap:facility:${NOVA}`, FACILITY);
+    plansFail = true;
+    board = row({ widgets: [widget('now', 'occupancy_series', 'Occupancy now', 'facility_occupancy_now', {}, 0, 0, 12)] });
+    renderAt(`/dashboards/${BOARD}`);
+    await waitFor(() => expect(bodies().some((body) => /\bitems: floor_plans\(/.test(body.query))).toBe(true));
+    expect(await within(tileTitled('Occupancy now')).findByTestId('dashboard-tile:failed', {}, { timeout: 8000 })).toBeDefined();
+  });
+
   it('should offer no Edit on a dashboard shared by someone else (Review Focus 2)', async () => {
     board = row({ owner_id: 'user-2', owned_by_me: false });
     renderAt(`/dashboards/${BOARD}`);
@@ -172,6 +185,19 @@ describe('dashboard page', () => {
     const edit = await screen.findByRole('link', { name: /^Edit/ });
     expect(edit.getAttribute('aria-disabled')).not.toBe('true');
   });
+
+  it('should show "On my Dashboard page" on the owner\'s dashboard only', async () => {
+    renderAt(`/dashboards/${BOARD}`);
+    await screen.findByTestId('dashboard-grid');
+    expect(await screen.findByText('On my Dashboard page')).toBeDefined();
+    cleanup();
+    board = row({ owner_id: 'user-2', owned_by_me: false });
+    renderAt(`/dashboards/${BOARD}`);
+    await screen.findByTestId('dashboard-grid');
+    // The header grid is drawn (its other fields are), without the owner's landing choice.
+    expect(await screen.findByText('Shared')).toBeDefined();
+    expect(screen.queryByText('On my Dashboard page')).toBeNull();
+  });
 });
 
 describe('dashboard list', () => {
@@ -185,6 +211,13 @@ describe('dashboard list', () => {
     const actions = await screen.findAllByRole('menuitem');
     expect(actions.map((node) => node.textContent)).toEqual(expect.arrayContaining([expect.stringMatching(/^Edit/u), expect.stringMatching(/^Delete/u)]));
     expect(actions.filter((node) => node.getAttribute('aria-disabled') === 'true' || node.hasAttribute('data-disabled'))).toEqual([]);
+  });
+
+  it('should neither list nor filter by "On my Dashboard page" (the owner\'s choice, not every row\'s)', async () => {
+    renderAt('/dashboards');
+    await screen.findByText('Security overview');
+    expect(screen.getAllByText('Shared').length).toBeGreaterThan(0);
+    expect(screen.queryByText('On my Dashboard page')).toBeNull();
   });
 });
 

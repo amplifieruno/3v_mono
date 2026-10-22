@@ -29,11 +29,12 @@ export const dashboard = defineResource(DASHBOARD_RESOURCE, {
   rules: DASHBOARD_RULES,
   views: {
     list: {
-      columns: ['name', 'description', 'is_shared', 'is_default', 'owner_id', 'updated_at'],
+      columns: ['name', 'description', 'is_shared', 'owner_id', 'updated_at'],
       defaultSort: [{ field: 'name', direction: 'asc' }],
       search: { fields: [{ field: 'name', op: 'contains' }] },
-      filters: { fields: ['owned_by_me', 'is_shared', 'is_default', 'owner_id'] },
+      filters: { fields: ['owned_by_me', 'is_shared', 'owner_id'] },
       savedViews: DASHBOARD_SAVED_VIEWS,
+      // No `is_default`: it is the owner's own landing choice, shown on the owner's record only.
     },
     show: {
       header: (l) => [l.grid(['name', 'owner_id', 'is_shared', 'is_default'])],

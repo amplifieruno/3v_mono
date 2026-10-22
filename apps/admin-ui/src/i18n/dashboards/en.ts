@@ -1,4 +1,33 @@
 import type { TranslationBundle } from '@burojs/i18n-core';
+import type { AnalyticBlockName, DashboardWidgetKind } from '../../modules/analytics/widget-blocks';
+
+/** Every widget kind's label: the record type fails the typecheck when a kind is missing. */
+const kinds = {
+  kpi: 'Key figures',
+  occupancy_series: 'Occupancy',
+  flow_matrix: 'Movement between areas',
+  heatmap: 'Busy hours',
+  incidents_list: 'Incidents',
+  segment_trend: 'Segment trends',
+  device_health: 'Device health',
+  deliveries: 'Notification deliveries',
+} satisfies Record<DashboardWidgetKind, string>;
+
+/** Every analytic block's label (what the widget shows): complete by type as well. */
+const sources = {
+  kpis: 'Key figures today',
+  occupancySeries: 'Occupancy over time',
+  occupancyNow: 'Occupancy now, on the floor plan',
+  flowMatrix: 'Moves between areas',
+  heatmap: 'Busy hours by area or weekday (hourly stats)',
+  heatmapSeries: 'Busy hours by weekday (occupancy series)',
+  incidentsList: 'Newest incidents',
+  segmentTrend: 'Member counts per day',
+  deviceHealthSummary: 'Devices by health, those needing attention',
+  deliveries: 'Deliveries by channel and outcome',
+  deviceHealthChart: 'One device over 24 hours',
+  deviceHealthDay: 'Every device over 24 hours',
+} satisfies Record<AnalyticBlockName, string>;
 
 /**
  * The dashboard editor in the `common` namespace (English, primary): its chrome
@@ -33,30 +62,8 @@ export default {
         w: 'Width (columns)',
         h: 'Height (rows)',
       },
-      kinds: {
-        kpi: 'Key figures',
-        occupancy_series: 'Occupancy',
-        flow_matrix: 'Movement between areas',
-        heatmap: 'Busy hours',
-        incidents_list: 'Incidents',
-        segment_trend: 'Segment trends',
-        device_health: 'Device health',
-        deliveries: 'Notification deliveries',
-      },
-      sources: {
-        kpis: 'Key figures today',
-        occupancySeries: 'Occupancy over time',
-        occupancyNow: 'Occupancy now, on the floor plan',
-        flowMatrix: 'Moves between areas',
-        heatmap: 'Busy hours by area or weekday (hourly stats)',
-        heatmapSeries: 'Busy hours by weekday (occupancy series)',
-        incidentsList: 'Newest incidents',
-        segmentTrend: 'Member counts per day',
-        deviceHealthSummary: 'Devices by health, those needing attention',
-        deliveries: 'Deliveries by channel and outcome',
-        deviceHealthChart: 'One device over 24 hours',
-        deviceHealthDay: 'Every device over 24 hours',
-      },
+      kinds,
+      sources,
       params: {
         facility_id: 'Facility',
         segment_id: 'Segment',

@@ -61,9 +61,10 @@ function TileContent({ widget, problems, readable, facilityId, t, problemText }:
     props = { ...props, facilityId };
   }
   if (settings.entry === 'deviceHealthChart' && typeof props.deviceId !== 'string') return <Note state="choose-device">{t('chooseDevice')}</Note>;
+  const failed = <Note state="failed">{t('failed')}</Note>;
   return (
-    <TileBoundary fallback={<Note state="failed">{t('failed')}</Note>} resetKey={JSON.stringify([widget.kind, widget.query, widget.params])}>
-      <WidgetBody entry={settings.entry} props={props} loading={t('loading')} invalid={(reason) => invalid([reason])} />
+    <TileBoundary fallback={failed} resetKey={JSON.stringify([widget.kind, widget.query, widget.params])}>
+      <WidgetBody entry={settings.entry} props={props} loading={t('loading')} failed={failed} invalid={(reason) => invalid([reason])} />
     </TileBoundary>
   );
 }
