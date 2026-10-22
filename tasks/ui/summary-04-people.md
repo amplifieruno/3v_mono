@@ -1,10 +1,11 @@
 # Summary — phase 4: People
 
 Plan: `plan-04-people.md`. Spec: `design.md`. Framework gaps: `buro-gaps.md` (G28–G37).
-Branch `feat/ui-console`, commits `1b17d36..e64df67`: data-layer fix `f3f3cc3` + `d9a515e`, buro
+Branch `feat/ui-console`, commits `1b17d36..f825046` plus the final fix wave (`de769d9`, `ad4e555`,
+the e2e and this docs commit): data-layer fix `f3f3cc3` + `d9a515e`, buro
 alignment `99544e4`, profiles `7b3f249`, documents/consent/restriction/duplicates `edaab7d`,
 identities and enrollment `e6a52e6`, merges/verification/timeline `5292854` + `e1ab611`, visits
-`59c3e7d`, merge-review fix `5f8731e`, the people smoke suite `e64df67` and this summary. Demo
+`59c3e7d`, merge-review fix `5f8731e`, the people smoke suite `e64df67` and the summary `f825046`. Demo
 video: `playwright-output/phase-04-people.webm` (a visitor profile and its tabs, a document opened,
 identity creation with a per-photo result, a merge and its rollback, a visit checked in and out;
 git-ignored like the earlier videos).
@@ -53,7 +54,7 @@ All in `apps/admin-ui/`, in a new `people` ConsoleModule (`src/modules/people/`)
   for backend Actions, so a flow's form shows the server's sentence instead of "may have been
   applied" (G33). `hasuraOperation(..., refusals)` takes the per-operation code map; collected into
   `ACTION_REFUSALS`. Every later phase with actions (search, bulk, access, auth) should use them.
-- **Face photos field + webcam** (`src/fields/face-photos*.ts(x)`, `src/blocks/webcam-capture/`):
+- **Face photos field + webcam** (`src/fields/face-photos*.ts(x)`, `src/components/webcam-capture/`):
   `facePhotos({ min, max })` uploads or captures 1..N photos and hands file ids to the form;
   the webcam is a component inside the field (a block cannot hand a file id to a form). Phase 9 face
   search and the phase 11 tester reuse it (`min:1, max:1`).
@@ -106,30 +107,41 @@ All in `apps/admin-ui/`, in a new `people` ConsoleModule (`src/modules/people/`)
 - `3v_mono-5l8` — refused storage uploads leave empty not-uploaded `storage.files` rows.
 - `3v_mono-lsq` — profile duplicate detection job missing; the seed creates no duplicate pairs
   (the duplicates queue is empty in the demo).
-- `3v_mono-t45` — uploaded face source photos (`face_source`) are never deleted.
+- `3v_mono-t45` — uploaded face source photos (`face_source`) are never deleted. Raised to P1 by the
+  final review, fixed and closed in the final fix wave (see "Final review fix wave").
 - `3v_mono-a9w` — `enroll_face` links the identity before committing photos; a guard error after
   linking leaves the link written.
 - `3v_mono-ey1` — member relations show the user's uuid when the display name is empty.
 
 ## Deferred minors (from the reviews)
 
-- design.md lists a duplicate "incl. export"; the current-record frame drops RecordActions in edit.
-- Restriction reason of only whitespace gives the generic error; the 10 MB document is base64-copied
-  twice in the browser; the restriction review step is untested.
-- The `has_face` flag shows twice on the profile until the identities tab; hidden type fields hide
-  their stored values (noted in the article); the email check cites G14 only in `email-check.ts`.
-- `DateTimeDisplay` ignores `presentation: plain`; created/updated stay date-only (G37).
+- The current-record frame drops RecordActions in edit.
+- The 10 MB document is base64-copied twice in the browser; the restriction review step is untested.
+- Hidden type fields hide their stored values (noted in the article); the email check cites G14 only
+  in `email-check.ts`.
+- Created/updated stamps stay date-only (G37); every other timestamp of this phase uses `dateTime()`.
 - Merge needs one identity page per kept identity (no multi-select merge, G34).
+- Checked in the final wave and not an issue: design.md has no duplicate "incl. export" (the earlier
+  note was stale), and "Face linked" (`has_face`) shows once on the profile page (header only; test
+  in `profile-records-page.test.tsx`).
 
 ## Known limits
 
 - **Leftovers of the smoke suite.** Profiles, visits and documents cannot be deleted, and neither can
   identities. The run's visitor is set inactive (its last name starts with `e2e-`), its visits are
   checked out or cancelled, its document stays, and a created identity is archived. Archived
-  identities still match faces, so each run that creates an identity uses up one spare face
-  (`apps/backend/tests/fixtures/faces/person-a-1.jpg`, `person-b.jpg`, two InsightFace-REST samples);
-  when all are used the creation step is annotated and skipped (the known-face refusal is still
-  asserted). The verification step approves a request on a seeded identity and puts its status back;
+  identities do not match faces (`match_face` excludes merged and archived identities since
+  `1792365500016`, still in `1792365700221`): the dev stack shows `person-a-1.jpg` creating
+  IDENTITY-00189 and, after that one was archived, IDENTITY-00192 in the next run. The earlier note
+  ("archived identities still match", one face used up per run) was wrong. A spare face is used up
+  only while an active identity holds it: a run that failed before its cleanup, a cleanup that
+  archived the wrong identity (the step took the newest identity instead of the action's answer, and
+  the cleanup swallowed errors; both fixed in the final wave), or another run that created one and
+  has not archived it yet. The list
+  also overstated the spares: `person-b.jpg` and InsightFace-REST's `Stallone.jpg` are the same file,
+  and `lumia.jpg` is a group photo (43 faces, always refused); the suite now tries `person-a-1.jpg`
+  and `person-b.jpg` only, and annotates and skips the creation step when both are held (the
+  known-face refusal is still asserted). The verification step approves a request on a seeded identity and puts its status back;
   the approved request stays. Dev-stack vitest `visits.dev.test.ts` needs no scheduled visit without
   a host: cancel any `e2e-` visit a failed run left scheduled.
 - The e2e needs insightface up for the identity step (`INSIGHTFACE_URL`, default
@@ -158,3 +170,23 @@ pnpm --filter admin-ui build
 `SEED_PASSWORD` is in `apps/backend/.env`. Sign-in is limited to ten per five minutes
 (`summary-02-places.md`): the e2e signs in once and reuses the saved state while its token has more
 than ten minutes left; leave about five minutes between a dev-stack run and an e2e run.
+
+## Final review fix wave
+
+Report: `.superpowers/sdd/plan-04-people/final-fix-report.md` (local).
+
+- **I1 / `3v_mono-t45` (closed), `de769d9`.** Face source originals are deleted whatever the outcome:
+  the `drain_file_deletions` cron first queues `face_source` files older than an hour
+  (`itap.enqueue_stale_face_sources`, migration `1792365700272`), and `enqueue_unused_files` queues a
+  crop's original (`metadata.source_file_id`) with the crop (retention, biometric deletion, DSR
+  erasure). Not deleted inside the actions: the form keeps the file ids for a resend after a refusal
+  and the result shows refused photos from them; the hour of grace covers both.
+- **I2, M8** people smoke: real `rollback_merge` signature, cleanup failures reported, exact photo ids
+  compared after the rollback, created id from the action's answer.
+- **I3** `merge_profiles` refreshes identities and reads its SQL refusals; identities depend on
+  `table:consent_records` (consent withdrawal flips `matching_enabled`).
+- **I4** the leftover note above is corrected (archived identities do not match).
+- **M1–M7, M9, M10** quoted-constraint matching, the refusal-scope doc, split refusals, the merge
+  lost-answer check against this target, upload refusals and a not-blank restriction reason, webcam
+  tests (moved to `src/components/`), date-time tests incl. DST and `plain`, `dateTime()` for this
+  phase's timestamps, an on-screen test of the merge review step, docs.
