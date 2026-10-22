@@ -13,7 +13,7 @@ export function TimeWindowsDisplay(
   props: ScalarDisplayProps<unknown, TimeWindowsMeta>,
 ): React.ReactElement {
   const t = useT();
-  const { value, testIds, i18n } = props;
+  const { value, testIds, i18n, meta } = props;
   if (value === null || value === undefined) {
     return <span className="text-muted-foreground">—</span>;
   }
@@ -25,7 +25,7 @@ export function TimeWindowsDisplay(
   return (
     <span data-testid={testIds.display} data-invalid={invalid || undefined}>
       {text === '' && !invalid ? (
-        <span className="text-muted-foreground">{t('console.timeWindows.none')}</span>
+        <span className="text-muted-foreground">{meta.emptyText}</span>
       ) : (
         text
       )}

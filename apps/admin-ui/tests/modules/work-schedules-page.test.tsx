@@ -37,16 +37,21 @@ const bodies = (): GraphqlBody[] =>
 const mutations = (): GraphqlBody[] =>
   bodies().filter((body) => body.query.trimStart().startsWith('mutation'));
 
-async function fakeGraphql(_input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
-  if (query.trimStart().startsWith('mutation')) return hasuraResponse({ data: { item: ROW } });
-  const data = query.includes('work_schedules_by_pk')
-    ? { item: ROW }
-    : query.includes('_aggregate')
-      ? { meta: { aggregate: { count: query.includes('work_schedules_aggregate') ? 1 : 0 } } }
-      : { items: query.includes('work_schedules(') ? [ROW] : [] };
-  return hasuraResponse({ data });
-}
+/** The Hasura endpoint serving `row` as the only work schedule. */
+const graphqlServing =
+  (row: typeof ROW | (Omit<typeof ROW, 'windows'> & { windows: unknown })) =>
+  async (_input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
+    if (query.trimStart().startsWith('mutation')) return hasuraResponse({ data: { item: row } });
+    const data = query.includes('work_schedules_by_pk')
+      ? { item: row }
+      : query.includes('_aggregate')
+        ? { meta: { aggregate: { count: query.includes('work_schedules_aggregate') ? 1 : 0 } } }
+        : { items: query.includes('work_schedules(') ? [row] : [] };
+    return hasuraResponse({ data });
+  };
+
+const fakeGraphql = graphqlServing(ROW);
 
 beforeAll(installDomShims);
 
@@ -69,6 +74,17 @@ describe('work schedule list', () => {
     );
     expect(await screen.findByText('Daily 22:00–06:00 (overnight)')).toBeDefined();
     expect(screen.getByText(/Europe\/Moscow/).textContent).toBe('Europe/Moscow (UTC+03:00)');
+  });
+
+  it('should say what no windows means for a schedule: never on shift', async () => {
+    vi.stubGlobal('fetch', vi.fn(graphqlServing({ ...ROW, windows: [] })));
+    render(
+      <MemoryRouter initialEntries={['/work-schedules']}>
+        <ConsoleApp auth={fakeAdminAuth(NOVA, 'Nova Tower Business Center')} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Never on shift')).toBeDefined();
+    expect(screen.queryByText('No windows')).toBeNull();
   });
 });
 

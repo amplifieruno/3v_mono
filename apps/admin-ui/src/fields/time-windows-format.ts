@@ -1,3 +1,5 @@
+import type { FieldProblem } from './field-issue';
+
 /**
  * Weekly time windows as the data layer stores them (design §6.0):
  * `[{ days: number[] (1..7, ISO Monday = 1), from: 'HH:MM', to: 'HH:MM' }]`.
@@ -43,32 +45,66 @@ const isDay = (value: unknown): value is number =>
 export const isOvernight = (window: Pick<TimeWindow, 'from' | 'to'>): boolean =>
   isStartTime(window.from) && isEndTime(window.to) && window.from > window.to;
 
-function windowProblem(window: unknown): string | null {
-  if (!isRecord(window)) return 'is not a window.';
+type WindowReason =
+  | 'notWindow'
+  | 'unexpectedKeys'
+  | 'daysNotList'
+  | 'noDays'
+  | 'badDays'
+  | 'badTimes'
+  | 'sameEnds';
+
+/** The reason a window is refused and its English sentence (after `Window N: `). */
+function windowReason(window: unknown): { reason: WindowReason; text: string; keys?: string } | null {
+  if (!isRecord(window)) return { reason: 'notWindow', text: 'is not a window.' };
   const unexpected = Object.keys(window).filter((key) => !WINDOW_KEYS.has(key));
-  if (unexpected.length > 0) return `has unexpected keys (${unexpected.join(', ')}).`;
-  const { days, from, to } = window;
-  if (!Array.isArray(days)) return 'days must be a list of weekdays 1–7.';
-  if (days.length === 0) return 'pick at least one day.';
-  if (!days.every(isDay)) return 'days must be weekdays 1–7 (Monday = 1).';
-  if (!isStartTime(from) || !isEndTime(to)) {
-    return 'enter times as HH:MM, from 00:00 to 23:59 (24:00 only as the end).';
+  if (unexpected.length > 0) {
+    const keys = unexpected.join(', ');
+    return { reason: 'unexpectedKeys', text: `has unexpected keys (${keys}).`, keys };
   }
-  if (from === to) return 'start and end are the same; use 00:00–24:00 for a whole day.';
+  const { days, from, to } = window;
+  if (!Array.isArray(days)) {
+    return { reason: 'daysNotList', text: 'days must be a list of weekdays 1–7.' };
+  }
+  if (days.length === 0) return { reason: 'noDays', text: 'pick at least one day.' };
+  if (!days.every(isDay)) {
+    return { reason: 'badDays', text: 'days must be weekdays 1–7 (Monday = 1).' };
+  }
+  if (!isStartTime(from) || !isEndTime(to)) {
+    return {
+      reason: 'badTimes',
+      text: 'enter times as HH:MM, from 00:00 to 23:59 (24:00 only as the end).',
+    };
+  }
+  if (from === to) {
+    return {
+      reason: 'sameEnds',
+      text: 'start and end are the same; use 00:00–24:00 for a whole day.',
+    };
+  }
   return null;
 }
 
 /**
  * `null` when `value` is a valid window list (or empty: `null`/`undefined` is the
- * `required` rule's concern), else the first problem. Mirrors the database's
+ * `required` rule's concern), else the first problem (code `timeWindows.<reason>`,
+ * params `index` and, for unexpected keys, `keys`). Mirrors the database's
  * `itap.valid_windows` and also refuses equal ends, which `itap.in_windows` never matches.
  */
-export function validateWindows(value: unknown): string | null {
+export function validateWindows(value: unknown): FieldProblem | null {
   if (value === null || value === undefined) return null;
-  if (!Array.isArray(value)) return 'Time windows must be a list of windows.';
+  if (!Array.isArray(value)) {
+    return { code: 'timeWindows.notList', text: 'Time windows must be a list of windows.' };
+  }
   for (const [index, window] of value.entries()) {
-    const problem = windowProblem(window);
-    if (problem !== null) return `Window ${index + 1}: ${problem}`;
+    const problem = windowReason(window);
+    if (problem !== null) {
+      return {
+        code: `timeWindows.${problem.reason}`,
+        text: `Window ${index + 1}: ${problem.text}`,
+        params: { index: index + 1, ...(problem.keys === undefined ? {} : { keys: problem.keys }) },
+      };
+    }
   }
   return null;
 }
@@ -115,7 +151,7 @@ export function formatWindows(
   const text = { ...ENGLISH, ...labels };
   const names = weekdayNames(locale);
   return windows
-    .filter((w): w is TimeWindow => windowProblem(w) === null)
+    .filter((w): w is TimeWindow => windowReason(w) === null)
     .map((w) => {
       const hours = `${w.from}–${w.to}`;
       const overnight = isOvernight(w) ? ` (${text.overnight})` : '';

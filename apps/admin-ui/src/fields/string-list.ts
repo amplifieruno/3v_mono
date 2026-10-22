@@ -1,5 +1,6 @@
-import type { FieldTexts, StandardSchemaV1 } from '@burojs/core';
-import { type JsonFieldOpts, f } from '@burojs/field-types';
+import type { FieldTexts } from '@burojs/core';
+import { type FieldValidator, type JsonFieldOpts, f } from '@burojs/field-types';
+import { problemValidator } from './field-issue';
 import { validateStringList } from './string-list-format';
 
 /** The field implementation id of {@link stringList} (`./string-list-impl.ts`). */
@@ -13,22 +14,9 @@ export interface StringListOptions {
   readonly texts?: string | FieldTexts;
 }
 
-/** {@link validateStringList} as a Standard Schema: the form shows its issue on the field. */
-export function stringListSchema(
-  item: string,
-): StandardSchemaV1<unknown, readonly string[] | null> {
-  return {
-    '~standard': {
-      version: 1,
-      vendor: 'itap',
-      validate: (value) => {
-        const message = validateStringList(value, { item });
-        return message === null
-          ? { value: (value ?? null) as readonly string[] | null }
-          : { issues: [{ message }] };
-      },
-    },
-  };
+/** {@link validateStringList} as a field validator: a translatable issue on the field. */
+export function checkStringList(item: string): FieldValidator {
+  return problemValidator((value) => validateStringList(value, { item }));
 }
 
 /**
@@ -42,7 +30,7 @@ export function stringList(opts: StringListOptions) {
   const jsonOpts: JsonFieldOpts = {
     required: opts.required === true,
     ...(nullable ? { nullable: true } : { default: [] }),
-    validate: stringListSchema(opts.item),
+    validate: checkStringList(opts.item),
     ...(opts.texts === undefined ? {} : { texts: opts.texts }),
   };
   const base = f.json(jsonOpts);

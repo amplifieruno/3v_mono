@@ -29,9 +29,11 @@ saved.
 
 ## Who reads it
 
-- **Segments** can select people who are on shift at the time of an event.
-- **After-hours events** do not fire for people inside their schedule (with
-  half an hour of grace on either side).
+- **Segments** can select people who are on shift at the time of an event
+  (exactly inside a window, no grace).
+- **After-hours events** (at facilities with operating hours) do not fire for
+  people with an active profile inside their schedule, with half an hour of
+  grace on either side.
 - **Attendance reports** compare presence with the schedule.
 - **Face authentication**: a client application can narrow the people it
-  matches to those on shift.
+  matches to those on shift (active profiles, the same half hour of grace).

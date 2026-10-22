@@ -8,7 +8,7 @@ import {
   CUSTOM_ATTRIBUTE_TYPE_ENUM,
 } from '../../enums/organization';
 import { enumField } from '../../enums/field';
-import { checkRange } from '../../fields/bounded-number';
+import { rangeValidator } from '../../fields/bounded-number';
 import { stringList } from '../../fields/string-list';
 
 export const CUSTOM_ATTRIBUTE_RESOURCE = 'custom_attribute_definition';
@@ -128,7 +128,7 @@ export const customAttributeFields = {
     required: true,
     default: 0,
     integer: true,
-    validate: (value: unknown) => checkRange(value, INT4),
+    validate: rangeValidator(INT4),
     texts: {
       label: 'Sort order',
       doc: { summary: 'Attributes are listed on a record by this number, lowest first.' },

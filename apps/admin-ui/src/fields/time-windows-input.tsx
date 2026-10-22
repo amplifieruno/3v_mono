@@ -60,7 +60,7 @@ export function TimeWindowsInput(
         />
       ))}
       {rows.length === 0 ? (
-        <span className="text-sm text-muted-foreground">{t('console.timeWindows.none')}</span>
+        <span className="text-sm text-muted-foreground">{meta.emptyText}</span>
       ) : null}
       {locked ? null : (
         <div>

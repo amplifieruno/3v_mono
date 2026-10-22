@@ -1,14 +1,22 @@
 // @vitest-environment jsdom
 import type { ScalarDisplayProps, ScalarInputProps } from '@burojs/react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type * as React from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppRuntime } from '../../src/app/runtime';
 import { timezone } from '../../src/fields/timezone';
 import { TimezoneDisplay } from '../../src/fields/timezone-display';
 import { TimezoneInput } from '../../src/fields/timezone-input';
-import { isTimezone, timezoneOffset, timezoneOptions } from '../../src/fields/timezone-zones';
+import type { TimezoneMeta } from '../../src/fields/timezone-meta';
+import {
+  UNKNOWN_TIMEZONE,
+  checkTimezone,
+  isTimezone,
+  timezoneOffset,
+  timezoneOptions,
+} from '../../src/fields/timezone-zones';
 import { fakeAdminAuth, installDomShims } from '../support/console-dom';
+import { expectTranslated, issueText, validatorResult } from '../support/field-issues';
 
 /**
  * The `itap.timezone` field: IANA zones with their current UTC offset, and a zone
@@ -19,7 +27,7 @@ const ORG = '11111111-1111-4111-8111-111111111111';
 
 /** The render context of a field implementation; only what these components read. */
 const context = {
-  meta: {},
+  meta: { nullable: false },
   presentation: 'default',
   accessibility: { input: 'tz' },
   testIds: { root: 'tz-root', input: 'tz-input', display: 'tz-display' },
@@ -64,6 +72,17 @@ describe('timezone zones', () => {
     expect(isTimezone('')).toBe(false);
     expect(isTimezone(42)).toBe(false);
   });
+
+  it('should refuse offsets, whose sign PostgreSQL reads the other way, and keep stored aliases', () => {
+    for (const offset of ['+03:00', '-05:00', '+0300', '-0500', ' +03:00', 'Etc/GMT+3']) {
+      expect(isTimezone(offset), offset).toBe(false);
+      expect(checkTimezone(offset), offset).toBe(UNKNOWN_TIMEZONE);
+      expect(timezoneOffset(offset), offset).toBeNull();
+    }
+    for (const alias of ['Asia/Kolkata', 'Asia/Calcutta', 'US/Eastern', 'Europe/Kyiv', 'Etc/UTC']) {
+      expect(isTimezone(alias), alias).toBe(true);
+    }
+  });
 });
 
 describe('timezone field', () => {
@@ -71,6 +90,8 @@ describe('timezone field', () => {
     const field = timezone({ texts: 'Time zone', required: true });
     expect(field.kind).toBe('string');
     expect(field.ui).toMatchObject({ input: 'itap.timezone', display: 'itap.timezone' });
+    expect(field.meta).toEqual({ nullable: false });
+    expect(timezone({ texts: 'Time zone' }).meta).toEqual({ nullable: true });
   });
 
   it('should show the zone with its current offset', async () => {
@@ -81,9 +102,11 @@ describe('timezone field', () => {
 
   it('flags an unknown timezone', async () => {
     const field = timezone({ texts: 'Time zone', required: true });
-    const validate = field.opts.validate as (value: unknown) => string | null;
-    expect(validate('Mars/Olympus')).toMatch(/not a known time zone/i);
-    expect(validate('Europe/Moscow')).toBeNull();
+    expect(issueText(await validatorResult(field.opts.validate, 'Mars/Olympus'))).toMatch(
+      /not a known time zone/i,
+    );
+    expect(await validatorResult(field.opts.validate, 'Europe/Moscow')).toBeNull();
+    await expectTranslated(UNKNOWN_TIMEZONE);
 
     renderDisplay('Mars/Olympus');
     const shown = await screen.findByTestId('tz-display');
@@ -97,11 +120,42 @@ describe('timezone field', () => {
       ...context,
       value: 'Mars/Olympus',
       onChange: vi.fn(),
-    } as unknown as ScalarInputProps<unknown>;
+    } as unknown as ScalarInputProps<unknown, TimezoneMeta>;
     renderInRuntime(<TimezoneInput {...props} />);
     const trigger = await screen.findByTestId('tz-input');
     expect(trigger.textContent).toContain('Mars/Olympus');
     expect(trigger.textContent).toContain('Unknown time zone');
     expect(trigger.getAttribute('aria-invalid')).toBe('true');
+  });
+});
+
+describe('timezone input clear', () => {
+  function renderInput(value: unknown, nullable: boolean) {
+    const onChange = vi.fn();
+    const props = {
+      ...context,
+      meta: { nullable },
+      value,
+      onChange,
+      issues: [],
+    } as unknown as ScalarInputProps<unknown, TimezoneMeta>;
+    renderInRuntime(<TimezoneInput {...props} />);
+    return onChange;
+  }
+
+  it('should clear an optional zone to null', async () => {
+    const onChange = renderInput('Asia/Tokyo', true);
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear time zone' }));
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('should offer no clear for a required zone or an empty one', async () => {
+    renderInput('Asia/Tokyo', false);
+    await screen.findByTestId('tz-input');
+    expect(screen.queryByRole('button', { name: 'Clear time zone' })).toBeNull();
+    cleanup();
+    renderInput(null, true);
+    await screen.findByTestId('tz-input');
+    expect(screen.queryByRole('button', { name: 'Clear time zone' })).toBeNull();
   });
 });

@@ -49,7 +49,8 @@ test.describe.serial('organization smoke', () => {
               headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
               body: JSON.stringify({
                 query: `mutation ($m: String!) { delete_${table}(where: {${column}: {_like: $m}}) { affected_rows } }`,
-                variables: { m: `${marker}%` },
+                // `_` and `%` are LIKE wildcards: the marker matches literally, then any suffix.
+                variables: { m: `${marker.replace(/[\\%_]/gu, '\\$&')}%` },
               }),
             });
           }
@@ -60,6 +61,24 @@ test.describe.serial('organization smoke', () => {
       await page.close();
     }
   });
+
+  /** Runs one GraphQL operation with the stored organization token (setup and restore steps). */
+  async function graphql(query: string, variables: Record<string, unknown>): Promise<unknown> {
+    return page.evaluate(
+      async ({ q, v }) => {
+        const stored = JSON.parse(localStorage.getItem('itap:auth:v1') ?? '{}') as { org?: { accessToken: string } };
+        const response = await fetch('/v1/graphql', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${stored.org?.accessToken ?? ''}` },
+          body: JSON.stringify({ query: q, variables: v }),
+        });
+        const body = (await response.json()) as { data?: unknown; errors?: unknown };
+        if (body.errors !== undefined) throw new Error(JSON.stringify(body.errors));
+        return body.data;
+      },
+      { q: query, v: variables },
+    );
+  }
 
   /** Deletes the single list row matching the name through its row menu. */
   async function deleteRow(resource: string, name: string): Promise<void> {
@@ -80,22 +99,30 @@ test.describe.serial('organization smoke', () => {
     const original = await input.inputValue();
     const changed = String(Number(original) + 60);
 
-    await input.fill(changed);
-    await page.getByTestId('form-submit:organization_settings:edit').click();
-    await expect(page).not.toHaveURL(/\/edit$/);
+    try {
+      await input.fill(changed);
+      await page.getByTestId('form-submit:organization_settings:edit').click();
+      await expect(page).not.toHaveURL(/\/edit$/);
 
-    await page.goto('/organization-settings');
-    await page.getByRole('link', { name: 'Edit' }).click();
-    await expect(page.getByTestId(field)).toHaveValue(changed);
+      await page.goto('/organization-settings');
+      await page.getByRole('link', { name: 'Edit' }).click();
+      await expect(page.getByTestId(field)).toHaveValue(changed);
 
-    // A value outside the allowed range is refused on the form.
-    await page.getByTestId(field).fill('5');
-    await page.getByTestId('form-submit:organization_settings:edit').click();
-    await expect(page.getByText('Enter a whole number from 30 to 86400.')).toBeVisible();
+      // A value outside the allowed range is refused on the form.
+      await page.getByTestId(field).fill('5');
+      await page.getByTestId('form-submit:organization_settings:edit').click();
+      await expect(page.getByText('Enter a whole number from 30 to 86400.')).toBeVisible();
 
-    await page.getByTestId(field).fill(original);
-    await page.getByTestId('form-submit:organization_settings:edit').click();
-    await expect(page).not.toHaveURL(/\/edit$/);
+      await page.getByTestId(field).fill(original);
+      await page.getByTestId('form-submit:organization_settings:edit').click();
+      await expect(page).not.toHaveURL(/\/edit$/);
+    } finally {
+      // Whatever failed above, the organization keeps its original timeout.
+      await graphql(
+        'mutation ($v: Int!) { update_organization_settings(where: {}, _set: {tracking_timeout_seconds: $v}) { affected_rows } }',
+        { v: Number(original) },
+      );
+    }
     await page.goto('/organization-settings');
     await page.getByRole('link', { name: 'Edit' }).click();
     await expect(page.getByTestId(field)).toHaveValue(original);
@@ -172,10 +199,13 @@ test.describe.serial('organization smoke', () => {
     const zone = 'form-field-input:user_settings:edit:timezone';
     await page.goto('/preferences');
     await expect(page.getByTestId(zone)).toBeVisible();
-    // The row may hold nothing yet (null language, no zone): remember exactly what is there.
+    // The row may hold nothing yet (null language, no zone, or `UTC`): read exactly what is stored.
+    const stored = (await graphql('query { user_settings { locale timezone } }', {})) as {
+      user_settings: { locale: string | null; timezone: string | null }[];
+    };
     const originalLocale = await page.getByTestId(locale).inputValue();
-    const zoneText = (await page.getByTestId(zone).innerText()).trim();
-    const originalZone = /^[A-Za-z_]+\/\S+/u.exec(zoneText)?.[0] ?? null;
+    const originalZone = stored.user_settings[0]?.timezone ?? null;
+    const storedLocale = stored.user_settings[0]?.locale ?? null;
 
     try {
       await page.getByTestId(locale).fill('de-AT');
@@ -188,28 +218,34 @@ test.describe.serial('organization smoke', () => {
       await expect(page.getByTestId(locale)).toHaveValue('de-AT');
       await expect(page.getByTestId(zone)).toContainText('Asia/Tokyo');
       await expect(page.getByTestId(zone)).toContainText('+09:00');
+
+      // The zone is optional: Clear empties it.
+      await page.getByRole('button', { name: 'Clear time zone' }).click();
+      const saved = page.waitForResponse(
+        (response) =>
+          response.url().includes('/v1/graphql') &&
+          (response.request().postData() ?? '').includes('user_settings') &&
+          (response.request().postData() ?? '').includes('mutation'),
+      );
+      await page.getByTestId('form-submit:user_settings:edit').click();
+      await saved;
+      await page.reload();
+      await expect(page.getByTestId(zone)).toContainText('Select');
     } finally {
       await page.goto('/preferences');
       await expect(page.getByTestId(zone)).toBeVisible();
-      await page.evaluate(
-        async ({ locale: l, zone: z }) => {
-          const stored = JSON.parse(localStorage.getItem('itap:auth:v1') ?? '{}') as { org?: { accessToken: string } };
-          await fetch('/v1/graphql', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json', authorization: `Bearer ${stored.org?.accessToken ?? ''}` },
-            body: JSON.stringify({
-              query:
-                'mutation ($l: String, $z: String) { update_user_settings(where: {}, _set: {locale: $l, timezone: $z}) { affected_rows } }',
-              variables: { l: l === '' ? null : l, z },
-            }),
-          });
-        },
-        { locale: originalLocale, zone: originalZone },
+      await graphql(
+        'mutation ($l: String, $z: String) { update_user_settings(where: {}, _set: {locale: $l, timezone: $z}) { affected_rows } }',
+        { l: storedLocale, z: originalZone },
       );
     }
 
     await page.reload();
     await expect(page.getByTestId(locale)).toHaveValue(originalLocale);
     await expect(page.getByTestId(zone)).toContainText(originalZone ?? 'Select');
+    const restored = (await graphql('query { user_settings { timezone } }', {})) as {
+      user_settings: { timezone: string | null }[];
+    };
+    expect(restored.user_settings[0]?.timezone ?? null).toBe(originalZone);
   });
 });

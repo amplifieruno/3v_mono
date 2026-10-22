@@ -9,6 +9,7 @@ import {
   organizationSettings,
   settingsFields,
 } from '../../src/modules/organization/settings';
+import { issueText } from '../support/field-issues';
 
 /**
  * The organization settings record: four panels, the org_admin update columns
@@ -70,11 +71,13 @@ function validatorOf(name: keyof typeof SETTINGS_RANGES): Validator {
 }
 
 async function validate(name: keyof typeof SETTINGS_RANGES, value: unknown): Promise<unknown> {
-  return validatorOf(name)(value, {
-    values: { [name]: value },
-    resource: SETTINGS_RESOURCE,
-    field: name,
-  });
+  return issueText(
+    await validatorOf(name)(value, {
+      values: { [name]: value },
+      resource: SETTINGS_RESOURCE,
+      field: name,
+    }),
+  );
 }
 
 async function firedChecks(values: Record<string, unknown>): Promise<string[]> {

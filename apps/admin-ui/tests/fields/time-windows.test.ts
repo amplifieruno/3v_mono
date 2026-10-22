@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { timeWindows, timeWindowsSchema } from '../../src/fields/time-windows';
+import { problemIssue } from '../../src/fields/field-issue';
+import { checkTimeWindows, timeWindows } from '../../src/fields/time-windows';
 import { formatWindows, validateWindows } from '../../src/fields/time-windows-format';
+import { expectTranslated, validatorResult } from '../support/field-issues';
 
 /**
  * Time windows (`[{ days: 1..7 ISO, from: 'HH:MM', to: 'HH:MM' }]`, `from > to` crosses
@@ -9,11 +11,6 @@ import { formatWindows, validateWindows } from '../../src/fields/time-windows-fo
  */
 
 const OVERNIGHT = [{ days: [6], from: '22:00', to: '06:00' }];
-
-async function issuesOf(value: unknown): Promise<readonly { readonly message?: unknown }[]> {
-  const result = await timeWindowsSchema['~standard'].validate(value);
-  return 'issues' in result && result.issues !== undefined ? result.issues : [];
-}
 
 describe('formatWindows', () => {
   it('should collapse consecutive weekdays into a range', () => {
@@ -59,8 +56,7 @@ describe('formatWindows', () => {
 describe('validateWindows', () => {
   it('keeps an overnight window', async () => {
     expect(validateWindows(OVERNIGHT)).toBeNull();
-    const result = await timeWindowsSchema['~standard'].validate(OVERNIGHT);
-    expect(result).toEqual({ value: OVERNIGHT });
+    expect(await validatorResult(checkTimeWindows, OVERNIGHT)).toBeNull();
     expect(formatWindows(OVERNIGHT, 'en')).toBe('Sat 22:00–06:00 (overnight)');
   });
 
@@ -73,7 +69,7 @@ describe('validateWindows', () => {
     expect(validateWindows([{ days: [1, 2, 3, 4, 5], from: '08:00', to: '20:00' }])).toBeNull();
   });
 
-  it('refuses an empty or malformed window', async () => {
+  it('refuses an empty or malformed window with a translatable issue', async () => {
     const refused: readonly [unknown, RegExp][] = [
       [[{ days: [], from: '08:00', to: '18:00' }], /window 1: pick at least one day/i],
       [[{ days: [0], from: '08:00', to: '18:00' }], /window 1: .*days/i],
@@ -95,20 +91,26 @@ describe('validateWindows', () => {
       [{ days: [1] }, /list/i],
     ];
     for (const [value, message] of refused) {
-      expect(validateWindows(value), JSON.stringify(value)).toMatch(message);
-      const issues = await issuesOf(value);
-      expect(issues.map((issue) => issue.message)).toEqual([validateWindows(value)]);
+      const problem = validateWindows(value);
+      expect(problem?.text, JSON.stringify(value)).toMatch(message);
+      if (problem === null) continue;
+      expect(problem.code).toMatch(/^timeWindows\./u);
+      expect(await validatorResult(checkTimeWindows, value)).toEqual(problemIssue(problem));
+      await expectTranslated(problem);
     }
   });
 });
 
 describe('timeWindows field', () => {
   it('should be a json field rendered by the itap.time-windows implementation', () => {
-    const field = timeWindows({ texts: 'Windows' });
+    const field = timeWindows({ emptyText: 'Never on shift', texts: 'Windows' });
     expect(field.kind).toBe('json');
     expect(field.ui).toMatchObject({ input: 'itap.time-windows', display: 'itap.time-windows' });
-    expect(field.meta).toEqual({ nullable: false });
-    expect(field.opts.validate).toBe(timeWindowsSchema);
-    expect(timeWindows({ nullable: true }).meta).toEqual({ nullable: true });
+    expect(field.meta).toEqual({ nullable: false, emptyText: 'Never on shift' });
+    expect(field.opts.validate).toBe(checkTimeWindows);
+    expect(timeWindows({ nullable: true, emptyText: 'Always open' }).meta).toEqual({
+      nullable: true,
+      emptyText: 'Always open',
+    });
   });
 });

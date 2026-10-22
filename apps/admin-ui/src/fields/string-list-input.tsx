@@ -33,7 +33,7 @@ export function StringListInput(
         <div key={index} className="flex items-center gap-2">
           <Input
             id={`${prefix}-${index}`}
-            aria-label={`${meta.item} ${index + 1}`}
+            aria-label={t('console.stringList.row', { params: { item: meta.item, index: index + 1 } })}
             className="max-w-sm"
             value={row}
             disabled={locked}

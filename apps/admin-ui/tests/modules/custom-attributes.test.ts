@@ -14,6 +14,7 @@ import {
   userSettings,
   userSettingsFields,
 } from '../../src/modules/organization/user-settings';
+import { issueText } from '../support/field-issues';
 
 /**
  * Custom attribute definitions (the schema of `custom_fields` per entity): options only
@@ -42,7 +43,9 @@ type Validator = (value: unknown) => unknown;
 
 function validatorOf(field: { readonly opts: unknown }): Validator {
   const validate = (field.opts as { validate?: unknown }).validate;
-  if (typeof validate === 'function') return validate as Validator;
+  if (typeof validate === 'function') {
+    return (value) => issueText((validate as Validator)(value));
+  }
   const standard = (validate as { '~standard'?: { validate: (v: unknown) => unknown } })?.[
     '~standard'
   ];

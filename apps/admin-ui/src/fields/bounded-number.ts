@@ -1,5 +1,6 @@
 import type { FieldTexts } from '@burojs/core';
-import { f } from '@burojs/field-types';
+import { type FieldValidator, f } from '@burojs/field-types';
+import { type FieldProblem, problemValidator } from './field-issue';
 
 /** The accepted range of a {@link boundedNumber} field; `max` absent = no upper bound. */
 export interface NumberRange {
@@ -13,16 +14,29 @@ export interface BoundedNumberOptions extends NumberRange {
   readonly texts: FieldTexts;
 }
 
-/** The sentence a value outside `range` is refused with; it names the range. */
-export function rangeMessage(range: NumberRange): string {
-  const kind = range.integer ? 'a whole number' : 'a number';
+/**
+ * The refusal of a value outside `range`; it names the range. Codes `number.range`,
+ * `number.rangeWhole`, `number.atLeast`, `number.atLeastWhole`; params `min`, `max`.
+ */
+export function rangeProblem(range: NumberRange): FieldProblem {
+  const whole = range.integer === true;
+  const kind = whole ? 'a whole number' : 'a number';
+  const suffix = whole ? 'Whole' : '';
   return range.max === undefined
-    ? `Enter ${kind} of at least ${range.min}.`
-    : `Enter ${kind} from ${range.min} to ${range.max}.`;
+    ? {
+        code: `number.atLeast${suffix}`,
+        text: `Enter ${kind} of at least ${range.min}.`,
+        params: { min: range.min },
+      }
+    : {
+        code: `number.range${suffix}`,
+        text: `Enter ${kind} from ${range.min} to ${range.max}.`,
+        params: { min: range.min, max: range.max },
+      };
 }
 
-/** `null` when `value` lies in `range` (an empty value is the `required` rule's concern), else the message. */
-export function checkRange(value: unknown, range: NumberRange): string | null {
+/** `null` when `value` lies in `range` (an empty value is the `required` rule's concern), else the refusal. */
+export function checkRange(value: unknown, range: NumberRange): FieldProblem | null {
   if (value === null || value === undefined || value === '') return null;
   const inRange =
     typeof value === 'number' &&
@@ -30,8 +44,12 @@ export function checkRange(value: unknown, range: NumberRange): string | null {
     (!range.integer || Number.isInteger(value)) &&
     value >= range.min &&
     (range.max === undefined || value <= range.max);
-  return inRange ? null : rangeMessage(range);
+  return inRange ? null : rangeProblem(range);
 }
+
+/** {@link checkRange} as a field validator: a translatable issue naming the range. */
+export const rangeValidator = (range: NumberRange): FieldValidator<number> =>
+  problemValidator<number>((value) => checkRange(value, range));
 
 /**
  * A required number field limited to `range`. The record form does not enforce the
@@ -46,7 +64,7 @@ export function boundedNumber(options: BoundedNumberOptions) {
     min: range.min,
     ...(range.max === undefined ? {} : { max: range.max }),
     ...(range.integer ? { integer: true } : {}),
-    validate: (value: unknown) => checkRange(value, range),
+    validate: rangeValidator(range),
     texts,
   });
 }

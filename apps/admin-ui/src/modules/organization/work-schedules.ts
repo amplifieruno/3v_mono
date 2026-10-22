@@ -22,6 +22,8 @@ export const workScheduleFields = {
     },
   }),
   windows: timeWindows({
+    // `[]` is never on shift: `itap.in_windows` matches nothing (segments, rostered checks).
+    emptyText: 'Never on shift',
     texts: {
       label: 'Windows',
       description:

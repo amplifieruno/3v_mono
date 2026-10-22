@@ -40,6 +40,7 @@ export default {
       search: 'Search time zones',
       empty: 'No time zone matches.',
       unknown: 'Unknown time zone',
+      clear: 'Clear time zone',
     },
     /** The time window field (`src/fields/time-windows-impl.ts`). */
     timeWindows: {
@@ -53,13 +54,14 @@ export default {
       overnight: 'overnight',
       endsNextDay: 'Ends the next day',
       daily: 'Daily',
-      none: 'No windows',
       invalid: 'Contains an invalid window',
     },
     /** The list-of-texts field (`src/fields/string-list-impl.ts`); `item` is lowercase (`option`). */
     stringList: {
       add: 'Add {{item}}',
       remove: 'Remove {{item}} {{index}}',
+      /** A row's text box; `item` is capitalized here (`Option 2`). */
+      row: '{{item}} {{index}}',
     },
     organizations: {
       title: 'Choose an organization',
@@ -68,6 +70,42 @@ export default {
       noneBody:
         'Your account has no active organization membership, so there is nothing to open yet. ' +
         'Ask an administrator of your organization to invite you or to reactivate your membership.',
+    },
+  },
+  /**
+   * Refusals of the reusable fields' validators (`src/fields/field-issue.ts`): key
+   * `validation.itap.<code>`, the code's params interpolated. Each text equals the
+   * English default the validator carries (`tests/support/field-issues.ts`).
+   */
+  validation: {
+    itap: {
+      timeWindows: {
+        notList: 'Time windows must be a list of windows.',
+        notWindow: 'Window {{index}}: is not a window.',
+        unexpectedKeys: 'Window {{index}}: has unexpected keys ({{keys}}).',
+        daysNotList: 'Window {{index}}: days must be a list of weekdays 1–7.',
+        noDays: 'Window {{index}}: pick at least one day.',
+        badDays: 'Window {{index}}: days must be weekdays 1–7 (Monday = 1).',
+        badTimes:
+          'Window {{index}}: enter times as HH:MM, from 00:00 to 23:59 (24:00 only as the end).',
+        sameEnds: 'Window {{index}}: start and end are the same; use 00:00–24:00 for a whole day.',
+      },
+      stringList: {
+        notList: '{{item}}s must be a list.',
+        none: 'Add at least one {{itemLower}}.',
+        notText: '{{item}} {{index}} is not text.',
+        blank: '{{item}} {{index}} is empty.',
+        repeated: '{{item}} {{index}} repeats {{itemLower}} {{first}}.',
+      },
+      timezone: {
+        unknown: 'Not a known time zone. Pick one from the list (for example Europe/Moscow).',
+      },
+      number: {
+        range: 'Enter a number from {{min}} to {{max}}.',
+        rangeWhole: 'Enter a whole number from {{min}} to {{max}}.',
+        atLeast: 'Enter a number of at least {{min}}.',
+        atLeastWhole: 'Enter a whole number of at least {{min}}.',
+      },
     },
   },
   /**
