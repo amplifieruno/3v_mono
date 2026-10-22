@@ -11,35 +11,45 @@ const INSIGHTFACE_URL = process.env.INSIGHTFACE_URL ?? 'http://127.0.0.1:18080';
 
 /*
  * One browser page for the whole flow, opened from the run's shared admin session. The run
- * creates a sensor and removes it, and starts recognition on a seeded camera and always stops it
- * again (also in the afterAll sweep).
+ * creates a sensor and removes it, and starts recognition on a seeded camera; it reads the
+ * camera's `recognition_enabled` first and puts exactly that state back after each step that
+ * changes it and in the afterAll sweep (the dev stack is shared).
  */
 test.describe.serial('devices smoke', () => {
   let page: Page;
+  /** Whether beforeAll got as far as opening the page (afterAll has nothing to clean otherwise). */
+  let opened = false;
   let cameraId = '';
   let facilityId = '';
+  /** The camera's `recognition_enabled` before the run; restored after every step that changes it. */
+  let recognitionBefore: boolean | undefined;
   /** GraphQL mutations the page sent, as `{ query, variables }` text. */
   const mutations: string[] = [];
 
   test.beforeAll(async ({ browser }) => {
     page = await openSignedIn(browser);
+    opened = true;
     page.on('request', (request: Request) => {
       if (request.method() !== 'POST' || !request.url().includes('/v1/graphql')) return;
       const body = request.postData() ?? '';
       if (body.includes('mutation')) mutations.push(body);
     });
-    const camera = await graphql<{ devices: { id: string; facility_id: string }[] }>(
-      'query ($n: String!) { devices(where: {name: {_eq: $n}}) { id facility_id } }',
-      { n: CAMERA },
-    );
+    const camera = await graphql<{
+      devices: { id: string; facility_id: string; recognition_enabled: boolean }[];
+    }>('query ($n: String!) { devices(where: {name: {_eq: $n}}) { id facility_id recognition_enabled } }', {
+      n: CAMERA,
+    });
     cameraId = camera.devices[0]?.id ?? '';
     facilityId = camera.devices[0]?.facility_id ?? '';
+    recognitionBefore = camera.devices[0]?.recognition_enabled;
     if (cameraId === '') throw new Error(`${CAMERA} is not seeded`);
   });
 
   test.afterAll(async () => {
+    // beforeAll may have failed before the page or the camera was read: clean only what exists.
+    if (!opened) return;
     try {
-      await stopRecognition();
+      await restoreRecognition();
       await graphql('mutation ($m: String!) { delete_devices(where: {name: {_like: $m}}) { affected_rows } }', {
         m: `${RUN}%`,
       });
@@ -52,10 +62,15 @@ test.describe.serial('devices smoke', () => {
   async function graphql<T = unknown>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
     return page.evaluate(
       async ({ q, v }) => {
-        const stored = JSON.parse(localStorage.getItem('itap:auth:v1') ?? '{}') as { org?: { accessToken: string } };
+        const stored = JSON.parse(localStorage.getItem('itap:auth:v1') ?? '{}') as {
+          org?: { accessToken: string };
+        };
         const response = await fetch('/v1/graphql', {
           method: 'POST',
-          headers: { 'content-type': 'application/json', authorization: `Bearer ${stored.org?.accessToken ?? ''}` },
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${stored.org?.accessToken ?? ''}`,
+          },
           body: JSON.stringify({ query: q, variables: v }),
         });
         const body = (await response.json()) as { data?: unknown; errors?: unknown };
@@ -66,18 +81,49 @@ test.describe.serial('devices smoke', () => {
     );
   }
 
-  /** Stops recognition on the camera through the same action the console uses; never throws. */
+  /**
+   * Puts the camera's recognition back as it was before the run (started or stopped through the
+   * same actions the console uses); never throws. Nothing to do when the camera was never read.
+   */
+  async function restoreRecognition(): Promise<void> {
+    if (cameraId === '' || recognitionBefore === undefined) return;
+    const action = recognitionBefore ? 'recognition_start' : 'recognition_stop';
+    try {
+      await graphql(`mutation ($id: uuid!) { ${action}(device_id: $id) { running } }`, {
+        id: cameraId,
+      });
+    } catch {
+      // Already in that state, or the stack is down: nothing to clean.
+    }
+  }
+
+  /** Stops recognition on the camera (a step that needs it off); never throws. */
   async function stopRecognition(): Promise<void> {
     try {
-      await graphql('mutation ($id: uuid!) { recognition_stop(device_id: $id) { running } }', { id: cameraId });
+      await graphql('mutation ($id: uuid!) { recognition_stop(device_id: $id) { running } }', {
+        id: cameraId,
+      });
     } catch {
-      // Already stopped, or the stack is down: nothing to clean.
+      // Already stopped, or the stack is down.
     }
+  }
+
+  /** Confirms an action's dialog when the action asks for one (it opens a moment after the click). */
+  async function confirmIfAsked(name: string): Promise<void> {
+    const confirm = page.getByRole('dialog').getByRole('button', { name, exact: true });
+    try {
+      await confirm.waitFor({ state: 'visible', timeout: 2_000 });
+    } catch {
+      return;
+    }
+    await confirm.click();
   }
 
   async function insightfaceUp(): Promise<boolean> {
     try {
-      const response = await fetch(`${INSIGHTFACE_URL}/info`, { signal: AbortSignal.timeout(3000) });
+      const response = await fetch(`${INSIGHTFACE_URL}/info`, {
+        signal: AbortSignal.timeout(3000),
+      });
       return response.ok;
     } catch {
       return false;
@@ -112,11 +158,23 @@ test.describe.serial('devices smoke', () => {
     expect(mutations.some((body) => body.includes('s3cret-pass'))).toBe(true);
     // It is never shown back.
     await expect(page.getByText('s3cret-pass')).toHaveCount(0);
+
+    // Remove the stored password: the request carries null and the server accepts it.
+    mutations.length = 0;
+    await page.goto(`/devices/${id}/edit`);
+    await page.getByTestId('form-field-input:device:edit:password:remove').click();
+    await expect(page.getByText('The stored value is removed on save.')).toBeVisible();
+    await page.getByTestId('form-submit:device:edit').click();
+    await expect(page).toHaveURL(new RegExp(`/devices/${id}$`));
+    expect(mutations.some((body) => /"password":null/u.test(body))).toBe(true);
   });
 
   test('should delete the sensor from the list', async () => {
     await page.goto('/devices');
-    await page.getByPlaceholder(/search/i).first().fill(SENSOR);
+    await page
+      .getByPlaceholder(/search/i)
+      .first()
+      .fill(SENSOR);
     const row = page.getByRole('row', { name: new RegExp(SENSOR) });
     await expect(row).toHaveCount(1);
     await row.getByTestId(/^list-row-actions-menu:device:/).click();
@@ -132,33 +190,40 @@ test.describe.serial('devices smoke', () => {
   });
 
   test('should start recognition, show its figures and the Stop button, then stop it', async () => {
-    await page.goto(`/devices/${cameraId}`);
-    await page.getByTestId('form-action:device:show:start_recognition').click();
-    const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible().catch(() => false)) {
-      await dialog.getByRole('button', { name: 'Start recognition', exact: true }).click();
-    }
-    await expect(page.getByTestId('form-action:device:show:stop_recognition')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Frames analysed').first()).toBeVisible();
-    await expect(page.getByText('Running now').first()).toBeVisible();
+    await stopRecognition();
+    try {
+      await page.goto(`/devices/${cameraId}`);
+      await page.getByTestId('form-action:device:show:start_recognition').click();
+      await confirmIfAsked('Start recognition');
+      await expect(page.getByTestId('form-action:device:show:stop_recognition')).toBeVisible({
+        timeout: 20_000,
+      });
+      await expect(page.getByText('Frames analysed').first()).toBeVisible();
+      await expect(page.getByText('Running now').first()).toBeVisible();
 
-    await page.getByTestId('form-action:device:show:stop_recognition').click();
-    const stopDialog = page.getByRole('dialog');
-    if (await stopDialog.isVisible().catch(() => false)) {
-      await stopDialog.getByRole('button', { name: 'Stop recognition', exact: true }).click();
+      await page.getByTestId('form-action:device:show:stop_recognition').click();
+      await confirmIfAsked('Stop recognition');
+      await expect(page.getByTestId('form-action:device:show:start_recognition')).toBeVisible({
+        timeout: 20_000,
+      });
+    } finally {
+      await restoreRecognition();
     }
-    await expect(page.getByTestId('form-action:device:show:start_recognition')).toBeVisible({ timeout: 20_000 });
   });
 
   test('should play the live view or say the stream is unavailable, and box a face when recognition runs', async () => {
     const withInsightface = await insightfaceUp();
     test.info().annotations.push({
       type: 'note',
-      description: withInsightface ? 'insightface up: detection box expected' : 'insightface down: detection box step skipped',
+      description: withInsightface
+        ? 'insightface up: detection box expected'
+        : 'insightface down: detection box step skipped',
     });
     try {
       if (withInsightface) {
-        await graphql('mutation ($id: uuid!) { recognition_start(device_id: $id) { running } }', { id: cameraId });
+        await graphql('mutation ($id: uuid!) { recognition_start(device_id: $id) { running } }', {
+          id: cameraId,
+        });
       }
       await page.goto(`/devices/${cameraId}`);
       await page.getByRole('tab', { name: 'Live' }).click();
@@ -167,29 +232,42 @@ test.describe.serial('devices smoke', () => {
       const video = live.locator('video');
       const unavailable = live.getByText('Stream unavailable');
       await expect(async () => {
-        const playing = await video.evaluate((el: HTMLVideoElement) => !el.paused && el.readyState >= 2 && el.currentTime > 0);
+        const playing = await video.evaluate(
+          (el: HTMLVideoElement) => !el.paused && el.readyState >= 2 && el.currentTime > 0,
+        );
         expect(playing || (await unavailable.isVisible())).toBe(true);
       }).toPass({ timeout: 30_000 });
       if (withInsightface) {
         await expect(live.getByTestId('live-box').first()).toBeVisible({ timeout: 25_000 });
       }
     } finally {
-      await stopRecognition();
+      await restoreRecognition();
     }
   });
 
   test('should show a camera running recognition on the live wall', async () => {
     try {
-      await graphql('mutation ($id: uuid!) { recognition_start(device_id: $id) { running } }', { id: cameraId });
+      await graphql('mutation ($id: uuid!) { recognition_start(device_id: $id) { running } }', {
+        id: cameraId,
+      });
       await page.goto('/live-wall');
       const wall = page.getByTestId('live-wall');
       await expect(wall).toBeVisible();
       await expect(wall.getByRole('link', { name: CAMERA })).toBeVisible();
       await expect(wall.getByTestId('live-camera').first()).toBeVisible();
-    } finally {
+
+      // Stopped, it leaves the wall (other cameras may still run recognition on the shared stack).
       await stopRecognition();
+      await page.reload();
+      await expect(
+        page
+          .getByTestId('live-wall')
+          .or(page.getByText(/no camera/i))
+          .first(),
+      ).toBeVisible();
+      await expect(page.getByRole('link', { name: CAMERA })).toHaveCount(0);
+    } finally {
+      await restoreRecognition();
     }
-    await page.reload();
-    await expect(page.getByText(/no camera/i).first()).toBeVisible();
   });
 });
