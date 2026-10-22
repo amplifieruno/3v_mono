@@ -954,3 +954,26 @@ migration `1792365700277`.
   resolution with the exported `resolveEnumLabel` / `enumValueText`.
 - **Expected from a framework:** a `useQueryFieldLabel(query, field)` / `useEnumLabel(enum, value)`
   hook (or the field texts on the handle).
+
+### G60. A block cannot place blocks chosen from data (a dashboard's widgets)
+- **Need:** a dashboard (plan 08 Task 2) draws its saved widgets, up to 50, each one of twelve
+  analytic blocks with props from the widget's `params`, at the widget's place on a 12-column grid;
+  the editor previews the widgets on screen the same way.
+- **Framework (0.6.0):** placements are declared in a screen's body, so how many blocks a page
+  draws and which ones are fixed when the app is defined; a `block()` prop takes a placement
+  declared beside it, not one built from data. A block view cannot render another block: the
+  placement machinery (`usePlacement`, the place node's chrome, prop validation with defaults,
+  `data` entries, the block's `t`) is internal to a placed node, the app's block catalogue has no
+  public hook (`useBlockImplementations` is not exported) and there is no `renderBlock`. A grid
+  of fixed slots × blocks with `when` (the operator workspace pattern) would need 600 placements,
+  and a node cannot take its grid column and span from data either. **[code]**
+  (`react/src/blocks/use-placement.ts`, `react/src/index.ts`, `ui-shadcn/src/blocks/place-node.tsx`).
+- **Workaround:** one block, `itap:dashboard-grid`, draws the tiles itself: each widget's props go
+  through the block's own schemas with `validatePlacementProps` (exported), its view comes from our
+  map of the registered implementations (`src/blocks/dashboard-grid/widget-views.ts`), its texts
+  from `blocks.<id>.*` through `I18nContext` (`block-t.ts`), and the two blocks with `data` entries
+  (`itap:occupancy-now`, `itap:health-chart`) get them read by the tile (`widget-data.tsx`). Each tile
+  has its own error boundary. Grid starts and spans are literal Tailwind classes per number.
+- **Expected from a framework:** a dynamic placement (`l.each(ref, item => l.place(...))` or a
+  `renderBlock(block, props)` component that mounts a placement with its chrome, data and texts),
+  and per-child grid placement on `l.grid` (column start, span and row span from a ref).

@@ -1,4 +1,8 @@
+import { dashboardGridBlock } from '../../blocks/dashboard-grid/dashboard-grid-block';
+import { readableFieldsOperation, readableRootFields } from '../../blocks/dashboard-grid/readable-fields-query';
 import { deliveriesBlock } from '../../blocks/deliveries/deliveries-block';
+import { deviceHealthDayBlock } from '../../blocks/device-health-day/device-health-day-block';
+import { deviceHealthDay, deviceHealthDayOperation } from '../../blocks/device-health-day/device-health-day-query';
 import { deviceHealthSummaryBlock } from '../../blocks/device-health-summary/device-health-summary-block';
 import {
   deviceHealthSummary,
@@ -20,20 +24,25 @@ import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import {
   AREA_HOURLY_STAT_RESOURCE,
   AREA_TRANSITION_RESOURCE,
+  DASHBOARD_RESOURCE,
   FACILITY_DAILY_STAT_RESOURCE,
 } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
 import { analyticsPage } from './analytics-page';
 import { areaHourlyStat, areaHourlyStatFields } from './area-hourly-stat';
 import { areaTransition, areaTransitionFields } from './area-transition';
+import { dashboard } from './dashboard';
+import { dashboardFields } from './dashboard-fields';
 import { facilityDailyStat, facilityDailyStatFields } from './facility-daily-stat';
 
 /**
  * Analytics: the stats the hourly aggregation computes (hourly figures per area, daily figures per
  * facility, moves between areas; read only), the analytic blocks over the tracked query functions
  * and tables (occupancy over time, busy hours, flow matrix, key figures, incidents, segment trends,
- * device health, deliveries; `./widget-blocks.ts` lists them for dashboards) and the Analytics page
- * composing them for the sidebar facility and a period.
+ * device health, deliveries; `./widget-blocks.ts` lists them for dashboards), the Analytics page
+ * composing them for the sidebar facility and a period, and dashboards: members' own grids of those
+ * blocks (`./dashboard.ts`, the grid block `itap:dashboard-grid`, the editor field
+ * `itap.dashboard-widgets`), one of which can be the landing page.
  */
 export const analyticsModule = {
   name: 'analytics-module',
@@ -50,6 +59,9 @@ export const analyticsModule = {
     segmentTrendBlock,
     deviceHealthSummaryBlock,
     deliveriesBlock,
+    deviceHealthDayBlock,
+    dashboard,
+    dashboardGridBlock,
     facilityZoneQuery,
     occupancySeries,
     flowMatrix,
@@ -57,6 +69,8 @@ export const analyticsModule = {
     incidentsList,
     segmentTrend,
     deviceHealthSummary,
+    deviceHealthDay,
+    readableRootFields,
   ],
   tables: {
     [AREA_HOURLY_STAT_RESOURCE]: hasuraTable('area_hourly_stats', {
@@ -71,6 +85,7 @@ export const analyticsModule = {
       selectFields: selectFieldsOf(areaTransitionFields),
       orderByField: 'day',
     }),
+    [DASHBOARD_RESOURCE]: hasuraTable('dashboards', { selectFields: selectFieldsOf(dashboardFields) }),
   },
   operations: [
     facilityZoneOperation,
@@ -80,5 +95,7 @@ export const analyticsModule = {
     incidentsListOperation,
     segmentTrendOperation,
     deviceHealthSummaryOperation,
+    deviceHealthDayOperation,
+    readableFieldsOperation,
   ],
 } as const satisfies ConsoleModule;

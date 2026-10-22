@@ -171,4 +171,7 @@ export default {
   area_transition: {
     doc: { topics: { index: 'Moves between areas: the basis of the flow matrix' } },
   },
+  dashboard: {
+    doc: { topics: { index: 'Dashboards: widgets, sharing, the landing page and what is refused' } },
+  },
 } satisfies TranslationBundle;

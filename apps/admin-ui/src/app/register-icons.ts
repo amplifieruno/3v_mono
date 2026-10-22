@@ -92,6 +92,7 @@ import {
   Clock,
   CalendarRange,
   Shuffle,
+  LayoutGrid,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -189,6 +190,7 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Clock,
   CalendarRange,
   Shuffle,
+  LayoutGrid,
 };
 
 /**

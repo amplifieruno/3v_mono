@@ -2,6 +2,7 @@ import { composeFieldImplementations } from '@burojs/react';
 import { shadcnFieldImplementations } from '@burojs/ui-shadcn';
 import { areaShapeImplementations } from './area-shape-impl';
 import { customFieldsImplementations } from './custom-fields-impl';
+import { dashboardWidgetsImplementations } from './dashboard-widgets-impl';
 import { dateTimeImplementations } from './date-time-impl';
 import { detectionFaceImplementations } from './detection-face-impl';
 import { eventRuleParametersImplementations } from './event-rule-parameters-impl';
@@ -36,7 +37,7 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
  * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
  * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
- * (`itap.segment-conditions`).
+ * (`itap.segment-conditions`) and a dashboard's widgets (`itap.dashboard-widgets`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -63,4 +64,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   workspacePanelsImplementations,
   notificationConditionsImplementations,
   segmentConditionsImplementations,
+  dashboardWidgetsImplementations,
 );

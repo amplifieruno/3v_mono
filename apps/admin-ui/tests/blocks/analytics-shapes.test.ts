@@ -249,9 +249,24 @@ describe('widget params', () => {
   });
 
   it('should cover exactly the widget contract’s kind and query pairs', () => {
-    const allowed = Object.values(DASHBOARD_WIDGET_QUERIES).flat().sort();
-    const read = Object.values(ANALYTIC_BLOCKS).map((entry) => entry.query).sort();
+    const allowed = Object.entries(DASHBOARD_WIDGET_QUERIES)
+      .flatMap(([kind, queries]) => queries.map((query) => `${kind} → ${query}`))
+      .sort();
+    const read = [...new Set(Object.values(ANALYTIC_BLOCKS).map((entry) => `${entry.kind} → ${entry.query}`))].sort();
     expect(read).toEqual(allowed);
+  });
+
+  it('should read the seed’s widget params (statuses, delivery days, device health hours)', () => {
+    expect(analyticBlockProps('incidentsList', { status: ['open', 'acknowledged', 'investigating'], limit: 10 })).toEqual({
+      ok: true,
+      props: { status: ['open', 'acknowledged', 'investigating'], limit: 10 },
+    });
+    expect(analyticBlockProps('deliveries', { days: 7 })).toEqual({ ok: true, props: { period: '7d' } });
+    expect(analyticBlockProps('deliveries', { days: 5 }).ok).toBe(false);
+    expect(analyticBlockProps('deliveries', { days: 7, period: '7d' }).ok).toBe(false);
+    expect(analyticBlockProps('deviceHealthDay', { facility_id: FACILITY, hours: 24 })).toEqual({ ok: true, props: { facilityId: FACILITY } });
+    expect(analyticBlockProps('deviceHealthDay', { hours: 12 }).ok).toBe(false);
+    expect(analyticBlockProps('deviceHealthChart', { device_id: null })).toEqual({ ok: true, props: { deviceId: null } });
   });
 
   it('should name the root field each block reads', () => {
@@ -266,6 +281,7 @@ describe('widget params', () => {
       heatmapSeries: 'occupancy_series',
       deviceHealthSummary: 'devices',
       deviceHealthChart: 'device_health_metrics',
+      deviceHealthDay: 'device_health_metrics',
       deliveries: 'delivery_report',
     });
   });

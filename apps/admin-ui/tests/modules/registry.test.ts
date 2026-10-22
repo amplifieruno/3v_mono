@@ -41,12 +41,14 @@ describe('module registries', () => {
       .sort();
     expect(registered).toEqual(operations);
     expect(operations).toEqual([
+      'analytics.deviceHealthDay',
       'analytics.deviceHealthSummary',
       'analytics.facilityZone',
       'analytics.flowMatrix',
       'analytics.heatmapHours',
       'analytics.incidentsList',
       'analytics.occupancySeries',
+      'analytics.readableRootFields',
       'analytics.segmentTrend',
       'devices.recognitionStart',
       'devices.recognitionStatus',
@@ -77,6 +79,7 @@ describe('module registries', () => {
       'notifications.userNames',
       'organization_invitation.inviteMember',
       'overview.dashboardKpis',
+      'overview.landingDashboard',
       'people.addIdentityPhotos',
       'people.addIdentityRelationship',
       'people.approveVerification',

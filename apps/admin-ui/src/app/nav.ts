@@ -110,6 +110,7 @@ export const NAV_ICONS = {
   hourlyStats: 'Clock',
   dailyStats: 'CalendarRange',
   areaTransitions: 'Shuffle',
+  dashboards: 'LayoutGrid',
 } as const;
 
 /**

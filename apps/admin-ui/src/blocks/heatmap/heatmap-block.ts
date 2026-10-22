@@ -38,7 +38,7 @@ export const heatmapBlock = defineBlock('itap:heatmap', {
     noFigure: '{{row}}, {{hour}}: no such day in the period',
     note: 'Darker is busier. Hours in the facility’s time zone ({{zone}}); each figure is the people present in that hour averaged over the period’s days.',
     unknownArea: 'Removed area',
-    truncated: 'Too many hourly figures for one read: the oldest hours of the period are left out, so the averages lean on recent days. Choose a shorter period.',
+    truncated: 'Too many hourly figures for one read: the oldest hours of the period are left out and still count in the averages as hours nobody was present, so the averages read low. Choose a shorter period.',
     summary: 'busiest {{row}} at {{hour}}, {{value}} people on average',
     areaHeader: 'Area',
     weekdayHeader: 'Day of the week',

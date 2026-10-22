@@ -6,7 +6,7 @@ import { INCIDENT_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
 import { EVENT_SEVERITIES, severitiesFrom } from '../../enums/events';
 import { ANALYTICS_BINDING } from '../facility-period/analytics-binding';
-import { INCIDENT_LIST_STATES } from './incidents-list-block';
+import { incidentListStatus } from './incidents-list-block';
 
 const named = z.object({ name: z.string() }).nullable();
 
@@ -29,7 +29,7 @@ export const incidentItems = z.object({ rows: z.array(incidentItem), total: z.nu
 
 export const incidentListInput = z.object({
   facilityId: z.string().uuid().nullable(),
-  status: z.enum(INCIDENT_LIST_STATES),
+  status: incidentListStatus,
   minSeverity: z.enum(EVENT_SEVERITIES),
   limit: z.number().int().min(1),
 });
@@ -37,13 +37,14 @@ export const incidentListInput = z.object({
 export type IncidentListInput = z.infer<typeof incidentListInput>;
 
 /**
- * The filter of the list: not resolved or closed (`open`), the severity and above, and the facility
+ * The filter of the list: not resolved or closed (`open`) or the statuses named, the severity and above, and the facility
  * with the incidents of no facility (shared by every facility, like the incident list's scope).
  */
 export function incidentWhere({ facilityId, status, minSeverity }: IncidentListInput): Record<string, unknown> {
   return {
     severity: { _in: severitiesFrom(minSeverity) },
     ...(status === 'open' ? { status: { _nin: ['resolved', 'closed'] } } : {}),
+    ...(Array.isArray(status) ? { status: { _in: status } } : {}),
     ...(facilityId === null ? {} : { _or: [{ facility_id: { _eq: facilityId } }, { facility_id: { _is_null: true } }] }),
   };
 }

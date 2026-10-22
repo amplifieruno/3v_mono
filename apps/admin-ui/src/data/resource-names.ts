@@ -84,3 +84,4 @@ export const SEGMENT_IDENTITY_MEMBER_RESOURCE = 'segment_identity_member';
 export const AREA_HOURLY_STAT_RESOURCE = 'area_hourly_stat';
 export const FACILITY_DAILY_STAT_RESOURCE = 'facility_daily_stat';
 export const AREA_TRANSITION_RESOURCE = 'area_transition';
+export const DASHBOARD_RESOURCE = 'dashboard';

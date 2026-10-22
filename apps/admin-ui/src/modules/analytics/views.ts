@@ -1,4 +1,6 @@
+import { dashboardGridView } from '../../blocks/dashboard-grid/views';
 import { deliveriesView } from '../../blocks/deliveries/views';
+import { deviceHealthDayView } from '../../blocks/device-health-day/views';
 import { deviceHealthSummaryView } from '../../blocks/device-health-summary/views';
 import { flowMatrixView } from '../../blocks/flow-matrix/views';
 import { heatmapView } from '../../blocks/heatmap/views';
@@ -17,4 +19,6 @@ export const analyticsViews = [
   segmentTrendView,
   deviceHealthSummaryView,
   deliveriesView,
+  deviceHealthDayView,
+  dashboardGridView,
 ] as const;
