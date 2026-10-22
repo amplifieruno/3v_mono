@@ -18,3 +18,9 @@ event type above the list, filter by device or time, or search the messages.
 The list does not count its rows on every page: ask for the count in the
 footer when you need it. Offline and online changes also raise platform
 events and notifications.
+
+## Facility filter
+
+The facility picked in the sidebar does **not** narrow this list: it shows
+every facility's devices. Filter by **Device** to see one device; a device's
+own tab shows only its records.

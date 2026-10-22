@@ -32,3 +32,9 @@ below the chart, newest first.
 first, 50 per page; filter by device, time or errors. The list does not count
 its rows on every page (there are many): ask for the count in the footer when
 you need it.
+
+## Facility filter
+
+The facility picked in the sidebar does **not** narrow this list: it shows
+every facility's devices. Filter by **Device** to see one device; a device's
+own tab shows only its records.

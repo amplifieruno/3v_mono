@@ -374,3 +374,18 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   action refuses other devices).
 - **Expected from a framework:** list literals (`readonly ScreenLiteral[]`) for `in` / `nin`
   conditions.
+
+### G27. `data.scope` cannot narrow through a relation
+- **Need:** the device health samples and device events (`device_health_metric`, `device_event`,
+  plan 03) have no `facility_id` of their own; their facility is the device's. The sidebar
+  facility picker should narrow them as it narrows devices.
+- **Framework (0.6.0):** `data.scope.<key>.field` must name a declared field of the resource
+  (`assertResourceScopeMapping`, `packages/core/src/data/read-scope.ts`), and `@burojs/hasura`
+  turns a dimension into a flat `{ [field]: { _eq | _in } }` (`readScopeToWhere`); the legacy
+  `scopeFields` / `getScope` pair is flat `_eq` too. A dotted path (`device.facility_id`) is
+  refused at definition and would not be a valid Hasura `where` anyway. **[code]**
+- **Workaround:** none; both lists show every facility's rows and say so in their articles
+  ("Facility filter"). The device page's Health and Events tabs show one device's rows.
+- **Expected from a framework:** a scope dimension over a relation path
+  (`scope: { facility: { field: 'facility_id', via: 'device' } }`), translated by the Hasura
+  provider into a nested `where` (`{ device: { facility_id: { _in } } }`).

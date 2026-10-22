@@ -38,7 +38,9 @@ nav section Devices (Live wall, Devices, Device health, Device events).
 - **`secret()` field** (`src/fields/secret*.ts(x)`, id `itap.secret`): a password box that leaves
   the value out of the payload while empty (typing sets it), `sensitive: true` (kept out of drafts,
   redacted in audit), never selected or returned (the mapping's `selectFieldsOf` skips `writeOnly`
-  fields). For integration secrets and client keys (phases 11-12). G24.
+  fields). On an edit form (the record has an `id`) "Remove the stored value" sends `null` and
+  "Keep the stored value" undoes it, so the column must be nullable. For integration secrets and
+  client keys (phases 11-12). G24.
 - **Health-chart block** (`itap:health-chart`, `src/blocks/health-chart/`) and its series query
   `deviceHealthSeries` (`health-series-query.ts`): last 24 h folded to 96 points of 15 minutes,
   small multiples per measure, gaps for missing samples, red ticks for failed periods. The
@@ -75,15 +77,45 @@ Nothing in the app. One test-infrastructure flake: parallel dev-stack files (abo
 G24 no write-only field option (custom `secret()` field plus the mapping rule); G25 a block's
 `source.list` reads at most 100 rows (custom series query); G26 a `source.list` condition cannot
 take a list value, so the live wall cannot narrow by `device_type in [...]` (only cameras can have
-recognition on, so the condition is left out). Details: `tasks/ui/buro-gaps.md`.
+recognition on, so the condition is left out); G27 `data.scope` cannot narrow through a relation,
+so the health-sample and device-event lists ignore the sidebar facility (both articles say so).
+Details: `tasks/ui/buro-gaps.md`.
+
+## Final review fixes
+
+I1 the devices e2e restores the Lobby Camera's `recognition_enabled` to what it read in
+`beforeAll` (not always "stopped"), checks the camera's absence from the wall instead of an empty
+wall, waits for confirm dialogs and skips the sweep when `beforeAll` failed; M2 `secret()` can
+remove a stored value (`null`); M3 G27 (above); M4 `unknown` health reworded; M5 the prod runbook
+notes that the frontend nginx resolves `stream-server` and `backend` at start; M7 progress
+(`timeupdate`) clears a pending stall; M8 the box fade honours `prefers-reduced-motion`; M9 bd
+`3v_mono-e6n` (seeded device positions). Report: `.superpowers/sdd/plan-03-devices/final-fix-report.md`.
 
 ## Deferred
 
 - Minors: floor-plan devices / access points read at most 100 without a truncation notice;
-  `device_type` is create-only; seeded devices have no positions; the box fade ignores
-  `prefers-reduced-motion`; a stream flagged "stalled" after 8 s without waiting may mislabel a
-  healthy one (also clear on `timeupdate`); the wall opens one socket per tile; HLS lag offsets
-  boxes from faces.
+  `device_type` is create-only; 6 of 19 seeded devices have no position and the floor plans show
+  few device markers in the demo (bd `3v_mono-e6n`); the wall opens one socket per tile; HLS lag
+  offsets boxes from faces.
+
+## Known limits
+
+- **`/streams/` is unauthenticated.** The console's nginx (and Traefik's `${STREAM_URL}` route)
+  proxy the stream-server's HLS without any token check: anyone who can reach the console host and
+  knows (or guesses) a stream id such as `lobby` can watch it. Acceptable for the demo; a real
+  deployment needs signed, short-lived stream URLs or an auth subrequest.
+- **Facility filter on the logs.** Device health and Device events list every facility's rows
+  whatever the sidebar facility is (G27).
+- **Box fade with reduced motion.** With `prefers-reduced-motion` a box stays opaque for its 2 s
+  and then disappears without a fade.
+
+## For later phases (carry notes)
+
+- **Phase 5 must multiplex detection rooms over one socket** before the operator workspace reuses
+  `openDetectionStream`: today every view (every live-wall tile) opens its own Socket.io
+  connection.
+- **Live detections give up after 3 unauthorized refusals** (the view says detections are
+  unavailable and stays so); phase 5 adds a Reconnect action.
 - The e2e needs insightface up for the box step (it is detected through `INSIGHTFACE_URL`, default
   `http://127.0.0.1:18080`; the step is skipped with an annotation when it is down).
 - Controller-written plans for phases 6-8 are committed with this summary:

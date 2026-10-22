@@ -98,7 +98,10 @@ export const deviceHealthEnum = defineEnum({
     critical: { label: 'Offline', doc: { summary: 'Unreachable at the last check.' } },
     unknown: {
       label: 'Unknown',
-      doc: { summary: 'Not checked yet; the health check probes active cameras only.' },
+      doc: {
+        summary:
+          'Never checked. The health check probes active cameras only (a camera in connection error included), so terminals and sensors stay unknown.',
+      },
     },
   },
 });

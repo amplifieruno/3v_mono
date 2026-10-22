@@ -27,6 +27,7 @@ Throughout, `DC` stands for `docker compose --env-file .env.prod -f docker/docke
 - [ ] CPU and RAM: InsightFace runs with `cpus: 4.0` and `mem_limit: 4g` (needed for the face-auth p95 of 2 s). Postgres, Hasura, the backend and the frontend need more on top, so plan at least 6 cores and 8 GB RAM.
 - [ ] `libs/InsightFace-REST` submodule checked out with its models (`git submodule update --init`); the prod `insightface` image builds from it.
 - [ ] The stream-server serves the streams `entrance`, `lobby`, `serverroom` and `warehouse`. The seeded cameras are bound to these ids; the end-to-end detection check (step 10) needs one of them.
+- [ ] The `stream-server` and `backend` services are deployed in the same compose project as the frontend. The console's nginx (`apps/admin-ui/nginx.conf`) proxies `/streams/` to `stream-server:8888` and `/socket.io` to `backend:3001` (besides `graphql`, `auth`, `storage`) and resolves every upstream name when it starts: a missing service makes nginx exit with `host not found in upstream`, so the frontend container does not come up.
 - [ ] The edge proxy on the external `proxy` network routes the hosts `${APP_URL}`, `${API_URL}`, `${GRAPHQL_URL}`, `${AUTH_URL}`, `${STORAGE_URL}`, `${STREAM_URL}` and terminates TLS. The compose file's own `traefik` service publishes no ports (`ports: []`), and its routers use the plain `web` entrypoint with TLS labels commented out.
 - [ ] `.env.prod` exists on the server only. It is git-ignored (`.gitignore`: `.env.*`); never commit it.
 
