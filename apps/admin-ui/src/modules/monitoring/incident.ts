@@ -215,7 +215,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
         l.grid(['severity', 'assigned_to']),
         'description',
         l.grid(['facility_id', 'area_id']),
-        'external_ref',
+        l.grid(['external_ref', 'escalation_policy_id']),
       ],
     },
     edit: {
@@ -224,7 +224,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
         l.grid(['severity', 'assigned_to']),
         'description',
         l.grid(['facility_id', 'area_id']),
-        'external_ref',
+        l.grid(['external_ref', 'escalation_policy_id']),
       ],
     },
   },

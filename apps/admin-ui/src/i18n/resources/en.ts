@@ -129,4 +129,10 @@ export default {
   operator_workspace: {
     doc: { topics: { index: 'Operator workspace: panels and arranging them' } },
   },
+  notification_rule: {
+    doc: { topics: { index: 'Notification rules: event types, conditions, recipients and testing' } },
+  },
+  notification_template: {
+    doc: { topics: { index: 'Notification templates: channels, languages and placeholders' } },
+  },
 } satisfies TranslationBundle;

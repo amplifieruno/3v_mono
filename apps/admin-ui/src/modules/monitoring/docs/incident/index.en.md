@@ -4,8 +4,12 @@ An **incident** is a situation an operator has to handle. Event rules with
 **Opens an incident** open them (one per person's stay and rule), with the
 severity of the event and the rule's escalation policy; **Opened by rule**
 names the rule. An operator can also open one by hand with **Create**: a
-title, the severity, the place, the assignee and an external reference (a
-ticket or police case number).
+title, the severity, the place, the assignee, an external reference (a
+ticket or police case number) and an **Escalation policy**. The policy says
+who is paged, step by step, while nobody acknowledges the incident; an
+incident a rule opened takes the rule version's policy, else that of a
+notification rule of its event, and it can be changed while the incident is
+not closed.
 
 **Monitoring → Incidents** lists them newest first and refreshes itself every
 15 seconds while it is open; the sidebar facility picker narrows it (an incident

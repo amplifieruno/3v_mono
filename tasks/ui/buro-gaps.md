@@ -772,3 +772,33 @@ migration `1792365700277`.
   message, and the fields' `doc.summary` say an active member is required.
 - **Expected from a framework:** a record form that places a write's `validation` issues on their
   fields (or form-level with their text), as flows do.
+
+### G49. A link cannot target an enum (enum-set junctions)
+- **Need:** a notification rule's event types and channels (plan 06 Task 1) are rows of junction
+  tables whose other end is an enum value (`notification_rule_event_types.event_type`,
+  `notification_rule_channels.channel`), not a record; the plan wanted read links (chips, `has*`
+  filters) like the record junctions of phases 2–5.
+- **Framework (0.6.0):** `f.relationMany({ to, through })` needs `to` to be a registered resource
+  (`packages/field-types/src/types/relation-many.ts`); an enum is not one, and the Hasura enum tables
+  (`event_types`, `notification_channels`) are not readable by `org_admin`. `f.enum` has no
+  multi-value form. **[code]**
+- **Workaround:** no read link: the rule page has an **Event types** and a **Channels** tab, each a
+  related list of the junction resource (add / remove, enum badges); the list page shows neither.
+- **Expected from a framework:** a link (or an `f.enumSet`) over a junction whose target key is an
+  enum value, read as enum chips and filterable with `hasAny`.
+
+### G50. A record form cannot place a database refusal on a node of a structured field
+- **Need:** the notification conditions trigger refuses with one code
+  (`notification_rule_conditions_invalid`), without saying which condition; a record form would
+  map it to the condition's row of `itap.notification-conditions`.
+- **Framework (0.6.0):** record forms show no server refusal text at all (G48), and a field
+  validator gets only the form values (`ValidationContext`: `values`, `field`), no data access, so
+  it cannot check ids against the organization. **[code]**
+- **Workaround:** the editor checks the references itself against the records it offers (an id
+  that names nothing any more, an area outside the chosen facility) and shows the problem on that
+  condition's row; it offers only valid combinations (areas of the chosen facility, the area dropped
+  when the facility changes). The validator checks the shape (keys, uuids, severities) with the
+  issue path naming the condition, and the editor marks that row. A race (a record deleted between
+  loading and saving) still ends in the generic "Validation failed".
+- **Expected from a framework:** validators with read access (or async field checks bound to a
+  query), and G48's server issues reaching record forms with a sub-path.

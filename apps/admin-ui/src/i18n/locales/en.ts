@@ -133,6 +133,31 @@ export default {
       kindsHint: 'Leave all unticked to react to every kind of watch list.',
       none: 'This rule type takes no parameters.',
     },
+    /** A notification rule's conditions (`src/fields/notification-conditions-impl.ts`). */
+    notificationConditions: {
+      facility: 'Facility',
+      area: 'Area',
+      segment: 'Segment',
+      minSeverity: 'Minimum severity',
+      anyFacility: 'Any facility',
+      anyArea: 'Any area',
+      anySegment: 'Anyone',
+      anySeverity: 'Any severity',
+      facilityHint: 'Only events in this facility.',
+      areaHint: 'Only events in this area or an area inside it.',
+      areaOfFacilityHint: 'Only events in this area of the facility, or an area inside it.',
+      segmentHint: 'Only events about a member of this segment when the event happens.',
+      minSeverityHint: 'Only events at least this severe.',
+      every: 'Every event of the rule’s event types.',
+      allOf: 'An event must meet every condition set here; leave all on “any” to match every event of the rule’s event types.',
+      unknown: 'Unknown: {{id}}',
+      loading: 'Reading the facilities, areas and segments…',
+      failed: 'The facilities, areas and segments could not be read.',
+      areaWithin: '{{name}}, and the areas inside it',
+      severityAndAbove: 'and above',
+      segmentAtEvent: '{{name}} (members when the event happens)',
+      other: '{{key}}: {{value}}',
+    },
     /** The write-only secret field (`src/fields/secret-impl.ts`). */
     secret: {
       hidden: 'Not shown',
@@ -221,6 +246,21 @@ export default {
         badTimes:
           'Window {{index}}: enter times as HH:MM, from 00:00 to 23:59 (24:00 only as the end).',
         sameEnds: 'Window {{index}}: start and end are the same; use 00:00–24:00 for a whole day.',
+      },
+      templatePlaceholders: {
+        malformed: 'Write each placeholder as its name in double curly braces: lowercase letters, digits, _ and . only.',
+      },
+      templateLocale: {
+        format: 'Enter a language code such as en, ru or pt-BR.',
+      },
+      notificationConditions: {
+        notObject: 'Conditions must be an object of named values.',
+        unknownKey:
+          'Unknown condition “{{key}}”: remove it (only facility, area, segment and minimum severity are understood).',
+        badId: 'Choose a record from the list.',
+        badSeverity: 'Choose one of the event severities.',
+        gone: 'It no longer exists in the organization: choose another or clear it.',
+        areaOutsideFacility: 'The area is not in the chosen facility: choose one of its areas or clear the area.',
       },
       ruleParameters: {
         notObject: 'Parameters must be an object of named values.',

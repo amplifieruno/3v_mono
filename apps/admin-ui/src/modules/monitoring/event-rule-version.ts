@@ -136,7 +136,7 @@ export const eventRuleVersion = defineResource(EVENT_RULE_VERSION_RESOURCE, {
     },
     edit: {
       header: (l) => [l.grid(['rule_id', 'rule_type', 'version', 'status'])],
-      body: (l) => ['parameters', l.grid(['severity', 'creates_incident'])],
+      body: (l) => ['parameters', l.grid(['severity', 'creates_incident']), 'escalation_policy_id'],
     },
   },
 });

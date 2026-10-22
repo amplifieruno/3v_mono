@@ -71,6 +71,9 @@ import {
   LayoutPanelTop,
   ShieldAlert,
   UserSearch,
+  BellRing,
+  MessageSquareText,
+  FlaskConical,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -147,6 +150,9 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   LayoutPanelTop,
   ShieldAlert,
   UserSearch,
+  BellRing,
+  MessageSquareText,
+  FlaskConical,
 };
 
 /**

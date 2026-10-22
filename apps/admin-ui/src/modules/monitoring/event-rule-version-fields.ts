@@ -1,5 +1,5 @@
 import { f } from '@burojs/field-types';
-import { EVENT_RULE_RESOURCE, USER_RESOURCE } from '../../data/resource-names';
+import { ESCALATION_POLICY_RESOURCE, EVENT_RULE_RESOURCE, USER_RESOURCE } from '../../data/resource-names';
 import { EVENT_SEVERITIES, EVENT_SEVERITY_ENUM, VERSION_STATUSES, VERSION_STATUS_ENUM } from '../../enums/events';
 import { enumField } from '../../enums/field';
 import { dateTime } from '../../fields/date-time';
@@ -64,15 +64,17 @@ export const eventRuleVersionFields = {
       },
     },
   }),
-  escalation_policy_id: f.uuid({
+  escalation_policy_id: f.relation({
+    to: ESCALATION_POLICY_RESOURCE,
     nullable: true,
-    write: 'never',
-    in: ['show'],
+    open: 'page',
+    in: ['show', 'edit'],
+    providerOptions: { relationship: 'escalation_policy' },
     texts: {
       label: 'Escalation policy',
       doc: {
         summary:
-          'Copied to the incidents this version opens. Chosen from the escalation policies, which the notifications pages add.',
+          'Given to the incidents this version opens: who is paged, step by step, while nobody acknowledges them. Empty: no escalation unless a notification rule of the event gives one.',
       },
     },
   }),

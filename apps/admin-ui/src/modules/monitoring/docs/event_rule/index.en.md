@@ -39,8 +39,9 @@ stateDiagram-v2
 1. **Edit draft** on the rule opens its draft version, creating it as a copy
    of the version in force (with its scope) when there is none. A rule has at
    most one draft: asking again opens the same one.
-2. Edit the draft: **Parameters**, **Severity**, **Opens an incident**, and
-   its **Scope** tab (add or remove places).
+2. Edit the draft: **Parameters**, **Severity**, **Opens an incident**, the
+   **Escalation policy** its incidents get, and its **Scope** tab (add or
+   remove places).
 3. **Publish** on the draft puts it in force. Events from then on are
    evaluated against it; the version in force so far becomes **Superseded**.
    If someone published the draft meanwhile, the console says so and nothing

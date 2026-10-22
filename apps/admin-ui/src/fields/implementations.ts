@@ -9,6 +9,7 @@ import { facePhotosImplementations } from './face-photos-impl';
 import { imageSizeImplementations } from './image-size-impl';
 import { incidentActivityDetailsImplementations } from './incident-activity-details-impl';
 import { inlineFileImplementations } from './inline-file-impl';
+import { notificationConditionsImplementations } from './notification-conditions-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
 import { secretImplementations } from './secret-impl';
@@ -32,7 +33,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * the photos to split off an identity (`itap.split-photos`), timestamps with their time of day
  * (`itap.date-time`), a detection’s face (`itap.detection-face`), an event rule version's parameters
  * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
- * (`itap.incident-activity-details`) and an operator workspace's panels (`itap.workspace-panels`).
+ * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
+ * notification rule's conditions (`itap.notification-conditions`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -57,4 +59,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   eventRuleParametersImplementations,
   incidentActivityDetailsImplementations,
   workspacePanelsImplementations,
+  notificationConditionsImplementations,
 );

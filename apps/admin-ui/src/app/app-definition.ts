@@ -8,6 +8,7 @@ import {
   NAV_SECTIONS,
   devicesSection,
   monitoringSection,
+  notificationsSection,
   organizationSection,
   overviewSection,
   peopleSection,
@@ -27,6 +28,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use(NAV_SECTIONS.devices, devicesSection);
   use(NAV_SECTIONS.people, peopleSection);
   use(NAV_SECTIONS.monitoring, monitoringSection);
+  use(NAV_SECTIONS.notifications, notificationsSection);
   use('help', helpPage, helpBlock);
   use('frames', currentRecordFrame);
   use('itap-enums', ...ITAP_ENUMS);

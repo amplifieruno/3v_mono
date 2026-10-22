@@ -85,6 +85,9 @@ export const NAV_ICONS = {
   watchListEntries: 'UserSearch',
   shiftHandovers: 'ArrowRightLeft',
   operatorWorkspace: 'LayoutPanelTop',
+  notificationRules: 'BellRing',
+  notificationTemplates: 'MessageSquareText',
+  testRule: 'FlaskConical',
 } as const;
 
 /**

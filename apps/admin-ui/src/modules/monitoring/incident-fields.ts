@@ -1,6 +1,12 @@
 import { ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
-import { AREA_RESOURCE, EVENT_RULE_RESOURCE, FACILITY_RESOURCE, USER_RESOURCE } from '../../data/resource-names';
+import {
+  AREA_RESOURCE,
+  ESCALATION_POLICY_RESOURCE,
+  EVENT_RULE_RESOURCE,
+  FACILITY_RESOURCE,
+  USER_RESOURCE,
+} from '../../data/resource-names';
 import { EVENT_SEVERITIES, EVENT_SEVERITY_ENUM, INCIDENT_STATUSES, INCIDENT_STATUS_ENUM } from '../../enums/events';
 import { INCIDENT_DISPOSITIONS, INCIDENT_DISPOSITION_ENUM } from '../../enums/incidents';
 import { enumField } from '../../enums/field';
@@ -117,15 +123,17 @@ export const incidentFields = {
     summary:
       'The event rule whose version opened the incident (one incident per stay and rule); empty for an incident opened by hand.',
   }),
-  escalation_policy_id: f.uuid({
+  escalation_policy_id: f.relation({
+    to: ESCALATION_POLICY_RESOURCE,
     nullable: true,
-    write: 'never',
-    in: ['show'],
+    open: 'page',
+    in: ['show', 'create', 'edit'],
+    providerOptions: { relationship: 'escalation_policy' },
     texts: {
       label: 'Escalation policy',
       doc: {
         summary:
-          'Copied from the rule version that opened it: who is notified, step by step, while nobody acknowledges it. Escalation policies come with the notification pages.',
+          'Who is paged, step by step, while nobody acknowledges the incident. Copied from the rule version that opened it, else from a notification rule of its event; can be chosen by hand.',
       },
     },
   }),
