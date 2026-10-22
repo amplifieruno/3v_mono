@@ -13,6 +13,7 @@ import { notificationConditionsImplementations } from './notification-conditions
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
 import { secretImplementations } from './secret-impl';
+import { segmentConditionsImplementations } from './segment-conditions-impl';
 import { storageFileImplementations } from './storage-file-impl';
 import { splitPhotosImplementations } from './split-photos-impl';
 import { stringListImplementations } from './string-list-impl';
@@ -34,7 +35,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * (`itap.date-time`), a detection’s face (`itap.detection-face`), an event rule version's parameters
  * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
  * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
- * notification rule's conditions (`itap.notification-conditions`).
+ * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
+ * (`itap.segment-conditions`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -60,4 +62,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   incidentActivityDetailsImplementations,
   workspacePanelsImplementations,
   notificationConditionsImplementations,
+  segmentConditionsImplementations,
 );

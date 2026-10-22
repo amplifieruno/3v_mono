@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
 import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/console-dom';
+import { catalogAnswer } from '../support/segment-conditions-fixture';
 
 /**
  * Segments and templates on screen: a manual segment's form shows no conditions, active window or
@@ -65,16 +66,18 @@ const bodies = (): GraphqlBody[] =>
 const mutations = (): GraphqlBody[] => bodies().filter((body) => body.query.trimStart().startsWith('mutation'));
 
 let deleteAnswer: unknown = { data: { delete_segments_by_pk: { id: SEGMENT } } };
+let segmentRow: Record<string, unknown> = SEGMENT_ROW;
 
 async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
   if (query.includes('delete_segments_by_pk')) return hasuraResponse(deleteAnswer);
+  if (query.includes('segment_fields(')) return hasuraResponse(catalogAnswer());
   if (query.includes('insert_segments_one')) {
     return hasuraResponse({ data: { insert_segments_one: { id: NEW_SEGMENT, code: 'SEGMENT-00020' } } });
   }
   if (query.trimStart().startsWith('mutation')) return hasuraResponse({ data: { item: { ...SEGMENT_ROW, id: NEW_SEGMENT } } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 1 } } } });
-  if (query.includes('segments_by_pk')) return hasuraResponse({ data: { item: SEGMENT_ROW } });
+  if (query.includes('segments_by_pk')) return hasuraResponse({ data: { item: segmentRow } });
   if (query.includes('segment_templates_by_pk')) return hasuraResponse({ data: { item: TEMPLATE_ROW } });
   if (/\bitems: segments\(/.test(query)) return hasuraResponse({ data: { items: [SEGMENT_ROW] } });
   if (/\bitems: segment_templates\(/.test(query)) return hasuraResponse({ data: { items: [TEMPLATE_ROW] } });
@@ -102,6 +105,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   deleteAnswer = { data: { delete_segments_by_pk: { id: SEGMENT } } };
+  segmentRow = SEGMENT_ROW;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -133,11 +137,44 @@ describe('segment form', () => {
     renderAt('/segments/create');
     fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Regulars' } });
     await chooseOption(/^Kind/, /^Dynamic/);
-    expect(await screen.findByLabelText(/^Conditions/)).toBeDefined();
+    expect(await screen.findByText('No conditions yet.')).toBeDefined();
     expect(screen.getByLabelText(/^Active from/)).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
     expect(await screen.findByText('A dynamic segment needs conditions: who belongs to it.')).toBeDefined();
     expect(mutations()).toHaveLength(0);
+  });
+
+  it('should create a dynamic segment with the conditions built in the editor', async () => {
+    renderAt('/segments/create');
+    fireEvent.change(await screen.findByLabelText(/^Name/), { target: { value: 'Regulars' } });
+    await chooseOption(/^Kind/, /^Dynamic/);
+    fireEvent.click(await screen.findByRole('button', { name: /^Add condition/ }));
+    await chooseOption(/^Field$/, /^Visits \(30 days\)/);
+    await chooseOption(/^Operator$/, /^is at least/);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Value' }), { target: { value: '8' } });
+    expect(screen.getByTestId('create-conditions-sentence').textContent).toBe('Reads: Visits (30 days) is at least 8');
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    expect(JSON.stringify(mutations()[0]?.variables)).toContain('"conditions":{"field":"visits_last_30d","operator":"gte","value":8}');
+  });
+
+  it('should not save a condition on a field the catalog no longer offers (Review Focus 1)', async () => {
+    segmentRow = {
+      ...SEGMENT_ROW,
+      kind: 'dynamic',
+      conditions: { op: 'and', children: [{ field: 'status', operator: 'eq', value: 'active' }, { field: 'custom_fields.badge_number', operator: 'eq', value: 'B-1' }] },
+    };
+    renderAt(`/segments/${SEGMENT}/edit`);
+    const node = await screen.findByTestId('segment-node-$.children[1]');
+    expect(node.getAttribute('data-invalid')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    await waitFor(() => expect(screen.getAllByText(/The field “custom_fields.badge_number” is not offered/).length).toBeGreaterThan(0));
+    expect(mutations()).toHaveLength(0);
+    // Removing the condition lets the segment save without it.
+    fireEvent.click(within(node).getByRole('button', { name: 'Remove Condition 2' }));
+    fireEvent.click(screen.getByRole('button', { name: /^(Create|Save)/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    expect(JSON.stringify(mutations()[0]?.variables)).not.toContain('badge_number');
   });
 });
 

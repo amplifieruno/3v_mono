@@ -42,8 +42,8 @@ const run = (checks: readonly Check[], id: string, ctx: Record<string, unknown>)
   (checks.find((check) => check.id === id)?.when as unknown as (di: Record<string, unknown>) => boolean)(ctx);
 const deleteRefusal = (message: string) =>
   ACTION_REFUSALS['segments.deleteSegment']?.({ code: 'permission-error', message }, { segmentId: 'x' })?.[0];
-const createRefusal = (message: string) =>
-  ACTION_REFUSALS['segments.createSegmentFromTemplate']?.({ code: 'constraint-violation', message }, {})?.[0];
+const createRefusal = (message: string, input: unknown = {}) =>
+  ACTION_REFUSALS['segments.createSegmentFromTemplate']?.({ code: 'constraint-violation', message }, input)?.[0];
 
 beforeAll(async () => {
   await app.ready;
@@ -149,7 +149,12 @@ describe('segment templates', () => {
       createRefusal('Uniqueness violation. duplicate key value violates unique constraint "segments_organization_id_name_key"')?.message,
     ).toBe('A segment of this name already exists: choose another name. Nothing was created.');
     expect(createRefusal('Check constraint violation. segment_condition_invalid:$.children[1].field')?.message).toContain(
-      'at $.children[1].field',
+      '($.children[1].field)',
+    );
+    // The refused condition is named from the conditions the flow sent (Review Focus 2).
+    const conditions = { op: 'and', children: [{ field: 'status', operator: 'eq', value: 'active' }, { field: 'custom_fields.shift', operator: 'eq', value: 'day' }] };
+    expect(createRefusal('Check constraint violation. segment_condition_invalid:$.children[1].field', { conditions })?.message).toBe(
+      'The template’s conditions are no longer valid here (the field of the condition on “custom_fields.shift” (2)): a field or a record they name may have changed. Nothing was created.',
     );
   });
 });

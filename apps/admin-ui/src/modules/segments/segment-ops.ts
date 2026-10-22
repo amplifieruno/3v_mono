@@ -1,10 +1,12 @@
 import { defineMutation } from '@burojs/core';
 import { z } from 'zod';
+import type { ActionRefusalReader } from '../../data/action-refusals';
 import { hasuraOperation, rootOf } from '../../data/operations';
 import { SEGMENT_RESOURCE, SEGMENT_TEMPLATE_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
 import { type SqlRefusalText, sqlRefusals } from '../../data/sql-refusals';
 import { SEGMENT_TARGETS } from '../../enums/segments';
+import { describeConditionPath } from '../../fields/segment-conditions-path';
 
 /** The registry key the segment operations are bound under. */
 export const SEGMENTS_BINDING = 'segments';
@@ -43,6 +45,20 @@ export const CREATE_FROM_TEMPLATE_REFUSALS = {
   segment_conditions_required: 'The template has no conditions. Nothing was created.',
   segments_template_fkey: 'The template no longer exists. Nothing was created.',
 } satisfies Record<string, SqlRefusalText>;
+
+/**
+ * {@link CREATE_FROM_TEMPLATE_REFUSALS}, with the refused condition named from the conditions the
+ * flow sent (`segment_condition_invalid:$.children[2].value` → the value of the condition on
+ * “end_date” (3)): the flow form has no conditions editor to mark.
+ */
+export const createFromTemplateRefusals: ActionRefusalReader = (error, input) => {
+  const conditions = (input as { readonly conditions?: unknown } | null)?.conditions;
+  return sqlRefusals({
+    ...CREATE_FROM_TEMPLATE_REFUSALS,
+    segment_condition_invalid: (path: string) =>
+      `The template’s conditions are no longer valid here (${describeConditionPath(conditions, path)}): a field or a record they name may have changed. Nothing was created.`,
+  })(error, input);
+};
 
 export const deleteSegmentInput = z.object({ segmentId: z.string().uuid() });
 
@@ -116,7 +132,7 @@ export const createFromTemplateOperation = hasuraOperation(
     },
     mapResult: (data) => rootOf(data, 'insert_segments_one') ?? null,
   },
-  sqlRefusals(CREATE_FROM_TEMPLATE_REFUSALS),
+  createFromTemplateRefusals,
 );
 
 /** A dynamic segment started from a template: its target, conditions and a name of its own. */

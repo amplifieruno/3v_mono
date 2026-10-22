@@ -10,13 +10,14 @@ import {
   SEGMENT_TARGET_ENUM,
 } from '../../enums/segments';
 import { dateTime } from '../../fields/date-time';
+import { segmentConditions } from '../../fields/segment-conditions';
 import { checkHexColor } from '../../fields/hex-color';
 import { checkNotBlank } from '../../fields/not-blank';
 import { timeWindows } from '../../fields/time-windows';
 
 /** The conditions' help, shared by segments and templates (the grammar is `tasks/data-layer/design.md` §6.5). */
 export const CONDITIONS_SUMMARY =
-  'Who belongs to a dynamic segment, as a tree of conditions: groups `{"op": "and" | "or" | "not", "children": [...]}` and conditions `{"field", "operator", "value"}` over the fields of the segment’s target (status, type, company, visits in the last 30 days and so on). The server checks every field, operator and value; a manual segment has none.';
+  'Who belongs to a dynamic segment: conditions on the fields of the segment’s members (status, type, company, custom fields, visits in the last 30 days and so on), combined in groups where all or any must hold, or turned around with “not”. The fields, their operators and values come from the server’s catalog for the target; a field it no longer offers is flagged, not dropped. Dates can be fixed or a number of days from the evaluation day. A manual segment has none.';
 
 /**
  * Columns of `itap.segments` the `org_admin` role reads. Kind and target are chosen once
@@ -71,8 +72,8 @@ export const segmentFields = {
       },
     },
   }),
-  conditions: f.json({
-    default: {},
+  conditions: segmentConditions({
+    targetField: 'target',
     in: ['show', 'create', 'edit'],
     texts: { label: 'Conditions', doc: { summary: CONDITIONS_SUMMARY } },
   }),

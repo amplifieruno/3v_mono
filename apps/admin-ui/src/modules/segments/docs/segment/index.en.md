@@ -19,6 +19,34 @@ The quickest way to a dynamic segment is a **segment template**: open
 **Create from template** on the list, pick a template and choose **Create
 segment**. The new segment starts with a copy of the template's conditions.
 
+## Conditions
+
+The conditions editor builds a tree. The top group says how its conditions
+combine: **All of these hold**, **Any of these holds**, or **Not**, which turns
+one condition (or one group) around. Groups nest up to seven levels deep and
+hold up to 100 conditions each; **Add condition** and **Add group** add to a
+group, and each condition or group can be moved up, moved down or removed.
+
+A condition is a **field**, an **operator** and a **value**. The fields are the
+server's catalog for what the members are: profile columns, custom fields,
+company, work schedule, visits and other figures of the last 30 days, the most
+visited area, membership in a manual segment, and for identities the status,
+age, first seen and so on. Each field offers only its own operators (a list
+field takes "is one of" with up to 500 values; numbers and dates take ranges;
+a field that may be empty takes "is empty or not"). Dates can be a fixed date
+or a number of days from the day the segment is evaluated (negative = ago), so
+"End date is between today and in 30 days" keeps moving.
+
+A missing value never matches a comparison: someone never seen does not have
+"Visits (30 days) is at least 2", and "not" of it matches them; use "is empty
+or not" to ask for a missing value on purpose.
+
+Every condition is checked as the server checks it, before the save, and a
+problem is shown on the condition it concerns. A condition on a field the
+catalog no longer offers (a custom field switched off) stays in the tree,
+marked: change its field or remove it. Above the tree, **Reads** gives the
+whole set as one sentence, as the segment page shows it.
+
 ## When a segment holds members
 
 Only an **Active** segment is evaluated. **Inactive** keeps the segment but

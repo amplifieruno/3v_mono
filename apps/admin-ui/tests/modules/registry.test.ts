@@ -93,6 +93,7 @@ describe('module registries', () => {
       'photo-gallery.identityPhotos',
       'places.applyFacilityTemplate',
       'places.facilityOccupancyNow',
+      'segment-conditions.catalog',
       'segment-stats.segmentDailyStats',
       'segments.createSegmentFromTemplate',
       'segments.deleteSegment',

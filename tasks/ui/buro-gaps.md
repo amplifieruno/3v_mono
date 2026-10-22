@@ -805,8 +805,14 @@ migration `1792365700277`.
   when the facility changes). The validator checks the shape (keys, uuids, severities) with the
   issue path naming the condition, and the editor marks that row. A race (a record deleted between
   loading and saving) still ends in the generic "Validation failed".
-- **Expected from a framework:** validators with read access (or async field checks bound to a
-  query), and G48's server issues reaching record forms with a sub-path.
+  Segment conditions (plan 07 Task 2) meet the same wall with a path the database does name
+  (`segment_condition_invalid:$.children[2].value`): the mounted editor publishes the server's
+  field catalog and the organization's records (`segment-conditions-registry.ts`, as G17), so the
+  field validator runs every check of `itap.validate_segment_node` and answers one issue per node
+  with that JSON path as its sub-path; the editor marks the node an issue names (any issue with a
+  `$…` path, so a server issue would land there too once forms carry them). On a record form a
+  server refusal still reads "Validation failed"; the "Create segment" flow names the refused
+  condition from the path in its refusal text.
 
 ### G51. A related list cannot reorder its rows
 - **Need:** escalation policy steps (`step_no`) and on-call rotation members (`position`) are

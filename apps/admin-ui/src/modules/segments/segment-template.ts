@@ -6,6 +6,7 @@ import { SEGMENT_RESOURCE, SEGMENT_TEMPLATE_RESOURCE } from '../../data/resource
 import { enumField } from '../../enums/field';
 import { SEGMENT_TARGETS, SEGMENT_TARGET_ENUM } from '../../enums/segments';
 import { checkNotBlank } from '../../fields/not-blank';
+import { segmentConditions } from '../../fields/segment-conditions';
 import { conditionsEmpty } from './segment-checks';
 import { CONDITIONS_SUMMARY } from './segment-fields';
 import { createSegmentFromTemplate } from './segment-ops';
@@ -33,8 +34,8 @@ export const segmentTemplateFields = {
     nullable: true,
     texts: { label: 'Category', doc: { summary: 'A free grouping of templates, such as behavior, lifecycle or schedule.' } },
   }),
-  conditions: f.json({
-    default: {},
+  conditions: segmentConditions({
+    targetField: 'target',
     in: ['show', 'create', 'edit'],
     texts: { label: 'Conditions', doc: { summary: `Copied into each segment created from the template. ${CONDITIONS_SUMMARY}` } },
   }),

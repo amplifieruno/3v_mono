@@ -1,6 +1,7 @@
 import { segmentStatsBlock } from '../../blocks/segment-stats/segment-stats-block';
 import { segmentDailyStats, segmentDailyStatsOperation } from '../../blocks/segment-stats/segment-stats-query';
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
+import { segmentConditionsCatalog, segmentConditionsOperation } from '../../fields/segment-conditions-query';
 import { SEGMENT_DAILY_STAT_RESOURCE, SEGMENT_RESOURCE, SEGMENT_TEMPLATE_RESOURCE } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
 import { segment } from './segment';
@@ -23,6 +24,7 @@ export const segmentsModule = {
     segmentDailyStat,
     segmentDailyStats,
     segmentStatsBlock,
+    segmentConditionsCatalog,
     deleteSegment,
     createSegmentFromTemplate,
   ],
@@ -31,5 +33,5 @@ export const segmentsModule = {
     [SEGMENT_TEMPLATE_RESOURCE]: hasuraTable('segment_templates', { selectFields: selectFieldsOf(segmentTemplateFields) }),
     [SEGMENT_DAILY_STAT_RESOURCE]: hasuraTable('segment_daily_stats', { selectFields: selectFieldsOf(segmentDailyStatFields) }),
   },
-  operations: [segmentDailyStatsOperation, ...SEGMENT_OPERATIONS],
+  operations: [segmentDailyStatsOperation, segmentConditionsOperation, ...SEGMENT_OPERATIONS],
 } as const satisfies ConsoleModule;
