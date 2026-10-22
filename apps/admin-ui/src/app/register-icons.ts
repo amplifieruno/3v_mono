@@ -86,6 +86,8 @@ import {
   Waypoints,
   Group,
   CopyPlus,
+  RefreshCw,
+  UserMinus,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -177,6 +179,8 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Waypoints,
   Group,
   CopyPlus,
+  RefreshCw,
+  UserMinus,
 };
 
 /**

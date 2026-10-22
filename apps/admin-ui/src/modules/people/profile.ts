@@ -2,6 +2,8 @@ import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
+import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
+import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
 import {
   CONSENT_RECORD_RESOURCE,
   DETECTION_RESOURCE,
@@ -75,6 +77,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
       r.action.flow('upload_document', uploadDocumentFlow),
       r.action.flow('restrict_processing', restrictProcessingFlow),
       r.action.flow('lift_restriction', liftRestrictionFlow),
+      r.action.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('profiles')),
     ],
   }),
   types: {
@@ -268,6 +271,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               ],
               { key: 'watch-lists', texts: 'Watch lists' },
             ),
+            subjectSegmentsPanel(l, 'profiles'),
             l.panel(
               [
                 l.place(facts, {

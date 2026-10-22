@@ -2,6 +2,8 @@ import { type Check, type CheckDI, defineResource, relatedList } from '@burojs/c
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
+import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
+import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
 import { resourceByName } from '../../data/resource-by-name';
 import {
   DETECTION_RESOURCE,
@@ -103,6 +105,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
       r.action.flow('merge_into', mergeIntoFlow),
       r.action.flow('split', splitFlow),
       r.action.flow('add_relationship', addRelationshipFlow),
+      r.action.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('identities')),
     ],
   }),
   views: {
@@ -223,6 +226,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
               ],
               { key: 'watch-lists', texts: 'Watch lists' },
             ),
+            subjectSegmentsPanel(l, 'identities'),
             l.panel(
               [
                 l.place(identityRelationshipsBlock, {

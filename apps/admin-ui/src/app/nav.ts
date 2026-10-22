@@ -102,6 +102,10 @@ export const NAV_ICONS = {
   segments: 'Group',
   segmentTemplates: 'LayoutTemplate',
   createFromTemplate: 'CopyPlus',
+  evaluateSegment: 'RefreshCw',
+  addSegmentMembers: 'UserPlus',
+  addToSegment: 'ListPlus',
+  removeSegmentMember: 'UserMinus',
 } as const;
 
 /**

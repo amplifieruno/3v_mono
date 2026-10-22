@@ -92,6 +92,11 @@ person or deleting a crop removes its original at once.
   or one identity only), with the reason, the expiry and whether the entry is
   **Active**. **+ Create** puts the identity on a list. A list that names the
   linked profile counts too; it is shown on the profile. See *Watch lists*.
+- **Segments**: the identity segments this face is in now (with the
+  **Source**: Manual or Rule) and the memberships that ended. **Add to
+  segment** (in the menu) adds it to an identity segment by hand; a merged
+  identity cannot join. Segments of the linked person are on the profile.
+  See *Segments*.
 - **Timeline**, **Relationships**, **Verification** and **Merges**: see
   *Merging, splitting, verifying and relating identities*.
 

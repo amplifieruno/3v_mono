@@ -11,7 +11,10 @@ import {
 } from '../../data/resource-names';
 import { SEGMENT_CHECKS, segmentDeleted } from './segment-checks';
 import { segmentFields } from './segment-fields';
+import { ADD_IDENTITIES_FLOW, ADD_PROFILES_FLOW, addIdentitiesFlow, addProfilesFlow, evaluateNowFlow } from './segment-flows';
+import { segmentMembersPanel } from './segment-member-tabs';
 import { deleteSegment } from './segment-ops';
+import { segmentPreviewBlock } from './segment-preview-block';
 
 /** The columns of the segment lists (the list page and a template's Segments tab). */
 export const SEGMENT_COLUMNS = ['code', 'name', 'kind', 'target', 'status', 'member_count', 'last_evaluated_at'] as const;
@@ -21,12 +24,20 @@ type Fields = typeof segmentFields;
 /**
  * What only a dynamic segment has: conditions (a manual one keeps `{}`), and the active window and
  * schedule, which bound its rule members (a manual segment has none, so they would change nothing).
- * A form writes only the fields it shows.
+ * A form writes only the fields it shows; a form (`preview`) also offers the preview of who the
+ * conditions on screen match (the target is the form's on create, the record's on edit).
  */
-const definition = (l: Layout<Fields>, source: 'values' | 'record') => {
+const definition = (l: Layout<Fields>, source: 'values' | 'record', preview = false) => {
   const when = l.equals(l.ref(source, 'kind'), 'dynamic');
+  // The block reads the form's conditions (and, on create, its target) through its prop defaults.
+  const previewBlock = l.place(segmentPreviewBlock, {
+    key: 'segment-preview',
+    when,
+    props: source === 'record' ? { target: l.ref('record', 'target') } : {},
+  });
   return [
     l.field('conditions', { when }),
+    ...(preview ? [previewBlock] : []),
     l.grid([l.field('active_from', { when }), l.field('active_until', { when })]),
     l.field('schedule', { when }),
   ] as const;
@@ -72,6 +83,9 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
       ),
     ],
     item: [
+      r.action.flow('evaluate_now', evaluateNowFlow),
+      r.action.flow(ADD_PROFILES_FLOW, addProfilesFlow),
+      r.action.flow(ADD_IDENTITIES_FLOW, addIdentitiesFlow),
       // Replaces the built-in Delete: the refusals of the guard and the foreign keys read as sentences.
       r.action.flow('delete', {
         texts: {
@@ -141,6 +155,7 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
                 ],
                 { key: 'details', texts: 'Details' },
               ),
+              segmentMembersPanel(l),
               l.panel(
                 [
                   l.place(segmentStatsBlock, { key: 'segment-trend', props: { segmentId: l.ref('record', 'id') } }),
@@ -167,11 +182,11 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
       },
     },
     create: {
-      body: (l) => ['name', 'description', l.grid(['kind', 'target', 'status']), ...definition(l, 'values'), l.grid(['color', 'icon'])],
+      body: (l) => ['name', 'description', l.grid(['kind', 'target', 'status']), ...definition(l, 'values', true), l.grid(['color', 'icon'])],
     },
     edit: {
       header: (l) => [l.grid(['code', 'kind', 'target'])],
-      body: (l) => ['name', 'description', 'status', ...definition(l, 'record'), l.grid(['color', 'icon'])],
+      body: (l) => ['name', 'description', 'status', ...definition(l, 'record', true), l.grid(['color', 'icon'])],
     },
   },
 });

@@ -47,6 +47,15 @@ catalog no longer offers (a custom field switched off) stays in the tree,
 marked: change its field or remove it. Above the tree, **Reads** gives the
 whole set as one sentence, as the segment page shows it.
 
+### Preview
+
+The form of a dynamic segment has a **Preview** under the conditions: it asks
+the server who the conditions on screen match right now, says how many and
+names the first ten (each opens its profile or identity). Nothing is saved,
+so it also works for a segment that does not exist yet. When the conditions
+change afterwards, the answer stays but says so: choose **Preview again**. A
+condition the server refuses is named, as the save would name it.
+
 ## When a segment holds members
 
 Only an **Active** segment is evaluated. **Inactive** keeps the segment but
@@ -61,6 +70,37 @@ last applied. When an evaluation fails (for example, a condition names a
 custom field that was switched off), the members stay as they were and the
 **Evaluation error** says why; the **Evaluation failing** view lists such
 segments.
+
+## Members
+
+The **Members** tab lists the **Current members** and, below, the
+**Earlier memberships**: every membership is kept when it ends, so the
+segment's history is never lost. Each row says its **Source**:
+
+- **Manual**: added by hand, with **Add members** on the segment (several
+  people or faces at once) or **Add to segment** on a profile or an identity.
+  It lasts until someone removes it: open the row and choose **Remove from
+  segment**.
+- **Rule**: added by the evaluation of a dynamic segment's conditions, and
+  ended by it when they stop holding (or outside the active window and
+  schedule). It cannot be removed by hand.
+
+People can be added by hand to a dynamic segment too: they stay members
+whatever the conditions say. Adding someone who is already a member by rule
+turns the membership into a manual one: the rule membership ends and a
+manual one starts at the same moment (the trend counts neither). Removing
+such a person while the conditions still match them brings them back by rule
+at the next evaluation. An archived segment takes no members; people whose
+processing is restricted, and merged identities, cannot join any segment.
+
+### Evaluate now
+
+The server evaluates dynamic segments every hour and shortly after their
+inputs change. **Evaluate now** on an active dynamic segment does it at
+once and says how many joined and left by rule and how many members the
+segment has now. If a newer evaluation had already run, it says that this one
+changed nothing. When the conditions are no longer valid (a custom field was
+switched off), it says which condition and nothing changes.
 
 ## Trend
 

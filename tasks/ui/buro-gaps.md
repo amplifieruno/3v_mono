@@ -563,6 +563,11 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   and the review block; a duplicate pair has "Merge identities" with Keep first / second.
 - **Expected from a framework:** a bulk flow with a hosted form and review over the selection
   (`ref('selection', …)` readable by `initial`, `candidates` and a function `input`).
+- **Phase 7 Task 3:** the same gap blocks "Add to segment…" over the profiles or identities
+  selected in a list: the bulk flow could send the selection (`add_segment_members(segment,
+  ids)`), but nothing can ask which segment. Workaround: "Add members" on the segment (one flow
+  per target, `when` on `target`) takes a multi-select of people or faces, which is the console's
+  bulk add, and "Add to segment" on a profile or an identity adds that one record.
 
 ### G35. A flow's review step reads the flow's values as its record
 - **Need:** the review of a merge or a rollback places a block that reads the flow's record (the
@@ -871,3 +876,20 @@ migration `1792365700277`.
   The dialog then shows the framework's "The server refused the values" line above the reason.
 - **Expected from a framework:** a per-resource refusal reader for create / update / delete (or
   the provider's `details` rendered by the delete dialog), so a built-in write can say why.
+
+### G55. A flow without a form or a review cannot show its answer in a block
+- **Need:** "Evaluate now" on a dynamic segment (`evaluate_segment`) needs no input but must show
+  what the server answered: how many joined and left by rule, the member count, or that a newer
+  evaluation had already run (stale).
+- **Framework (0.6.0):** `then.open: { block }` draws the block in the flow's host, and a flow has
+  a host only with a `form` or a `review` (`compileFlow`: `hasHost = form !== undefined ||
+  review !== undefined`). A flow with neither runs from the button and its `then.open` block is
+  never drawn, without a diagnostic; `confirm` opens a dialog but is no host. A review of only an
+  empty panel draws nothing either. **[run]** (`core/src/flows/compile.ts`,
+  `ui-shadcn/src/flows/flow-action-button.tsx` `useHostedFlow`;
+  `tests/modules/segment-membership-page.test.tsx` showed nothing before the workaround).
+- **Workaround:** the flow has a review that places the same block without result props
+  (`itap:segment-evaluation`, which then says what an evaluation does); the run starts on the
+  review's button and the answer replaces it in the dialog.
+- **Expected from a framework:** a `then.open: { block }` on a hostless flow opens a host for the
+  answer (or `checkApp` reports the block as unreachable).

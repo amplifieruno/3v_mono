@@ -141,7 +141,7 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function and inbox function', () => {
+  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function, inbox function and segment membership write', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
       'inbox.acknowledgeNotification',
       'inbox.markAllNotificationsRead',
@@ -170,8 +170,11 @@ describe('enrollment refusals', () => {
       `${PEOPLE_BINDING}.rollbackMerge`,
       `${PEOPLE_BINDING}.splitIdentity`,
       `${PEOPLE_BINDING}.uploadProfileDocument`,
+      'segments.addSegmentMembers',
       'segments.createSegmentFromTemplate',
       'segments.deleteSegment',
+      'segments.evaluateSegment',
+      'segments.removeSegmentMembers',
     ]);
   });
 

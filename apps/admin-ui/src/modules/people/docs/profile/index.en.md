@@ -108,6 +108,12 @@ of the edit form, each with the reason. Its restriction is never lifted.
   whether the entry is **Active**. **+ Create** puts the person on a list.
   Entries of the person's individual identities are on each identity's own
   Watch lists tab. See *Watch lists*.
+- **Segments**: the segments the person is in now (**Member now**, with the
+  **Source**: Manual = added by hand, Rule = matched by a dynamic segment's
+  conditions) and the memberships that ended. **Add to segment** (in the
+  menu) adds the person to a segment by hand; opening a manual membership
+  offers **Remove from segment**. A person whose processing is restricted
+  cannot join segments. See *Segments*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

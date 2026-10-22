@@ -95,8 +95,12 @@ describe('module registries', () => {
       'places.facilityOccupancyNow',
       'segment-conditions.catalog',
       'segment-stats.segmentDailyStats',
+      'segments.addSegmentMembers',
       'segments.createSegmentFromTemplate',
       'segments.deleteSegment',
+      'segments.evaluateSegment',
+      'segments.previewSegment',
+      'segments.removeSegmentMembers',
       'split-photos.splitParts',
       'storage_files.openFile',
     ]);
