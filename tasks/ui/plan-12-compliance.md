@@ -34,6 +34,8 @@ as built)" in §8.1, §8.3–§8.5; `tasks/data-layer/summary-10-compliance.md` 
 
 ---
 ### Task 1: Retention and legal holds
+
+Carry-over from phase 4: document that the `face_source` sweep (~1 h, migration 1792365700272) ignores legal holds (raw uploads are not records) and that retention/erasure `files_enqueued` counts include originals; fix the identity article wording "removes its original at once" → queued and drained within ~10 min.
 Retention policies (class, facility, days, action, active) with class rules, retention plan block (dry
 run), retention runs + per-class rows, legal holds + targets, hold banners on held profiles/identities/
 incidents. Commit `feat(ui): retention and legal holds`.
