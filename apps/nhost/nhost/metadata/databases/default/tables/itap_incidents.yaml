@@ -158,6 +158,12 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: incident_id
+computed_fields:
+  - name: rule_id
+    definition:
+      function:
+        schema: itap
+        name: incident_rule_id
 insert_permissions:
   - role: org_admin
     permission:
@@ -205,6 +211,8 @@ select_permissions:
         - status
         - title
         - updated_at
+      computed_fields:
+        - rule_id
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

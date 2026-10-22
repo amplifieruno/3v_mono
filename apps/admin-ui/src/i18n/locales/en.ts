@@ -115,6 +115,14 @@ export default {
       /** A row's text box; `item` is capitalized here (`Option 2`). */
       row: '{{item}} {{index}}',
     },
+    /** An event rule version's parameters (`src/fields/event-rule-parameters-impl.ts`). */
+    ruleParameters: {
+      dwell: 'Dwell time (minutes)',
+      dwellHint: 'An event is raised once someone has stayed this long in an area of the rule’s scope.',
+      kinds: 'Watch-list kinds',
+      kindsHint: 'Leave all unticked to react to every kind of watch list.',
+      none: 'This rule type takes no parameters.',
+    },
     /** The write-only secret field (`src/fields/secret-impl.ts`). */
     secret: {
       hidden: 'Not shown',
@@ -203,6 +211,12 @@ export default {
         badTimes:
           'Window {{index}}: enter times as HH:MM, from 00:00 to 23:59 (24:00 only as the end).',
         sameEnds: 'Window {{index}}: start and end are the same; use 00:00–24:00 for a whole day.',
+      },
+      ruleParameters: {
+        notObject: 'Parameters must be an object of named values.',
+        dwell: 'Enter a dwell time above 0 minutes.',
+        dwellRequired: 'Enter the dwell time: an unusual-dwell rule without one never fires.',
+        watchListKinds: 'Watch-list kinds must be some of watch, blacklist and VIP; leave all unticked for every kind.',
       },
       stringList: {
         notList: '{{item}}s must be a list.',

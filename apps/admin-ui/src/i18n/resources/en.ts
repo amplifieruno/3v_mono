@@ -105,4 +105,16 @@ export default {
   area_occupancy: {
     doc: { topics: { index: 'Who is where and occupancy now' } },
   },
+  event: {
+    doc: { topics: { index: 'Events: severity, links and live list' } },
+  },
+  event_rule: {
+    doc: { topics: { index: 'Event rules: types, versions, scope and publishing' } },
+  },
+  event_rule_version: {
+    doc: { topics: { index: 'Rule versions' } },
+  },
+  incident: {
+    doc: { topics: { index: 'Incidents' } },
+  },
 } satisfies TranslationBundle;

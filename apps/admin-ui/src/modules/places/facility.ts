@@ -2,7 +2,7 @@ import { defineResource, facts, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { ACCESS_POINT_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
+import { ACCESS_POINT_RESOURCE, EVENT_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
 import { rangeValidator } from '../../fields/bounded-number';
@@ -218,6 +218,19 @@ export const facility = defineResource(FACILITY_RESOURCE, {
                 }),
               ],
               { key: 'access_points', texts: 'Access points' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                  key: 'facility-events',
+                  props: {
+                    where: [{ field: 'facility_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['occurred_at', 'severity', 'event_type', 'title', 'area_id', 'profile_id'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'events', texts: 'Events' },
             ),
           ],
           { key: 'sections' },

@@ -54,6 +54,8 @@ export const incidentTables: TableSpec[] = [
       // Set only on incidents opened by event rules (one per session and rule).
       'dedup_key',
     ],
+    // The event rule that opened the incident (from dedup_key), so a rule lists its incidents.
+    computedFields: [{ name: 'rule_id', function: 'incident_rule_id' }],
     extraPermissions: {
       // Closed incidents are frozen (closed is terminal).
       update_permissions: [

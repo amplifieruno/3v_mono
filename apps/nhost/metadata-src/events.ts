@@ -38,6 +38,8 @@ export const eventTables: TableSpec[] = [
     readOnlyColumns: ['version', 'published_by', 'published_at'],
     insertOnlyColumns: ['rule_id'],
     relationshipNames: { event_rules_current_version_fkey: 'current_of_rules' },
+    // The header's rule type, for the console's per-type parameters editor.
+    computedFields: [{ name: 'rule_type', function: 'event_rule_version_rule_type' }],
     extraPermissions: { delete_permissions: [{ role: ORG_ADMIN, permission: { filter: openVersion } }] },
   },
   // Children of a version: editable only while the version is open (trigger guard_version_children).

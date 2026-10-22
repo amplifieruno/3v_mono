@@ -4,6 +4,7 @@ import { resourceByName } from '../../data/resource-by-name';
 import {
   CONSENT_RECORD_RESOURCE,
   DETECTION_RESOURCE,
+  EVENT_RESOURCE,
   IDENTITY_RESOURCE,
   PROFILE_DOCUMENT_RESOURCE,
   PROFILE_RESOURCE,
@@ -241,6 +242,19 @@ export const profile = defineResource(PROFILE_RESOURCE, {
                 }),
               ],
               { key: 'detections', texts: 'Detections' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                  key: 'profile-events',
+                  props: {
+                    where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['occurred_at', 'severity', 'event_type', 'title', 'facility_id', 'area_id'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'events', texts: 'Events' },
             ),
             l.panel(
               [

@@ -660,3 +660,37 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
   grows with the organization's detections). A relation filter (`identity: { profile_id }`) would use
   the `identity_id` index, which is what the dotted `where` would send.
 - **Expected from a framework:** dotted `where` paths across to-one relations in related lists.
+
+### G41. A polled list cannot page by cursor
+- **Need:** the event log (plan 05 Task 2) is append-only (no count per page, keyset paging like the
+  other logs) and watched live by operators (polling until G3's live fix ships).
+- **Framework (0.6.0):** `views.list.refetchInterval` is ignored on a `pagination: 'cursor'` list
+  (`use-resource-list.ts`: "a background refetch would fight the accumulator"; a console warning). **[code]**
+- **Workaround:** the event list pages by offset (`count: 'manual'` and the mapping's `noAggregate`
+  stay: no count query, Next while the page is full) and polls every 15 s. Deep offsets are slower than
+  a keyset, acceptable for a list read from the top.
+- **Expected from a framework:** a live cursor list that refreshes its first page (prepends new rows).
+
+### G42. A related list's "+ Create" cannot follow the parent record's state
+- **Need:** a rule version's Scope tab (plan 05 Task 2) adds places while the version is a draft;
+  a published version's scope is history (the database refuses changes, `version_not_editable`).
+- **Framework (0.6.0):** a placement's "+ Create" opens when the target's quick create passes the
+  entry gate (`related-list-view.tsx`); no placement prop turns it off, and a `create` rule sees no
+  parent record. **[code]**
+- **Workaround:** two resources over `event_rule_version_scopes`: `event_rule_version_scope`
+  (create/delete, placed while the version is open) and `event_rule_version_scope_history` (all
+  operations off, placed otherwise), each in a panel with `when` on the version's status.
+- **Expected from a framework:** `create: false` (or a condition) on a related-list placement.
+
+### G43. Record types cannot key per-type fields stored inside one jsonb column
+- **Need:** an event rule version's `parameters` jsonb holds different keys per rule type
+  (`dwell_seconds` for unusual dwell, `watch_list_kinds` for watch lists), and the type lives on the
+  header (`event_rules.rule_type`), not on the version.
+- **Framework (0.6.0):** `types: { by }` discriminates on a field of the record and adds top-level
+  fields; storing them inside a jsonb column needs the provider's `jsonbSpill`, which wants a second
+  (meta) jsonb column. **[code]**
+- **Workaround:** a computed column `event_rule_versions.rule_type` (migration `1792365700275`) and a
+  custom field `itap.event-rule-parameters` keyed by the record's rule type (input, display and
+  validator per type, other keys kept as stored).
+- **Expected from a framework:** record types over a parent's field and per-type fields mapped to keys
+  of one jsonb column.

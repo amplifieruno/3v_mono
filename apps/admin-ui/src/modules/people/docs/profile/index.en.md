@@ -103,6 +103,7 @@ of the edit form, each with the reason. Its restriction is never lifted.
 - **Sessions**: the person's tracking sessions (each stay in a facility), and
   **Detections**: every face of the person's identities the cameras recorded.
   See *Tracking sessions* and *Detections*.
+- **Events**: the events that concern the person, newest first. See *Events*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

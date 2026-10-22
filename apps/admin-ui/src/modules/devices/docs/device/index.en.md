@@ -140,7 +140,10 @@ as a dashed outline.
 
 The **Health** tab charts the device's last 24 hours and lists its health
 samples (see Device health); the **Events** tab is the timeline of its device
-events (offline, back online, no frames, maintenance).
+events (offline, back online, no frames, maintenance). The **Monitoring
+events** tab lists the events the platform raised with this device (a person
+seen by the camera, a door decision, the device going offline), newest first;
+see *Events*.
 
 The saved views **Offline** (health offline) and **Cameras** (the three camera
 types) are offered above the list.

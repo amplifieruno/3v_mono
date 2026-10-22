@@ -90,12 +90,26 @@ describe('append-only logs', () => {
     }
   });
 
+  it('should page the event log by offset so it can poll, still counting only on demand', async () => {
+    // buro ignores `refetchInterval` on a cursor list (accumulated pages), and operators watch events live.
+    await app.ready;
+    expect(ITAP_TABLES.event?.noAggregate).toBe(true);
+    const def = app.registry.get('event') as {
+      operations?: Record<string, boolean>;
+      views?: { list?: { count?: string; pagination?: string; refetchInterval?: number } };
+    };
+    expect(def.views?.list?.count).toBe('manual');
+    expect(def.views?.list?.pagination).toBeUndefined();
+    expect(def.views?.list?.refetchInterval).toBeGreaterThan(0);
+    expect(def.operations).toMatchObject({ create: false, edit: false, delete: false });
+  });
+
   it('should leave the aggregate on for every table that is not a log', () => {
     const noAggregate = Object.entries(ITAP_TABLES)
       .filter(([, mapping]) => mapping.noAggregate)
       .map(([name]) => name)
       .sort();
-    expect(noAggregate).toEqual([...LOGS].sort());
+    expect(noAggregate).toEqual([...LOGS, 'event'].sort());
   });
 });
 

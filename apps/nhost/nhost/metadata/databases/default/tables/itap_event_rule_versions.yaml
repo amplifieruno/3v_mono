@@ -67,6 +67,12 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: rule_version_id
+computed_fields:
+  - name: rule_type
+    definition:
+      function:
+        schema: itap
+        name: event_rule_version_rule_type
 insert_permissions:
   - role: org_admin
     permission:
@@ -99,6 +105,8 @@ select_permissions:
         - status
         - updated_at
         - version
+      computed_fields:
+        - rule_type
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id

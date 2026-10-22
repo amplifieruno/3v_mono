@@ -20,6 +20,7 @@ import {
   Copy,
   CopyCheck,
   DoorOpen,
+  FilePen,
   FileUp,
   Footprints,
   Gauge,
@@ -32,6 +33,7 @@ import {
   LayoutDashboard,
   LayoutTemplate,
   Link,
+  ListChecks,
   ListPlus,
   ListTree,
   LogIn,
@@ -46,9 +48,11 @@ import {
   Route,
   Scan,
   ScanFace,
+  Send,
   Settings,
   ShieldBan,
   ShieldCheck,
+  Siren,
   Split,
   Undo2,
   UserCog,
@@ -56,6 +60,7 @@ import {
   Users,
   UsersRound,
   X,
+  Zap,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -81,6 +86,7 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Copy,
   CopyCheck,
   DoorOpen,
+  FilePen,
   FileUp,
   Footprints,
   Gauge,
@@ -93,6 +99,7 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   LayoutDashboard,
   LayoutTemplate,
   Link,
+  ListChecks,
   ListPlus,
   ListTree,
   LogIn,
@@ -107,9 +114,11 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Route,
   Scan,
   ScanFace,
+  Send,
   Settings,
   ShieldBan,
   ShieldCheck,
+  Siren,
   Split,
   Undo2,
   UserCog,
@@ -117,6 +126,7 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Users,
   UsersRound,
   X,
+  Zap,
 };
 
 /**

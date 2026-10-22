@@ -9,6 +9,7 @@ import {
   DEVICE_EVENT_RESOURCE,
   DEVICE_HEALTH_METRIC_RESOURCE,
   DEVICE_RESOURCE,
+  EVENT_RESOURCE,
 } from '../../data/resource-names';
 import { CAMERA_DEVICE_TYPES } from '../../enums/devices';
 import { deviceFields } from './device-fields';
@@ -207,6 +208,19 @@ export const device = defineResource(DEVICE_RESOURCE, {
                 }),
               ],
               { key: 'events', texts: 'Events' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                  key: 'device-monitoring-events',
+                  props: {
+                    where: [{ field: 'device_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['occurred_at', 'severity', 'event_type', 'title', 'area_id', 'profile_id'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'monitoring-events', texts: 'Monitoring events' },
             ),
           ],
           { key: 'sections' },

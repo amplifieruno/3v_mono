@@ -2,7 +2,13 @@ import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import {
   AREA_OCCUPANCY_RESOURCE,
   DETECTION_RESOURCE,
+  EVENT_RESOURCE,
+  EVENT_RULE_RESOURCE,
+  EVENT_RULE_SCOPE_HISTORY_RESOURCE,
+  EVENT_RULE_SCOPE_RESOURCE,
+  EVENT_RULE_VERSION_RESOURCE,
   IDENTITY_LOCATION_RESOURCE,
+  INCIDENT_RESOURCE,
   TRACKING_SESSION_RESOURCE,
 } from '../../data/resource-names';
 import { occupancyNowBlock } from '../../blocks/occupancy-now/occupancy-now-block';
@@ -12,6 +18,20 @@ import { areaOccupancy } from './area-occupancy';
 import { areaOccupancyFields } from './area-occupancy-fields';
 import { detection } from './detection';
 import { detectionFields } from './detection-fields';
+import { event } from './event';
+import { eventFields } from './event-fields';
+import { eventRule } from './event-rule';
+import { eventRuleFields } from './event-rule-fields';
+import {
+  createEventRuleDraft,
+  createEventRuleDraftOperation,
+  publishEventRuleVersion,
+  publishEventRuleVersionOperation,
+} from './event-rule-ops';
+import { eventRuleScope, eventRuleScopeFields, eventRuleScopeHistory } from './event-rule-scope';
+import { eventRuleVersion } from './event-rule-version';
+import { eventRuleVersionFields } from './event-rule-version-fields';
+import { incident, incidentFields } from './incident';
 import { identityLocation } from './identity-location';
 import { identityLocationFields } from './identity-location-fields';
 import { occupancyPage } from './occupancy-page';
@@ -19,15 +39,49 @@ import { trackingSession } from './tracking-session';
 import { trackingSessionFields } from './tracking-session-fields';
 
 /**
- * Monitoring: what happens in the buildings. Detections (every face a camera recognised),
- * tracking sessions with their paths, the locations they are made of (append-only logs: no
- * count per page, keyset paging), who is where now (polled) and the occupancy of each area on
- * the floor plan.
+ * Monitoring: what happens in the buildings. Events (what the platform noticed, polled),
+ * detections (every face a camera recognised), tracking sessions with their paths, the
+ * locations they are made of (append-only logs: no count per page, keyset paging), who is where
+ * now (polled), the occupancy of each area on the floor plan, event rules with their versions
+ * and scopes, and the incidents rules open.
  */
 export const monitoringModule = {
   name: 'monitoring-module',
-  uses: [detection, trackingSession, identityLocation, areaOccupancy, occupancyRows, occupancyNowBlock, occupancyPage],
+  uses: [
+    event,
+    incident,
+    detection,
+    trackingSession,
+    identityLocation,
+    areaOccupancy,
+    occupancyRows,
+    occupancyNowBlock,
+    occupancyPage,
+    eventRule,
+    eventRuleVersion,
+    eventRuleScope,
+    eventRuleScopeHistory,
+    createEventRuleDraft,
+    publishEventRuleVersion,
+  ],
   tables: {
+    [EVENT_RESOURCE]: hasuraTable('events', {
+      selectFields: selectFieldsOf(eventFields),
+      orderByField: 'occurred_at',
+      noAggregate: true,
+    }),
+    [INCIDENT_RESOURCE]: hasuraTable('incidents', { selectFields: selectFieldsOf(incidentFields) }),
+    [EVENT_RULE_RESOURCE]: hasuraTable('event_rules', { selectFields: selectFieldsOf(eventRuleFields) }),
+    [EVENT_RULE_VERSION_RESOURCE]: hasuraTable('event_rule_versions', {
+      selectFields: selectFieldsOf(eventRuleVersionFields),
+      orderByField: 'version',
+    }),
+    [EVENT_RULE_SCOPE_RESOURCE]: hasuraTable('event_rule_version_scopes', {
+      selectFields: selectFieldsOf(eventRuleScopeFields),
+    }),
+    [EVENT_RULE_SCOPE_HISTORY_RESOURCE]: hasuraTable('event_rule_version_scopes', {
+      selectFields: selectFieldsOf(eventRuleScopeFields),
+    }),
     [DETECTION_RESOURCE]: hasuraTable('detections', {
       selectFields: selectFieldsOf(detectionFields),
       orderByField: 'detected_at',
@@ -48,5 +102,5 @@ export const monitoringModule = {
       orderByField: 'last_seen_at',
     }),
   },
-  operations: [occupancyRowsOperation],
+  operations: [occupancyRowsOperation, createEventRuleDraftOperation, publishEventRuleVersionOperation],
 } as const satisfies ConsoleModule;

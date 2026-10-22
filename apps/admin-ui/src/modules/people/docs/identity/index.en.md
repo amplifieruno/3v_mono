@@ -83,6 +83,8 @@ person or deleting a crop removes its original at once.
 - **Detections** and **Sessions**: every time a camera recorded this face, and
   the identity's stays in a facility with their paths. See *Detections* and
   *Tracking sessions*.
+- **Events**: the events that concern this identity (arrivals, watch-list
+  matches, restricted areas), newest first. See *Events*.
 - **Timeline**, **Relationships**, **Verification** and **Merges**: see
   *Merging, splitting, verifying and relating identities*.
 

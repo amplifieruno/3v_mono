@@ -24,7 +24,7 @@ interface RelationTexts {
  * `area_occupancy`) to the record it names. `relationship` is the table's Hasura relationship
  * (it would name the hop of a dotted column or filter); `null` for a computed column, which has none.
  */
-function platformRelation(to: string, relationship: string | null, texts: RelationTexts, shown: Shown = SHOWN) {
+export function platformRelation(to: string, relationship: string | null, texts: RelationTexts, shown: Shown = SHOWN) {
   return f.relation({
     to,
     system: true,

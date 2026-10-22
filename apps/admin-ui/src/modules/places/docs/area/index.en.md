@@ -65,7 +65,8 @@ shows it on a **Floor plan** tab, with the shapes of the areas inside it.
 
 ## Sub-areas
 
-The **Sub-areas** tab lists the areas directly inside this one.
+The **Sub-areas** tab lists the areas directly inside this one. The **Events**
+tab lists the events raised in the area, newest first (see *Events*).
 
 ## Status and deleting
 

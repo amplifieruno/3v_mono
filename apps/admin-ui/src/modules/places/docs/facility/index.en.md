@@ -16,8 +16,9 @@ the page opens:
 - **Areas over capacity**: areas with a capacity that now hold more people than
   it, people in their sub-areas included.
 
-The tabs below hold the details, the area tree and the facility's **access
-points** (each row opens the access point's page).
+The tabs below hold the details, the area tree, the facility's **access
+points** (each row opens the access point's page) and its **Events**, newest
+first (see *Events*).
 
 ## Details
 

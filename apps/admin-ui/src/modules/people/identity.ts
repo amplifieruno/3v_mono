@@ -4,6 +4,7 @@ import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-bloc
 import { resourceByName } from '../../data/resource-by-name';
 import {
   DETECTION_RESOURCE,
+  EVENT_RESOURCE,
   IDENTITY_MERGE_RESOURCE,
   IDENTITY_MERGE_SOURCE_RESOURCE,
   IDENTITY_RESOURCE,
@@ -182,6 +183,19 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                 }),
               ],
               { key: 'sessions', texts: 'Sessions' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                  key: 'identity-events',
+                  props: {
+                    where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['occurred_at', 'severity', 'event_type', 'title', 'facility_id', 'area_id'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'events', texts: 'Events' },
             ),
             l.panel(
               [

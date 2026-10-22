@@ -15,7 +15,7 @@ import { resourceByName } from '../../data/resource-by-name';
 import { areaShape } from '../../fields/area-shape';
 import { rangeValidator } from '../../fields/bounded-number';
 import { areaParentGuardBlock } from './area-parent-guard-block';
-import { AREA_RESOURCE, FACILITY_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
+import { AREA_RESOURCE, EVENT_RESOURCE, FACILITY_RESOURCE, FLOOR_PLAN_RESOURCE } from '../../data/resource-names';
 
 /**
  * Columns of `itap.areas` (and its computed `current_occupancy`) the `org_admin` role reads;
@@ -233,6 +233,19 @@ export const area = defineResource(AREA_RESOURCE, {
                 }),
               ],
               { key: 'sub_areas', texts: 'Sub-areas' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                  key: 'area-events',
+                  props: {
+                    where: [{ field: 'area_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['occurred_at', 'severity', 'event_type', 'title', 'profile_id', 'device_id'],
+                    open: 'page',
+                  },
+                }),
+              ],
+              { key: 'events', texts: 'Events' },
             ),
           ],
           { key: 'sections' },

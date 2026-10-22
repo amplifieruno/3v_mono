@@ -70,6 +70,11 @@ export const NAV_ICONS = {
   identityLocations: 'Footprints',
   whoIsWhere: 'UsersRound',
   occupancyNow: 'MapPinned',
+  events: 'Zap',
+  eventRules: 'ListChecks',
+  incidents: 'Siren',
+  editDraft: 'FilePen',
+  publish: 'Send',
 } as const;
 
 /**
