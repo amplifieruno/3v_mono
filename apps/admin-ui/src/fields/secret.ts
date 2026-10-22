@@ -14,7 +14,8 @@ export interface SecretOptions {
  * (`selectFieldsOf(fields, { writeOnly })`), so a form starts with no value; the input
  * is a password box that keeps an empty box out of the payload (it reports `undefined`,
  * which a payload omits), so saving a record without typing a new secret keeps the
- * stored one. It exists on the create and edit forms only: there is nothing to show. It is
+ * stored one; on an edit form "Remove the stored value" sends `null` (the column must be
+ * nullable) to clear it. It exists on the create and edit forms only: there is nothing to show. It is
  * `sensitive`, so a typed value never lands in a form draft or an audit event.
  */
 export function secret(opts: SecretOptions = {}) {

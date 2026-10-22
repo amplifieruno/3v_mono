@@ -66,6 +66,9 @@ export default {
     /** The write-only secret field (`src/fields/secret-impl.ts`). */
     secret: {
       hidden: 'Not shown',
+      remove: 'Remove the stored value',
+      keep: 'Keep the stored value',
+      removing: 'The stored value is removed on save.',
     },
     /** The custom attribute values field (`src/fields/custom-fields-impl.ts`). */
     customFields: {
