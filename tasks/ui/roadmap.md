@@ -10,7 +10,7 @@ and ends. Branch `feat/ui-console`.
 | 1 ✅ | Organization | organization settings, companies, work schedules, custom attribute definitions, user settings (done, `summary-01-organization.md`) | 0 |
 | 2 ✅ | Places | facilities, areas (tree), floor plans (block), access points (+ devices binding), facility templates (`apply_facility_template`) (done, `summary-02-places.md`) | 1 |
 | 3 ✅ | Devices | devices, device areas, health metrics, device events, live camera block (stream-server + Socket.io detections), `recognition_start/stop/status` (done, `summary-03-devices.md`) | 2 |
-| 4 | People | profiles (documents via `upload_profile_document`/`open_file`, consent, restriction, duplicates), identities (photos, enrollment, merge/rollback/split, duplicates, verification, relationships), visits (check-in/out) | 2, 3 |
+| 4 ✅ | People | profiles (documents via `upload_profile_document`/`open_file`, consent, restriction, duplicates), identities (photos, enrollment, merge/rollback/split, duplicates, verification, relationships), visits (check-in/out) (done, `summary-04-people.md`) | 2, 3 |
 | 5 | Monitoring | detections, tracking sessions, identity locations, occupancy, events, event rules (versions, test), incidents (lifecycle, notes, activities), watch lists, shift handovers, operator workspace | 4 |
 | 6 | Notifications | rules, templates, recipient groups, escalation policies, on-call, subscriptions, user inbox, deliveries, webhooks (+ deliveries) | 5 |
 | 7 | Segments | segments manual/dynamic, conditions editor over `segment_fields`, `preview_segment`/`evaluate_segment`, members history, daily stats, templates | 4 |
