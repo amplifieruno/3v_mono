@@ -7,6 +7,7 @@ import { enumField } from '../../enums/field';
 import { VERIFICATION_STATUSES, VERIFICATION_STATUS_ENUM } from '../../enums/identity-governance';
 import { recordDate } from './record-date';
 import { approveVerification, rejectVerification } from './verification-ops';
+import { dateTime } from '../../fields/date-time';
 
 /** Columns of `itap.verification_requests` the `org_admin` role reads (`organization_id` left out). */
 export const verificationRequestFields = {
@@ -63,10 +64,9 @@ export const verificationRequestFields = {
     open: 'none',
     texts: { label: 'Decided by', doc: { summary: 'The member who approved or rejected the request.' } },
   }),
-  decided_at: f.dateTime({
+  decided_at: dateTime({
     system: true,
     in: ['list', 'show'],
-    nullable: true,
     texts: { label: 'Decided', doc: { summary: 'When the request was approved, rejected or cancelled.' } },
   }),
   created_at: f.dateTime({ system: true, in: ['list', 'show'], texts: { label: 'Requested', doc: { summary: 'When verification was asked for.' } } }),

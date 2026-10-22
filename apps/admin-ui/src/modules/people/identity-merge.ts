@@ -16,6 +16,7 @@ import { carriedId } from '../../fields/carried-id';
 import { rollbackMerge } from './identity-merge-ops';
 import { recordDate } from './record-date';
 import { mergeRollbackReviewBlock } from './merge-rollback-review-block';
+import { dateTime } from '../../fields/date-time';
 
 /**
  * Columns of `itap.identity_merges` the `org_admin` role reads (`organization_id` and the
@@ -67,10 +68,9 @@ export const identityMergeFields = {
     open: 'none',
     texts: { label: 'Merged by', doc: { summary: 'The member who merged the identities.' } },
   }),
-  created_at: f.dateTime({ system: true, texts: { label: 'Merged at', doc: { summary: 'When the merge ran.' } } }),
-  rolled_back_at: f.dateTime({
+  created_at: dateTime({ system: true, texts: { label: 'Merged at', doc: { summary: 'When the merge ran.' } } }),
+  rolled_back_at: dateTime({
     system: true,
-    nullable: true,
     texts: { label: 'Rolled back at', doc: { summary: 'When the merge was undone; empty while it stands.' } },
   }),
   rolled_back_by: f.relation({

@@ -97,6 +97,8 @@ let conflicting = false;
 let sharedPrimary = false;
 /** Whether the merge's kept identity was merged away later (set per test). */
 let targetMerged = false;
+/** Whether identity lists (the merge picker) offer the other identity (set per test). */
+let pickable = false;
 
 async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
@@ -173,6 +175,9 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
       },
     });
   }
+  if (pickable && /\bidentities\(/.test(query) && !query.includes('_by_pk') && !query.includes('_aggregate')) {
+    return hasuraResponse({ data: { items: [{ ...IDENTITY, id: OTHER, code: 'IDENTITY-00002' }] } });
+  }
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 0 } } } });
   if (query.includes('identity_duplicate_candidates_by_pk')) return hasuraResponse({ data: { item: PAIR_ROW } });
   if (query.includes('identity_merges_by_pk')) return hasuraResponse({ data: { item: MERGE_ROW } });
@@ -200,6 +205,7 @@ beforeEach(() => {
   conflicting = false;
   sharedPrimary = false;
   targetMerged = false;
+  pickable = false;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -236,6 +242,23 @@ describe('merging', () => {
     await screen.findAllByRole('heading', { name: /IDENTITY-00001/ });
     const dialog = await openFromMenu(/^Merge into this identity/);
     expect(await within(dialog).findByText('Choose the identities to merge into IDENTITY-00001.')).toBeDefined();
+  });
+
+  it('should reach the review step with a chosen identity and say what moves there', async () => {
+    // The step that crashed before 5f8731e: the picker read the record, which the review lacks (G35).
+    pickable = true;
+    renderAt(`/identities/${KEPT}`);
+    await screen.findAllByRole('heading', { name: /IDENTITY-00001/ });
+    const dialog = await openFromMenu(/^Merge into this identity/);
+    fireEvent.click((await within(dialog).findAllByRole('combobox'))[0]!);
+    fireEvent.click(await screen.findByRole('option', { name: /IDENTITY-00002/ }));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    expect(await within(dialog).findByTestId('identity-merge-moves')).toBeDefined();
+    fireEvent.click(within(dialog).getAllByRole('button', { name: /^Merge into this identity$/ }).at(-1)!);
+    await within(dialog).findByRole('button', { name: /^Back$/ });
+    expect(await within(dialog).findByTestId('identity-merge-review')).toBeDefined();
+    expect(within(dialog).queryByText(/could not be loaded/)).toBeNull();
+    expect((await within(dialog).findByTestId('identity-merge-moves')).textContent).toContain('move to IDENTITY-00001');
   });
 
   it('should say what a pair’s merge moves, and the profile the kept identity takes over', async () => {

@@ -6,6 +6,7 @@ import { IDENTITY_PHOTO_KINDS, IDENTITY_SOURCES, IDENTITY_STATUSES } from '../..
 import { FACE_SOURCE_KIND } from '../../src/fields/face-photos';
 import { ITAP_TABLES } from '../../src/modules';
 import { IDENTITY_CHECKS, identity } from '../../src/modules/people/identity';
+import { MERGE_PROFILES_EFFECTS } from '../../src/modules/people/merge-profiles';
 import { identityFields } from '../../src/modules/people/identity-fields';
 
 /**
@@ -60,6 +61,13 @@ describe('identity resource', () => {
   it('should offer no create form and no delete', () => {
     const resource = app.registry.get(IDENTITY_RESOURCE) as { operations?: { create?: boolean; delete?: boolean } };
     expect(resource.operations).toMatchObject({ create: false, delete: false });
+  });
+
+  it('should refresh after consent changes and profile merges, which flip or move identities', () => {
+    // Withdrawing biometric consent flips matching_enabled in SQL (a consent_records write).
+    const resource = app.registry.get(IDENTITY_RESOURCE) as { data?: { dependencies?: readonly string[] } };
+    expect(resource.data?.dependencies).toContain('table:consent_records');
+    expect(MERGE_PROFILES_EFFECTS).toContainEqual({ resource: IDENTITY_RESOURCE });
   });
 
   it('should map itap.identities and select every declared column', () => {

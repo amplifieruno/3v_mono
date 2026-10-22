@@ -96,6 +96,13 @@ describe('SQL refusals', () => {
       message: 'The database refused the change: other_code. Nothing was changed.',
     });
     expect(read({ code: 'unexpected', message: 'connection reset' }, {})).toBeNull();
+    // A constraint is matched only where the database quotes its name; a code only exactly.
+    expect(read({ code: 'constraint-violation', message: 'Uniqueness violation. violates pair_key_2' }, {})?.[0]?.code).toBe(
+      'database_refused',
+    );
+    expect(read({ code: 'permission-error', message: 'Check constraint violation. merge_rows_moved_twice' }, {})?.[0]?.code).toBe(
+      'database_refused',
+    );
   });
 });
 

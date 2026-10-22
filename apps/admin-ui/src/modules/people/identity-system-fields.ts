@@ -1,4 +1,5 @@
 import { f } from '@burojs/field-types';
+import { dateTime } from '../../fields/date-time';
 
 /**
  * The read-only columns of `itap.identities`: what recognition, the consent effects and the
@@ -42,16 +43,14 @@ export const identitySystemFields = {
       doc: { summary: 'How confidently recognition matched this identity most recently, from 0 to 1.' },
     },
   }),
-  first_seen_at: f.dateTime({
+  first_seen_at: dateTime({
     system: true,
     in: ['list', 'show'],
-    nullable: true,
     texts: { label: 'First seen', doc: { summary: 'When a camera first recorded this face.' } },
   }),
-  last_seen_at: f.dateTime({
+  last_seen_at: dateTime({
     system: true,
     in: ['list', 'show'],
-    nullable: true,
     texts: { label: 'Last seen', doc: { summary: 'When a camera last recorded this face.' } },
   }),
   detection_count: f.number({

@@ -216,6 +216,15 @@ describe('profile documents', () => {
   });
 });
 
+describe('profile page', () => {
+  it('should show “Face linked” once, in the header', async () => {
+    renderAt(`/profiles/${ANNA}`);
+    await screen.findAllByRole('heading', { name: /Anna Petrova/ });
+    await screen.findByText('Face linked');
+    expect(screen.getAllByText('Face linked')).toHaveLength(1);
+  });
+});
+
 describe('erased profile', () => {
   it('should disable the edit form’s fields with the reason', async () => {
     renderAt(`/profiles/${ERASED}/edit`);

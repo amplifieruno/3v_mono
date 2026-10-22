@@ -98,6 +98,13 @@ describe('processing restriction', () => {
     flow.assertNotSubmitted();
   });
 
+  it('should refuse a reason of spaces only on the field', async () => {
+    const flow = (await profileFlow('restrict_processing', anna).open()).fill({ reason: '   ' });
+    await flow.submit();
+    flow.assertNotSubmitted();
+    expect(JSON.stringify(flow.state)).toContain('not only spaces');
+  });
+
   it('should offer Restrict on an unrestricted profile and Lift on a restricted one', async () => {
     (await profileFlow('lift_restriction', anna).open()).assertUnavailable();
     (await profileFlow('restrict_processing', restrictedAnna).open()).assertUnavailable();

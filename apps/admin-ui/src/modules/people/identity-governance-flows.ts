@@ -2,7 +2,11 @@ import { type FlowConfig, type FlowUnknownCheck, type Layout, type ScreenRef, co
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { IDENTITY_RESOURCE } from '../../data/resource-names';
+import {
+  IDENTITY_MERGE_RESOURCE,
+  IDENTITY_MERGE_SOURCE_RESOURCE,
+  IDENTITY_RESOURCE,
+} from '../../data/resource-names';
 import { carriedId } from '../../fields/carried-id';
 import { splitPhotos } from '../../fields/split-photos';
 import { splitChoiceOf } from '../../fields/split-photos-format';
@@ -61,8 +65,10 @@ const sentFirstSource = new Map<string, string>();
 
 /**
  * Check again for {@link mergeIntoFlow}: the merge ran when the first identity it sent is now
- * merged (the function merges all or nothing). Unknown when nothing was recorded for this
- * identity (the console was reloaded) or the identity cannot be read.
+ * merged into THIS identity (the function merges all or nothing): its latest merge-source row
+ * belongs to a completed merge whose target is this identity. Merged elsewhere (another console
+ * merged it meanwhile) reads as not applied. Unknown when nothing was recorded for this identity
+ * (the console was reloaded) or a row cannot be read.
  */
 export const mergeIntoApplied: FlowUnknownCheck = async ({ record, data }) => {
   const targetId = record?.id;
@@ -71,7 +77,18 @@ export const mergeIntoApplied: FlowUnknownCheck = async ({ record, data }) => {
   try {
     const { data: row } = await data.one(resourceByName(IDENTITY_RESOURCE) as never, { id: sourceId } as never);
     if (row === null || row === undefined) return 'unknown';
-    return (row as Readonly<Record<string, unknown>>).status === 'merged' ? 'applied' : 'not-applied';
+    if ((row as Readonly<Record<string, unknown>>).status !== 'merged') return 'not-applied';
+    const { data: sources } = await data.list(resourceByName(IDENTITY_MERGE_SOURCE_RESOURCE) as never, {
+      filter: { field: 'source_identity_id', op: 'eq', value: sourceId },
+      sort: [{ field: 'created_at', direction: 'desc' }],
+      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+    } as never);
+    const mergeId = (sources as readonly Readonly<Record<string, unknown>>[])[0]?.merge_id;
+    if (typeof mergeId !== 'string') return 'unknown';
+    const { data: merge } = await data.one(resourceByName(IDENTITY_MERGE_RESOURCE) as never, { id: mergeId } as never);
+    if (merge === null || merge === undefined) return 'unknown';
+    const { target_identity_id: mergedInto, status } = merge as Readonly<Record<string, unknown>>;
+    return mergedInto === targetId && status === 'completed' ? 'applied' : 'not-applied';
   } catch {
     return 'unknown';
   }

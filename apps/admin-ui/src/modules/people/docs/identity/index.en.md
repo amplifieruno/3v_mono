@@ -66,7 +66,9 @@ identity linked to another profile: then check whether the two profiles are
 the same person.
 
 The platform keeps its own crop of each accepted face. The uploaded originals
-are ordinary files of the organization (kind `face_source`).
+(kind `face_source`) are deleted about an hour after upload, whatever the
+answer, so a refused form can still be sent again in the meantime; erasing the
+person or deleting a crop removes its original at once.
 
 ## The identity page
 

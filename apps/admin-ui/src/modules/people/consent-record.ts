@@ -15,6 +15,7 @@ import {
 import { storageFile } from '../../fields/storage-file';
 import { profile } from './profile';
 import { PROFILE_DOCUMENT_FILE_KIND } from './profile-document';
+import { dateTime } from '../../fields/date-time';
 
 /**
  * Columns of `itap.consent_records` the `org_admin` role reads (`organization_id` left out). A
@@ -53,13 +54,12 @@ export const consentRecordFields = {
     default: 'electronic',
     texts: { label: 'Method', doc: { summary: 'How the consent was given: a paper form, an electronic form or verbally.' } },
   }),
-  granted_at: f.dateTime({
+  granted_at: dateTime({
     system: true,
     texts: { label: 'Granted', doc: { summary: 'When the consent was recorded.' } },
   }),
-  withdrawn_at: f.dateTime({
+  withdrawn_at: dateTime({
     system: true,
-    nullable: true,
     texts: { label: 'Withdrawn', doc: { summary: 'When the consent was withdrawn; empty while it stands.' } },
   }),
   document_file_id: storageFile({

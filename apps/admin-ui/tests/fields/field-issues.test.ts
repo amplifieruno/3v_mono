@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkRange, rangeValidator } from '../../src/fields/bounded-number';
 import { problemIssue } from '../../src/fields/field-issue';
+import { checkNotBlank, validateNotBlank } from '../../src/fields/not-blank';
 import { checkStringList } from '../../src/fields/string-list';
 import { validateStringList } from '../../src/fields/string-list-format';
 import {
@@ -20,6 +21,18 @@ import { expectTranslated, validatorResult } from '../support/field-issues';
  * in the `common` bundle, params interpolated), not an English literal that buro would show
  * only as its generic "invalid" text in another locale.
  */
+
+describe('not-blank text', () => {
+  it('should refuse spaces only with a translatable issue and leave empty values to required', async () => {
+    const problem = validateNotBlank('  \t ');
+    expect(problem?.code).toBe('text.blank');
+    if (problem !== null) {
+      expect(await validatorResult(checkNotBlank(), '   ')).toEqual(problemIssue(problem));
+      await expectTranslated(problem);
+    }
+    for (const fine of ['', null, undefined, ' x ']) expect(validateNotBlank(fine)).toBeNull();
+  });
+});
 
 describe('string list issues', () => {
   it('should refuse each malformed list with a translatable issue', async () => {

@@ -18,8 +18,10 @@ export function sqlRefusalDetail(message: string): string | null {
 
 /**
  * The sentence for one refusal code, or a function of the code's argument (`merge_rows_moved:3`
- * reads `3`). A detail that is no known code may still name a constraint: an entry whose key
- * appears in the detail (`identity_relationships_pair_key`) answers it.
+ * reads `3`). A detail that is no known code may still name a constraint: the database quotes
+ * the constraint's name (`violates unique constraint "identity_relationships_pair_key"`), so an
+ * entry whose key appears quoted in the detail answers it. A code (`profile_erased`) is matched
+ * exactly only, never as a part of a longer detail.
  */
 export type SqlRefusalText = string | ((argument: string) => string);
 
@@ -44,7 +46,7 @@ export function sqlRefusals(
     const detail = sqlRefusalDetail(message);
     if (detail === null) return null;
     const { code, argument } = codeOf(detail);
-    const key = Object.hasOwn(texts, code) ? code : Object.keys(texts).find((name) => detail.includes(name));
+    const key = Object.hasOwn(texts, code) ? code : Object.keys(texts).find((name) => detail.includes(`"${name}"`));
     const named = key === undefined ? undefined : texts[key];
     const issue: RefusalIssue =
       key === undefined || named === undefined

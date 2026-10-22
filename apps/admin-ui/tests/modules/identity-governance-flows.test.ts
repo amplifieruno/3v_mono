@@ -61,27 +61,42 @@ describe('merge into this identity', () => {
     });
   });
 
-  it('should check a lost answer by whether the first identity sent is now merged', async () => {
+  it('should check a lost answer by whether the first identity sent is now merged into this one', async () => {
     const send = mergeIntoFlow.submit.input as (ctx: unknown) => unknown;
     send({ values: { source_ids: [OTHER, THIRD], reason: null }, record: kept });
     const reads: unknown[] = [];
-    const check = (status: string | null, record: Record<string, unknown> = kept) =>
+    const check = (
+      status: string | null,
+      record: Record<string, unknown> = kept,
+      merge: Record<string, unknown> | null = mergeRow,
+    ) =>
       mergeIntoApplied({
         record,
         args: {},
         key: 'k',
         signal: new AbortController().signal,
         data: {
-          one: async (_resource: unknown, params: unknown) => {
+          one: async (_resource: unknown, params: { id: string }) => {
             reads.push(params);
+            if (params.id === MERGE) return { data: merge };
             return { data: status === null ? null : { id: OTHER, status } };
+          },
+          list: async (_resource: unknown, params: unknown) => {
+            reads.push(params);
+            return { data: merge === null ? [] : [{ id: 'src', merge_id: MERGE, source_identity_id: OTHER }] };
           },
         } as never,
       });
     expect(await check('merged')).toBe('applied');
     expect(reads[0]).toEqual({ id: OTHER });
+    expect(reads[1]).toMatchObject({ filter: { field: 'source_identity_id', op: 'eq', value: OTHER } });
+    expect(reads[2]).toEqual({ id: MERGE });
     expect(await check('unverified')).toBe('not-applied');
     expect(await check(null)).toBe('unknown');
+    // Merged meanwhile into another identity, or that merge was rolled back: not this merge.
+    expect(await check('merged', kept, { ...mergeRow, target_identity_id: THIRD })).toBe('not-applied');
+    expect(await check('merged', kept, { ...mergeRow, status: 'rolled_back' })).toBe('not-applied');
+    expect(await check('merged', kept, null)).toBe('unknown');
     // Nothing was sent from this identity: no basis for an answer.
     expect(await check('merged', { ...kept, id: THIRD })).toBe('unknown');
   });
@@ -274,6 +289,49 @@ describe('SQL function refusals through the provider', () => {
       code: 'merge_rows_moved',
       details: { issues: [{ message: { default: expect.stringMatching(/^3 of the photos/) } }] },
     });
+  });
+
+  it('should read the refusals of a profile merge and of a split blocked by a guard', async () => {
+    for (const [code, said] of [
+      ['profile_erased', /was erased/],
+      ['profile_processing_restricted', /restricted/],
+      ['merge_source_is_target', /into itself/],
+    ] as const) {
+      const provider = providerFailing(`Check constraint violation. ${code}`);
+      await expect(provider.mutations?.custom?.(call('mergeProfiles'), {} as never)).rejects.toMatchObject({
+        kind: 'validation',
+        code,
+        details: { issues: [{ message: { default: expect.stringMatching(said) } }] },
+      });
+    }
+    for (const code of ['identity_merged_frozen', 'profile_processing_restricted']) {
+      const provider = providerFailing(`Check constraint violation. ${code}`);
+      await expect(provider.mutations?.custom?.(call('splitIdentity'), {} as never)).rejects.toMatchObject({ code });
+    }
+  });
+
+  it('should not read a code inside a longer detail as that code', async () => {
+    // `profile_erased` is a code of merge_profiles: a different refusal that only contains it is
+    // not that refusal, it reads as the database's own words.
+    const provider = providerFailing('Check constraint violation. profile_erased_by_retention');
+    await expect(provider.mutations?.custom?.(call('mergeProfiles'), {} as never)).rejects.toMatchObject({
+      code: 'database_refused',
+    });
+  });
+
+  it('should read the document upload action’s refusals as definite ones', async () => {
+    for (const [code, said] of [
+      ['unsupported_mime_type', /PDF, PNG, JPEG or WebP/],
+      ['file_too_large', /larger than 10 MB/],
+      ['profile_not_found', /no longer exists/],
+    ] as const) {
+      const provider = providerFailing('refused', code);
+      await expect(provider.mutations?.custom?.(call('uploadProfileDocument'), {} as never)).rejects.toMatchObject({
+        kind: 'validation',
+        code,
+        details: { issues: [{ message: { default: expect.stringMatching(said) }, path: [] }] },
+      });
+    }
   });
 
   it('should name a relationship that already exists', async () => {

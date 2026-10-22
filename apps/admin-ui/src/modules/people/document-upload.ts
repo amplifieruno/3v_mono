@@ -2,6 +2,7 @@ import { type FlowConfig, defineMutation } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { z } from 'zod';
 import { NAV_ICONS } from '../../app/nav';
+import type { ActionRefusalReader } from '../../data/action-refusals';
 import { hasuraOperation, rootOf } from '../../data/operations';
 import { PROFILE_DOCUMENT_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
@@ -27,10 +28,28 @@ export const uploadProfileDocumentInput = z.object({
 
 export const uploadProfileDocumentOutput = z.object({ document_id: z.string(), file_id: z.string() });
 
+/**
+ * What the action's refusals tell the user (`apps/backend/src/actions/profileDocuments.ts`): it
+ * answers each before it stores anything. Form-level: the input is built from several fields.
+ */
+export const uploadDocumentRefusals: ActionRefusalReader = ({ code, message }) => {
+  const said: Readonly<Record<string, string>> = {
+    unsupported_mime_type: 'This kind of file is not accepted: upload a PDF, PNG, JPEG or WebP file.',
+    file_too_large: 'The file is larger than 10 MB: upload a smaller file.',
+    profile_not_found: 'The profile no longer exists.',
+    invalid_input: `The request was refused: ${message}.`,
+  };
+  const text = said[code];
+  return text === undefined ? null : [{ code, message: `${text} Nothing was saved.`, path: [] }];
+};
+
 /** The `upload_profile_document` action (`org_admin`): the file travels inside the input as base64. */
-export const uploadProfileDocumentOperation = hasuraOperation(PEOPLE_BINDING, 'uploadProfileDocument', {
-  kind: 'mutation',
-  document: `mutation UploadProfileDocument(
+export const uploadProfileDocumentOperation = hasuraOperation(
+  PEOPLE_BINDING,
+  'uploadProfileDocument',
+  {
+    kind: 'mutation',
+    document: `mutation UploadProfileDocument(
   $profile: uuid!
   $kind: String!
   $title: String!
@@ -50,19 +69,21 @@ export const uploadProfileDocumentOperation = hasuraOperation(PEOPLE_BINDING, 'u
     file_id
   }
 }`,
-  variables: (input) => {
-    const v = input as z.infer<typeof uploadProfileDocumentInput>;
-    return {
-      profile: v.profileId,
-      kind: v.kind,
-      title: v.title,
-      fileName: v.fileName,
-      mimeType: v.mimeType,
-      content: v.contentBase64,
-    };
+    variables: (input) => {
+      const v = input as z.infer<typeof uploadProfileDocumentInput>;
+      return {
+        profile: v.profileId,
+        kind: v.kind,
+        title: v.title,
+        fileName: v.fileName,
+        mimeType: v.mimeType,
+        content: v.contentBase64,
+      };
+    },
+    mapResult: (data) => rootOf(data, 'upload_profile_document'),
   },
-  mapResult: (data) => rootOf(data, 'upload_profile_document'),
-});
+  uploadDocumentRefusals,
+);
 
 /**
  * Stores a profile document (action `upload_profile_document`): the backend puts the file in the

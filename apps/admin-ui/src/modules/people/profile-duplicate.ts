@@ -8,6 +8,7 @@ import { CANDIDATE_STATUSES, CANDIDATE_STATUS_ENUM } from '../../enums/people-re
 import { stringList } from '../../fields/string-list';
 import { mergeProfilesFlow } from './merge-profiles-flow';
 import { profileCompareBlock } from './profile-compare-block';
+import { dateTime } from '../../fields/date-time';
 
 /** One side of a pair: a profile, read across the `profile_a` / `profile_b` relationship. */
 const side = (relationship: string, label: string) =>
@@ -47,7 +48,7 @@ export const profileDuplicateFields = {
       },
     },
   }),
-  detected_at: f.dateTime({ system: true, texts: { label: 'Found', doc: { summary: 'When the platform found the pair.' } } }),
+  detected_at: dateTime({ system: true, texts: { label: 'Found', doc: { summary: 'When the platform found the pair.' } } }),
   created_at: f.dateTime({ system: true, texts: 'Created', in: [] }),
   updated_at: f.dateTime({ system: true, texts: 'Updated', in: [] }),
 };

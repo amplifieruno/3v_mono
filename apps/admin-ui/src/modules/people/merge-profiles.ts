@@ -3,13 +3,17 @@ import { z } from 'zod';
 import { hasuraOperation, rootOf } from '../../data/operations';
 import {
   CONSENT_RECORD_RESOURCE,
+  IDENTITY_RESOURCE,
   PROFILE_DOCUMENT_RESOURCE,
   PROFILE_DUPLICATE_RESOURCE,
   PROFILE_RESOURCE,
 } from '../../data/resource-names';
 import { schema } from '../../data/schema';
+import { sqlRefusals } from '../../data/sql-refusals';
 import type { MERGE_KEEP } from '../../enums/people-records';
 import { PEOPLE_BINDING } from './profile-activity';
+
+const NOTHING = ' Nothing was changed.';
 
 export const mergeProfilesInput = z.object({ targetId: z.string().uuid(), sourceId: z.string().uuid() });
 
@@ -17,22 +21,45 @@ export const mergeProfilesInput = z.object({ targetId: z.string().uuid(), source
 export const mergeProfilesOutput = z.object({ id: z.string() });
 
 /** `merge_profiles(hasura_session, p_target, p_source)` (org_admin); Hasura fills the session. */
-export const mergeProfilesOperation = hasuraOperation(PEOPLE_BINDING, 'mergeProfiles', {
-  kind: 'mutation',
-  document: `mutation MergeProfiles($target: uuid!, $source: uuid!) {
+export const mergeProfilesOperation = hasuraOperation(
+  PEOPLE_BINDING,
+  'mergeProfiles',
+  {
+    kind: 'mutation',
+    document: `mutation MergeProfiles($target: uuid!, $source: uuid!) {
   merge_profiles(args: { p_target: $target, p_source: $source }) {
     id
   }
 }`,
-  variables: (input) => {
-    const { targetId, sourceId } = input as z.infer<typeof mergeProfilesInput>;
-    return { target: targetId, source: sourceId };
+    variables: (input) => {
+      const { targetId, sourceId } = input as z.infer<typeof mergeProfilesInput>;
+      return { target: targetId, source: sourceId };
+    },
+    mapResult: (data) => {
+      const rows = rootOf(data, 'merge_profiles');
+      return Array.isArray(rows) ? (rows[0] ?? null) : null;
+    },
   },
-  mapResult: (data) => {
-    const rows = rootOf(data, 'merge_profiles');
-    return Array.isArray(rows) ? (rows[0] ?? null) : null;
-  },
-});
+  // The function and the guards of the rows it moves; one transaction, so nothing was changed.
+  sqlRefusals({
+    profile_not_found: 'One of the two profiles no longer exists.' + NOTHING,
+    merge_source_is_target: 'A profile cannot be merged into itself.' + NOTHING,
+    profile_erased: 'One of the two profiles was erased: an erased profile cannot be merged.' + NOTHING,
+    profile_processing_restricted:
+      'Processing of one of the two people is restricted: their identities cannot move to another profile until the restriction is lifted.' +
+      NOTHING,
+  }),
+);
+
+/** Every view a profile merge changes. */
+export const MERGE_PROFILES_EFFECTS = [
+  { resource: PROFILE_RESOURCE },
+  // The source's identities move to the target, and the target's consent decides their matching.
+  { resource: IDENTITY_RESOURCE },
+  { resource: PROFILE_DOCUMENT_RESOURCE },
+  { resource: CONSENT_RECORD_RESOURCE },
+  { resource: PROFILE_DUPLICATE_RESOURCE },
+];
 
 /**
  * Folds the source profile into the target (the SQL function `merge_profiles`): the source's
@@ -45,12 +72,7 @@ export const mergeProfiles = defineMutation('itap:merge-profiles', {
   binding: mergeProfilesOperation.binding,
   input: schema(mergeProfilesInput),
   output: schema(mergeProfilesOutput.nullable()),
-  effects: [
-    { resource: PROFILE_RESOURCE },
-    { resource: PROFILE_DOCUMENT_RESOURCE },
-    { resource: CONSENT_RECORD_RESOURCE },
-    { resource: PROFILE_DUPLICATE_RESOURCE },
-  ],
+  effects: MERGE_PROFILES_EFFECTS,
 });
 
 /** A duplicate pair's ids as the merge reads them. */

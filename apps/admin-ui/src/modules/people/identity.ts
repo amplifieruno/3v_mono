@@ -82,7 +82,9 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
   order: 20,
   icon: NAV_ICONS.identities,
   displayField: 'code',
-  data: { provider: 'hasura' },
+  // A consent record write flips `matching_enabled` of the person's identities (SQL trigger):
+  // withdrawing biometric consent refreshes the identity views too.
+  data: { provider: 'hasura', dependencies: ['table:consent_records'] },
   operations: { create: false, delete: false },
   builtinActions: { delete: false },
   fields: identityFields,

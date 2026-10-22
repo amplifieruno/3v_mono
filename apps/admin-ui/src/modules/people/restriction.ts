@@ -6,6 +6,7 @@ import { hasuraOperation, rootOf } from '../../data/operations';
 import { PROFILE_RESOURCE } from '../../data/resource-names';
 import { schema } from '../../data/schema';
 import { fieldApplied } from '../../data/status-applied';
+import { checkNotBlank } from '../../fields/not-blank';
 import { PEOPLE_BINDING } from './profile-activity';
 
 export const setProcessingRestrictionInput = z.object({
@@ -55,6 +56,8 @@ export const setProcessingRestriction = defineMutation('itap:set-processing-rest
 const reasonFields = {
   reason: f.text({
     required: true,
+    // The function refuses a reason of spaces only (`processing_restriction_reason_required`).
+    validate: checkNotBlank<string>(),
     texts: {
       label: 'Reason',
       doc: {

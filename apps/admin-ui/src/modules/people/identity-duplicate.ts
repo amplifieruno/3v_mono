@@ -8,6 +8,7 @@ import { CANDIDATE_STATUSES, CANDIDATE_STATUS_ENUM } from '../../enums/people-re
 import { mergeDuplicateFlow } from './identity-duplicate-merge-flow';
 import { identityMergeReviewBlock } from './identity-merge-review-block';
 import { recordDate } from './record-date';
+import { dateTime } from '../../fields/date-time';
 
 /** One side of a pair: an identity (the pair is unordered; the database stores the smaller id first). */
 const side = (label: string) =>
@@ -47,7 +48,7 @@ export const identityDuplicateFields = {
     open: 'page',
     texts: { label: 'Merge', doc: { summary: 'The merge that settled the pair; a rollback of it reopens the pair.' } },
   }),
-  detected_at: f.dateTime({ system: true, texts: { label: 'Found', doc: { summary: 'When the platform found the pair.' } } }),
+  detected_at: dateTime({ system: true, texts: { label: 'Found', doc: { summary: 'When the platform found the pair.' } } }),
   created_at: f.dateTime({ system: true, texts: 'Created', in: [] }),
   updated_at: f.dateTime({ system: true, texts: 'Updated', in: [] }),
 };

@@ -1,4 +1,5 @@
 import { f } from '@burojs/field-types';
+import { dateTime } from '../../fields/date-time';
 
 /**
  * The read-only columns and computed fields of `itap.profiles`: what triggers, the processing
@@ -50,10 +51,9 @@ export const profileSystemFields = {
       },
     },
   }),
-  restricted_at: f.dateTime({
+  restricted_at: dateTime({
     system: true,
     in: ['show'],
-    nullable: true,
     texts: { label: 'Restricted at', doc: { summary: 'When processing was restricted; empty while it is not.' } },
   }),
   restriction_reason: f.text({
@@ -68,10 +68,9 @@ export const profileSystemFields = {
       },
     },
   }),
-  erased_at: f.dateTime({
+  erased_at: dateTime({
     system: true,
     in: ['list', 'show'],
-    nullable: true,
     texts: {
       label: 'Erased at',
       doc: {

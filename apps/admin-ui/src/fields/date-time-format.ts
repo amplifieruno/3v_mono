@@ -22,3 +22,14 @@ export function instantOf(value: unknown): number | null {
   const at = Date.parse(value);
   return Number.isNaN(at) ? null : at;
 }
+
+/** An instant as date and time of day in `locale` (`Oct 22, 2026, 09:05` in `en`), in the browser's time zone. */
+export function formatDateTime(at: number, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(at);
+}

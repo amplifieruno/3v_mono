@@ -63,7 +63,7 @@ export default {
       count: '{{chosen}} chosen with {{templates}} face templates; {{stay}} photos stay.',
       moves: '{{photos}} photos and {{templates}} face templates move to the new identity.',
     },
-    /** The browser camera (`src/blocks/webcam-capture/webcam-capture.tsx`). */
+    /** The browser camera (`src/components/webcam-capture/webcam-capture.tsx`). */
     webcam: {
       start: 'Use camera',
       take: 'Take photo',
@@ -203,6 +203,9 @@ export default {
       },
       splitPhotos: {
         none: 'Choose at least one photo to split off.',
+      },
+      text: {
+        blank: 'Enter some text, not only spaces.',
       },
       facePhotos: {
         tooFew: 'Add at least {{min}} photos.',

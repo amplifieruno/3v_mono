@@ -181,6 +181,11 @@ export const splitIdentityOperation = hasuraOperation(
     split_row_not_found:
       'One of the chosen photos no longer belongs to this identity. Close the dialog, reload and choose again.' +
       NOTHING,
+    // The biometric guards on photos and templates (`identity_biometrics_insert_guard`, merge freeze).
+    identity_merged_frozen: 'The identity was merged into another one meanwhile: roll back its merge first.' + NOTHING,
+    profile_processing_restricted:
+      'Processing of the linked person is restricted: their photos cannot be moved until the restriction is lifted.' +
+      NOTHING,
   }),
 );
 

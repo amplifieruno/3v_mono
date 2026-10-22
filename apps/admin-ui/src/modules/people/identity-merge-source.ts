@@ -8,6 +8,7 @@ import {
 } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { IDENTITY_STATUSES, IDENTITY_STATUS_ENUM } from '../../enums/identities';
+import { dateTime } from '../../fields/date-time';
 
 /** Columns of `itap.identity_merge_sources` the `org_admin` role reads (`organization_id` left out). */
 export const identityMergeSourceFields = {
@@ -42,7 +43,7 @@ export const identityMergeSourceFields = {
       doc: { summary: 'Whether it was its profile’s primary identity; restored unless another identity is primary by then.' },
     },
   }),
-  created_at: f.dateTime({ system: true, texts: { label: 'Merged at', doc: { summary: 'When it was merged.' } } }),
+  created_at: dateTime({ system: true, texts: { label: 'Merged at', doc: { summary: 'When it was merged.' } } }),
 };
 
 /**

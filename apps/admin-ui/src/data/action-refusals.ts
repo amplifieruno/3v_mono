@@ -50,6 +50,12 @@ function refusalOf(error: DataError): ActionRefusalError | null {
  * may call it what it is: the flow then shows the refusal on the form instead of the unknown
  * screen. Codes a reader does not name, Hasura's own codes and transport failures pass through
  * unchanged.
+ *
+ * Scope: custom mutations only (`provider.mutations.custom`), that is Hasura Actions and tracked
+ * SQL functions bound through `hasuraOperation(..., refusals)` (`./sql-refusals.ts` for the
+ * functions). Resource writes (create / update / delete of a resource, flows with
+ * `submit.create` / `update` / `delete`) do not pass through here: their refusals keep the
+ * provider's own classification.
  */
 export function withActionRefusals(provider: DataProvider, refusals: ActionRefusals): DataProvider {
   const custom = provider.mutations?.custom;

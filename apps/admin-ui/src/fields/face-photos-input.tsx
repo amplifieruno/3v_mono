@@ -3,7 +3,7 @@ import { Button, Input } from '@burojs/ui-shadcn';
 import { Upload, X } from 'lucide-react';
 import * as React from 'react';
 import type { ItapIdentity } from '../auth';
-import { WebcamCapture } from '../blocks/webcam-capture/webcam-capture';
+import { WebcamCapture } from '../components/webcam-capture/webcam-capture';
 import { facePhotoIds } from './face-photos-format';
 import type { FacePhotosMeta } from './face-photos-meta';
 import { PhotoThumb } from './photo-thumb';
