@@ -53,4 +53,12 @@ export default {
   device_event: {
     doc: { topics: { index: 'Device events' } },
   },
+  profile: {
+    doc: {
+      topics: {
+        index: 'Profiles: types, status, clearance and activity',
+        'profiles-and-identities': 'Profiles and identities',
+      },
+    },
+  },
 } satisfies TranslationBundle;

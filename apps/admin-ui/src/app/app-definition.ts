@@ -9,6 +9,7 @@ import {
   devicesSection,
   organizationSection,
   overviewSection,
+  peopleSection,
   placesSection,
 } from './nav';
 import { helpPage } from './pages';
@@ -23,6 +24,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
   use(NAV_SECTIONS.organization, organizationSection);
   use(NAV_SECTIONS.places, placesSection);
   use(NAV_SECTIONS.devices, devicesSection);
+  use(NAV_SECTIONS.people, peopleSection);
   use('help', helpPage, helpBlock);
   use('frames', currentRecordFrame);
   use('itap-enums', ...ITAP_ENUMS);

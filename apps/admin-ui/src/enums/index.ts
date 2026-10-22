@@ -23,6 +23,7 @@ import {
   facilityStatusEnum,
   PLACES_ENUM_TABLES,
 } from './places';
+import { accessLevelEnum, PEOPLE_ENUM_TABLES, profileStatusEnum, profileTypeEnum } from './people';
 import {
   invitationStatusEnum,
   memberRoleEnum,
@@ -52,6 +53,9 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   deviceStatusEnum,
   deviceHealthEnum,
   deviceEventKindEnum,
+  profileTypeEnum,
+  profileStatusEnum,
+  accessLevelEnum,
 ];
 
 /**
@@ -63,4 +67,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...ORGANIZATION_ENUM_TABLES,
   ...PLACES_ENUM_TABLES,
   ...DEVICES_ENUM_TABLES,
+  ...PEOPLE_ENUM_TABLES,
 };

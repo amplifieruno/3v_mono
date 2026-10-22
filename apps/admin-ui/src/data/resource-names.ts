@@ -16,3 +16,7 @@ export const DEVICE_RESOURCE = 'device';
 export const DEVICE_AREA_RESOURCE = 'device_area';
 export const DEVICE_HEALTH_METRIC_RESOURCE = 'device_health_metric';
 export const DEVICE_EVENT_RESOURCE = 'device_event';
+export const COMPANY_RESOURCE = 'company';
+export const WORK_SCHEDULE_RESOURCE = 'work_schedule';
+export const USER_RESOURCE = 'user';
+export const PROFILE_RESOURCE = 'profile';

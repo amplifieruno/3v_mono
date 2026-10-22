@@ -61,7 +61,7 @@ export const ARTICLE_FILES: DocSources = articleSources(articleGlob, (topicId) =
  * `common` bundle at `concepts.<term>` (`./i18n/locales/*.ts`); any doc can
  * defer to one with `doc.see: 'concept/<term>'`.
  */
-export const CONCEPTS = ['organization-token'] as const;
+export const CONCEPTS = ['organization-token', 'profile-and-identity'] as const;
 
 /** The embedded documentation config handed to `<BuroProvider docs>`. */
 export const docs: DocsConfig = {

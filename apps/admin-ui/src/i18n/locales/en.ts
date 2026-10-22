@@ -240,5 +240,16 @@ export default {
           'before it expires. Switching organization issues a new token and clears cached data.',
       },
     },
+    'profile-and-identity': {
+      label: 'Profile and identity',
+      doc: {
+        summary:
+          'A profile is a known person, entered by people: name, company, type, dates, ' +
+          'clearance. An identity is a face the platform tracks, created by enrolment or by ' +
+          'recognition when it meets a new face. Linking identities to a profile is what lets ' +
+          'cameras and face authentication recognise that person; an identity without a profile ' +
+          'is an unknown person, a profile without one is pending face link.',
+      },
+    },
   },
 } satisfies TranslationBundle;

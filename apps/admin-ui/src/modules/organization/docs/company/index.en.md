@@ -4,6 +4,10 @@
 to. A person's profile names their company, and a visit can name the company
 the visitor comes from.
 
+A company's page has two tabs: **Details**, and **People**, the profiles that
+belong to the company (code, name, type, status and whether a face is linked).
+**+ Create** there starts a new profile already set to this company.
+
 ## Kinds
 
 - **Tenant**: rents space in the business center. **Suite** is the office or

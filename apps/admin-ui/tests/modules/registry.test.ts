@@ -47,6 +47,7 @@ describe('module registries', () => {
       'health-chart.deviceHealthSeries',
       'organization_invitation.inviteMember',
       'overview.dashboardKpis',
+      'people.profileActivity',
       'places.applyFacilityTemplate',
       'places.facilityOccupancyNow',
       'storage_files.openFile',

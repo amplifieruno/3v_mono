@@ -1,7 +1,8 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
+import { USER_RESOURCE } from '../../data/resource-names';
 
-export const USER_RESOURCE = 'user';
+export { USER_RESOURCE };
 
 /**
  * Columns of `auth.users` the `org_admin` role reads (GraphQL names: the

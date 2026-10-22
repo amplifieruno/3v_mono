@@ -1,24 +1,18 @@
-import { defineResource } from '@burojs/core';
+import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
-import { z } from 'zod';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { enumField } from '../../enums/field';
+import { checkEmail } from '../../fields/email-check';
 import {
   COMPANY_KINDS,
   COMPANY_KIND_ENUM,
   COMPANY_STATUSES,
   COMPANY_STATUS_ENUM,
 } from '../../enums/organization';
+import { resourceByName } from '../../data/resource-by-name';
+import { COMPANY_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
 
-export const COMPANY_RESOURCE = 'company';
-
-const EMAIL = z.string().email();
-
-/** The record form runs `validate` only, not the field's format (`tasks/ui/buro-gaps.md` G14). */
-const checkEmail = (value: unknown): string | null =>
-  value === null || value === undefined || value === '' || EMAIL.safeParse(value).success
-    ? null
-    : 'Enter a valid email address.';
+export { COMPANY_RESOURCE };
 
 /** Columns of `itap.companies` the `org_admin` role reads; the module's `index.ts` mapping selects these. */
 export const companyFields = {
@@ -65,14 +59,14 @@ export const companyFields = {
       },
     },
   }),
-  created_at: f.dateTime({ system: true, texts: 'Created' }),
-  updated_at: f.dateTime({ system: true, texts: 'Updated' }),
+  created_at: f.dateTime({ system: true, texts: 'Created', in: ['show'] }),
+  updated_at: f.dateTime({ system: true, texts: 'Updated', in: ['show'] }),
 };
 
 /**
  * The companies people belong to: tenants of the business center, contractors and
  * vendors, service providers and visitor organizations. Profiles and visits point at
- * a company; their related lists come with the people module (phase 4).
+ * a company; its page lists its people (profiles of the people module).
  */
 export const company = defineResource(COMPANY_RESOURCE, {
   texts: {
@@ -111,6 +105,42 @@ export const company = defineResource(COMPANY_RESOURCE, {
             ],
           },
         },
+      ],
+    },
+    show: {
+      body: (l) => [
+        l.tabs(
+          [
+            l.panel(
+              [
+                l.grid(['name', 'kind', 'status']),
+                l.grid(['suite', 'contact_email', 'contact_phone', 'cost_center']),
+                l.grid(['created_at', 'updated_at']),
+              ],
+              { key: 'details', texts: 'Details' },
+            ),
+            l.panel(
+              [
+                l.place(relatedList(resourceByName(PROFILE_RESOURCE)), {
+                  key: 'company-profiles',
+                  props: {
+                    // Also seeds "+ Create": a new profile starts in this company.
+                    where: [{ field: 'company_id', op: 'eq', value: l.ref('record', 'id') }],
+                    columns: ['code', 'last_name', 'first_name', 'profile_type', 'status', 'has_face'],
+                  },
+                }),
+              ],
+              { key: 'people', texts: 'People' },
+            ),
+          ],
+          { key: 'sections' },
+        ),
+      ],
+    },
+    edit: {
+      body: (l) => [
+        l.grid(['name', 'kind', 'status']),
+        l.grid(['suite', 'contact_email', 'contact_phone', 'cost_center']),
       ],
     },
   },

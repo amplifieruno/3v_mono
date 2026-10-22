@@ -3,8 +3,9 @@ import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { timeWindows } from '../../fields/time-windows';
 import { timezone } from '../../fields/timezone';
+import { WORK_SCHEDULE_RESOURCE } from '../../data/resource-names';
 
-export const WORK_SCHEDULE_RESOURCE = 'work_schedule';
+export { WORK_SCHEDULE_RESOURCE };
 
 /** Columns of `itap.work_schedules` the `org_admin` role reads; the module's `index.ts` mapping selects these. */
 export const workScheduleFields = {

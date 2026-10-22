@@ -39,6 +39,7 @@ export const NAV_ICONS = {
   startRecognition: 'ScanFace',
   stopRecognition: 'CircleStop',
   liveWall: 'MonitorPlay',
+  profiles: 'IdCard',
 } as const;
 
 /**
@@ -46,7 +47,7 @@ export const NAV_ICONS = {
  * grouping only: resources and pages keep their own paths. Every area is
  * declared here so later phases only register what they fill; the app
  * definition registers the sections modules fill (`overview`, `organization`, `places`,
- * `devices`).
+ * `devices`, `people`).
  */
 export const NAV_SECTIONS = {
   overview: 'overview',

@@ -460,3 +460,36 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** a scope dimension over a relation path
   (`scope: { facility: { field: 'facility_id', via: 'device' } }`), translated by the Hasura
   provider into a nested `where` (`{ device: { facility_id: { _in } } }`).
+
+### G28. A saved view cannot hold a relative date
+- **Need:** the profile list's "Visitors today" view (plan 04 Task 1): visitors whose start date
+  is on or before today and whose end date is on or after it.
+- **Framework (0.6.0):** `views.list.savedViews[].state.filters` are static data, and a filter
+  value is a literal (`FILTER_PREDICATE_OPS` has no relative-date operator, no `today` token).
+  **[code]**
+- **Workaround:** `profileSavedViews(now)` (`src/modules/people/profile-views.ts`) writes the
+  day the console was loaded; the view goes stale past midnight until a reload (the article says
+  so).
+- **Expected from a framework:** relative date values in filters (`{ op: 'lte', value: { relative:
+  'today' } }`), resolved when the view is applied.
+
+### G29. A relation's label is one field; a person's name is two
+- **Need:** profiles are named by first and last name; relation pickers and relation cells of later
+  resources (visits' visitor and host, identities' profile) should show both.
+- **Framework (0.6.0):** `recordTitle` builds the page heading and breadcrumb, but relation labels
+  and pickers read `displayField` only (one field name). **[code]** (`types/resource.ts`
+  `displayField` doc).
+- **Workaround:** `displayField: 'last_name'` plus `recordTitle` (first and last name) on the
+  profile; pickers show the last name only (search finds first names too).
+- **Expected from a framework:** relation labels and pickers that use `recordTitle` (or a declared
+  label template over several fields).
+
+### G30. A record type cannot be changed
+- **Need:** a visitor who becomes an employee, a contractor taken on as staff: `profile_type` is
+  updatable by `org_admin` and the access engine reacts to it.
+- **Framework (0.6.0):** the discriminator of `types` is never editable on edit
+  (`screens/plan.ts`: `mode === 'edit' && node.field === compiled.discriminator`). **[code]**
+- **Workaround:** `profile_type` is `write: 'create'` in the console; changing it needs a flow
+  (not built) or a new profile.
+- **Expected from a framework:** an opt-in "change type" on edit that switches the screen to the
+  new type's fields (and drops the old type's values or keeps them, as declared).
