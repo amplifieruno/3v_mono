@@ -1239,3 +1239,19 @@ migration `1792365700277`.
   check sees no submitted value, G12): accepted in `tests/check-app.test.ts`.
 - **Expected from a framework:** a per-resource refusal reader for create / update / delete (as
   G54), or a related list placement whose "+ Create" may open a named flow of the owner resource.
+
+### G79. A flow's "may have been applied" screen cannot say what to do for that flow
+- **Need:** "Rotate key" on a client application (phase 11) answers a key's secret once. When the
+  answer of `rotate_client_key` is lost, a key may exist whose secret nobody received; the
+  administrator must be told to look at the Keys tab and revoke a key they have no secret for.
+- **Framework (0.6.0):** the unknown outcome reads the one app-wide text `flow.unknown` ("The
+  request timed out. It may have been applied. Nothing was resent.") plus the snapshot's reason
+  (`ui-shadcn/src/flows/flow-screen.tsx` `outcomeMessage`); a flow declares no unknown text of its
+  own, and `onUnknown.check` cannot help here: even "applied" would open the secret block without
+  a secret (the check sees no answer, G12). **[code]**
+- **Workaround:** no check (accepted `flow.unknown-unhandled` for `client_application
+  toolbar.item.5.submit` in `tests/check-app.test.ts`), `retry: 'never'` so nothing is resent, and
+  the "API keys" article says what to do after a lost rotation
+  (`src/modules/face-auth/docs/client_application/keys.en.md`).
+- **Expected from a framework:** a per-flow `texts.unknown` (or `onUnknown.texts`) shown on the
+  unknown screen.

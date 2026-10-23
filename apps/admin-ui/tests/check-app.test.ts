@@ -46,6 +46,11 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // Nothing is resent; the unknown screen tells the user to look at the application's lists first,
   // and a second send of a binding that landed is refused as "already bound".
   ...[0, 1, 2, 3, 4].map((item) => ({ code: 'flow.unknown-unhandled', location: `client_application toolbar.item.${item}.submit` })),
+  // `rotate_key`: a lost answer of `rotate_client_key` lost the one-time secret with it, so there is
+  // nothing to show even if the key landed, and a resend would create another key. The unknown
+  // screen stands; the "API keys" article tells the administrator to revoke a key whose secret they
+  // never received.
+  { code: 'flow.unknown-unhandled', location: 'client_application toolbar.item.5.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

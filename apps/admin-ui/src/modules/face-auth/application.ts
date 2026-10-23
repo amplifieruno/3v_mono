@@ -1,12 +1,14 @@
 import { type Layout, type ScreenCondition, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { CLIENT_APPLICATION_RESOURCE } from '../../data/resource-names';
+import { CLIENT_APPLICATION_KEY_RESOURCE, CLIENT_APPLICATION_RESOURCE } from '../../data/resource-names';
 import { CLIENT_APPLICATION_COLUMNS, clientApplicationFields } from './application-fields';
 import { deleteFlow, reactivateFlow, revokeFlow, suspendFlow } from './application-flows';
 import { APPLICATION_RULES, THRESHOLD_CHECKS } from './application-rules';
 import { BINDING_FLOWS } from './binding-flows';
 import { type BindingKind, bindingOf } from './binding-targets';
+import { CLIENT_KEY_COLUMNS } from './key';
+import { rotateKeyFlow } from './key-flows';
 
 type Fields = typeof clientApplicationFields;
 
@@ -49,8 +51,8 @@ function bindingPanel(l: Layout<Fields>, kind: BindingKind, description: string,
  * Client applications of the face authentication service (`itap.client_applications`): what may
  * call the API, whom it may authenticate (bound segments and facilities, narrowed by its doors and
  * work schedules), how (modes, thresholds, liveness) and what it learns (attributes). Suspend,
- * Reactivate and Revoke change its status; revoked is terminal. Keys, sessions and attempts are
- * added as tabs by the later tasks of phase 11. The integrator's view: the "Integration" article.
+ * Reactivate and Revoke change its status; revoked is terminal. Its API keys are on the Keys tab
+ * (Rotate key shows a new secret once). Sessions and attempts are added by phase 11 task 3. The integrator's view: the "Integration" article.
  */
 export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
   texts: {
@@ -73,6 +75,7 @@ export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
   actions: (r) => ({
     item: [
       ...BINDING_FLOWS.map(([name, flow]) => r.action.flow(name, flow)),
+      r.action.flow('rotate_key', rotateKeyFlow),
       r.action.flow('suspend', suspendFlow),
       r.action.flow('reactivate', reactivateFlow),
       r.action.flow('revoke', revokeFlow),
@@ -143,6 +146,31 @@ export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
                 bindingPanel(l, 'attribute', 'What the application receives about the person with a success, and nothing else. Add one with “Share attribute”.'),
               ],
               { key: 'modes-attributes', texts: 'Modes and attributes' },
+            ),
+            l.panel(
+              [
+                l.panel(
+                  [
+                    l.place(relatedList(resourceByName(CLIENT_APPLICATION_KEY_RESOURCE)), {
+                      key: 'keys-list',
+                      props: {
+                        where: [{ field: 'application_id', op: 'eq', value: l.ref('record', 'id') }],
+                        columns: [...CLIENT_KEY_COLUMNS],
+                        open: 'none',
+                      },
+                    }),
+                  ],
+                  {
+                    key: 'api-keys',
+                    texts: {
+                      title: 'API keys',
+                      description:
+                        'The keys the application signs its requests with; a secret is shown only once, when “Rotate key” (More menu) creates the key. At most two keys are active: rotate, switch the integration to the new key, then revoke the old one from its row.',
+                    },
+                  },
+                ),
+              ],
+              { key: 'keys', texts: 'Keys' },
             ),
           ],
           { key: 'sections' },

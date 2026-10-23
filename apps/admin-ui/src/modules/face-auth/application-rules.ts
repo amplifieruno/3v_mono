@@ -14,7 +14,8 @@ export const isRevoked = (ctx: Pick<RuleContext, 'record'>): boolean => !isProbe
 export const SANDBOX_REASON =
   'A sandbox application authenticates only the synthetic test identities of its segment, never people at a place: it binds no facilities or access points.';
 /** Why a revoked application is neither edited nor bound to anything new. */
-export const REVOKED_REASON = 'The application is revoked: it refuses every request for good, so its settings and bindings no longer change.';
+export const REVOKED_REASON =
+  'The application is revoked: it refuses every request for good, so its settings, bindings and keys no longer change (old keys can still be revoked).';
 
 /** The binding flows a sandbox application is not offered (`sandbox_population_check`). */
 export const LOCATION_FLOWS = BINDINGS.filter((b) => !b.sandbox).map((b) => b.flow);
@@ -22,7 +23,7 @@ export const LOCATION_FLOWS = BINDINGS.filter((b) => !b.sandbox).map((b) => b.fl
 /**
  * - A sandbox application is not offered "Add facility" and "Add access point" (hidden, with the
  *   reason); a forced call is refused by the database (`sandbox_location_binding`, mapped).
- * - A revoked application is not edited and gets no new binding (disabled, with the reason).
+ * - A revoked application is not edited and gets no new binding or key (disabled, with the reason).
  */
 export const APPLICATION_RULES: Rule[] = [
   {
@@ -33,12 +34,24 @@ export const APPLICATION_RULES: Rule[] = [
     reason: SANDBOX_REASON,
   },
   {
-    target: { kind: 'action', name: ['edit', ...BINDINGS.map((b) => b.flow)] },
+    target: { kind: 'action', name: ['edit', 'rotate_key', ...BINDINGS.map((b) => b.flow)] },
     deny: 'run',
     when: isRevoked,
     fallback: 'disable',
     reason: REVOKED_REASON,
   },
+];
+
+/** Whether the rule's record is a binding of a revoked application (`application { status }`, selected with the binding). */
+export const bindingOfRevoked = (ctx: Pick<RuleContext, 'record'>): boolean => {
+  if (isProbe(ctx)) return false;
+  const application = (ctx.record as Row)?.application;
+  return typeof application === 'object' && application !== null && (application as Readonly<Record<string, unknown>>).status === 'revoked';
+};
+
+/** A binding of a revoked application is not removed either (row delete disabled, with the reason). */
+export const BINDING_RULES: Rule[] = [
+  { target: { kind: 'action', name: 'delete' }, deny: 'run', when: bindingOfRevoked, fallback: 'disable', reason: REVOKED_REASON },
 ];
 
 const number = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);

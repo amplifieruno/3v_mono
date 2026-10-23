@@ -73,10 +73,18 @@ application is a sandbox is chosen when it is registered and never changes.
   refused as "application inactive" until **Reactivate**. Keys, bindings and
   history stay as they are.
 - **Revoke** retires an application for good: every request is refused and it
-  can never be reactivated (the platform refuses it). Its settings and bindings
-  no longer change; register a new application for a new integration.
+  can never be reactivated (the platform refuses it). Its settings, bindings
+  and keys no longer change (a key can still be revoked); register a new
+  application for a new integration.
 - **Delete** is for an application that never authenticated anyone. One with
   sessions or attempts keeps them as history and is refused with the reason:
   revoke it instead.
+
+## Keys
+
+The **Keys** tab lists the application's API keys. **Rotate key** (More menu)
+creates one and shows its secret once; **Revoke key** on a row retires one for
+good. At most two keys are active. A revoked application gets no new keys. See
+the **API keys** article.
 
 How an integrator calls the API is in the **Integration** article.

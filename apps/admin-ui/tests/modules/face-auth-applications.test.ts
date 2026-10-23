@@ -203,7 +203,17 @@ describe('refusals through the provider', () => {
   it('should name every face-auth operation in the refusal registry', () => {
     const names = Object.keys(ACTION_REFUSALS).filter((key) => key.startsWith(`${FACE_AUTH_BINDING}.`));
     expect(names.sort()).toEqual(
-      ['bindAccessPoint', 'bindAttribute', 'bindFacility', 'bindMode', 'bindSegment', 'deleteClientApplication', 'setClientApplicationStatus'].map(
+      [
+        'bindAccessPoint',
+        'bindAttribute',
+        'bindFacility',
+        'bindMode',
+        'bindSegment',
+        'deleteClientApplication',
+        'revokeClientKey',
+        'rotateClientKey',
+        'setClientApplicationStatus',
+      ].map(
         (name) => `${FACE_AUTH_BINDING}.${name}`,
       ),
     );

@@ -11,9 +11,10 @@ machine-readable contract is `GET /v1/auth/openapi.json` on the ITAP backend
 The application calls the API with a key: an 8-character **prefix** and a
 **secret** shown once, when the key is created. An application has at most two
 active keys, so a new key can be rolled out before the old one is revoked. Keys
-can expire or be revoked. The secret must never ship inside a browser or mobile
-app: capture devices send their frames to the integrator's own server, which
-signs the requests.
+can expire or be revoked; an administrator rotates and revokes them on the
+application's **Keys** tab (the **API keys** article). The secret must never
+ship inside a browser or mobile app: capture devices send their frames to the
+integrator's own server, which signs the requests.
 
 ## The sequence
 

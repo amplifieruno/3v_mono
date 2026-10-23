@@ -159,8 +159,9 @@ export const TARGET_READ_FIELDS = {
 /** The bound thing as the add flow's form asks for it. */
 export const TARGET_FORM_FIELDS = {
   segment: { segment_id: f.relation({ ...SEGMENT, candidates: [{ field: 'status', op: 'ne', value: 'archived' }] }) },
-  facility: { facility_id: f.relation({ ...FACILITY }) },
-  access_point: { access_point_id: f.relation({ ...ACCESS_POINT }) },
+  // Places have no archived state: the ones out of service (`inactive`) are not offered.
+  facility: { facility_id: f.relation({ ...FACILITY, candidates: [{ field: 'status', op: 'ne', value: 'inactive' }] }) },
+  access_point: { access_point_id: f.relation({ ...ACCESS_POINT, candidates: [{ field: 'status', op: 'ne', value: 'inactive' }] }) },
   mode: { mode: enumField(AUTH_MODES, AUTH_MODE_ENUM, { required: true, texts: MODE_TEXTS }) },
   attribute: { attribute: enumField(AUTH_ATTRIBUTES, AUTH_ATTRIBUTE_ENUM, { required: true, texts: ATTRIBUTE_TEXTS }) },
 } as const;

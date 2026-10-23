@@ -212,6 +212,7 @@ export default {
       topics: {
         index: 'Client applications: population, modes, thresholds, attributes, sandbox and status',
         integration: 'Integration: keys, the authentication sequence, signing and what the settings mean for callers',
+        keys: 'API keys: rotating a key (the secret shown once), at most two active keys, revoking',
       },
     },
   },

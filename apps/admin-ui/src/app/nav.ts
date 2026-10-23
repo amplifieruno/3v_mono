@@ -157,6 +157,8 @@ export const NAV_ICONS = {
   bindAccessPoint: 'DoorOpen',
   allowMode: 'ScanFace',
   shareAttribute: 'ListPlus',
+  rotateKey: 'RotateCw',
+  revokeKey: 'Ban',
 } as const;
 
 /**

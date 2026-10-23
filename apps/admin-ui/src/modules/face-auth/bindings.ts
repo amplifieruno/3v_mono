@@ -1,6 +1,7 @@
 import { defineResource } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { CLIENT_APPLICATION_RESOURCE } from '../../data/resource-names';
+import { BINDING_RULES } from './application-rules';
 import { BINDINGS, type BindingKind, type BindingSpec, TARGET_READ_FIELDS } from './binding-targets';
 
 /*
@@ -10,7 +11,8 @@ import { BINDINGS, type BindingKind, type BindingSpec, TARGET_READ_FIELDS } from
  * kind (`./binding-flows.ts`), not by the list's create: the flow's custom insert can say why the
  * database refused it (a sandbox binding a facility, a duplicate), a resource create cannot
  * (`tasks/ui/buro-gaps.md` G78). Bindings describe the application, not a place, so the sidebar
- * facility never narrows them.
+ * facility never narrows them. A revoked application's bindings are not removed either
+ * (`BINDING_RULES`, over `application { status }` selected with each row).
  */
 
 const common = {
@@ -44,6 +46,7 @@ function bindingResource(spec: BindingSpec) {
     operations: { create: false, edit: false },
     builtinActions: { edit: false },
     fields,
+    rules: BINDING_RULES,
     views: {
       list: { page: false, columns: [spec.column as keyof typeof fields & string, 'created_at'] },
       show: { page: false },

@@ -88,6 +88,8 @@ describe('module registries', () => {
       'face-auth.bindMode',
       'face-auth.bindSegment',
       'face-auth.deleteClientApplication',
+      'face-auth.revokeClientKey',
+      'face-auth.rotateClientKey',
       'face-auth.setClientApplicationStatus',
       'health-chart.deviceHealthSeries',
       'identity-timeline.identityTimeline',
