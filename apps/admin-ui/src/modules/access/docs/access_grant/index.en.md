@@ -4,8 +4,10 @@ An **access grant** lets one person through one place for a limited time,
 beside the access policies: a visitor's meeting room, a contractor's plant
 room for the afternoon, a courier's loading dock once. **Access control →
 Access grants** lists them; the views **Not revoked**, **Single use,
-unused**, **Used** and **Revoked** narrow the list. A person's and an access
-point's **Access** tab list their grants too, and create one for them.
+unused**, **Used** and **Revoked** narrow the list. The list spans every
+facility: a grant carries no facility of its own, so the facility selected in
+the sidebar does not narrow it. A person's and an access point's **Access**
+tab list their grants too, and create one for them.
 
 ## Granting
 

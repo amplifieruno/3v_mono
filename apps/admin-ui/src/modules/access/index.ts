@@ -13,7 +13,9 @@ import {
   ACCESS_POLICY_SUBJECT_RESOURCE,
   ACCESS_POLICY_TARGET_RESOURCE,
   ACCESS_POLICY_VERSION_RESOURCE,
+  EMERGENCY_OVERRIDE_AREA_RESOURCE,
   EMERGENCY_OVERRIDE_RESOURCE,
+  TERMINAL_POLICY_SYNC_RESOURCE,
 } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
 import { accessNamesOperation, accessNamesQuery } from './access-names-query';
@@ -25,6 +27,8 @@ import { accessGrant } from './grant';
 import { accessGrantFields } from './grant-fields';
 import { GRANT_MUTATIONS, GRANT_OPERATIONS } from './grant-ops';
 import { emergencyOverride, emergencyOverrideFields } from './override';
+import { emergencyOverrideArea, emergencyOverrideAreaFields } from './override-area';
+import { OVERRIDE_MUTATIONS, OVERRIDE_OPERATIONS } from './override-ops';
 import { accessPolicy } from './policy';
 import { policyAnalyticsBlock } from './policy-analytics-block';
 import { policyAnalyticsPage } from './policy-analytics-page';
@@ -55,7 +59,12 @@ import {
 } from './policy-targets';
 import { accessPolicyVersion } from './policy-version';
 import { accessPolicyVersionFields } from './policy-version-fields';
+import { publishResultBlock } from './publish-result-block';
 import { simulationBlock } from './simulation-block';
+import { TERMINAL_OPERATIONS, TERMINAL_QUERIES } from './terminal-ops';
+import { terminalPolicySync, terminalPolicySyncFields } from './terminal-sync';
+import { terminalSyncBlock } from './terminal-sync-block';
+import { publishPolicyAction, terminalsPage } from './terminals-page';
 import { simulateAccessPolicy, simulateAccessPolicyOperation } from './simulation-query';
 import { accessPolicyVersionContent, versionContentOperation } from './version-content-query';
 import { versionReviewBlock } from './version-review-block';
@@ -70,8 +79,10 @@ const versions = { selectFields: [...selectFieldsOf(accessPolicyVersionFields), 
  * (four-eyes) before it goes in force, rejected with a reason, rolled back by copying an earlier
  * version, or tried against the doors' past decisions first (simulation, writes nothing); the
  * policy analytics page; access grants (revoked with a reason, never edited); the access decision
- * log with each decision's trace and "Test access" on an access point; emergency overrides (read
- * only until plan 10 task 3).
+ * log with each decision's trace and "Test access" on an access point; emergency overrides
+ * (started with a justification, ended early with a reason, each terminal's pick-up shown); the
+ * terminals' policy sync (Terminals page, device pages, the sync log) and "Publish policy to
+ * terminals".
  */
 export const accessModule = {
   name: 'access-module',
@@ -99,6 +110,14 @@ export const accessModule = {
     accessGrant,
     accessDecision,
     emergencyOverride,
+    emergencyOverrideArea,
+    ...OVERRIDE_MUTATIONS,
+    terminalPolicySync,
+    ...TERMINAL_QUERIES,
+    terminalSyncBlock,
+    publishResultBlock,
+    publishPolicyAction,
+    terminalsPage,
     ...GRANT_MUTATIONS,
     accessDecisionTrace,
     accessTraceNames,
@@ -140,10 +159,19 @@ export const accessModule = {
       selectFields: selectFieldsOf(emergencyOverrideFields),
       orderByField: 'started_at',
     }),
+    [EMERGENCY_OVERRIDE_AREA_RESOURCE]: hasuraTable('emergency_override_areas', { selectFields: selectFieldsOf(emergencyOverrideAreaFields) }),
+    // Append-only log: keyset paging, no count on every page.
+    [TERMINAL_POLICY_SYNC_RESOURCE]: hasuraTable('terminal_policy_syncs', {
+      selectFields: selectFieldsOf(terminalPolicySyncFields),
+      orderByField: 'created_at',
+      noAggregate: true,
+    }),
   },
   operations: [
     ...POLICY_OPERATIONS,
     ...GRANT_OPERATIONS,
+    ...OVERRIDE_OPERATIONS,
+    ...TERMINAL_OPERATIONS,
     decisionTraceOperation,
     traceNamesOperation,
     versionContentOperation,

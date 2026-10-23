@@ -8,12 +8,14 @@ export const ACCESS_POLICY_VERSION_STATUS_ENUM = 'access_policy_version_status';
 export const ACCESS_DECISION_RESULT_ENUM = 'access_decision_result';
 export const ACCESS_DECISION_REASON_ENUM = 'access_decision_reason';
 export const OVERRIDE_MODE_ENUM = 'override_mode';
+export const TERMINAL_SYNC_RESULT_ENUM = 'terminal_sync_result';
 
 export const ACCESS_EFFECTS = ['allow', 'deny'] as const;
 /** The rows of `version_statuses`, read with the meaning they have for access policies (approval). */
 export const ACCESS_POLICY_VERSION_STATUSES = ['draft', 'pending_approval', 'published', 'superseded'] as const;
 export const ACCESS_DECISION_RESULTS = ['granted', 'denied'] as const;
 export const OVERRIDE_MODES = ['lock_all', 'unlock_all', 'evacuation'] as const;
+export const TERMINAL_SYNC_RESULTS = ['synced', 'unreachable', 'failed'] as const;
 export const ACCESS_DECISION_REASONS = [
   'override_lock',
   'override_unlock',
@@ -109,7 +111,10 @@ export const accessDecisionReasonEnum = defineEnum({
       doc: { summary: 'A policy names the person and the door, but its schedule or validity did not cover the moment.' },
     },
     no_rule: { label: 'No matching rule', doc: { summary: 'No policy in force and no grant covers the person at this door.' } },
-    unknown_person: { label: 'Unknown person', doc: { summary: 'The face has no profile, so no policy can name the person.' } },
+    unknown_person: {
+      label: 'Unknown person',
+      doc: { summary: 'Nobody known was presented: a face without a profile that no policy for faces (identity segment) matched, or nothing at all.' },
+    },
     profile_inactive: { label: 'Profile not active', doc: { summary: 'The person’s profile is suspended, inactive or terminated.' } },
     access_point_unavailable: {
       label: 'Door unavailable',
@@ -118,16 +123,33 @@ export const accessDecisionReasonEnum = defineEnum({
   },
 });
 
+/** The override modes' texts: the enum's labels, also the record title of an override. */
+export const OVERRIDE_MODE_TEXTS = {
+  lock_all: { label: 'Lock all', doc: { summary: 'Every covered door refuses everyone, access grants included.' } },
+  unlock_all: { label: 'Unlock all', doc: { summary: 'Every covered door opens for everyone.' } },
+  evacuation: {
+    label: 'Evacuation',
+    doc: { summary: 'Exits open for everyone (even under a lock); entries keep deciding as usual.' },
+  },
+} as const satisfies Record<(typeof OVERRIDE_MODES)[number], { label: string; doc: { summary: string } }>;
+
 export const overrideModeEnum = defineEnum({
   name: OVERRIDE_MODE_ENUM,
   values: enumValues(OVERRIDE_MODES, { lock_all: 'destructive', unlock_all: 'warning', evacuation: 'warning' }),
+  texts: OVERRIDE_MODE_TEXTS,
+});
+
+/** The result of one push of the policy to a terminal (`terminal_sync_results`). */
+export const terminalSyncResultEnum = defineEnum({
+  name: TERMINAL_SYNC_RESULT_ENUM,
+  values: enumValues(TERMINAL_SYNC_RESULTS, { synced: 'success', unreachable: 'warning', failed: 'destructive' }),
   texts: {
-    lock_all: { label: 'Lock all', doc: { summary: 'Every covered door refuses everyone, access grants included.' } },
-    unlock_all: { label: 'Unlock all', doc: { summary: 'Every covered door opens for everyone.' } },
-    evacuation: {
-      label: 'Evacuation',
-      doc: { summary: 'Exits open for everyone (even under a lock); entries keep deciding as usual.' },
+    synced: { label: 'Synced', doc: { summary: 'The terminal received the rule set and decides by it.' } },
+    unreachable: {
+      label: 'Unreachable',
+      doc: { summary: 'The terminal is offline or unhealthy: nothing was delivered, it keeps its older rule set and is tried again.' },
     },
+    failed: { label: 'Failed', doc: { summary: 'The delivery failed (see the error); the terminal is tried again.' } },
   },
 });
 
@@ -138,4 +160,5 @@ export const ACCESS_ENUM_TABLES: Readonly<Record<string, string>> = {
   [ACCESS_DECISION_RESULT_ENUM]: 'access_decision_results',
   [ACCESS_DECISION_REASON_ENUM]: 'access_decision_reasons',
   [OVERRIDE_MODE_ENUM]: 'override_modes',
+  [TERMINAL_SYNC_RESULT_ENUM]: 'terminal_sync_results',
 };

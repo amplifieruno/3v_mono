@@ -10,7 +10,7 @@ import { type ItapScope, applyFacility } from './scope';
 const ALL_FACILITIES = '__all__';
 
 /** More facilities than one organization runs; the picker reads one page. */
-const FACILITY_PAGE_SIZE = 200;
+export const FACILITY_PAGE_SIZE = 200;
 
 interface FacilityRow {
   readonly id: string;

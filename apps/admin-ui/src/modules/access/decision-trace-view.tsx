@@ -4,7 +4,7 @@ import type * as React from 'react';
 import { ACCESS_DECISION_RESOURCE, ACCESS_POINT_RESOURCE, IDENTITY_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
 import { ACCESS_DECISION_REASON_ENUM, ACCESS_DECISION_RESULT_ENUM } from '../../enums/access';
 import type { decisionTraceBlock } from './decision-trace-block';
-import { type Trace, formatRisk, traceOf } from './decision-trace-format';
+import { DECIDED_BY, type Trace, formatRisk, humanizeValue, isKnown, traceOf } from './decision-trace-format';
 import { TracePolicies } from './decision-trace-policies';
 import { type DecisionTrace, accessDecisionTrace, accessTraceNames } from './decision-trace-query';
 import { Step, TraceGrants, TraceOverrides, TracePerson, TraceRisk } from './decision-trace-steps';
@@ -53,7 +53,9 @@ function Steps({ trace, names, t }: { readonly trace: Trace; readonly names: typ
     <div className="flex flex-col gap-4">
       {trace.decidedBy === null ? null : (
         <p className="text-sm" data-testid="trace-decided-by">
-          {t(`decidedBy_${trace.decidedBy}`)}
+          {isKnown(trace.decidedBy, DECIDED_BY)
+            ? t(`decidedBy_${trace.decidedBy}`)
+            : t('decidedBy_other', { params: { step: humanizeValue(trace.decidedBy) } })}
         </p>
       )}
       <TraceOverrides trace={trace} t={t} />

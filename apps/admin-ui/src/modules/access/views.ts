@@ -2,9 +2,13 @@ import { implementBlock } from '@burojs/react';
 import { decisionTraceBlock } from './decision-trace-block';
 import { DecisionTraceView } from './decision-trace-view';
 import { policyAnalyticsBlock } from './policy-analytics-block';
+import { publishResultBlock } from './publish-result-block';
+import { PublishResultView } from './publish-result-view';
 import { PolicyAnalyticsView } from './policy-analytics-view';
 import { simulationBlock } from './simulation-block';
 import { SimulationView } from './simulation-view';
+import { terminalSyncBlock } from './terminal-sync-block';
+import { TerminalSyncView } from './terminal-sync-view';
 import { versionReviewBlock } from './version-review-block';
 import { VersionReviewView } from './version-review-view';
 
@@ -14,4 +18,6 @@ export const accessViews = [
   implementBlock(simulationBlock, { component: SimulationView }),
   implementBlock(policyAnalyticsBlock, { component: PolicyAnalyticsView }),
   implementBlock(decisionTraceBlock, { component: DecisionTraceView }),
+  implementBlock(terminalSyncBlock, { component: TerminalSyncView }),
+  implementBlock(publishResultBlock, { component: PublishResultView }),
 ] as const;

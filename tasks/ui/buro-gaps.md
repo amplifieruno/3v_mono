@@ -1184,3 +1184,32 @@ migration `1792365700277`.
   (`tests/integration/access-grants.dev.test.ts`).
 - **Expected from a framework:** `one` reads the dotted relation columns a screen or a rule declares,
   like lists do.
+
+### G76. The shell has no banner slot
+- **Need:** an emergency override active in the selected facility is announced above every page
+  of the console (plan 10 task 3), not only on the overrides list.
+- **Framework (0.6.0):** `AppShell` takes `sidebar`, `header`, `palette` and `docPanel`; `AppHeader`
+  takes `breadcrumbs`, `search` and `actions` (a fixed-height bar); `AppLayout` draws `children`
+  straight into the page's scroll container. There is no slot (nor a frame or block placement)
+  for an app-wide notice between the header and the page. **[code]**
+  (`ui-shadcn/src/shell/app-shell.tsx`, `layout/app-header.tsx`, `layout/app-layout.tsx`)
+- **Workaround:** the console's own shell composition (`src/app/app.tsx`) draws
+  `<ActiveOverrideBanner />` before `<Outlet />` as the shell's children: it scrolls with the page
+  and is app code, not a declaration (`src/app/active-override-banner.tsx`).
+- **Expected from a framework:** a `banner` slot on `AppShell` (or a shell-level block placement
+  area) drawn under the header on every page.
+
+### G77. An app flow cannot have form fields
+- **Need:** "Publish policy to terminals" (an app action: it belongs to no record) asks which
+  facility to publish to (optional) and shows the per-terminal answer.
+- **Framework (0.6.0):** `defineAppAction({ kind: 'flow', form: { fields } })` throws
+  `form.fields.<name>.schema.spa is a function; only submit.input and submit.onUnknown.check may be
+  functions in an app flow`: every `f.*` field carries its zod schema (functions), and a `body`
+  layout is a function too, so an app flow can have no form at all, only `review: true`. **[run]**
+  (`core/src/define-app-action.ts` `appFlowPortablePart`)
+- **Workaround:** the flow publishes to the facility selected in the sidebar (`submit.input`
+  reads `scope.facility`; none selected = every facility), with `review: true` so the hosted flow
+  keeps its answer (G55); the Terminals page explains it above the inline flow
+  (`src/modules/access/terminals-page.ts`).
+- **Expected from a framework:** app flow forms with portable field declarations (the manifest
+  shape of a field), or a resource-less flow form that accepts `f.*` fields in trusted code.

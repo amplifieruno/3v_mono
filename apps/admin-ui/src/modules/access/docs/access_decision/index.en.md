@@ -19,8 +19,9 @@ trace as steps, in the order the engine went through them:
    decided (an evacuation opens exits even under a lock).
 2. The door itself: an inactive door or one under maintenance refuses
    everyone.
-3. The **Person**: an unknown face or a profile that is not active is refused
-   before any policy.
+3. The **Person**: nobody presented (no face, no person) or a profile that
+   is not active is refused before any policy. A face without a profile goes
+   on: only a policy naming a segment of faces (identities) can match it.
 4. **Policy versions in force**, in evaluation order (highest priority first,
    a deny before an allow at equal priority): whom each names (the person, a
    segment, the profile type, the access level), where (the whole facility,

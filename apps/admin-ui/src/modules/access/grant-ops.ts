@@ -8,8 +8,9 @@ import { ACCESS_BINDING } from './policy-ops';
 
 const NOTHING = ' Nothing was changed.';
 
-/** What `revoke_access_grant` raises (and the grant guard behind it). */
+/** What `revoke_access_grant` raises (migration 157, and the grant guard behind it). */
 export const REVOKE_GRANT_REFUSALS: Readonly<Record<string, SqlRefusalText>> = {
+  member_required: 'Only an active member of the organization can revoke a grant (your membership is suspended or expired).' + NOTHING,
   access_grant_not_found: 'The grant no longer exists: reload the list.' + NOTHING,
   access_grant_revoked: 'The grant was already revoked (by someone else meanwhile?): reload it.' + NOTHING,
   access_grant_not_editable: 'A grant never changes except by being revoked once.' + NOTHING,

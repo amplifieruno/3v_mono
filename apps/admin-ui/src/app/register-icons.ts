@@ -109,6 +109,9 @@ import {
   Archive,
   Ticket,
   ScrollText,
+  RadioTower,
+  FileClock,
+  Upload,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -223,6 +226,9 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   Archive,
   Ticket,
   ScrollText,
+  RadioTower,
+  FileClock,
+  Upload,
 };
 
 /**

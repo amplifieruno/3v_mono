@@ -122,8 +122,25 @@ export interface Trace {
   readonly ignoredDevice: boolean;
 }
 
-/** The order the risk components are listed in (`itap.evaluate_access`). */
+/** The order the risk components are listed in (`itap.evaluate_access`); others follow, by name. */
 export const RISK_PARTS = ['unknown_identity', 'recent_denials', 'over_capacity', 'device_health'] as const;
+
+/** The trace values the block has words for; any other (a newer engine) is shown humanized. */
+export const DECIDED_BY = ['override', 'access_point', 'person', 'policy', 'grant', 'default'] as const;
+export const SUBJECT_KINDS = ['profile', 'segment', 'profile_type', 'access_level'] as const;
+export const TARGET_KINDS = ['facility', 'area', 'access_point'] as const;
+export const SCHEDULE_STATES = ['always', 'in', 'out'] as const;
+
+/** Whether `value` is one of `known` (narrowed), so its text key exists. */
+export function isKnown<const K extends string>(value: string | null, known: readonly K[]): value is K {
+  return value !== null && (known as readonly string[]).includes(value);
+}
+
+/** An engine value without words in the block, readable: `badge_reader` -> `Badge reader`. */
+export function humanizeValue(value: string): string {
+  const text = value.replace(/_/gu, ' ').trim();
+  return text === '' ? '—' : text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 /** Why a candidate did or did not decide: the first unmet condition in the engine's order. */
 export function candidateOutcome(c: z.infer<typeof candidateRow>): CandidateOutcome {
@@ -173,7 +190,8 @@ export function traceOf(signals: unknown): Trace | null {
       consumed: g.consumed === true,
     })),
     riskScore: t.risk?.score ?? null,
-    riskParts: RISK_PARTS.flatMap((key) => {
+    // Known parts in the engine's order, then any other part (by name), so the parts add up to the score.
+    riskParts: [...RISK_PARTS, ...Object.keys(components).filter((key) => !isKnown(key, RISK_PARTS)).sort()].flatMap((key) => {
       const value = components[key];
       return typeof value === 'number' && value > 0 ? [{ key, value }] : [];
     }),

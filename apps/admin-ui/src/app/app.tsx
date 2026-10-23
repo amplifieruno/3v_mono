@@ -18,6 +18,7 @@ import { LoginPage } from '../auth/login-page';
 import { OrganizationPickerPage } from '../auth/organization-picker-page';
 import { LOGIN_PATH, ORGANIZATIONS_PATH, RequireAuth } from '../auth/require-auth';
 import { authProvider, tokenStore } from '../auth/session';
+import { ActiveOverrideBanner } from './active-override-banner';
 import { HOME_PATH, useConsoleBrand } from './brand';
 import { FacilityPicker } from './facility-picker';
 import { InboxBell } from './inbox-bell';
@@ -49,7 +50,7 @@ const headerActions = (
 /**
  * The application frame for a signed-in user inside an organization: the
  * organization switcher heads the sidebar, the facility picker sits under it,
- * and the header carries the inbox bell.
+ * the header carries the inbox bell, and active emergency overrides head every page.
  */
 function ConsoleShell(): React.ReactElement {
   const brand = useConsoleBrand();
@@ -62,6 +63,8 @@ function ConsoleShell(): React.ReactElement {
         header={<AppHeader actions={headerActions} />}
         sidebar={<AppSidebar header={<OrganizationSwitcher />} filters={<FacilityPicker />} />}
       >
+        {/* buro's shell has no banner slot (G76): the active emergency overrides head every page. */}
+        <ActiveOverrideBanner />
         <Outlet />
       </AppShell>
     </RequireAuth>

@@ -12,6 +12,7 @@ import {
   EVENT_RESOURCE,
 } from '../../data/resource-names';
 import { CAMERA_DEVICE_TYPES } from '../../enums/devices';
+import { deviceSyncNodes } from '../access/access-tabs';
 import { deviceFields } from './device-fields';
 import { CAMERA_FIELD_NAMES, TERMINAL_FIELD_NAMES } from './device-type-fields';
 import { RECOGNITION_STATUS_ROWS, recognitionStatus } from './recognition';
@@ -143,7 +144,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
               { key: STREAM_PANEL, texts: 'Stream' },
             ),
             l.panel(
-              [l.grid(['policy_version_synced', 'policy_synced_at']), 'policy_sync_error'],
+              [l.grid(['policy_version_synced', 'policy_synced_at']), 'policy_sync_error', ...deviceSyncNodes(l)],
               { key: POLICY_PANEL, texts: 'Access policies' },
             ),
             l.panel(

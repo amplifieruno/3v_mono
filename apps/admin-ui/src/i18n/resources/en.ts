@@ -201,4 +201,10 @@ export default {
   access_decision: {
     doc: { topics: { index: 'Access decisions: the decision log, how a door decided (the trace) and Test access' } },
   },
+  emergency_override: {
+    doc: { topics: { index: 'Emergency overrides: lock, unlock, evacuation, justification, ending early, terminals' } },
+  },
+  terminal_policy_sync: {
+    doc: { topics: { index: 'Terminals: policy sync, epochs, Publish policy to terminals and the sync log' } },
+  },
 } satisfies TranslationBundle;

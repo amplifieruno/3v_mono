@@ -50,6 +50,13 @@ export default {
       unused: 'Unused',
       reusable: 'Reusable',
     },
+    /** The shell's banner of active emergency overrides (`src/app/active-override-banner.tsx`). */
+    overrideBanner: {
+      active: 'Emergency override active: {{mode}} at {{facility}}, until {{until}}.',
+      facility: 'a facility',
+      open: 'Open the override',
+      more: 'And {{count}} more active overrides.',
+    },
     /** The file sent inside an action's input (`src/fields/inline-file-impl.ts`). */
     inlineFile: {
       choose: 'Choose file',

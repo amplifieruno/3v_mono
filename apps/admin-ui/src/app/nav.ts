@@ -142,6 +142,11 @@ export const NAV_ICONS = {
   accessDecisions: 'ScrollText',
   checkAccess: 'ScanFace',
   emergencyOverrides: 'Siren',
+  startOverride: 'Siren',
+  endOverride: 'CircleStop',
+  terminals: 'RadioTower',
+  terminalSyncLog: 'FileClock',
+  publishPolicy: 'Upload',
 } as const;
 
 /**

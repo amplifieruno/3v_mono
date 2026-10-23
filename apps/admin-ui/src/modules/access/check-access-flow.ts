@@ -1,45 +1,56 @@
-import { type FlowConfig, type FlowUnknownCheck, ref } from '@burojs/core';
+import { type FlowConfig, type FlowUnknownCheck, ref, source } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import { ACCESS_DECISION_RESOURCE, IDENTITY_RESOURCE, PROFILE_RESOURCE } from '../../data/resource-names';
 import { decisionTraceBlock } from './decision-trace-block';
 import { checkAccess } from './grant-ops';
+import { type LatestDecision, latestDecision, latestDoorDecision } from './terminal-ops';
 
 const present = (value: unknown): boolean => value !== null && value !== undefined && value !== '';
 
 /** What "Test access" sent per access point, for its lost-answer check. */
 interface SentTest {
-  readonly sentAt: string;
+  /** The newest decision at the door when the dialog opened (database timestamps), or none. */
+  readonly baseline: LatestDecision | null;
   readonly profileId: string | null;
   readonly identityId: string | null;
 }
 
 const sent = new Map<string, SentTest>();
 
-/** The flow's input, remembered for {@link decisionRecorded}. */
-export function testInput(accessPointId: string, values: Readonly<Record<string, unknown>>) {
+/** The baseline the flow's `with` read, or `null` (no decision at the door yet, or unreadable). */
+function baselineOf(source: unknown): LatestDecision | null {
+  const parsed = latestDecision.nullable().safeParse((source as { readonly latest?: unknown } | null | undefined)?.latest ?? null);
+  return parsed.success ? parsed.data : null;
+}
+
+/** The flow's input, remembered with the door's newest decision for {@link decisionRecorded}. */
+export function testInput(accessPointId: string, values: Readonly<Record<string, unknown>>, baseline: unknown = null) {
   const profileId = present(values.profile_id) ? String(values.profile_id) : null;
   const identityId = present(values.identity_id) ? String(values.identity_id) : null;
-  sent.set(accessPointId, { sentAt: new Date(Date.now() - 1000).toISOString(), profileId, identityId });
+  sent.set(accessPointId, { baseline: baselineOf(baseline), profileId, identityId });
   return { accessPointId, profileId, identityId };
 }
 
 /**
- * Check again after a lost "Test access": applied when the access point has a decision about the
- * person (or face) since the test was sent. `check_access` records at the database's `now()`.
+ * Check again after a lost "Test access": applied when the door has a decision about the person
+ * (or face) that is not the baseline and not older than it. Both timestamps are the database's
+ * (`check_access` records at its `now()`, after the baseline was committed), so the browser's
+ * clock plays no part and a recorded test is never sent twice: a single-use grant is used once.
  */
 export const decisionRecorded: FlowUnknownCheck = async ({ record, data }) => {
   const id = record?.id;
   const test = typeof id === 'string' ? sent.get(id) : undefined;
   if (test === undefined || typeof id !== 'string') return 'unknown';
   const who = test.profileId !== null ? { field: 'profile_id', value: test.profileId } : test.identityId !== null ? { field: 'identity_id', value: test.identityId } : null;
+  const since = test.baseline;
   try {
     const { data: rows } = await data.list(resourceByName(ACCESS_DECISION_RESOURCE) as never, {
       filter: {
         and: [
           { field: 'access_point_id', op: 'eq', value: id },
-          { field: 'decided_at', op: 'gte', value: test.sentAt },
+          ...(since === null ? [] : [{ field: 'decided_at', op: 'gte', value: since.decided_at }, { field: 'id', op: 'ne', value: since.id }]),
           ...(who === null ? [] : [{ field: who.field, op: 'eq', value: who.value }]),
         ],
       },
@@ -83,6 +94,8 @@ export const checkAccessFlow = {
   },
   icon: NAV_ICONS.checkAccess,
   surfaces: { default: 'menu', show: 'auto' },
+  // The door's newest decision when the dialog opens: the lost-answer check's server-clock baseline.
+  with: { baseline: source.query(latestDoorDecision, { accessPointId: ref('record', 'id') }) },
   checks: [
     {
       id: 'someone',
@@ -102,7 +115,7 @@ export const checkAccessFlow = {
   submit: {
     mutation: checkAccess,
     retry: 'never',
-    input: ({ values, record }) => testInput(String(record?.id ?? ''), values),
+    input: ({ values, record, with: read }) => testInput(String(record?.id ?? ''), values, read.baseline),
     onUnknown: { check: decisionRecorded },
   },
   then: { open: { block: decisionTraceBlock, props: { decisionId: ref('result', 'id'), showDecisionLink: true } } },

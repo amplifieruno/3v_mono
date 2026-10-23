@@ -4,7 +4,7 @@ import { ACCESS_GRANT_RESOURCE, EMERGENCY_OVERRIDE_RESOURCE } from '../../data/r
 import { OVERRIDE_MODE_ENUM } from '../../enums/access';
 import { DEVICE_HEALTH_ENUM } from '../../enums/devices';
 import { ACCESS_LEVEL_ENUM, PROFILE_STATUS_ENUM, PROFILE_TYPE_ENUM } from '../../enums/people';
-import { type Trace, type TraceGrant, formatRisk } from './decision-trace-format';
+import { RISK_PARTS, type Trace, type TraceGrant, formatRisk, humanizeValue, isKnown } from './decision-trace-format';
 import { RecordLink } from './record-link';
 
 type T = (key: string, options?: { readonly params?: Record<string, unknown> }) => string;
@@ -103,7 +103,9 @@ export function TraceRisk({ trace, areaNames, t }: { readonly trace: Trace; read
         <ul className="list-disc pl-5">
           {trace.riskParts.map((part) => (
             <li key={part.key} data-testid="trace-risk-part">
-              {t(`risk_${part.key}`, { params: params(part.key, part.value) })}
+              {isKnown(part.key, RISK_PARTS)
+                ? t(`risk_${part.key}`, { params: params(part.key, part.value) })
+                : t('risk_other', { params: { name: humanizeValue(part.key), value: formatRisk(part.value) } })}
             </li>
           ))}
         </ul>

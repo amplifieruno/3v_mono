@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRisk, traceOf } from '../../src/modules/access/decision-trace-format';
+import { DECIDED_BY, SUBJECT_KINDS, formatRisk, humanizeValue, isKnown, traceOf } from '../../src/modules/access/decision-trace-format';
 
 /**
  * The decision trace read from `access_decisions.signals` (Review Focus 5) for the shapes the
@@ -124,5 +124,22 @@ describe('decision trace', () => {
     expect(traceOf('{}')).toBeNull();
     expect(traceOf([])).toBeNull();
     expect(traceOf({})).toMatchObject({ decidedBy: null, candidates: [] });
+  });
+
+  it('should keep values of a newer engine readable and every risk part in the sum (review follow-up)', () => {
+    const trace = traceOf({
+      decided_by: 'badge_reader',
+      candidates: [candidate({ subject: 'badge_group', schedule: 'holiday' })],
+      risk: { score: 0.55, components: { unknown_identity: 0.4, tailgate_suspicion: 0.15, recent_denials: 0 } },
+    });
+    expect(trace?.decidedBy).toBe('badge_reader');
+    expect(isKnown(trace?.decidedBy ?? null, DECIDED_BY)).toBe(false);
+    expect(isKnown(trace?.candidates[0]?.subject ?? null, SUBJECT_KINDS)).toBe(false);
+    expect(humanizeValue('badge_group')).toBe('Badge group');
+    expect(trace?.riskParts).toEqual([
+      { key: 'unknown_identity', value: 0.4 },
+      { key: 'tailgate_suspicion', value: 0.15 },
+    ]);
+    expect(trace?.riskParts.reduce((sum, part) => sum + part.value, 0)).toBeCloseTo(0.55);
   });
 });

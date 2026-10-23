@@ -6,6 +6,7 @@ import {
   accessEffectEnum,
   accessPolicyVersionStatusEnum,
   overrideModeEnum,
+  terminalSyncResultEnum,
 } from './access';
 import {
   DEVICES_ENUM_TABLES,
@@ -213,6 +214,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   accessDecisionResultEnum,
   accessDecisionReasonEnum,
   overrideModeEnum,
+  terminalSyncResultEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */

@@ -46,9 +46,12 @@ A camera also has its **Stream** settings:
 
 ### Access terminals
 
-A terminal receives the organization's access policies. Its **Access
-policies** tab shows the policy version it last confirmed, when, and the error
-of the last failed push. These are kept by the platform and not edited.
+A terminal receives the organization's access rule set. Its **Access
+policies** tab shows the rule set version (epoch) it last confirmed, when, and
+the error of the last failed push, then its state against the current rule set
+(**Current**, **Behind**, **Never synced** or **Unreachable**, with an urgent
+change still pending) and its **Sync log**, newest first. These are kept by
+the platform and not edited; see the terminal sync log for how pushes work.
 
 ## Recognition
 
