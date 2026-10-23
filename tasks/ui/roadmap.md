@@ -18,7 +18,9 @@ and ends. Branch `feat/ui-console`.
 | 9 ✅ | Search & bulk | `search_faces` (upload + webcam capture), results, saved searches, bulk jobs (+ rows, retry/cancel) (done, `summary-09-search.md`) | 4 |
 | 10 ✅ | Access control | access policies (versions, four-eyes flows, simulate), grants, emergency overrides, decisions, terminal sync, `publish_policy_to_terminals` (done, `summary-10-access.md`) | 4, 7 |
 | 11 ✅ | Face authentication | client applications (+ bindings), keys (`rotate_client_key`), sessions, attempts, review, `authenticate_face` (done, `summary-11-face-auth.md`) | 4, 7, 10 |
-| 12 | Compliance | retention policies + plan + runs, legal holds, DSR, processing activities, integrations (+ secret, sync runs), exports, system status, audit log | all |
+| 12 ✅ | Compliance | retention policies + plan + runs, legal holds, DSR, processing activities, integrations (+ secret, sync runs), exports, system status, audit log, console-wide smoke (done, `summary-12-compliance.md`) | all |
+
+**Status: all 13 phases (0–12) are done.** Overview of the whole console: `summary.md`.
 
 Rules for every phase: maximum buro use; English `texts`; docs for every resource and every field
 whose label does not carry its meaning; gaps logged; `checkApp` and docs-integrity green; one
