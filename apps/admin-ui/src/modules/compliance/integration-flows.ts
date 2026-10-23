@@ -9,12 +9,19 @@ import { runIntegrationSync, setIntegrationSchedule, setIntegrationSecret } from
 
 type Row = Readonly<Record<string, unknown>>;
 
-/** Reads the integration again and asks `stored` of its `has_secret` (a lost answer of the secret action). */
+/**
+ * Reads the integration again and asks `stored` of its `has_secret` (a lost answer of the secret
+ * action). `record` is the row the flow opened on (or its re-read before sending): when it already
+ * had `has_secret === stored`, the re-read cannot tell a landed request from one that never reached
+ * the backend (an old secret was already stored), so the answer stays `unknown`.
+ */
 const secretStored =
   (stored: boolean): FlowUnknownCheck =>
   async ({ record, data }) => {
-    const id = (record as Row | null | undefined)?.id;
+    const before = record as Row | null | undefined;
+    const id = before?.id;
     if (typeof id !== 'string' || id === '') return 'unknown';
+    if (before?.has_secret === stored) return 'unknown';
     try {
       const { data: row } = await data.one(resourceByName(INTEGRATION_RESOURCE) as never, { id } as never);
       const has = (row as Row | null | undefined)?.has_secret;
@@ -43,7 +50,9 @@ const secretFields = {
  * "Set secret": a password box whose value goes to `set_integration_secret` only. The field is
  * sensitive (never kept in a form draft), the answer carries no secret, and nothing of it is put in
  * the URL or in storage. A lost answer is checked by reading `has_secret` again (setting the same
- * secret twice is harmless).
+ * secret twice is harmless); it stays unknown when a secret was already stored before the flow
+ * opened. G84: after a lost answer buro keeps the attempt in sessionStorage with an unsalted
+ * SHA-256 of the request body, the secret included, for the tab’s life.
  */
 export const setSecretFlow = {
   texts: {

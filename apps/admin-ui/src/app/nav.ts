@@ -1,4 +1,5 @@
 import { defineSection } from '@burojs/core';
+import { COMPLIANCE_ICONS } from './nav-compliance';
 
 /**
  * Icon names for the navigation and the actions: lucide component names. Strings keep the
@@ -164,34 +165,7 @@ export const NAV_ICONS = {
   approveAttempt: 'Check',
   rejectAttempt: 'CircleX',
   authTester: 'ScanFace',
-  retentionPolicies: 'CalendarX',
-  activatePolicy: 'CirclePlay',
-  deactivatePolicy: 'CirclePause',
-  retentionPlan: 'ClipboardList',
-  retentionRuns: 'FileClock',
-  legalHolds: 'Gavel',
-  endHold: 'CircleStop',
-  dataSubjectRequests: 'FileUser',
-  newAccessRequest: 'FileSearch',
-  newPortabilityRequest: 'FileDown',
-  newErasureRequest: 'Eraser',
-  newRestrictionRequest: 'ShieldBan',
-  newRectificationRequest: 'FilePen',
-  rejectRequest: 'CircleX',
-  completeRequest: 'CheckCheck',
-  retryRequest: 'RotateCcw',
-  processingActivities: 'BookCheck',
-  integrations: 'Cable',
-  syncRuns: 'History',
-  runSync: 'RefreshCw',
-  setSecret: 'KeyRound',
-  clearSecret: 'Eraser',
-  integrationSchedule: 'CalendarClock',
-  exportDefinitions: 'FileOutput',
-  exportJobs: 'FileClock',
-  runExport: 'Play',
-  auditLog: 'ScrollText',
-  systemStatus: 'Activity',
+  ...COMPLIANCE_ICONS,
 } as const;
 
 /**

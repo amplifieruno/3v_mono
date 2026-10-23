@@ -132,7 +132,7 @@ The gaps that cost the most:
 | Unit (vitest, node) | `tests/**/*.test.ts` without `.dev.` | 67 files |
 | Page (vitest, jsdom, the real `ConsoleApp` over fake fetch) | `tests/**/*.test.tsx` | 68 files |
 | Dev stack (vitest, `ITAP_DEV_STACK=1`, real Hasura, actions and jobs) | `tests/integration/*.dev.test.ts` | 45 files |
-| Console suite total | | 180 files, 1 341 tests (final run with `ITAP_DEV_STACK=1`: all passed, 931 s) |
+| Console suite total | | 180 files, 1 344 tests (final run with `ITAP_DEV_STACK=1`: 1 343 passed, 941 s; the one failure came from rows an earlier run left behind, and its file passed when rerun) |
 | e2e (Playwright, Chromium, against the seeded dev stack) | `e2e/*.spec.ts` | 15 specs, 80 tests |
 | Backend unit (vitest) | `apps/backend/src` | 81 files, 552 tests (all passed) |
 

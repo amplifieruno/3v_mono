@@ -215,6 +215,43 @@ describe('an integration', () => {
     ]);
   });
 
+  /** Sets a secret whose answer is lost, the integration reading `before` until the send and `after` from then on. */
+  async function loseSecretAnswer(before: boolean, after: boolean): Promise<HTMLElement> {
+    let sent = false;
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const body = String(init?.body);
+      if (body.includes('SetIntegrationSecret')) {
+        sent = true;
+        throw new TypeError('Failed to fetch');
+      }
+      if (body.includes('integrations_by_pk')) return hasuraResponse({ data: { item: { ...integrationRow, has_secret: sent ? after : before } } });
+      return serve(input, init);
+    });
+    renderAt(`/integrations/${INTEGRATION}`);
+    await menuItem(/Set secret/);
+    const dialog = await screen.findByRole('dialog');
+    const box = (await within(dialog).findAllByLabelText(/New secret/)).find((node) => node instanceof HTMLInputElement) as HTMLInputElement;
+    fireEvent.change(box, { target: { value: SECRET } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Set secret/ }));
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Check again' }));
+    return dialog;
+  }
+
+  it('should confirm a lost Set secret answer when the re-read shows a secret that was not there', async () => {
+    await loseSecretAnswer(false, true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(attemptKeys()).toEqual([]);
+  });
+
+  it('should leave a lost Set secret answer unknown when a secret was already stored', async () => {
+    const dialog = await loseSecretAnswer(true, true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    // The old secret answers `has_secret: true` whether or not the request landed: never "stored".
+    expect(screen.queryByRole('dialog')).toBe(dialog);
+    expect(within(dialog).getByRole('button', { name: 'Check again' })).toBeDefined();
+    expect(attemptKeys().map((key) => (JSON.parse(sessionStorage.getItem(key) ?? '{}') as Record<string, unknown>).state)).toEqual(['unknown']);
+  });
+
   it('should not offer Clear secret while none is stored', async () => {
     renderAt(`/integrations/${INTEGRATION}`);
     fireEvent.keyDown((await screen.findAllByRole('button', { name: 'More' }))[0]!, { key: 'Enter' });

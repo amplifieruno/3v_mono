@@ -105,7 +105,7 @@ export function auditDiff(action: unknown, changes: unknown): AuditDiff {
     return { kind: 'changes', rows };
   }
   if (action === 'insert') return { kind: 'created', rows: columnRows(changes, 'after') };
-  if (action === 'delete') return { kind: 'removed', rows: columnRows(changes, 'after') };
+  if (action === 'delete') return { kind: 'removed', rows: columnRows(changes, 'before') };
   return { kind: 'details', rows: columnRows(changes, 'after') };
 }
 

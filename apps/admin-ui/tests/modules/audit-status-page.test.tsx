@@ -159,6 +159,14 @@ describe('the audit log', () => {
     expect(bodies().some((body) => body.query.trimStart().startsWith('mutation'))).toBe(false);
   });
 
+  it('should show a removed row with the values it had', async () => {
+    entryRow = { ...entryRow, action: 'delete', changes: { name: 'Old Gate Camera' } };
+    renderAt(`/audit-log/${ENTRY}`);
+    const diff = await screen.findByTestId('audit-diff');
+    expect(diff.getAttribute('data-kind')).toBe('removed');
+    expect(within(diff).getByTestId('audit-diff:row:name').textContent).toContain('Old Gate Camera');
+  });
+
   it('should not link a removed row, and show a purge without values', async () => {
     entryRow = { ...entryRow, action: 'delete', changes: { retention: true } };
     renderAt(`/audit-log/${ENTRY}`);

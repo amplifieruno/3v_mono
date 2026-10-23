@@ -39,6 +39,9 @@ export async function removeComplianceRun(run: ComplianceRun): Promise<number> {
   const holds = await ids(`select id from itap.legal_holds where name like '${run.run}%'`);
   const definitions = await ids(`select id from itap.export_definitions where name like '${run.run}%'`);
   const requests = run.throwaway === '' ? [] : await ids(`select id from itap.data_subject_requests where profile_id = '${run.throwaway}'`);
+  const jobs = await ids(`select id from itap.export_jobs where definition_id in (${quoted(definitions)})`);
+  const throwaway = run.throwaway === '' ? [] : [run.throwaway];
+  const org = `organization_id = '${run.organizationId}'`;
   for (const file of await ids(`select file_id from itap.export_jobs where definition_id in (${quoted(definitions)}) and file_id is not null`)) {
     run.files.add(file);
   }
@@ -59,20 +62,23 @@ export async function removeComplianceRun(run: ComplianceRun): Promise<number> {
       `delete from itap.legal_hold_targets where hold_id in (${quoted(holds)})`,
       `delete from itap.legal_holds where id in (${quoted(holds)})`,
       `delete from itap.audit_log where entity in ('legal_holds', 'legal_hold_targets') and (entity_id in (${quoted(holds)}) or changes ->> 'hold_id' in (${quoted(holds)}))`,
-      `delete from itap.profiles where id in (${quoted(run.throwaway === '' ? [] : [run.throwaway])})`,
-      `delete from itap.audit_log where entity_id in (${quoted(run.throwaway === '' ? [] : [run.throwaway])}) or changes ->> 'profile_id' in (${quoted(run.throwaway === '' ? [] : [run.throwaway])})`,
+      `delete from itap.profiles where id in (${quoted(throwaway)})`,
+      `delete from itap.audit_log where entity_id in (${quoted(throwaway)}) or changes ->> 'profile_id' in (${quoted(throwaway)})`,
       // The audit rows this cleanup itself wrote (this transaction).
-      `delete from itap.audit_log where occurred_at >= now() and entity in ('legal_holds', 'legal_hold_targets', 'profiles', 'export_jobs', 'export_definitions', 'data_subject_requests')`,
+      `delete from itap.audit_log where occurred_at >= now() and ${org} and entity in ('legal_holds', 'legal_hold_targets', 'profiles', 'export_jobs', 'export_definitions', 'data_subject_requests')
+         and (entity_id in (${quoted([...holds, ...definitions, ...jobs, ...requests, ...throwaway])})
+              or changes ->> 'hold_id' in (${quoted(holds)}) or changes ->> 'definition_id' in (${quoted(definitions)})
+              or changes ->> 'profile_id' in (${quoted(throwaway)}) or changes ->> 'request_id' in (${quoted(requests)}))`,
     ].join(';\n'),
   );
   // Deleting the person bumps the organization's settings at commit (a deferred trigger): that audit row goes too.
   await runSql(
-    `select set_config('itap.retention_context', 'on', true); delete from itap.audit_log where entity = 'organization_settings' and changes = '{"retention": true}'::jsonb and occurred_at >= '${started}'`,
+    `select set_config('itap.retention_context', 'on', true); delete from itap.audit_log where ${org} and entity = 'organization_settings' and changes = '{"retention": true}'::jsonb and occurred_at >= '${started}'`,
   );
   const [[left = '1'] = []] = await runSql(
     `select (select count(*) from itap.legal_holds where name like '${run.run}%')
           + (select count(*) from itap.export_definitions where name like '${run.run}%')
-          + (select count(*) from itap.profiles where last_name = 'Throwaway ${run.run}')
+          + (select count(*) from itap.profiles where id in (${quoted(throwaway)}))
           + (select count(*) from itap.data_subject_requests where id in (${quoted(requests)}))`,
   );
   return Number(left);

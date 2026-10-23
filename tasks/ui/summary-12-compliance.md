@@ -74,6 +74,8 @@ System status).
   - Settings and mapping are JSON, with validators mirroring the CHECKs; `itap.integration-config`
     shows them as sentences.
   - Set secret: a password field sent to `set_integration_secret` only; the form never stores it.
+    Check again after a lost answer confirms it only when no secret was stored before the dialog
+    opened; with an old secret stored it stays unknown (the re-read cannot tell them apart).
   - Clear secret, and Run sync (refusals mapped; it opens the run).
   - Schedule: cron and time zone merged into `config` with `_append` / `_delete_key` (G83).
   - The sync runs log shows counts and problems.
@@ -94,7 +96,7 @@ System status).
 - **Audit log** (`audit_entry` over `audit_log`):
   - Read-only, with cursor paging, filters by entity, action, user, time and record, and saved views.
   - The diff block `itap:audit-diff` shows each field before and after, and opens nested JSON.
-    Inserts and deletes show the whole row. Purged and anonymized entries are explained in words.
+    Inserts show the whole row as its values after, deletes as its values before. Purged and anonymized entries are explained in words.
     Secrets show as Redacted at any depth.
   - The record column links to the record's page when the table has one.
 - **Docs**: articles for retention policies (index, plan), runs, legal holds, data subject requests,
@@ -151,6 +153,9 @@ unselectable). No backend change in this phase.
 ## Gates
 
 - **Console suite**: ran once with `ITAP_DEV_STACK=1`: 180 files, 1341 tests, all passed (931 s).
+  After the final review follow-ups: 180 files, 1344 tests; 1343 passed (941 s). The one failure,
+  in `face-auth-attempts.dev.test.ts`, came from an auth sequence digest that an earlier run without
+  `GRAPHQL_ADMIN_SECRET` left behind. With that run's rows removed, the file passes (3/3).
 - **Backend unit tests**: 81 files, 552 tests, all passed.
 - **e2e `compliance.spec.ts`**: 5 passed in about 1 minute. Cleanup left 0 rows; the counts are back
   at the seed's: 2 holds, 5 requests, 3 export definitions, 7 jobs, no throwaway person.

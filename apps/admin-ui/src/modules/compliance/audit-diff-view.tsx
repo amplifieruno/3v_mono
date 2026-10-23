@@ -54,7 +54,8 @@ function DiffTable({ rows, twoSided, t }: { readonly rows: readonly AuditDiffRow
                 </TableCell>
               ) : null}
               <TableCell className="align-top" data-testid="audit-diff:after">
-                <ValueCell value={row.after} t={t} />
+                {/* One side only: a removed row's values are its `before`, everything else's its `after`. */}
+                <ValueCell value={twoSided ? row.after : (row.after ?? row.before)} t={t} />
               </TableCell>
             </TableRow>
           ))}

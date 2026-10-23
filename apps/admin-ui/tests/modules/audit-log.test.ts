@@ -64,7 +64,7 @@ describe('an audit entry’s changes', () => {
         { field: 'password', after: { kind: 'redacted' } },
       ],
     });
-    expect(auditDiff('delete', { code: 'X' }).kind).toBe('removed');
+    expect(auditDiff('delete', { code: 'X' })).toEqual({ kind: 'removed', rows: [{ field: 'code', before: { kind: 'text', text: 'X' } }] });
     expect(auditDiff('delete', { retention: true })).toEqual({ kind: 'retention' });
     expect(auditDiff('erase', { code: 'DSR-00003', partial: false })).toEqual({
       kind: 'details',
