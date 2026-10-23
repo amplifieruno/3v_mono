@@ -86,7 +86,8 @@ export const keyRevoked: FlowUnknownCheck = async ({ record, data }) => {
 };
 
 /**
- * "Revoke key" on a key not yet revoked (`revoke_client_key`, which takes no reason): every
+ * "Revoke key" on a key not yet revoked (`revoke_client_key`, which takes no reason), from the key's
+ * row on the application's Keys tab: every
  * request signed with it is refused from then on, for good. Revoked is terminal: the flow is no
  * longer offered on a revoked key, and the database refuses a second revocation.
  */
@@ -103,7 +104,8 @@ export const revokeKeyFlow = {
   },
   icon: NAV_ICONS.revokeKey,
   variant: 'destructive',
-  surfaces: { default: 'menu', row: 'menu', show: 'menu' },
+  // Keys have no page of their own: the row menu of the application's Keys tab only.
+  surfaces: { default: 'menu', row: 'menu' },
   when: cond.not(cond.present(ref('record', 'revoked_at'))),
   confirm: true,
   submit: {

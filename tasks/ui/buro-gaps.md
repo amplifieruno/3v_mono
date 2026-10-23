@@ -1255,3 +1255,10 @@ migration `1792365700277`.
   (`src/modules/face-auth/docs/client_application/keys.en.md`).
 - **Expected from a framework:** a per-flow `texts.unknown` (or `onUnknown.texts`) shown on the
   unknown screen.
+- **Also (the secret dialog, phase 11 task 3):** the block `then.open` shows after "Rotate key"
+  closes on Escape or a click outside like any flow dialog; there is no required acknowledgement
+  ("I have copied the secret") before it may close, so a secret can be dismissed unseen. **[code]**
+  (`ui-shadcn` flow dialog: `onOpenChange` closes the runner.) Workaround: the block's warning (role
+  alert) and the "API keys" article say a dismissed secret is gone and the key is revoked and
+  rotated again. Expected: a `then.open` option that keeps the dialog open until the block's own
+  button closes it.

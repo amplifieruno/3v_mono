@@ -120,6 +120,9 @@ describe('refusals (Review Focus 2)', () => {
       ['client_application_revoked', /revoked/],
       ['client_key_expiry_invalid', /must be in the future/],
       ['client_application_not_found', /no longer exists/],
+      ['no_organization', /no organization/],
+      ['organization_required', /no organization/],
+      ['member_required', /active member of the organization can rotate keys/],
     ] as const) {
       await expect(failing(actionRefusal(code)).mutations?.custom?.(call('rotateClientKey'), {} as never)).rejects.toMatchObject({
         kind: 'validation',

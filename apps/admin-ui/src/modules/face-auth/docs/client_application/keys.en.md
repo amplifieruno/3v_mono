@@ -17,7 +17,9 @@ The new key's prefix and secret are shown **once**, right after the rotation,
 with a **Copy secret** button and a warning. Copy the secret into the
 integration's secret store before closing the dialog: once the dialog is closed
 or the page reloaded, the secret is gone for good. A lost secret cannot be
-recovered: revoke that key and rotate again.
+recovered: revoke that key and rotate again. The dialog also closes on Escape
+or a click outside it, without asking whether you copied the secret: copy it
+first.
 
 An application has **at most two active keys** (not revoked, not expired), so a
 new key can be rolled out while the old one still works. A third rotation is

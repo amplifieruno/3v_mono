@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from '../../src/app/app';
+import { LocationProbe } from '../support/location-probe';
 import { fakeAdminAuth, hasuraResponse, installDomShims } from '../support/console-dom';
 
 /**
@@ -79,6 +80,7 @@ const renderAt = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <ConsoleApp auth={fakeAdminAuth(NOVA, 'Nova Tower Business Center')} />
+      <LocationProbe full />
     </MemoryRouter>,
   );
 
@@ -96,10 +98,13 @@ async function rotate(): Promise<HTMLElement> {
   return dialog;
 }
 
+/** The router's location (path, query and hash): under MemoryRouter `window.location` never moves. */
+const routerLocation = (): string => screen.getByTestId('location').textContent ?? '';
+
 /** Everything the page could have kept the secret in besides the open dialog. */
 function persisted(): string {
   const dump = (storage: Storage) => Object.keys(storage).map((key) => `${key}=${storage.getItem(key) ?? ''}`).join('\n');
-  return [dump(localStorage), dump(sessionStorage), window.location.href, document.title].join('\n');
+  return [dump(localStorage), dump(sessionStorage), routerLocation(), document.title].join('\n');
 }
 
 beforeAll(() => {
@@ -159,6 +164,8 @@ describe('Rotate key shows the secret once (Review Focus 1)', () => {
     expect(mutations().map((body) => body.query)).toEqual([expect.stringContaining('rotate_client_key')]);
     expect(mutations()[0]?.variables).toEqual({ application: APP, expires: null });
     expect(persisted()).not.toContain(SECRET);
+    // The route is still the application's page: the secret went to no query string or hash.
+    expect(routerLocation()).toBe(`/client-applications/${APP}`);
     // No read after the rotation asks for the secret, and none answers it.
     expect(bodies().filter((body) => !body.query.includes('rotate_client_key')).some((body) => /\bsecret\b/u.test(body.query))).toBe(false);
 

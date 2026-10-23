@@ -26,6 +26,9 @@ export const ROTATE_REFUSALS: Readonly<Record<string, string>> = {
   auth_service_not_configured:
     'The face authentication service has no encryption key configured (AUTH_KEY_ENCRYPTION_KEY), so no key can be issued: ask the platform operator.' +
     NO_KEY,
+  no_organization: 'Your session has no organization: sign in to an organization again.' + NO_KEY,
+  organization_required: 'Your session has no organization: sign in to an organization again.' + NO_KEY,
+  member_required: 'Only an active member of the organization can rotate keys (your membership is suspended or expired).' + NO_KEY,
   invalid_input: 'The request was not valid:',
 };
 
