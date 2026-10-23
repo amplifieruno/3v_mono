@@ -19,9 +19,15 @@ export class ClientKeyError extends Error {
   }
 }
 
-function sqlCode(error: unknown): string | undefined {
+/**
+ * The refusal code a store_client_key error carries: its own codes (client_*, auth_*), and those of the guards it
+ * calls first (itap.require_active_member -> member_required, itap.session_organization -> organization_required).
+ */
+export function sqlCode(error: unknown): string | undefined {
   if (!(error instanceof HasuraError)) return undefined;
-  return /\b(client_[a-z_]+|auth_[a-z_]+|access_point_not_bound)\b/.exec(`${error.detail ?? ''} ${error.message}`)?.[1];
+  return /\b(client_[a-z_]+|auth_[a-z_]+|access_point_not_bound|member_required|organization_required)\b/.exec(
+    `${error.detail ?? ''} ${error.message}`,
+  )?.[1];
 }
 
 /**
