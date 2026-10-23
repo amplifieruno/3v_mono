@@ -9,7 +9,8 @@ import { type BulkText, bulkErrorText, bulkOptionLines } from '../../src/fields/
 import { bulkSearchCsv } from '../../src/fields/bulk-search-csv';
 import bulkTexts from '../../src/i18n/bulk/en';
 import { ACTION_REFUSALS } from '../../src/modules';
-import { bulkJobCreated } from '../../src/modules/search/bulk-job-flows';
+import { bulkJobCreated, retryApplied } from '../../src/modules/search/bulk-job-flows';
+import { BULK_RESULT_KIND, BULK_SEARCH_RESULT_KIND, bulkResultFileKind } from '../../src/fields/bulk-fields';
 import { BULK_JOBS_BINDING, type BulkJobProgress } from '../../src/modules/search/bulk-job-ops';
 import { newBulkJobOf, notProcessed, progressPercent } from '../../src/modules/search/bulk-job-shape';
 
@@ -57,9 +58,17 @@ describe('codes and options in words', () => {
       'The input file is not a readable CSV file (“unterminated quoted field in record 3”).',
     );
     expect(bulkErrorText('no_face', t)).toBe('No face was found in the photo.');
+    expect(bulkErrorText('invalid_input', t)).toMatch(/^The search service refused the photo’s search settings/u);
+    expect(bulkErrorText('invalid_filters', t)).toBe('The search service refused the search filters.');
     expect(bulkErrorText('weird_code', t)).toBe('Refused: weird_code');
     expect(bulkErrorText(null, t)).toBeNull();
     expect(bulkErrorText(' ', t)).toBeNull();
+  });
+
+  it('should name the result file kind the backend writes per job kind', () => {
+    expect(bulkResultFileKind('bulk_search')).toBe(BULK_SEARCH_RESULT_KIND);
+    expect(bulkResultFileKind('profile_import')).toBe(BULK_RESULT_KIND);
+    expect(bulkResultFileKind('profile_update')).toBe(BULK_RESULT_KIND);
   });
 
   it('should say what each kind’s options ask for', () => {
@@ -162,6 +171,17 @@ describe('Retry and Cancel (Review Focus 4)', () => {
       expect(flow.submitted[0]?.call).toMatchObject({ input: { jobId: JOB } });
     }
     for (const status of ['queued', 'running', 'completed', 'cancelled']) (await itemFlow('retry', job({ status })).open()).assertUnavailable();
+  });
+
+  it('should read a retried job that ended partial or failed again as applied (Check again)', async () => {
+    const data = (row: Record<string, unknown> | null) => ({ one: async () => ({ data: row }) }) as never;
+    const before = job({ status: 'partial', attempts: 1 });
+    expect(await retryApplied({ record: before, data: data(job({ status: 'queued', attempts: 1 })) } as never)).toBe('applied');
+    expect(await retryApplied({ record: before, data: data(job({ status: 'partial', attempts: 2 })) } as never)).toBe('applied');
+    expect(await retryApplied({ record: before, data: data(job({ status: 'failed', attempts: 2 })) } as never)).toBe('applied');
+    expect(await retryApplied({ record: before, data: data(job({ status: 'partial', attempts: 1 })) } as never)).toBe('not-applied');
+    expect(await retryApplied({ record: job({ status: 'partial' }), data: data(job({ status: 'partial', attempts: 1 })) } as never)).toBe('unknown');
+    expect(await retryApplied({ record: before, data: data(null) } as never)).toBe('unknown');
   });
 
   it('should not retry a job whose input file is gone', async () => {

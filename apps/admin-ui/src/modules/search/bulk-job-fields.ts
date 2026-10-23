@@ -2,7 +2,7 @@ import { f } from '@burojs/field-types';
 import { USER_RESOURCE } from '../../data/resource-names';
 import { BULK_JOB_KIND_ENUM, BULK_JOB_KINDS, BULK_JOB_STATUS_ENUM, BULK_JOB_STATUSES } from '../../enums/bulk';
 import { enumField } from '../../enums/field';
-import { BULK_INPUT_KIND, bulkErrorField, bulkOptionsField } from '../../fields/bulk-fields';
+import { BULK_INPUT_KIND, BULK_RESULT_KIND, bulkErrorField, bulkOptionsField } from '../../fields/bulk-fields';
 import { dateTime } from '../../fields/date-time';
 import { storageFile } from '../../fields/storage-file';
 
@@ -53,14 +53,17 @@ export const bulkJobFields = {
   succeeded: count('Succeeded', 'Rows created, updated, found valid by a dry run, or searched (with or without a match).'),
   failed: count('Failed', 'Rows refused: nothing of them was saved, and each says why.'),
   skipped: count('Skipped', 'Blank rows of the file, with nothing to do.'),
+  // Display only, so the declared kind is never written: the backend writes `bulk_result` for a profile
+  // job and `bulk_search_result` for a bulk search (`bulkResultFileKind`); both are opened the same
+  // way (presigned, not sensitive), and a bulk search job is visible to its owner only.
   result_file_id: storageFile({
     bucket: 'organization',
-    kind: 'bulk_result',
+    kind: BULK_RESULT_KIND,
     displayOnly: true,
     in: [...showOnly],
     texts: {
       label: 'Result file',
-      doc: { summary: 'A CSV of every row with its outcome, the profile or identity, and the error; a bulk search’s is visible to its owner only.' },
+      doc: { summary: 'A CSV of every row with its outcome, the profile or identity, and the error; a bulk search’s (kind bulk_search_result) is visible to its owner only, like the job.' },
     },
   }),
   error: bulkErrorField({

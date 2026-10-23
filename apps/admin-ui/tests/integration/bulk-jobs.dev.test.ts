@@ -21,7 +21,7 @@ import { offsetPage, type TestQueryInput } from '../support/pagination';
  * failed with the failed row's reason, the created profile, counts that add up and a result file
  * that opens (Review Focus 3); a large dry run cancelled while queued or running ends cancelled and
  * stops moving (Review Focus 4). Cleanup with the admin secret: the imported profile, the jobs (their
- * rows go with them) and the uploaded and result files.
+ * rows go with them) and the uploaded and result files; imported profiles also by their test address.
  */
 
 const IDENTITY = { providerId: 'hasura', sessionKey: 'bulk-jobs-dev-test', scopeKey: null, bindingRevision: '1' } as const;
@@ -48,6 +48,8 @@ const runSql = async (sql: string): Promise<Row> => {
   return (await response.json()) as Row;
 };
 
+/** The addresses the import test gives its profiles (`devtest.bulk.<stamp>@example.com`); no other test uses them. */
+const IMPORT_EMAIL_PREFIX = 'devtest.bulk.';
 const TERMINAL = new Set(['completed', 'partial', 'failed', 'cancelled']);
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const quoted = (ids: readonly string[]) => ids.map((id) => `'${id}'`).join(', ');
@@ -106,6 +108,8 @@ describe.skipIf(!DEV_STACK_ENABLED)('bulk jobs against the dev stack (Nova Tower
 
   afterAll(async () => {
     if (profiles.length > 0) await runSql(`delete from itap.profiles where id in (${quoted(profiles)})`);
+    // By this test's own address pattern too, so a run that timed out before reading its rows leaves no profile.
+    await runSql(`delete from itap.profiles where email like '${IMPORT_EMAIL_PREFIX}%@example.com'`);
     if (jobs.length > 0) {
       const { result } = (await runSql(`select result_file_id from itap.bulk_jobs where id in (${quoted(jobs)}) and result_file_id is not null`)) as {
         result: string[][];
@@ -120,7 +124,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('bulk jobs against the dev stack (Nova Tower
 
   it('should import the valid row, fail the invalid one with its reason, and add up (Review Focus 3)', async () => {
     const stamp = Date.now();
-    const csv = `first_name,last_name,email\r\nDevtest,Bulk${stamp},devtest.bulk.${stamp}@example.com\r\nDevtest,,\r\n`;
+    const csv = `first_name,last_name,email\r\nDevtest,Bulk${stamp},${IMPORT_EMAIL_PREFIX}${stamp}@example.com\r\nDevtest,,\r\n`;
     const jobId = await start('profile_import', csv, { dry_run: false });
     const state = await finished(jobId);
     expect(state).toMatchObject({ status: 'partial', total: 2, processed: 2, succeeded: 1, failed: 1, skipped: 0, error: null });

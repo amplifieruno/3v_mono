@@ -45,7 +45,7 @@ function Summary({ job, t }: { readonly job: BulkJobProgress; readonly t: T }): 
 export function BulkJobProgressView({ props, t }: BlockViewProps<typeof bulkJobProgressBlock>): React.ReactElement {
   const jobId = props.jobId ?? null;
   const status = props.status ?? null;
-  const [since] = React.useState(() => Date.now());
+  const [since, setSince] = React.useState(() => Date.now());
   const progress = useCustomQuery(
     bulkJobProgressQuery,
     { jobId: jobId ?? '' },
@@ -53,6 +53,23 @@ export function BulkJobProgressView({ props, t }: BlockViewProps<typeof bulkJobP
   );
   const dispatcher = useDispatcher();
   const job = progress.data;
+  const { refetch } = progress;
+  const jobStatus = job?.status ?? null;
+
+  // A new run of the job (a retry, another attempt) gets its own 30 minutes of reading.
+  const windowKey = `${status ?? ''}|${jobStatus ?? ''}|${job?.attempts ?? ''}`;
+  const windowSeen = React.useRef(windowKey);
+  React.useEffect(() => {
+    if (windowSeen.current === windowKey) return;
+    windowSeen.current = windowKey;
+    setSince(Date.now());
+  }, [windowKey]);
+
+  // The page's job moved on (Retry or Cancel answered) while this block's read is older, or no
+  // longer polling: read it again, which also starts polling again while it is pending.
+  React.useEffect(() => {
+    if (status !== null && jobStatus !== null && jobStatus !== status) void refetch();
+  }, [status, jobStatus, refetch]);
   const key = job ? `${job.status}|${job.processed}|${job.succeeded}|${job.failed}|${job.skipped}` : null;
   const seen = React.useRef<string | null>(null);
 

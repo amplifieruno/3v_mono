@@ -10,6 +10,15 @@ export const BULK_SEARCH_PHOTOS_FIELD = 'itap.bulk-search-photos';
 export const BULK_INPUT_KIND = 'bulk_input';
 /** `metadata.kind` of a search photo (owner-only), as `src/modules/search/search-fields.ts` uploads it. */
 export const SEARCH_IMAGE_KIND = 'search';
+/** `metadata.kind` of a profile job's result file (organization-visible). */
+export const BULK_RESULT_KIND = 'bulk_result';
+/** `metadata.kind` of a bulk search's result file: owner-only, since search results are personal. */
+export const BULK_SEARCH_RESULT_KIND = 'bulk_search_result';
+
+/** The kind of the result file the backend writes for a job of `jobKind` (`apps/backend/src/bulk/runner.ts`). */
+export function bulkResultFileKind(jobKind: unknown): string {
+  return jobKind === 'bulk_search' ? BULK_SEARCH_RESULT_KIND : BULK_RESULT_KIND;
+}
 /** Largest input file the backend reads (`apps/backend/src/bulk/columns.ts` MAX_FILE_BYTES). */
 export const BULK_INPUT_MAX_BYTES = 5 * 1024 * 1024;
 

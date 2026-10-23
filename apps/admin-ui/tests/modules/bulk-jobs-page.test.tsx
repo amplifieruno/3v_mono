@@ -159,6 +159,7 @@ describe('bulk job page', () => {
     expect(sent('retry_bulk_job(')?.variables).toEqual({ job: JOB });
     expect(await screen.findByText('The job is queued again.')).toBeDefined();
     await waitFor(() => expect(screen.getByTestId('bulk-job-progress').getAttribute('data-status')).toBe('queued'));
+    expect(await screen.findByText('Checking for progress every few seconds…')).toBeDefined(); // following the new run
     await waitFor(() => expect(screen.queryByRole('button', { name: /^Retry/u })).toBeNull());
   });
 

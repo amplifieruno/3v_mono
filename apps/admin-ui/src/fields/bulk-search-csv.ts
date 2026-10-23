@@ -16,3 +16,40 @@ function cell(value: string): string {
 export function bulkSearchCsv(photos: readonly BulkSearchPhoto[]): string {
   return ['image_file_id,label', ...photos.map((photo) => `${photo.id},${cell(photo.name)}`)].join('\r\n') + '\r\n';
 }
+
+/** The cells of a CSV text (RFC 4180: quoted cells, doubled quotes, CRLF or LF rows). */
+function csvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') {
+        value += '"';
+        i += 1;
+      } else if (char === '"') quoted = false;
+      else value += char;
+    } else if (char === '"') quoted = true;
+    else if (char === ',') {
+      row.push(value);
+      value = '';
+    } else if (char === '\n' || char === '\r') {
+      if (char === '\r' && text[i + 1] === '\n') i += 1;
+      rows.push([...row, value]);
+      row = [];
+      value = '';
+    } else value += char;
+  }
+  if (value !== '' || row.length > 0) rows.push([...row, value]);
+  return rows;
+}
+
+/** The photos of a CSV written by {@link bulkSearchCsv}, back from its text (rows without an id are left out). */
+export function parseBulkSearchCsv(text: string): BulkSearchPhoto[] {
+  return csvRows(text)
+    .slice(1)
+    .filter((cells) => (cells[0] ?? '').trim() !== '')
+    .map((cells) => ({ id: (cells[0] ?? '').trim(), name: cells[1] ?? '' }));
+}

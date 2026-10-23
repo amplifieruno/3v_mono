@@ -23,6 +23,8 @@ const PLAIN = new Set([
   'invalid_image',
   'file_not_found',
   'search_unavailable',
+  'invalid_input',
+  'invalid_filters',
   'interrupted',
   'bulk_input_missing',
   'file_too_large',

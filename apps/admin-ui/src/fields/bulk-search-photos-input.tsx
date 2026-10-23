@@ -4,8 +4,8 @@ import { ImagePlus, X } from 'lucide-react';
 import * as React from 'react';
 import type { ItapIdentity } from '../auth';
 import { BULK_INPUT_KIND, SEARCH_IMAGE_KIND } from './bulk-fields';
-import { type BulkSearchPhoto, bulkSearchCsv } from './bulk-search-csv';
-import { useStorageUpload } from './storage-client';
+import { type BulkSearchPhoto, bulkSearchCsv, parseBulkSearchCsv } from './bulk-search-csv';
+import { type StorageTarget, presignStorageFile, useStorageTarget, useStorageUpload } from './storage-client';
 import type { StorageFileMeta } from './storage-file-meta';
 import { StorageFileView } from './storage-file-view';
 
@@ -14,23 +14,65 @@ const CSV_META: StorageFileMeta = { bucket: 'organization', kind: BULK_INPUT_KIN
 
 const fileId = (value: unknown): string | null => (typeof value === 'string' && value !== '' ? value : null);
 
+/** The photos of each CSV this page wrote, so a remounted picker (a step back, a re-render) lists them again. */
+const PHOTOS_BY_CSV = new Map<string, readonly BulkSearchPhoto[]>();
+
+/** The photos of a stored CSV: from this page's memory, else read back from the file. */
+async function photosOf(csvId: string, target: StorageTarget): Promise<readonly BulkSearchPhoto[]> {
+  const known = PHOTOS_BY_CSV.get(csvId);
+  if (known !== undefined) return known;
+  const { url } = await presignStorageFile(csvId, target);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`bulk search CSV ${res.status}`);
+  const photos = parseBulkSearchCsv(await res.text());
+  PHOTOS_BY_CSV.set(csvId, photos);
+  return photos;
+}
+
 /**
  * Picks face photos for a bulk search: each is uploaded as the member's own `search` image, then the
  * job's CSV (`./bulk-search-csv.ts`) is uploaded as their `bulk_input` file and its id written. Adding
- * more photos writes a new CSV with every photo so far; Clear starts again.
+ * more photos writes a new CSV with every photo so far; Clear starts again. A picker mounted with a
+ * CSV already chosen lists its photos again (read back from the CSV) before more can be added, so
+ * adding never drops the earlier ones.
  */
 export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.ReactElement {
   const { onChange, disabled, readOnly, accessibility, testIds } = props;
   const t = useT();
   const upload = useStorageUpload();
+  const target = useStorageTarget();
   const { data: identity } = useIdentity<ItapIdentity>();
   const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const [photos, setPhotos] = React.useState<readonly BulkSearchPhoto[]>([]);
+  const value = fileId(props.value);
+  // The photos of the CSV `value` names (`of`); another value means they are still to be read.
+  const [listed, setListed] = React.useState<{ readonly of: string | null; readonly photos: readonly BulkSearchPhoto[]; readonly unreadable?: boolean }>(() => ({
+    of: value === null || PHOTOS_BY_CSV.has(value) ? value : null,
+    photos: value === null ? [] : (PHOTOS_BY_CSV.get(value) ?? []),
+  }));
   const [progress, setProgress] = React.useState<{ readonly done: number; readonly count: number } | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const bucket = identity?.organizationId ?? null;
-  const locked = disabled === true || readOnly === true || progress !== null || bucket === null;
-  const value = fileId(props.value);
+  const restoring = listed.of !== value;
+  const photos = restoring ? [] : listed.photos;
+  const locked = disabled === true || readOnly === true || progress !== null || bucket === null || restoring;
+  const addLocked = locked || listed.unreadable === true;
+
+  React.useEffect(() => {
+    if (!restoring) return;
+    if (value === null) return setListed({ of: null, photos: [] });
+    let live = true;
+    photosOf(value, target)
+      .then((read) => live && setListed({ of: value, photos: read }))
+      .catch(() => {
+        if (!live) return;
+        // Unreadable: adding would drop the earlier photos, so only Clear is offered.
+        setListed({ of: value, photos: [], unreadable: true });
+        setError(t('console.bulk.photos.unreadable'));
+      });
+    return () => {
+      live = false;
+    };
+  }, [restoring, value, target, t]);
   const errorId = `${accessibility.input ?? 'bulk-search-photos'}-upload-error`;
 
   const add = async (files: readonly File[]): Promise<void> => {
@@ -47,7 +89,8 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
       const all = [...photos, ...added];
       const csv = new File([bulkSearchCsv(all)], 'bulk-search.csv', { type: 'text/csv' });
       const { id } = await upload(csv, { bucket, kind: BULK_INPUT_KIND });
-      setPhotos(all);
+      PHOTOS_BY_CSV.set(id, all);
+      setListed({ of: id, photos: all });
       onChange?.(id);
     } catch {
       setError(t('console.bulk.photos.failed'));
@@ -57,7 +100,7 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
   };
 
   const clear = (): void => {
-    setPhotos([]);
+    setListed({ of: null, photos: [] });
     setError(null);
     onChange?.(null);
   };
@@ -93,7 +136,7 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
           accept="image/*"
           className="sr-only"
           tabIndex={-1}
-          disabled={locked}
+          disabled={addLocked}
           data-testid={testIds.input}
           aria-describedby={error ? errorId : accessibility.description}
           aria-invalid={error ? true : undefined}
@@ -103,7 +146,7 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
             void add(files);
           }}
         />
-        <Button type="button" variant="outline" size="sm" disabled={locked} onClick={() => inputRef.current?.click()}>
+        <Button type="button" variant="outline" size="sm" disabled={addLocked} onClick={() => inputRef.current?.click()}>
           <ImagePlus className="size-4" aria-hidden />
           {progress === null
             ? t('console.bulk.photos.add')

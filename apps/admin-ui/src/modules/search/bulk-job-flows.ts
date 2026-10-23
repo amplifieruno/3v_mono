@@ -150,6 +150,28 @@ const statusIn =
     }
   };
 
+/**
+ * Applied when the job ran again since the page read it: it is queued, running or completed now, or a
+ * worker started a new attempt (`attempts` grew; a failed or partial job is only claimed again after a
+ * retry), so a retried job that ended partial or failed again still reads as applied.
+ */
+export const retryApplied: FlowUnknownCheck = async ({ record, data }) => {
+  const before = record as Readonly<Record<string, unknown>> | null | undefined;
+  const id = before?.id;
+  if (typeof id !== 'string' || id === '') return 'unknown';
+  try {
+    const { data: row } = await data.one(resourceByName(BULK_JOB_RESOURCE) as never, { id } as never);
+    const now = row as Readonly<Record<string, unknown>> | null | undefined;
+    if (typeof now?.status !== 'string') return 'unknown';
+    if (['queued', 'running', 'completed'].includes(now.status)) return 'applied';
+    const was = typeof before?.attempts === 'number' ? before.attempts : null;
+    if (was === null || typeof now.attempts !== 'number') return 'unknown';
+    return now.attempts > was ? 'applied' : 'not-applied';
+  } catch {
+    return 'unknown';
+  }
+};
+
 /** Statuses Retry is offered on: the job failed, or some of its rows did (Review Focus 4). */
 export const RETRYABLE_STATUSES = ['failed', 'partial'] as const;
 /** Statuses Cancel is offered on: the job has not finished. */
@@ -170,7 +192,7 @@ export const retryBulkJobFlow = {
   surfaces: { default: 'menu', show: 'auto', row: 'menu' },
   when: cond.in(ref('record', 'status'), [...RETRYABLE_STATUSES]),
   confirm: true,
-  submit: { mutation: retryBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: statusIn(['queued', 'running', 'completed']) } },
+  submit: { mutation: retryBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: retryApplied } },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 

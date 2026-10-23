@@ -32,6 +32,8 @@ export default {
         file_not_found: 'The photo could not be found: it was deleted or uploaded by someone else.',
         search_unavailable: 'The search service did not answer; Retry runs this photo again.',
         interrupted: 'The search was interrupted; Retry runs this photo again.',
+        invalid_input: 'The search service refused the photo’s search settings (image ID, threshold or number of results).',
+        invalid_filters: 'The search service refused the search filters.',
         // The job as a whole.
         bulk_input_missing: 'The input file is missing or was not fully uploaded.',
         file_too_large: 'The input file is larger than 5 MB.',
@@ -66,6 +68,7 @@ export default {
         none: 'No photos yet. Add the face photos to search for; each becomes one row.',
         failed: 'A photo could not be uploaded. Check the connection and add it again.',
         wrongType: 'Only image files can be searched.',
+        unreadable: 'The photos chosen earlier could not be read back: Clear, then add them all again.',
       },
     },
   },
