@@ -189,4 +189,10 @@ export default {
   bulk_job: {
     doc: { topics: { index: 'Bulk jobs: profile import and update, bulk face search, CSV columns, rows, Cancel and Retry' } },
   },
+  access_policy: {
+    doc: { topics: { index: 'Access policies: versions, four-eyes approval, roll back, archive and analytics' } },
+  },
+  access_policy_version: {
+    doc: { topics: { index: 'Policy versions: drafts, frozen pending versions, approval and simulation' } },
+  },
 } satisfies TranslationBundle;

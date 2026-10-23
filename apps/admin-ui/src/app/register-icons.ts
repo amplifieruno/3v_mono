@@ -102,6 +102,11 @@ import {
   BookmarkPlus,
   Play,
   Images,
+  KeyRound,
+  GitBranch,
+  ChartPie,
+  SendHorizontal,
+  Archive,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -209,6 +214,11 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   BookmarkPlus,
   Play,
   Images,
+  KeyRound,
+  GitBranch,
+  ChartPie,
+  SendHorizontal,
+  Archive,
 };
 
 /**

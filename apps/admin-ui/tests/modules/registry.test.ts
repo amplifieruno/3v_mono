@@ -4,7 +4,13 @@ import { Kind, type OperationDefinitionNode, parse } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
 import { hasuraTable } from '../../src/data/mapping';
-import { FACILITY_RESOURCE, NOTIFICATION_SUBSCRIPTION_RESOURCE, REPORT_FACILITY_RESOURCE } from '../../src/data/resource-names';
+import {
+  ACCESS_POLICY_FACILITY_TARGET_RESOURCE,
+  ACCESS_POLICY_TARGET_RESOURCE,
+  FACILITY_RESOURCE,
+  NOTIFICATION_SUBSCRIPTION_RESOURCE,
+  REPORT_FACILITY_RESOURCE,
+} from '../../src/data/resource-names';
 import { hasuraOperation } from '../../src/data/operations';
 import { CONSOLE_MODULES, HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
 import { type ConsoleModule, collectOperations, collectTables } from '../../src/modules/module';
@@ -41,6 +47,15 @@ describe('module registries', () => {
       .sort();
     expect(registered).toEqual(operations);
     expect(operations).toEqual([
+      'access.accessNames',
+      'access.approveAccessPolicyVersion',
+      'access.archiveAccessPolicy',
+      'access.createAccessPolicyDraft',
+      'access.policyAnalytics',
+      'access.rejectAccessPolicyVersion',
+      'access.simulateAccessPolicy',
+      'access.submitAccessPolicyVersion',
+      'access.versionContent',
       'analytics.deviceHealthDay',
       'analytics.deviceHealthSummary',
       'analytics.facilityZone',
@@ -182,8 +197,14 @@ describe('module registries', () => {
       expect.arrayContaining(['area', 'floor_plan', 'access_point', 'access_point_device', 'device', 'device_area']),
     );
     // Personal lists show all of the member's own rows: a facility there is a filter, not a place. A
-    // report's facilities describe what it covers (its chips), so they are never narrowed either.
-    const personal = new Set([NOTIFICATION_SUBSCRIPTION_RESOURCE, REPORT_FACILITY_RESOURCE]);
+    // report's facilities describe what it covers (its chips), so they are never narrowed either; nor
+    // are an access policy version's targets: whoever approves a version must see every place it names.
+    const personal = new Set([
+      NOTIFICATION_SUBSCRIPTION_RESOURCE,
+      REPORT_FACILITY_RESOURCE,
+      ACCESS_POLICY_TARGET_RESOURCE,
+      ACCESS_POLICY_FACILITY_TARGET_RESOURCE,
+    ]);
     const unscoped = bound
       .filter((resource) => !personal.has(resource.name))
       .filter((resource) => resource.data?.scope?.facility?.field !== 'facility_id')

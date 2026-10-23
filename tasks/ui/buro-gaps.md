@@ -1137,3 +1137,18 @@ migration `1792365700277`.
   runner is gone. jsdom's `act` flushes the effect first, so unit tests pass and hide it. **[run]**
 - **Workaround:** none; the mutation applies, the toast is missing.
 - **Expected from a framework:** `then` effects run from the launcher or before `onClose`.
+
+### G73. A flow cannot submit a read-only query (a dry run)
+- **Need:** "Simulate" on an access policy version: a period and a sample size chosen, then the
+  answer of `simulate_access_policy` (a STABLE function exposed as a GraphQL query: it writes
+  nothing) shown in a block; plan 10 calls it a simulation flow.
+- **Framework (0.6.0):** a flow's `submit` binds exactly one mutation (`FlowSubmit`: `mutation`,
+  `create`, `update`, `delete`, `each`); there is no `query` binding. The Hasura provider runs a
+  custom operation only under the kind it was registered with (`registeredOperation`), and the
+  registry test holds every document to its declared kind, so a `defineMutation` over a GraphQL
+  `query` document is refused. **[code]**
+- **Workaround:** a modal action placing a block in a sheet (`r.action.modal('simulate', …)`), as
+  the notification rule "Test rule" (phase 6): the block holds the period and sample-size pickers
+  and runs `useCustomQuery`, so changing them simulates again (`src/modules/access/simulation-*`).
+- **Expected from a framework:** `submit: { query }` for a read-only flow (no idempotency key, no
+  lost-answer check), or a block-hosted "dry run" step whose answer `then.open` can show.

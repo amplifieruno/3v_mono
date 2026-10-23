@@ -1,3 +1,4 @@
+import { accessViews } from './access/views';
 import { analyticsViews } from './analytics/views';
 import { devicesViews } from './devices/views';
 import { monitoringViews } from './monitoring/views';
@@ -9,4 +10,4 @@ import { searchViews } from './search/views';
 import { segmentsViews } from './segments/views';
 
 /** The block views of every module, composed into `<BuroProvider blockImplementations>`. */
-export const MODULE_VIEWS = [...organizationViews, ...placesViews, ...devicesViews, ...peopleViews, ...searchViews, ...monitoringViews, ...notificationsViews, ...segmentsViews, ...analyticsViews] as const;
+export const MODULE_VIEWS = [...organizationViews, ...placesViews, ...devicesViews, ...peopleViews, ...searchViews, ...monitoringViews, ...notificationsViews, ...segmentsViews, ...analyticsViews, ...accessViews] as const;

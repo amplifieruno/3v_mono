@@ -1,5 +1,12 @@
 import type { EnumDef } from '@burojs/core';
 import {
+  ACCESS_ENUM_TABLES,
+  accessDecisionReasonEnum,
+  accessDecisionResultEnum,
+  accessEffectEnum,
+  accessPolicyVersionStatusEnum,
+} from './access';
+import {
   DEVICES_ENUM_TABLES,
   deviceEventKindEnum,
   deviceHealthEnum,
@@ -200,6 +207,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   bulkJobStatusEnum,
   bulkJobRowOutcomeEnum,
   bulkUpdateKeyEnum,
+  accessEffectEnum,
+  accessPolicyVersionStatusEnum,
+  accessDecisionResultEnum,
+  accessDecisionReasonEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -246,4 +257,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...REPORT_ENUM_TABLES,
   ...SEARCH_ENUM_TABLES,
   ...BULK_ENUM_TABLES,
+  ...ACCESS_ENUM_TABLES,
 };

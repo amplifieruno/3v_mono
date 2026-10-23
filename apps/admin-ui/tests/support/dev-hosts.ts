@@ -13,6 +13,8 @@ export const DEV_AUTH = 'http://127.0.0.1:4100/v1';
 export const DEV_STORAGE = 'http://local.storage.local.nhost.run';
 
 export const ADMIN_EMAIL = 'admin@itap.demo';
+/** A second administrator of Nova only: the other member of a four-eyes approval. */
+export const NOVA_ADMIN_EMAIL = 'nova.admin@itap.demo';
 export const NOVA_NAME = 'Nova Tower Business Center';
 export const RIVERSIDE_NAME = 'Riverside Office Park';
 export const NOVA_FACILITY = 'Nova Tower';

@@ -130,6 +130,13 @@ export const NAV_ICONS = {
   bulkSearch: 'Images',
   retryBulkJob: 'RotateCcw',
   cancelBulkJob: 'CircleStop',
+  accessPolicies: 'KeyRound',
+  policyVersions: 'GitBranch',
+  policyAnalytics: 'ChartPie',
+  draftChange: 'FilePen',
+  submitForApproval: 'SendHorizontal',
+  archivePolicy: 'Archive',
+  simulatePolicy: 'FlaskConical',
 } as const;
 
 /**
