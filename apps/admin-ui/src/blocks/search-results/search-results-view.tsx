@@ -8,7 +8,7 @@ import { SEARCH_REQUEST_RESOURCE } from '../../data/resource-names';
 import { PhotoThumb } from '../../fields/photo-thumb';
 import { BlockNote } from '../charts/block-note';
 import { SearchResultCard } from './search-result-card';
-import { type SearchOutcomeKind, searchOutcome, searchPending, severalFaces } from './search-outcome';
+import { type SearchOutcomeKind, searchOutcome, searchPolling, severalFaces } from './search-outcome';
 import type { searchResultsBlock } from './search-results-block';
 import { type SearchRun, searchRunQuery } from './search-results-query';
 
@@ -78,7 +78,7 @@ function OutcomeHeader({ run, t }: { readonly run: SearchRun; readonly t: T }): 
 
 /**
  * The results block's view (`itap:search-results`): the outcome header, then the cards. Reads the
- * request again every {@link SEARCH_POLL_MS} while it is queued or running.
+ * request again every {@link SEARCH_POLL_MS} while it is queued or running, for at most two minutes after it was made.
  */
 export function SearchResultsView({ props, t }: BlockViewProps<typeof searchResultsBlock>): React.ReactElement {
   const app = useApp();
@@ -87,7 +87,7 @@ export function SearchResultsView({ props, t }: BlockViewProps<typeof searchResu
   const run = useCustomQuery(
     searchRunQuery,
     { requestId: requestId ?? '' },
-    { enabled: requestId !== null, refetchInterval: pollWhile<SearchRun | null>(searchPending, SEARCH_POLL_MS) },
+    { enabled: requestId !== null, refetchInterval: pollWhile<SearchRun | null>((run) => searchPolling(run, Date.now()), SEARCH_POLL_MS) },
   );
 
   if (requestId === null || run.isError || run.data === null) return <BlockNote testId={TEST_ID} tone="error">{t('unreadable')}</BlockNote>;

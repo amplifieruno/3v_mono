@@ -45,7 +45,11 @@ export function isRunOf(row: Readonly<Record<string, unknown>>, sent: SearchDefi
   );
 }
 
-/** Applied when the member's history holds a run by hand of what was sent last, made since it was sent. */
+/**
+ * Applied when the newest run by hand of this type made since shortly before it was sent is what was
+ * sent last. Should a lost run not have landed, an identical one made moments earlier (inside the skew
+ * window) still reads as applied: harmless, searches change no data.
+ */
 export const searchRan: FlowUnknownCheck = async ({ data }) => {
   const sent = lastSent;
   if (sent === null) return 'unknown';
@@ -62,8 +66,10 @@ export const searchRan: FlowUnknownCheck = async ({ data }) => {
       sort: [{ field: 'created_at', direction: 'desc' }],
       pagination: { kind: 'offset', page: 1, pageSize: 20 },
     } as never);
-    const found = (rows as readonly Readonly<Record<string, unknown>>[]).some((row) => isRunOf(row, sent.definition));
-    return found ? 'applied' : 'not-applied';
+    // Rows come newest first: only the newest run of this type is judged, so an identical run made
+    // moments before this one (inside the skew window) does not make a lost one read as applied.
+    const newest = (rows as readonly Readonly<Record<string, unknown>>[])[0];
+    return newest !== undefined && isRunOf(newest, sent.definition) ? 'applied' : 'not-applied';
   } catch {
     return 'unknown';
   }

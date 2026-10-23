@@ -95,9 +95,12 @@ All in `apps/admin-ui/`, in a new `search` ConsoleModule (`src/modules/search/`)
 - G69 `runFlow` cannot script custom query sources.
 - G70 a related list has no filters or column sets of its own (rows tabs per kind).
 - G71 a form cannot produce a file from what was entered (the bulk search CSV is written by a field).
+- G72 a confirm-only flow loses its `then.notify` toast in a real browser (no workaround).
 
 ## Deferred and residues
 
+- G72: confirm-only flows (Cancel job, Retry, and those of other phases) lose their `then.notify` toast in a
+  real browser (jsdom hides it); the action itself applies.
 - Retry on cancelled jobs (ruling above). Run now does not run "as" the saved search (no
   `saved_search_id` argument on `search_faces`; baseline and scheduled runs untouched): a backend change.
 - Withdrawn consent is covered only generically (no seeded identity with matching disabled).

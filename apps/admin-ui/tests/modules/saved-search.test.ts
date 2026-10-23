@@ -2,7 +2,7 @@ import { type DataError, defineDataProvider, defineMutationHandler } from '@buro
 import { answer, runFlow } from '@burojs/testing';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { app } from '../../src/app/app-definition';
-import { searchPending } from '../../src/blocks/search-results/search-outcome';
+import { SEARCH_POLL_LIMIT_MS, searchPolling } from '../../src/blocks/search-results/search-outcome';
 import { withActionRefusals } from '../../src/data/action-refusals';
 import { pollWhile } from '../../src/data/poll-while';
 import { SAVED_SEARCH_RESOURCE } from '../../src/data/resource-names';
@@ -200,6 +200,8 @@ describe('Check again after a lost search answer', () => {
     rememberSent(definition, Date.parse('2026-10-22T10:00:00Z'));
     expect(await searchRan({ data: data([{ ...stored, max_results: 5 }]) } as never)).toBe('not-applied');
     expect(await searchRan({ data: data([stored]) } as never)).toBe('applied');
+    // Only the newest run is judged: an identical older one behind a different newer one is not it.
+    expect(await searchRan({ data: data([{ ...stored, max_results: 5 }, stored]) } as never)).toBe('not-applied');
     expect(lists[0]).toMatchObject({
       filter: {
         and: [
@@ -229,11 +231,22 @@ describe('Check again after a lost "New saved search" answer', () => {
 
 describe('polling the results block', () => {
   it('should read again while the request is queued or running, and stop after', () => {
-    const interval = pollWhile(searchPending, 1500) as unknown as (query: { state: { data: unknown } }) => number | false;
-    expect(interval({ state: { data: { status: 'running' } } })).toBe(1500);
-    expect(interval({ state: { data: { status: 'queued' } } })).toBe(1500);
-    expect(interval({ state: { data: { status: 'completed' } } })).toBe(false);
+    const now = Date.parse('2026-10-22T10:00:00Z');
+    const fresh = new Date(now - 5_000).toISOString();
+    const interval = pollWhile((run: { status: string; created_at: string } | undefined) => searchPolling(run, now), 1500) as unknown as (query: {
+      state: { data: unknown };
+    }) => number | false;
+    expect(interval({ state: { data: { status: 'running', created_at: fresh } } })).toBe(1500);
+    expect(interval({ state: { data: { status: 'queued', created_at: fresh } } })).toBe(1500);
+    expect(interval({ state: { data: { status: 'completed', created_at: fresh } } })).toBe(false);
     expect(interval({ state: { data: null } })).toBe(false);
+  });
+
+  it('should stop reading a request that stays queued or running for two minutes', () => {
+    const now = Date.parse('2026-10-22T10:00:00Z');
+    const madeAgo = (ms: number) => ({ status: 'queued', created_at: new Date(now - ms).toISOString() });
+    expect(searchPolling(madeAgo(SEARCH_POLL_LIMIT_MS - 1000), now)).toBe(true);
+    expect(searchPolling(madeAgo(SEARCH_POLL_LIMIT_MS + 1000), now)).toBe(false);
   });
 });
 

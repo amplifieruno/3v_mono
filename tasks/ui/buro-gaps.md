@@ -1124,3 +1124,16 @@ migration `1792365700277`.
   value. Photos and CSV files of an abandoned form stay in the bucket (as with any upload field).
 - **Expected from a framework:** `f.file` with a "derived file" step, or an async `submit.prepare`
   step a flow runs before its mutation.
+
+### G72. A confirm-only flow loses its `then.notify` toast in a real browser
+- **Need:** every flow with a confirmation and no form or review (Cancel job, Retry, acknowledge
+  and close incidents, event rules, reports, invitations, user notifications) says what happened
+  in a toast.
+- **Framework (0.6.0):** `@burojs/core` (`dist/index.js` ~1893) hosts a flow only when
+  `hasHost = form || review`. The `FlowRunner` of `@burojs/ui-shadcn` (`flow-runtime-*.js`) calls
+  `launch().finally(() => onCloseRef.current())`, and `onClose` (`check-confirm-dialog-*.js`
+  ~607-612, `() => setRunning(false)`) unmounts the runner, while `runThen` in `@burojs/react`
+  (`flows-runtime.js`) runs the notify in a `useEffect` after the success render, by which time the
+  runner is gone. jsdom's `act` flushes the effect first, so unit tests pass and hide it. **[run]**
+- **Workaround:** none; the mutation applies, the toast is missing.
+- **Expected from a framework:** `then` effects run from the launcher or before `onClose`.

@@ -200,6 +200,13 @@ describe('bulk job page', () => {
     expect(screen.queryByText('Input file')).toBeNull();
   });
 
+  it('should offer Retry on someone else’s failed profile job (the server only restricts bulk searches to their owner)', async () => {
+    record = job({ owner_id: 'user-2', status: 'failed', error: 'owner_inactive' });
+    renderAt(`/bulk-jobs/${JOB}`);
+    const retry = await (await main()).findByRole('button', { name: /^Retry/u });
+    expect((retry as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('should show why the whole job failed', async () => {
     record = job({ status: 'failed', total: null, processed: 0, succeeded: 0, failed: 0, skipped: 0, error: 'header_unknown:badge' });
     renderAt(`/bulk-jobs/${JOB}`);

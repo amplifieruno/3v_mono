@@ -43,3 +43,13 @@ export const confidenceText = (confidence: number): string => `${Math.round(conf
 /** Whether a request as last read is still queued or running (the results block reads it again until not). */
 export const searchPending = (run: { readonly status: string } | null | undefined): boolean =>
   run?.status === 'queued' || run?.status === 'running';
+
+/** How long one page keeps reading a request that does not finish (a stuck queue). */
+export const SEARCH_POLL_LIMIT_MS = 2 * 60_000;
+
+/** Whether to read the request again: still queued or running, and not older than {@link SEARCH_POLL_LIMIT_MS}. */
+export function searchPolling(run: { readonly status: string; readonly created_at: string } | null | undefined, now: number): boolean {
+  if (!searchPending(run) || run === null || run === undefined) return false;
+  const created = Date.parse(run.created_at);
+  return Number.isNaN(created) || now - created < SEARCH_POLL_LIMIT_MS;
+}

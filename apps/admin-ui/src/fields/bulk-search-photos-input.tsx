@@ -1,5 +1,6 @@
 import { type ScalarDisplayProps, type ScalarInputProps, useIdentity, useT } from '@burojs/react';
 import { Button, Input } from '@burojs/ui-shadcn';
+import { useQuery } from '@tanstack/react-query';
 import { ImagePlus, X } from 'lucide-react';
 import * as React from 'react';
 import type { ItapIdentity } from '../auth';
@@ -44,35 +45,25 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
   const { data: identity } = useIdentity<ItapIdentity>();
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const value = fileId(props.value);
-  // The photos of the CSV `value` names (`of`); another value means they are still to be read.
-  const [listed, setListed] = React.useState<{ readonly of: string | null; readonly photos: readonly BulkSearchPhoto[]; readonly unreadable?: boolean }>(() => ({
-    of: value === null || PHOTOS_BY_CSV.has(value) ? value : null,
-    photos: value === null ? [] : (PHOTOS_BY_CSV.get(value) ?? []),
-  }));
+  // The photos of the CSV `value` names: from this page's memory, else read back from the file.
+  const known = value === null ? undefined : PHOTOS_BY_CSV.get(value);
+  const read = useQuery({
+    queryKey: ['itap', 'bulk-search-csv', value],
+    queryFn: () => photosOf(value ?? '', target),
+    enabled: value !== null && known === undefined,
+    staleTime: Infinity,
+    retry: false,
+  });
   const [progress, setProgress] = React.useState<{ readonly done: number; readonly count: number } | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const bucket = identity?.organizationId ?? null;
-  const restoring = listed.of !== value;
-  const photos = restoring ? [] : listed.photos;
+  const restoring = value !== null && known === undefined && read.data === undefined && !read.isError;
+  // Unreadable: adding would drop the earlier photos, so only Clear is offered.
+  const unreadable = value !== null && known === undefined && read.isError;
+  const photos = value === null ? [] : (known ?? read.data ?? []);
   const locked = disabled === true || readOnly === true || progress !== null || bucket === null || restoring;
-  const addLocked = locked || listed.unreadable === true;
-
-  React.useEffect(() => {
-    if (!restoring) return;
-    if (value === null) return setListed({ of: null, photos: [] });
-    let live = true;
-    photosOf(value, target)
-      .then((read) => live && setListed({ of: value, photos: read }))
-      .catch(() => {
-        if (!live) return;
-        // Unreadable: adding would drop the earlier photos, so only Clear is offered.
-        setListed({ of: value, photos: [], unreadable: true });
-        setError(t('console.bulk.photos.unreadable'));
-      });
-    return () => {
-      live = false;
-    };
-  }, [restoring, value, target, t]);
+  const addLocked = locked || unreadable;
+  const shownError = error ?? (unreadable ? t('console.bulk.photos.unreadable') : null);
   const errorId = `${accessibility.input ?? 'bulk-search-photos'}-upload-error`;
 
   const add = async (files: readonly File[]): Promise<void> => {
@@ -90,7 +81,6 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
       const csv = new File([bulkSearchCsv(all)], 'bulk-search.csv', { type: 'text/csv' });
       const { id } = await upload(csv, { bucket, kind: BULK_INPUT_KIND });
       PHOTOS_BY_CSV.set(id, all);
-      setListed({ of: id, photos: all });
       onChange?.(id);
     } catch {
       setError(t('console.bulk.photos.failed'));
@@ -100,7 +90,6 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
   };
 
   const clear = (): void => {
-    setListed({ of: null, photos: [] });
     setError(null);
     onChange?.(null);
   };
@@ -138,8 +127,8 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
           tabIndex={-1}
           disabled={addLocked}
           data-testid={testIds.input}
-          aria-describedby={error ? errorId : accessibility.description}
-          aria-invalid={error ? true : undefined}
+          aria-describedby={shownError ? errorId : accessibility.description}
+          aria-invalid={shownError ? true : undefined}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             event.target.value = '';
@@ -160,7 +149,7 @@ export function BulkSearchPhotosInput(props: ScalarInputProps<unknown>): React.R
         ) : null}
       </div>
       <p id={errorId} role="alert" className="text-sm text-destructive empty:hidden" data-testid={testIds.error}>
-        {error ?? ''}
+        {shownError ?? ''}
       </p>
     </div>
   );

@@ -54,7 +54,8 @@ let lastCreated: { readonly row: SavedSearchColumns; readonly at: number } | nul
 
 /**
  * Whether a stored saved search is the one `sent` created: the same name, type, sharing, schedule,
- * filters and limit (a shared saved search of someone else's with the same name is not it).
+ * filters and limit (owner is not compared: the check sees no user, so a same-named shared search of someone else's
+ * with identical settings would also read as it).
  */
 export function isSavedSearchOf(row: Readonly<Record<string, unknown>>, sent: SavedSearchColumns): boolean {
   return (
