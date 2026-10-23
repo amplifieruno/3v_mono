@@ -21,6 +21,7 @@ export const dsrStepsBlock = defineBlock('itap:dsr-steps', {
     holdFallback: 'Legal hold',
     category_profile: 'Profile',
     category_identities: 'Identities',
+    category_incidents: 'Incidents',
     step_claimed: 'Picked up by the background job (attempt {{attempt}})',
     step_failed: 'Attempt {{attempt}} failed: {{error}}; tried again later',
     step_gave_up: 'Gave up after {{attempts}} attempts: fix the cause, then Retry',

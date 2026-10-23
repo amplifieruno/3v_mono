@@ -20,6 +20,9 @@ const AT = '2026-10-20T09:00:00.000Z';
 
 let request: Record<string, unknown> = {};
 let steps: unknown[] = [];
+/** The legal hold targets the erasure review reads (`ErasureHolds`), or `'error'` for a failed read. */
+let erasureTargets: unknown[] | 'error' = [];
+const SUBJECT = { id: PROFILE, code: 'P-00042', first_name: 'Ada', last_name: 'Throwaway', full_name: 'Ada Throwaway', erased_at: null, processing_restricted: false };
 
 interface GraphqlBody {
   readonly query: string;
@@ -39,6 +42,13 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   if (query.includes('DataSubjectRequestProgress')) {
     return hasuraResponse({ data: { data_subject_requests_by_pk: { ...request, steps } } });
   }
+  if (query.includes('ErasureHolds')) {
+    return erasureTargets === 'error'
+      ? hasuraResponse({ errors: [{ message: 'database unavailable', extensions: { code: 'unexpected' } }] })
+      : hasuraResponse({ data: { legal_hold_targets: erasureTargets } });
+  }
+  if (query.includes('DataSubject(')) return hasuraResponse({ data: { profiles_by_pk: { ...SUBJECT, identities_aggregate: { aggregate: { count: 2 } } } } });
+  if (query.includes('profiles') && !query.includes('_by_pk') && !query.includes('_aggregate')) return hasuraResponse({ data: { items: [SUBJECT] } });
   if (query.includes('LegalHoldNames')) return hasuraResponse({ data: { legal_holds: [{ id: HOLD, name: 'Litigation Smith' }] } });
   if (query.includes('OpenFile')) return hasuraResponse({ data: { open_file: { url: 'https://files.test/bundle.zip', expires_at: AT } } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 0 } } } });
@@ -82,6 +92,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  erasureTargets = [];
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -145,5 +156,59 @@ describe('filing an erasure (Review Focus 1)', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getAllByLabelText(/Type the person’s code to confirm/).length).toBeGreaterThan(0);
     expect(graphqlBodies().some((body) => body.query.includes('CreateDataSubjectRequest'))).toBe(false);
+  });
+});
+
+describe('the erasure review of a chosen person (Review Focus 1)', () => {
+  const hold = (id: string, name: string) => ({ id, name, starts_at: AT, ends_at: null });
+  const target = (column: string, holdRow: ReturnType<typeof hold>) => ({
+    profile_id: null,
+    identity_id: null,
+    incident_id: null,
+    facility_id: null,
+    [column]: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000a1',
+    hold: holdRow,
+  });
+
+  async function review(): Promise<HTMLElement> {
+    renderAt('/data-subject-requests');
+    fireEvent.click(await screen.findByRole('button', { name: 'Erasure request' }));
+    fireEvent.click(await screen.findByRole('combobox', { name: /^Person/ }));
+    fireEvent.click(await screen.findByRole('option', { name: /Ada Throwaway/ }));
+    return screen.findByTestId('dsr-erasure-review');
+  }
+
+  it('should say a hold on the person keeps the profile, identities and biometrics', async () => {
+    erasureTargets = [target('identity_id', hold(HOLD, 'Litigation Smith'))];
+    const panel = await review();
+    expect(within(panel).getByTestId('dsr-erasure-subject').textContent).toContain('Ada Throwaway (P-00042) and 2 linked identities');
+    const held = await within(panel).findByTestId('dsr-erasure-person-held');
+    expect(held.textContent).toContain('The profile, identities, photos and face templates are kept, no tombstone is written');
+    expect(within(held).getByRole('link', { name: 'Litigation Smith' })).toBeDefined();
+    expect(within(panel).queryByTestId('dsr-erasure-not-held')).toBeNull();
+  });
+
+  it('should count holds on an incident or a facility where the person was recorded', async () => {
+    erasureTargets = [target('incident_id', hold(HOLD, 'Incident hold')), target('facility_id', hold('33333333-3333-4333-8333-000000000032', 'Facility hold'))];
+    const panel = await review();
+    const held = await within(panel).findByTestId('dsr-erasure-held');
+    expect(within(held).getByRole('link', { name: 'Incident hold' })).toBeDefined();
+    expect(within(held).getByRole('link', { name: 'Facility hold' })).toBeDefined();
+    expect(within(panel).queryByTestId('dsr-erasure-person-held')).toBeNull();
+    const read = graphqlBodies().find((body) => body.query.includes('ErasureHolds'));
+    expect(read?.query).toContain('incident_identities');
+    expect(read?.query).toContain('detections');
+  });
+
+  it('should say everything is erased only when no hold applies', async () => {
+    const panel = await review();
+    expect((await within(panel).findByTestId('dsr-erasure-not-held')).textContent).toContain('everything above is erased');
+  });
+
+  it('should say the holds are unknown when they cannot be read', async () => {
+    erasureTargets = 'error';
+    const panel = await review();
+    expect((await within(panel).findByTestId('dsr-erasure-holds-unknown')).textContent).toContain('cannot be filed');
+    expect(within(panel).queryByTestId('dsr-erasure-not-held')).toBeNull();
   });
 });

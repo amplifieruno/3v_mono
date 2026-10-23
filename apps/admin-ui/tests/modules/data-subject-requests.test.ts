@@ -5,8 +5,9 @@ import { app } from '../../src/app/app-definition';
 import { withActionRefusals } from '../../src/data/action-refusals';
 import { DSR_RESOURCE, PROFILE_RESOURCE } from '../../src/data/resource-names';
 import { ACTION_REFUSALS } from '../../src/modules';
-import { newRequestOf } from '../../src/modules/compliance/dsr-create-flows';
-import { confirmationMismatch } from '../../src/modules/compliance/dsr-erasure-flow';
+import { dsrFiled, newRequestOf, sending } from '../../src/modules/compliance/dsr-create-flows';
+import { splitErasureHolds } from '../../src/modules/compliance/dsr-erasure-holds-query';
+import { confirmationMismatch, erasureHoldsUnknown } from '../../src/modules/compliance/dsr-erasure-flow';
 import { defaultDueAt, dueProblem, latestDueAt, receivedInFuture, requestDates } from '../../src/modules/compliance/dsr-dates';
 import { stepLine } from '../../src/modules/compliance/dsr-step-format';
 import { dsrPending, retainedOf } from '../../src/modules/compliance/dsr-steps-query';
@@ -222,5 +223,31 @@ describe('the steps', () => {
     expect(dsrPending({ status: 'in_progress', lease_expires_at: RECEIVED })).toBe(true);
     expect(dsrPending({ status: 'in_progress', lease_expires_at: null })).toBe(false);
     expect(dsrPending({ status: 'completed', lease_expires_at: null })).toBe(false);
+  });
+});
+
+describe('the erasure review’s holds (fix round 1)', () => {
+  const hold = (id: string, via: string[]) => ({ id, name: id, starts_at: RECEIVED, ends_at: null, via });
+
+  it('should tell holds on the person from holds on their incidents and facilities', () => {
+    const split = splitErasureHolds([hold('p', ['profile']), hold('i', ['identity']), hold('x', ['incident']), hold('f', ['facility']), hold('both', ['facility', 'profile'])]);
+    expect(split.person.map((h) => h.id)).toEqual(['p', 'i', 'both']);
+    expect(split.places.map((h) => h.id)).toEqual(['x', 'f']);
+  });
+
+  it('should refuse to file while the holds cannot be read (fail closed)', async () => {
+    const ok = { query: async () => [] } as unknown as CheckDI['data'];
+    const failing = { query: async () => Promise.reject(new Error('offline')) } as unknown as CheckDI['data'];
+    const unknown = (values: Record<string, unknown>, data: CheckDI['data']) => erasureHoldsUnknown({ values, data } as Pick<CheckDI, 'values' | 'data'>);
+    expect(await unknown({ profile_id: PROFILE }, ok)).toBe(false);
+    expect(await unknown({ profile_id: PROFILE }, failing)).toBe(true);
+    expect(await unknown({}, failing)).toBe(false);
+  });
+
+  it('should check again only for the request its own flow sent', async () => {
+    const data = { list: async () => ({ data: [{ id: REQUEST }] }) } as never;
+    sending(newRequestOf('erasure', { profile_id: PROFILE, received_at: RECEIVED }));
+    expect(await dsrFiled('erasure')({ data } as never)).toBe('applied');
+    expect(await dsrFiled('portability')({ data } as never)).toBe('unknown');
   });
 });

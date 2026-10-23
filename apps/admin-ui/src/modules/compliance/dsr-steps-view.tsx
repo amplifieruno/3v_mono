@@ -11,6 +11,9 @@ import { type StepTone, stepLine } from './dsr-step-format';
 import type { dsrStepsBlock } from './dsr-steps-block';
 import { type DsrStep, dataSubjectRequestProgress, dsrPending, legalHoldNames, retainedOf } from './dsr-steps-query';
 
+/** Retained categories that are the person's own records, labelled by the block (the rest are data classes). */
+const OWN_CATEGORIES: ReadonlySet<string> = new Set(['profile', 'identities', 'incidents']);
+
 /** How often a request the job still works on is read again. */
 export const DSR_POLL_MS = 3000;
 
@@ -49,8 +52,8 @@ function PartialNotice({ steps, t, classLabel }: { readonly steps: readonly DsrS
   const holdIds = retained?.holdIds ?? [];
   const names = useCustomQuery(legalHoldNames, { holdIds }, { enabled: holdIds.length > 0 });
   if (retained === null) return null;
-  const category = (value: string): string =>
-    value === 'profile' || value === 'identities' ? t(`category_${value}`) : classLabel(value);
+  // `retained` names data classes and the person's own records (profile, identities, incidents).
+  const category = (value: string): string => (OWN_CATEGORIES.has(value) ? t(`category_${value}`) : classLabel(value));
   return (
     <div role="status" data-testid="dsr-partial" className="flex flex-col gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
       <p className="font-medium">{t('partialTitle')}</p>

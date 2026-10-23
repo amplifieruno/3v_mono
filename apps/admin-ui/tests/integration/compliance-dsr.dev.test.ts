@@ -8,6 +8,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import {
+  LEGAL_HOLD_FACILITY_TARGET_RESOURCE,
   LEGAL_HOLD_PROFILE_TARGET_RESOURCE,
   LEGAL_HOLD_RESOURCE,
   PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE,
@@ -15,6 +16,8 @@ import {
 } from '../../src/data/resource-names';
 import { FILES_BINDING } from '../../src/fields/open-file';
 import { newRequestOf } from '../../src/modules/compliance/dsr-create-flows';
+import { splitErasureHolds } from '../../src/modules/compliance/dsr-erasure-holds-query';
+import type { HeldBy } from '../../src/modules/compliance/hold-notice-query';
 import type { DsrProgress } from '../../src/modules/compliance/dsr-steps-query';
 import { retainedOf } from '../../src/modules/compliance/dsr-steps-query';
 import { COMPLIANCE_BINDING } from '../../src/modules/compliance/retention-policy-ops';
@@ -30,6 +33,8 @@ import { ADMIN_EMAIL, DEV_GRAPHQL, DEV_STACK_ENABLED, NOVA_NAME, devAdminSecret,
  * - a rectification is rejected (and a second rejection is refused, mapped); another is completed
  *   with its outcome; Retry on a request the job did not give up on is refused (mapped);
  * - a due date beyond 90 days is refused (mapped);
+ * - the erasure review's hold read (read only) sees a hold on an incident naming a seeded person and a
+ *   temporary hold on a facility where a seeded person was detected, as the erasure would honour them;
  * - a processing activity is recorded with a data class (a second one of the class is refused), read
  *   back with the seeded DPIA files untouched, and deleted with its classes.
  * Erasure is irreversible: it only ever touches the throwaway person. Cleanup with the admin
@@ -273,5 +278,35 @@ describe.skipIf(!DEV_STACK_ENABLED)('data subject requests against the dev stack
     const gone = await graphql(`query($id: uuid!) { processing_activities_by_pk(id: $id) { id } processing_activity_data_classes(where: { activity_id: { _eq: $id } }) { id } }`, { id: activity.id });
     expect(gone).toEqual({ processing_activities_by_pk: null, processing_activity_data_classes: [] });
     activities.push(String(activity.id));
+  });
+
+  it('should see the incident and facility holds an erasure would honour (read only)', async () => {
+    const data = await graphql(`{
+      legal_hold_targets(where: { incident_id: { _is_null: false } }, limit: 1) {
+        hold { id }
+        incident { incident_identities(where: { identity: { profile_id: { _is_null: false } } }, limit: 1) { identity { profile_id } } }
+      }
+      detections(where: { identity: { profile_id: { _is_null: false } } }, limit: 1, order_by: { detected_at: desc }) { facility_id identity { profile_id } }
+    }`);
+    const incidentTarget = (data.legal_hold_targets as { hold: { id: string }; incident: { incident_identities: { identity: { profile_id: string } }[] } }[])[0];
+    const namedPerson = incidentTarget?.incident.incident_identities[0]?.identity.profile_id;
+    expect(namedPerson, 'a seeded held incident naming a known person').toBeDefined();
+    const viaIncident = (await custom(COMPLIANCE_BINDING, 'queries', 'erasureHolds', { profileId: namedPerson })) as HeldBy[];
+    expect(splitErasureHolds(viaIncident).places.map((h) => h.id)).toContain(incidentTarget?.hold.id);
+
+    const detection = (data.detections as { facility_id: string; identity: { profile_id: string } }[])[0];
+    expect(detection).toBeDefined();
+    const hold = await create(LEGAL_HOLD_RESOURCE, {
+      name: 'DSR dev test facility hold',
+      reason: 'compliance-dsr dev test',
+      starts_at: new Date(Date.now() - 60_000).toISOString(),
+    });
+    holds.push(String(hold.id));
+    await create(LEGAL_HOLD_FACILITY_TARGET_RESOURCE, { hold_id: hold.id, facility_id: detection?.facility_id });
+    const viaFacility = (await custom(COMPLIANCE_BINDING, 'queries', 'erasureHolds', { profileId: detection?.identity.profile_id })) as HeldBy[];
+    const found = viaFacility.find((h) => h.id === hold.id);
+    expect(found?.via).toEqual(['facility']);
+    // Ended at once: a facility hold keeps the whole facility from retention while in force.
+    await custom(COMPLIANCE_BINDING, 'mutations', 'endLegalHold', { holdId: hold.id });
   });
 });

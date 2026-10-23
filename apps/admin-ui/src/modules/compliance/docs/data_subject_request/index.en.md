@@ -62,19 +62,36 @@ they are never deleted.
 Erasure cannot be undone, so **Erasure request** shows, once the person is
 chosen, what will happen:
 
-- detections, locations, sessions, events, access decisions, face
-  authentication attempts and evidence, deliveries, searches and export jobs
-  about the person are deleted; bulk job rows are archived;
-- photos and face templates are deleted, and identities no kept row refers to;
-- mentions in saved searches, reports, incidents, visits, consents, documents
-  and the audit log are redacted;
+- **deleted**: detections and their snapshots, locations, tracking sessions,
+  events (those kept with an incident lose the person instead), access
+  decisions, face authentication attempts and evidence, deliveries naming them,
+  face searches and saved searches run with their image, export jobs; bulk job
+  rows are archived;
+- **deleted**: photos and face templates, identities no kept row refers to,
+  their visits, consent records and documents, watch-list entries, segment
+  memberships, access grants no kept decision uses, authentication sessions,
+  notification subscriptions and activity statistics;
+- **redacted**: incidents (the person is unlinked, notes and activities
+  stripped of them), hosted visits, shift handovers, digests, reports showing
+  them (expired), their other requests and the audit log;
 - the profile becomes a tombstone named **Erased subject** (inactive,
   restricted); files are deleted within about 10 minutes.
 
-It also lists each **legal hold** in force that covers the person or their
-identities. Under such a hold the erasure keeps what the hold covers and
-completes as **Partial**: the request's page then says what was kept and links
-the holds that kept it. To erase it later, end the hold and file a new request.
+It also lists the **legal holds** in force the erasure honours, as the
+erasure itself selects them:
+
+- a hold on the **person** or one of their **identities**: the profile,
+  identities, photos and face templates are kept, no tombstone is written and
+  mentions are not redacted; only what lies outside the hold is erased;
+- a hold on an **incident** naming them or a **facility** where they were
+  recorded (detections, locations, sessions, events, access decisions): the
+  rows under it are kept, the rest is erased.
+
+Either way the request completes as **Partial**: its page then says what was
+kept and links the holds that kept it. A hold reaching the person only through
+a completed identity merge is not listed but is still honoured. To erase what a
+hold kept, end the hold and file a new request. When the holds cannot be read,
+the review says so and the request cannot be filed until they can.
 
 To file it, type the person's **code** (such as P-00042, shown in the review)
 in the confirmation box: without the matching code nothing is sent. The flow

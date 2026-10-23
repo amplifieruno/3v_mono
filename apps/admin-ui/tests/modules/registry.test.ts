@@ -88,6 +88,7 @@ describe('module registries', () => {
       'compliance.dataSubjectRequestProgress',
       'compliance.deleteRetentionPolicy',
       'compliance.endLegalHold',
+      'compliance.erasureHolds',
       'compliance.legalHoldNames',
       'compliance.legalHoldsCovering',
       'compliance.rejectDataSubjectRequest',

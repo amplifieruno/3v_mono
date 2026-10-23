@@ -4,6 +4,7 @@ import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import { PROFILE_RESOURCE } from '../../data/resource-names';
 import { DSR_DATE_CHECKS } from './dsr-dates';
+import { erasureHolds } from './dsr-erasure-holds-query';
 import { dsrFiled, newRequestOf, openFiled, requestFields, sending } from './dsr-create-flows';
 import { dsrErasureReviewBlock } from './dsr-erasure-review-block';
 import { createDataSubjectRequest } from './dsr-ops';
@@ -37,6 +38,21 @@ export async function confirmationMismatch({ values, data }: Pick<CheckDI, 'valu
     const { data: row } = await data.one(resourceByName(PROFILE_RESOURCE) as never, { id: profileId } as never);
     const code = (row as Readonly<Record<string, unknown>> | null | undefined)?.code;
     return !confirmsCode(v.confirmation, typeof code === 'string' ? code : null);
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Whether the legal holds the erasure would honour cannot be read (the check fires): the review
+ * could not say what is kept, so nothing is filed until they can be (fail closed).
+ */
+export async function erasureHoldsUnknown({ values, data }: Pick<CheckDI, 'values' | 'data'>): Promise<boolean> {
+  const profileId = (values as ErasureValues).profile_id;
+  if (typeof profileId !== 'string' || profileId === '') return false;
+  try {
+    await data.query(erasureHolds, { profileId });
+    return false;
   } catch {
     return true;
   }
@@ -88,12 +104,19 @@ export const newErasureRequestFlow = {
       when: confirmationMismatch,
       texts: 'The confirmation does not match the chosen person’s code: type the code shown in the review (such as P-00042).',
     },
+    {
+      id: 'dsrErasureHoldsUnknown',
+      severity: 'error',
+      anchor: 'profile_id',
+      when: erasureHoldsUnknown,
+      texts: 'The legal holds on this person could not be read, so what the erasure would keep is unknown. Nothing was filed; try again once they can be checked.',
+    },
   ],
   submit: {
     mutation: createDataSubjectRequest,
     retry: 'never',
     input: ({ values }) => sending(newRequestOf('erasure', values)),
-    onUnknown: { check: dsrFiled },
+    onUnknown: { check: dsrFiled('erasure') },
   },
   then: openFiled,
 } satisfies FlowConfig<unknown, Record<never, never>, typeof erasureFields>;

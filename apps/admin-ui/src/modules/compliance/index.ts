@@ -10,6 +10,7 @@ import {
 } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
 import { dataSubjectRequest } from './dsr';
+import { erasureHolds, erasureHoldsOperation } from './dsr-erasure-holds-query';
 import { dsrErasureReviewBlock } from './dsr-erasure-review-block';
 import { dsrFields } from './dsr-fields';
 import { DSR_OPERATIONS, completeDataSubjectRequest, createDataSubjectRequest, rejectDataSubjectRequest, retryDataSubjectRequest } from './dsr-ops';
@@ -75,6 +76,7 @@ export const complianceModule = {
     dataSubjectRequestProgress,
     legalHoldNames,
     dataSubject,
+    erasureHolds,
     dsrStepsBlock,
     dsrErasureReviewBlock,
     processingActivity,
@@ -100,5 +102,6 @@ export const complianceModule = {
     dsrProgressOperation,
     holdNamesOperation,
     dsrSubjectOperation,
+    erasureHoldsOperation,
   ],
 } as const satisfies ConsoleModule;
