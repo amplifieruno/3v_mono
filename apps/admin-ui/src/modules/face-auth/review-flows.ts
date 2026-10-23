@@ -28,7 +28,7 @@ const rejectFields = noteField('Why the person was not accepted; kept on the att
 export const approveAttemptFlow = {
   texts: {
     label: 'Approve',
-    notify: 'Attempt approved: the session succeeded.',
+    notify: 'Attempt approved: the session succeeded and a “Face sign-in” event was raised (none for a sandbox application).',
     doc: {
       summary:
         'Confirms the person of a partial match: the attempt is approved with your name and note, its session succeeds and closes, and the authentication success event is raised.',
@@ -54,7 +54,7 @@ export const approveAttemptFlow = {
 export const rejectAttemptFlow = {
   texts: {
     label: 'Reject',
-    notify: 'Attempt rejected: the session failed.',
+    notify: 'Attempt rejected: the session failed and a “Face sign-in failed” event was raised (none for a sandbox application).',
     doc: {
       summary:
         'Refuses the person of a partial match: the attempt is rejected with your name and note, its session fails and closes, and the authentication failure event is raised.',

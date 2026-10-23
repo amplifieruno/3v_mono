@@ -13,16 +13,34 @@ type Props = BlockViewProps<typeof authDecisionBlock>;
 
 const NEXT_STEPS: ReadonlySet<string> = new Set(['none', 'capture', 'recapture', 'second_factor', 'review']);
 
-/** An attribute's value as text: a photo link stays a link, a list is joined, anything else as JSON. */
-function AttributeValue({ value, photoLabel }: { readonly value: unknown; readonly photoLabel: string }): React.ReactElement {
-  const url = (value as { readonly url?: unknown } | null)?.url;
-  if (typeof url === 'string') {
+/** A signed photo attribute (`{ url, expires_at }`) as the API returns it. */
+function isSignedPhoto(value: unknown): value is { readonly url: string } {
+  return typeof value === 'object' && value !== null && 'url' in value && typeof value.url === 'string';
+}
+
+/**
+ * An attribute's value as text: a signed photo stays a link, an unsigned photo (null) says why
+ * there is no link, a list is joined, anything else as JSON.
+ */
+function AttributeValue({
+  name,
+  value,
+  photoLabel,
+  photoUnsigned,
+}: {
+  readonly name: string;
+  readonly value: unknown;
+  readonly photoLabel: string;
+  readonly photoUnsigned: string;
+}): React.ReactElement {
+  if (isSignedPhoto(value)) {
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">
+      <a href={value.url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">
         {photoLabel}
       </a>
     );
   }
+  if (name === 'photo' && (value === null || value === undefined)) return <span className="text-muted-foreground">{photoUnsigned}</span>;
   if (Array.isArray(value)) return <span>{value.map(String).join(', ')}</span>;
   if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
   return <span>{typeof value === 'string' ? value : JSON.stringify(value)}</span>;
@@ -86,7 +104,7 @@ export function AuthDecisionView({ props, t }: Props): React.ReactElement {
               {attributes.map(([key, value]) => (
                 <li key={key}>
                   <span className="text-muted-foreground">{attributeLabel(key)}: </span>
-                  <AttributeValue value={value} photoLabel={t('photoLink')} />
+                  <AttributeValue name={key} value={value} photoLabel={t('photoLink')} photoUnsigned={t('photoUnsigned')} />
                 </li>
               ))}
             </ul>

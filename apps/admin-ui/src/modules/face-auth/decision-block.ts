@@ -23,6 +23,7 @@ export const authDecisionBlock = defineBlock('itap:auth-decision', {
     attributes: 'Attributes shared with the application',
     noAttributes: 'None: the application shares no attributes, or nobody was authenticated.',
     photoLink: 'Short-lived photo link',
+    photoUnsigned: 'No link: the person has no photo, or it could not be signed.',
     attack: 'Attack check',
     failure: 'Failure',
     failureCode: 'Code: {{code}}',

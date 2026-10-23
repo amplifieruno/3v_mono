@@ -1269,3 +1269,19 @@ migration `1792365700277`.
   answer cannot be checked (the check sees no answer, so no session id, G12) and a resend would be
   a replay of the same frames; accepted `flow.unknown-unhandled` for `face_auth_tester
   toolbar.item.0.submit`, and the tester article points to the sessions log.
+### G80. A relation's candidates cannot follow a column of another relation picked in the same form
+- **Need:** "Authenticate a face" (phase 11) offers the claimed identity of a verification; for a
+  sandbox application only synthetic test identities (`is_synthetic`) make sense, so the identity
+  select should narrow when the chosen application's `is_sandbox` is true.
+- **Framework (0.6.0):** `candidates` values read `values` refs, but a picked relation's value is its
+  key only; a `with` source (`source.one`) cannot be keyed by unsaved input
+  (`source.values-input`), and a flow form has no derived values. **[code]**
+  (`docs/forms-guide.md` "Candidates in detail", `docs/checks-guide.md`)
+- **Workaround:** a field implementation (`itap.sandbox-identity`, `src/fields/sandbox-identity*.ts`)
+  wraps the kit's relation input: its meta reads `ref('values', 'application_id')`, the input reads
+  that application with `useOne` and adds `is_synthetic = true` to the select's `fixedFilters` for a
+  sandbox. The server still answers anyone else as not authenticated.
+- **Expected from a framework:** a candidate value that reads a column of a picked relation
+  (`ref('values', 'application_id', 'is_sandbox')` resolved through the target), or form-scoped
+  sources keyed by values.
+

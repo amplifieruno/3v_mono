@@ -7,6 +7,8 @@ import { enumField } from '../../enums/field';
 import { rangeValidator } from '../../fields/bounded-number';
 import { facePhotoIds } from '../../fields/face-photos-format';
 import { facePhotos } from '../../fields/face-photos';
+import { SEARCH_IMAGE_KIND } from '../../fields/bulk-fields';
+import { sandboxIdentity } from '../../fields/sandbox-identity';
 import { authDecisionBlock } from './decision-block';
 import { AUTH_MAX_FRAMES, AUTH_MIN_FRAMES, authenticateFace } from './tester-ops';
 
@@ -24,11 +26,20 @@ export const testerFields = {
     required: true,
     texts: { label: 'Mode', doc: { summary: 'Identification searches the application’s whole population; verification compares with the claimed identity only.' } },
   }),
-  claimed_identity_id: f.relation({
-    to: IDENTITY_RESOURCE,
-    nullable: true,
-    texts: { label: 'Claimed identity', doc: { summary: 'In verification, the identity the person claims to be.' } },
-  }),
+  claimed_identity_id: sandboxIdentity(
+    f.relation({
+      to: IDENTITY_RESOURCE,
+      nullable: true,
+      texts: {
+        label: 'Claimed identity',
+        doc: {
+          summary:
+            'In verification, the identity the person claims to be. For a sandbox application only its synthetic test identities are offered.',
+        },
+      },
+    }),
+    'application_id',
+  ),
   access_point_id: f.relation({
     to: ACCESS_POINT_RESOURCE,
     nullable: true,
@@ -51,6 +62,8 @@ export const testerFields = {
   frames: facePhotos({
     min: AUTH_MIN_FRAMES,
     max: AUTH_MAX_FRAMES,
+    // Owner-only (`search`): test frames are not organization photos; the action reads its caller's own search files.
+    kind: SEARCH_IMAGE_KIND,
     texts: {
       label: 'Frames',
       doc: {

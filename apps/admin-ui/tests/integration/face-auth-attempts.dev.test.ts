@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ItapAuthProvider } from '../../src/auth';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { AUTHENTICATION_ATTEMPT_RESOURCE, AUTHENTICATION_SESSION_RESOURCE, CLIENT_APPLICATION_RESOURCE } from '../../src/data/resource-names';
-import { FACE_SOURCE_KIND } from '../../src/fields/face-photos';
+import { SEARCH_IMAGE_KIND } from '../../src/fields/bulk-fields';
 import { FILES_BINDING } from '../../src/fields/open-file';
 import { type StorageTarget, uploadStorageFile } from '../../src/fields/storage-client';
 import { FACE_AUTH_BINDING } from '../../src/modules/face-auth/application-ops';
@@ -105,7 +105,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('face authentication sessions, review and te
   };
   const frame = async (n: number): Promise<string> => {
     const bytes = new Uint8Array(readFileSync(resolve(SEED_FACES, `${n}.jpg`)));
-    const { id } = await uploadStorageFile(new File([bytes], `dev-test-frame-${n}.jpg`, { type: 'image/jpeg' }), { bucket: organizationId, kind: FACE_SOURCE_KIND }, target);
+    const { id } = await uploadStorageFile(new File([bytes], `dev-test-frame-${n}.jpg`, { type: 'image/jpeg' }), { bucket: organizationId, kind: SEARCH_IMAGE_KIND }, target);
     uploaded.push(id);
     return id;
   };

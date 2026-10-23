@@ -63,6 +63,8 @@ const attemptRow = (extra: Record<string, unknown> = {}) => ({
 
 let attempt: Record<string, unknown>;
 let uploads = 0;
+let sandbox = false;
+let uploadKinds: string[] = [];
 
 const bodies = (): GraphqlBody[] =>
   vi
@@ -78,7 +80,7 @@ const decision = {
   authenticated: true,
   confidence: 0.912,
   identity_id: IDENTITY,
-  attributes: { display_name: 'Ada Example', segments: ['Employees', 'Night shift'] },
+  attributes: { display_name: 'Ada Example', segments: ['Employees', 'Night shift'], photo: null },
   attack_outcome: 'passed',
   failure_code: null,
   failure_message: null,
@@ -90,6 +92,8 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
   const url = String(input);
   if (url.endsWith('/v1/files') && init?.method === 'POST') {
     uploads += 1;
+    const form = init?.body;
+    if (form instanceof FormData) uploadKinds.push(String(form.get('metadata[]') ?? form.get('metadata') ?? ''));
     return hasuraResponse({ processedFiles: [{ id: FRAMES[(uploads - 1) % FRAMES.length] }] });
   }
   if (url.includes('/presignedurl')) return hasuraResponse({ url: `https://files.test/${url.split('/').at(-2)}`, expiration: 60 });
@@ -98,6 +102,9 @@ async function serve(input: RequestInfo | URL, init?: RequestInit): Promise<Resp
   if (query.includes('authenticate_face(')) return hasuraResponse({ data: { authenticate_face: decision } });
   if (query.includes('open_file(')) return hasuraResponse({ data: { open_file: { url: 'https://files.test/evidence', expires_at: '2030-01-01T00:00:00Z' } } });
   if (query.includes('organization_settings_by_pk')) return hasuraResponse({ data: { item: { organization_id: NOVA } } });
+  if (query.includes('client_applications_by_pk')) {
+    return hasuraResponse({ data: { item: { id: APP, code: 'APP-00021', name: 'Lobby Kiosk', status: 'active', is_sandbox: sandbox } } });
+  }
   if (query.includes('authentication_attempts_by_pk')) return hasuraResponse({ data: { item: attempt } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 1 } } } });
   if (/\bitems: client_applications\(/u.test(query)) {
@@ -129,6 +136,8 @@ beforeEach(() => {
   localStorage.clear();
   attempt = attemptRow();
   uploads = 0;
+  sandbox = false;
+  uploadKinds = [];
   vi.stubGlobal('fetch', vi.fn(serve));
 });
 
@@ -169,12 +178,35 @@ describe('Authenticate a face (Review Focus 4)', () => {
     expect(within(view).getByTestId('auth-decision-confidence').textContent).toBe('0.912');
     expect(within(view).getByTestId('auth-decision-attributes').textContent).toContain('Display name: Ada Example');
     expect(within(view).getByTestId('auth-decision-attributes').textContent).toContain('Employees, Night shift');
+    expect(within(view).getByTestId('auth-decision-attributes').textContent).toContain('No link: the person has no photo, or it could not be signed.');
     expect(within(view).getByText('Passed')).toBeDefined();
     expect(within(view).getByText('None: the session is closed.')).toBeDefined();
     expect(within(view).getByRole('link', { name: 'Open the identity' }).getAttribute('href')).toBe(`/identities/${IDENTITY}`);
     expect(within(view).getByRole('link', { name: 'Open the attempt' }).getAttribute('href')).toBe(`/authentication-attempts/${ATTEMPT}`);
     expect(within(view).getByRole('link', { name: 'Open the session' }).getAttribute('href')).toBe(`/authentication-sessions/${SESSION}`);
     expect(within(view).queryByTestId('auth-decision-failure')).toBeNull();
+    // Test frames are owner-only search files, never organization face photos.
+    expect(uploadKinds).toHaveLength(3);
+    for (const kind of uploadKinds) expect(kind).toContain('"kind":"search"');
+  });
+
+  const identityQueries = () => bodies().filter((body) => /\bitems: identities\(/u.test(body.query));
+
+  it.each([
+    [true, true],
+    [false, false],
+  ])('should offer only synthetic identities to verify for a sandbox application (sandbox %s)', async (isSandbox, narrowed) => {
+    sandbox = isSandbox;
+    renderAt('/authenticate-a-face');
+    fireEvent.click(await screen.findByRole('combobox', { name: /^Application/ }));
+    fireEvent.click(await screen.findByRole('option', { name: /Lobby Kiosk/ }));
+    fireEvent.click(await screen.findByRole('combobox', { name: /^Mode/ }));
+    fireEvent.click(await screen.findByRole('option', { name: /Verification/ }));
+    await waitFor(() => expect(bodies().some((body) => body.query.includes('client_applications_by_pk'))).toBe(true));
+    fireEvent.click(await screen.findByRole('combobox', { name: /^Claimed identity/ }));
+    await waitFor(() => expect(identityQueries().length).toBeGreaterThan(0));
+    const last = JSON.stringify(identityQueries().at(-1)?.variables ?? {});
+    expect(last.includes('is_synthetic')).toBe(narrowed);
   });
 });
 

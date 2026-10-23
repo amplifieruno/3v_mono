@@ -16,6 +16,7 @@ import { inlineFileImplementations } from './inline-file-impl';
 import { notificationConditionsImplementations } from './notification-conditions-impl';
 import { planPositionImplementations } from './plan-position-impl';
 import { recordScopedRelationImplementations } from './record-scoped-relation-impl';
+import { sandboxIdentityImplementations } from './sandbox-identity-impl';
 import { reportParametersImplementations } from './report-parameters-impl';
 import { searchFiltersImplementations } from './search-filters-impl';
 import { secretImplementations } from './secret-impl';
@@ -35,7 +36,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * values (`itap.custom-fields`), floor-plan shapes and points (`itap.area-shape`,
  * `itap.plan-position`), image sizes (`itap.image-size`), facility template trees
  * (`itap.template-structure`), relation selects read in a given record scope
- * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`), files sent inside an
+ * (`itap.record-scoped-relation`), identity selects narrowed to synthetic identities for a sandbox
+ * application (`itap.sandbox-identity`), write-only secrets (`itap.secret`), files sent inside an
  * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`),
  * the photos to split off an identity (`itap.split-photos`), timestamps with their time of day
  * (`itap.date-time`), a detection’s face (`itap.detection-face`), an access grant’s use (`itap.grant-use`), an event rule version's parameters
@@ -61,6 +63,7 @@ export const itapFieldImplementations = composeFieldImplementations(
   imageSizeImplementations,
   templateStructureImplementations,
   recordScopedRelationImplementations,
+  sandboxIdentityImplementations,
   secretImplementations,
   inlineFileImplementations,
   facePhotosImplementations,

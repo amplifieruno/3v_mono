@@ -13,7 +13,8 @@ import { validateFacePhotos } from '../../src/fields/face-photos-format';
 import { ACTION_REFUSALS, HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
 import { FACE_AUTH_BINDING } from '../../src/modules/face-auth/application-ops';
 import { authenticationAttemptFields } from '../../src/modules/face-auth/attempt-fields';
-import { testerInput } from '../../src/modules/face-auth/tester-flow';
+import { testerFields, testerInput } from '../../src/modules/face-auth/tester-flow';
+import { SANDBOX_IDENTITY_FIELD } from '../../src/fields/sandbox-identity';
 
 /**
  * Sessions, attempts, review and the tester without the UI: the logs are read-only and paged by
@@ -61,6 +62,14 @@ const decision = {
 
 beforeAll(async () => {
   await app.ready;
+});
+
+describe('the tester form', () => {
+  it('should upload frames as owner-only search files and follow the application for the claimed identity', () => {
+    expect(testerFields.frames.meta).toMatchObject({ kind: 'search', min: 3, max: 5 });
+    expect(testerFields.claimed_identity_id.ui).toMatchObject({ input: SANDBOX_IDENTITY_FIELD });
+    expect(testerFields.claimed_identity_id.meta).toMatchObject({ sandboxApplication: { kind: 'ref', source: 'values', path: ['application_id'] } });
+  });
 });
 
 describe('the session and attempt logs', () => {
