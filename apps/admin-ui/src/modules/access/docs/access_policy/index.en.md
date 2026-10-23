@@ -76,9 +76,10 @@ approval), a roll back is refused: finish or discard the open version first.
 
 **Archive** retires a policy for good: its version in force is superseded, a
 version waiting for approval goes back to draft, and no new version can be
-drafted. Terminals are updated at once. A policy in force cannot be deleted:
-archive it instead. A policy never approved can be deleted; one whose
-versions decided at a door stays, archived, as history.
+drafted. Terminals are updated within seconds when this narrows access
+(an allowing policy is archived), otherwise within 15 minutes. A policy in
+force cannot be deleted: archive it instead. A policy never approved can be
+deleted; one whose versions decided at a door stays, archived, as history.
 
 ## Policy analytics
 

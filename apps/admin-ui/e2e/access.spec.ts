@@ -1,12 +1,19 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
+import { policyEpoch, removeAccessRun } from './access-cleanup';
 import {
   type PersonAtDoor,
+  addVersionRow,
   attributes,
+  createGrant,
+  expectEveryState,
+  facilityWithArea,
   grantedPersonAtDoor,
   graphqlAs,
   localInput,
-  removeAccessRun,
+  pick as pickIn,
   signInSecondAdmin,
+  startEvacuation,
+  versionStatusOf,
   visitorWithoutPolicy,
 } from './access-support';
 import { NOVA_FACILITY, devStackEnabled, openSignedIn } from './dev-stack';
@@ -40,20 +47,16 @@ test.describe.serial('access control smoke', () => {
   let visitor: PersonAtDoor | undefined;
   let versionUrl = '';
   let facilityId = '';
+  let startEpoch = 0;
   let areaName = '';
 
   test.beforeAll(async ({ browser }) => {
     page = await openSignedIn(browser);
     opened = true;
-    const nova = await graphqlAs<{ facilities: { id: string; areas: { name: string }[] }[] }>(
-      page,
-      'query ($n: String!) { facilities(where: { name: { _eq: $n } }) { id areas(order_by: { name: asc }, limit: 1) { name } } }',
-      { n: NOVA_FACILITY },
-    );
-    facilityId = nova.facilities[0]?.id ?? '';
-    areaName = nova.facilities[0]?.areas[0]?.name ?? '';
+    ({ id: facilityId, areaName } = await facilityWithArea(page, NOVA_FACILITY));
     expect(facilityId).toMatch(UUID);
     expect(areaName).not.toBe('');
+    startEpoch = await policyEpoch(facilityId);
     denied = await grantedPersonAtDoor(page);
     visitor = await visitorWithoutPolicy(page);
   });
@@ -62,12 +65,12 @@ test.describe.serial('access control smoke', () => {
     if (!opened) return;
     test.setTimeout(90_000);
     try {
-      const people = [denied?.profile, visitor?.profile].filter((id): id is string => !!id);
       await removeAccessRun({
         run: RUN,
         startedAt,
+        startEpoch,
         facilityId,
-        people,
+        visitor: visitor?.profile,
         policies,
         grants,
         overrides,
@@ -91,40 +94,20 @@ test.describe.serial('access control smoke', () => {
   const person = (): PersonAtDoor => seeded(denied);
   const guest = (): PersonAtDoor => seeded(visitor);
 
-  /** Picks the option named `option` of a relation picker, after typing `search` into its search box. */
-  async function pick(field: Locator, search: string, option: string): Promise<void> {
-    await field.click();
-    await page.getByRole('combobox').last().fill(search);
-    await page.getByRole('option', { name: option }).first().click();
-  }
+  const pick = (field: Locator, search: string, option: string): Promise<void> =>
+    pickIn(page, field, search, option);
 
-  const versionStatus = async (): Promise<string> =>
-    (
-      await graphqlAs<{ access_policy_versions_by_pk: { status: string } }>(
-        page,
-        'query ($id: uuid!) { access_policy_versions_by_pk(id: $id) { status } }',
-        { id: versionUrl.split('/').pop() },
-      )
-    ).access_policy_versions_by_pk.status;
+  const versionStatus = (): Promise<string> =>
+    versionStatusOf(page, versionUrl.split('/').pop() ?? '');
 
   const decisionCount = (): Promise<unknown> =>
     graphqlAs(page, '{ access_decisions_aggregate { aggregate { count } } }');
 
-  /** Creates a grant for the visitor at their door from the create page; answers its id. */
-  async function createGrant(from: string, until: string, singleUse: boolean): Promise<string> {
-    const field = (name: string) =>
-      page.getByTestId(`form-field-input:access_grant:create:${name}`);
-    await page.goto('/access-grants/create');
-    await pick(field('profile_id'), guest().last, guest().name);
-    await pick(field('access_point_id'), guest().doorName, guest().doorName);
-    await field('valid_from').fill(from);
-    await field('valid_until').fill(until);
-    if (singleUse) await field('single_use').check();
-    await field('reason').fill(`${RUN} visit`);
-    await page.getByTestId('form-submit:access_grant:create').click();
-    await expect(page).toHaveURL(/\/access-grants\/[0-9a-f-]{36}$/);
-    grants.add(idOf(page));
-    return idOf(page);
+  /** Creates a grant for the visitor at their door; records and answers its id. */
+  async function grantFor(from: string, until: string, singleUse: boolean): Promise<string> {
+    const id = await createGrant(page, guest(), { from, until, singleUse, reason: `${RUN} visit` });
+    grants.add(id);
+    return id;
   }
 
   test('should draft a policy version, name a person and a door, and simulate it without writing', async () => {
@@ -150,24 +133,10 @@ test.describe.serial('access control smoke', () => {
     await expect(page).toHaveURL(versionUrl);
 
     // Who: the person (the first kind, People); Where: the door (the third kind, Access points).
-    await main().getByRole('tab', { name: 'Who' }).click();
-    const who = main().getByRole('tabpanel', { name: 'Who' });
-    await who.getByRole('button', { name: 'Create' }).first().click();
-    await pick(dialog().getByRole('combobox', { name: /^Person/ }), person().last, person().name);
-    await dialog().getByRole('button', { name: 'Create', exact: true }).click();
-    await expect(dialog()).toHaveCount(0);
+    const who = await addVersionRow(page, 'Who', 0, /^Person/, person().last, person().name);
     await expect(who.locator(`a[href="/profiles/${person().profile}"]`).first()).toBeVisible();
-
-    await main().getByRole('tab', { name: 'Where' }).click();
-    const where = main().getByRole('tabpanel', { name: 'Where' });
-    await where.getByRole('button', { name: 'Create' }).nth(2).click();
-    await pick(
-      dialog().getByRole('combobox', { name: /^Access point/ }),
-      person().doorName,
-      person().doorName,
-    );
-    await dialog().getByRole('button', { name: 'Create', exact: true }).click();
-    await expect(dialog()).toHaveCount(0);
+    const door = person().doorName;
+    const where = await addVersionRow(page, 'Where', 2, /^Access point/, door, door);
     await expect(where.locator(`a[href="/access-points/${person().door}"]`).first()).toBeVisible();
 
     // The simulation: the seeded grant would have been a denial; nothing is recorded.
@@ -176,9 +145,7 @@ test.describe.serial('access control smoke', () => {
     const simulation = page.getByTestId('policy-simulation');
     await expect(simulation.getByTestId('simulation-summary')).toContainText(
       'would be denied instead of granted',
-      {
-        timeout: 30_000,
-      },
+      { timeout: 30_000 },
     );
     await expect(
       simulation.locator('[data-testid="simulation-sample"][data-change="granted-denied"]').first(),
@@ -250,15 +217,7 @@ test.describe.serial('access control smoke', () => {
     await page.goto('/access-terminals');
     const rows = main().getByTestId('terminal-sync-row');
     await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-    await expect
-      .poll(
-        async () =>
-          (await attributes(rows, 'state')).every((s) => s === 'current' || s === 'unreachable'),
-        {
-          timeout: 60_000,
-        },
-      )
-      .toBe(true);
+    await expectEveryState(rows, ['current', 'unreachable']);
 
     // Publishing again answers per terminal.
     await main()
@@ -275,7 +234,7 @@ test.describe.serial('access control smoke', () => {
   });
 
   test('should show a single-use grant unused, use it up with Test access, and revoke another grant with a reason', async () => {
-    await createGrant(localInput(-2), localInput(30), true);
+    await grantFor(localInput(-2), localInput(30), true);
     const grantUrl = page.url();
     await expect(main().locator('[data-use="unused"]').first()).toBeVisible();
 
@@ -298,7 +257,7 @@ test.describe.serial('access control smoke', () => {
     await expect(page.getByTestId('form-action:access_grant:show:revoke')).toHaveCount(0);
 
     // A reusable grant for 2099 (it opens no real door now), revoked with a reason.
-    await createGrant('2099-01-01T08:00', '2099-01-01T18:00', false);
+    await grantFor('2099-01-01T08:00', '2099-01-01T18:00', false);
     await expect(main().locator('[data-use="reusable"]').first()).toBeVisible();
     await page.getByTestId('form-action:access_grant:show:revoke').click();
     await dialog()
@@ -311,22 +270,12 @@ test.describe.serial('access control smoke', () => {
   });
 
   test('should start an override, show the banner for its facility, and end it with a reason', async () => {
-    await page.goto('/emergency-overrides');
-    await main().getByRole('button', { name: 'Start override', exact: true }).click();
-    await pick(dialog().getByRole('combobox', { name: /^Facility/ }), NOVA_FACILITY, NOVA_FACILITY);
-    await dialog().getByRole('combobox', { name: /^Mode/ }).click();
-    await page.getByRole('option', { name: /^Evacuation\b/ }).click();
-    await pick(dialog().getByRole('combobox', { name: /^Areas/ }), areaName, areaName);
-    // A multi-pick stays open: close its list, not the dialog.
-    await page.getByRole('combobox', { name: /^Search area/ }).press('Escape');
-    await expect(dialog().getByRole('heading', { name: 'Start override' })).toBeVisible();
-    await dialog().getByRole('textbox', { name: /^Ends/ }).fill(localInput(60));
-    await dialog()
-      .getByRole('textbox', { name: /^Justification/ })
-      .fill(`${RUN} evacuation drill of one area`);
-    await dialog().getByRole('button', { name: 'Start override', exact: true }).click();
-    await expect(page).toHaveURL(/\/emergency-overrides\/[0-9a-f-]{36}$/);
-    const overrideId = idOf(page);
+    const overrideId = await startEvacuation(
+      page,
+      NOVA_FACILITY,
+      areaName,
+      `${RUN} evacuation drill of one area`,
+    );
     overrides.add(overrideId);
 
     // The banner names the facility and links the override, on every page.
@@ -355,15 +304,7 @@ test.describe.serial('access control smoke', () => {
     await main().getByRole('tab', { name: 'Terminals' }).click();
     const rows = main().getByTestId('terminal-sync-row');
     await expect(rows.first()).toBeVisible();
-    await expect
-      .poll(
-        async () =>
-          (await attributes(rows, 'state')).every((s) => s === 'received' || s === 'unreachable'),
-        {
-          timeout: 60_000,
-        },
-      )
-      .toBe(true);
+    await expectEveryState(rows, ['received', 'unreachable']);
     expect(await attributes(rows, 'state')).toContain('received');
     // Gone from the banner (it reads again every half minute).
     await expect(link).toHaveCount(0, { timeout: 45_000 });

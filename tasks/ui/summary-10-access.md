@@ -91,7 +91,10 @@ Terminal sync log, Policy analytics, Terminals).
   for actions without a correlation id; the terminal state helpers (`terminalState`, `terminalsOf`).
 - The shell banner place in `app.tsx` (G76), for any app-wide notice.
 - `e2e/access-support.ts`: a second admin's own browser context (`signInSecondAdmin`) for four-eyes
-  flows, and a run cleanup that waits for the urgent terminal push its own deletes cause.
+  flows, picker/grant/override helpers; `e2e/access-cleanup.ts`: a run cleanup scoped to the run's
+  own rows (the visitor's decisions, decisions referencing the run's grants/overrides/versions, sync
+  rows of epochs after the run's start, settings audit rows of the cleanup transaction) that waits
+  for the urgent terminal push its own deletes cause.
 
 ## Rulings (from the ledger)
 

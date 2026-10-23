@@ -1,103 +1,5 @@
 import { type Browser, type Locator, type Page, expect } from '@playwright/test';
-import {
-  DEV_GRAPHQL,
-  NOVA_ADMIN_EMAIL,
-  devAdminSecret,
-  seedPassword,
-} from '../tests/support/dev-hosts';
-
-/** What `access.spec.ts` wrote during a run, for {@link removeAccessRun}. */
-export interface AccessRun {
-  /** Run marker: policies are named `<run> …`. */
-  readonly run: string;
-  /** When the run began (ISO): decisions and sync log rows from then on are the run's. */
-  readonly startedAt: string;
-  readonly facilityId: string;
-  /** The people the run asked the engine about: their decisions since `startedAt` are removed. */
-  readonly people: readonly string[];
-  readonly policies: ReadonlySet<string>;
-  readonly grants: ReadonlySet<string>;
-  readonly overrides: ReadonlySet<string>;
-}
-
-/** Runs SQL with the admin secret: test cleanup only (versions, decisions and audit rows are history to `org_admin`). */
-export async function runSql(sql: string): Promise<string[][]> {
-  const response = await fetch(DEV_GRAPHQL.replace('/v1/graphql', '/v2/query'), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-hasura-admin-secret': devAdminSecret() },
-    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql } }),
-  });
-  const body = (await response.json()) as { result?: string[][]; error?: string };
-  if (!response.ok) throw new Error(`run_sql: ${JSON.stringify(body)}`);
-  return (body.result ?? []).slice(1);
-}
-
-const quoted = (ids: Iterable<string>): string =>
-  [...ids].map((id) => `'${id}'`).join(', ') || 'null';
-
-const ids = async (sql: string): Promise<string[]> =>
-  (await runSql(sql)).map(([id]) => id ?? '').filter((id) => id !== '');
-
-/**
- * Removes everything a run wrote, with the admin secret: the decisions it recorded and their events
- * (and what those fanned out), the override events, grants, overrides with their areas, policies
- * (versions, subjects and targets cascade), the facility's sync log rows of the run and the audit
- * rows of all of them. Ids are read first: deleting a row writes an audit row keyed by it. The
- * deletes change the rule set, so the urgent push they cause is waited for and its log rows go too,
- * with the settings row's audit rows of those epoch bumps.
- */
-export async function removeAccessRun(run: AccessRun): Promise<void> {
-  const decisions = `(select id from itap.access_decisions where decided_at >= '${run.startedAt}' and profile_id in (${quoted(run.people)}))`;
-  const keys = [...run.overrides].flatMap((id) => [
-    `override:${id}:started`,
-    `override:${id}:ended`,
-  ]);
-  const events = `(select id from itap.events where access_decision_id in ${decisions} or dedup_key in (${quoted(keys)}))`;
-  const policies = await ids(
-    `select id from itap.access_policies where id in (${quoted(run.policies)}) or name like '${run.run}%'`,
-  );
-  const versions = await ids(
-    `select id from itap.access_policy_versions where policy_id in (${quoted(policies)})`,
-  );
-  const children = await ids(
-    `select id from itap.access_policy_version_subjects where version_id in (${quoted(versions)})
-     union all select id from itap.access_policy_version_targets where version_id in (${quoted(versions)})`,
-  );
-  const areas = await ids(
-    `select id from itap.emergency_override_areas where override_id in (${quoted(run.overrides)})`,
-  );
-  const audited = [
-    ...policies,
-    ...versions,
-    ...children,
-    ...run.grants,
-    ...run.overrides,
-    ...areas,
-  ];
-  const syncs = `delete from itap.terminal_policy_syncs where facility_id = '${run.facilityId}' and created_at >= '${run.startedAt}'`;
-  await runSql(
-    [
-      "select set_config('itap.retention_context', 'on', true)",
-      `delete from itap.notification_deliveries where event_id in ${events}`,
-      `delete from itap.user_notifications where event_id in ${events}`,
-      `delete from itap.webhook_deliveries where event_id in ${events}`,
-      `delete from itap.incident_events where event_id in ${events}`,
-      `delete from itap.events where id in ${events}`,
-      `delete from itap.access_decisions where id in ${decisions}`,
-      `delete from itap.access_grants where id in (${quoted(run.grants)})`,
-      `delete from itap.emergency_override_areas where override_id in (${quoted(run.overrides)})`,
-      `delete from itap.emergency_overrides where id in (${quoted(run.overrides)})`,
-      `delete from itap.access_policies where id in (${quoted(policies)})`,
-      syncs,
-      `delete from itap.audit_log where entity_id in (${quoted(audited)})`,
-    ].join('; '),
-  );
-  await new Promise((resolve) => setTimeout(resolve, 15_000));
-  // The epoch bumps of these deletes are audited on the settings row as retention changes.
-  await runSql(
-    `select set_config('itap.retention_context', 'on', true); ${syncs}; delete from itap.audit_log where entity = 'organization_settings' and occurred_at >= '${run.startedAt}' and changes = '{"retention": true}'::jsonb`,
-  );
-}
+import { NOVA_ADMIN_EMAIL, seedPassword } from '../tests/support/dev-hosts';
 
 /** A `datetime-local` value (the browser's local time) `minutes` from now. */
 export function localInput(minutes: number): string {
@@ -192,7 +94,7 @@ export async function grantedPersonAtDoor(page: Page): Promise<PersonAtDoor> {
 
 /**
  * A seeded visitor at a door where no policy decides (`no_rule`), found by asking the engine
- * (`check_access` records a decision each time: the run's cleanup removes them by person and time).
+ * (`check_access` records a decision each time: the run's cleanup removes the visitor's by time).
  */
 export async function visitorWithoutPolicy(page: Page): Promise<PersonAtDoor> {
   const candidates = await graphqlAs<{
@@ -225,4 +127,119 @@ export async function visitorWithoutPolicy(page: Page): Promise<PersonAtDoor> {
     }
   }
   throw new Error('no seeded visitor without a policy at a seeded door');
+}
+
+/** Picks the option named `option` of a relation picker, after typing `search` into its search box. */
+export async function pick(
+  page: Page,
+  field: Locator,
+  search: string,
+  option: string,
+): Promise<void> {
+  await field.click();
+  await page.getByRole('combobox').last().fill(search);
+  await page.getByRole('option', { name: option }).first().click();
+}
+
+/** Creates a grant for `guest` at their door from the create page; answers its id. */
+export async function createGrant(
+  page: Page,
+  guest: PersonAtDoor,
+  grant: {
+    readonly from: string;
+    readonly until: string;
+    readonly singleUse: boolean;
+    readonly reason: string;
+  },
+): Promise<string> {
+  const field = (name: string) => page.getByTestId(`form-field-input:access_grant:create:${name}`);
+  await page.goto('/access-grants/create');
+  await pick(page, field('profile_id'), guest.last, guest.name);
+  await pick(page, field('access_point_id'), guest.doorName, guest.doorName);
+  await field('valid_from').fill(grant.from);
+  await field('valid_until').fill(grant.until);
+  if (grant.singleUse) await field('single_use').check();
+  await field('reason').fill(grant.reason);
+  await page.getByTestId('form-submit:access_grant:create').click();
+  await expect(page).toHaveURL(/\/access-grants\/[0-9a-f-]{36}$/);
+  return page.url().split('/').pop() ?? '';
+}
+
+/** The facility named `name` and the first of its areas by name (the override's area). */
+export async function facilityWithArea(
+  page: Page,
+  name: string,
+): Promise<{ readonly id: string; readonly areaName: string }> {
+  const data = await graphqlAs<{ facilities: { id: string; areas: { name: string }[] }[] }>(
+    page,
+    'query ($n: String!) { facilities(where: { name: { _eq: $n } }) { id areas(order_by: { name: asc }, limit: 1) { name } } }',
+    { n: name },
+  );
+  return { id: data.facilities[0]?.id ?? '', areaName: data.facilities[0]?.areas[0]?.name ?? '' };
+}
+
+/** The status of the policy version `id`, read as the page's member. */
+export async function versionStatusOf(page: Page, id: string): Promise<string> {
+  const data = await graphqlAs<{ access_policy_versions_by_pk: { status: string } }>(
+    page,
+    'query ($id: uuid!) { access_policy_versions_by_pk(id: $id) { status } }',
+    { id },
+  );
+  return data.access_policy_versions_by_pk.status;
+}
+
+/** Waits until every terminal row's `data-state` is one of `states` (pushes land within a minute). */
+export async function expectEveryState(rows: Locator, states: readonly string[]): Promise<void> {
+  await expect
+    .poll(async () => (await attributes(rows, 'state')).every((s) => states.includes(s ?? '')), {
+      timeout: 60_000,
+    })
+    .toBe(true);
+}
+
+/**
+ * Adds a row to a policy version's Who or Where tab: the `nth` Create button of the tab (one per
+ * kind), then the option `option` of the dialog's picker `picker`; waits for the dialog to close.
+ */
+export async function addVersionRow(
+  page: Page,
+  tab: string,
+  nth: number,
+  picker: RegExp,
+  search: string,
+  option: string,
+): Promise<Locator> {
+  const main = page.getByRole('main');
+  const dialog = page.getByRole('dialog');
+  await main.getByRole('tab', { name: tab }).click();
+  const panel = main.getByRole('tabpanel', { name: tab });
+  await panel.getByRole('button', { name: 'Create' }).nth(nth).click();
+  await pick(page, dialog.getByRole('combobox', { name: picker }), search, option);
+  await dialog.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  return panel;
+}
+
+/** Starts an evacuation of `area` in `facility` from the overrides list; answers the override's id. */
+export async function startEvacuation(
+  page: Page,
+  facility: string,
+  area: string,
+  justification: string,
+): Promise<string> {
+  const dialog = page.getByRole('dialog');
+  await page.goto('/emergency-overrides');
+  await page.getByRole('main').getByRole('button', { name: 'Start override', exact: true }).click();
+  await pick(page, dialog.getByRole('combobox', { name: /^Facility/ }), facility, facility);
+  await dialog.getByRole('combobox', { name: /^Mode/ }).click();
+  await page.getByRole('option', { name: /^Evacuation\b/ }).click();
+  await pick(page, dialog.getByRole('combobox', { name: /^Areas/ }), area, area);
+  // A multi-pick stays open: close its list, not the dialog.
+  await page.getByRole('combobox', { name: /^Search area/ }).press('Escape');
+  await expect(dialog.getByRole('heading', { name: 'Start override' })).toBeVisible();
+  await dialog.getByRole('textbox', { name: /^Ends/ }).fill(localInput(60));
+  await dialog.getByRole('textbox', { name: /^Justification/ }).fill(justification);
+  await dialog.getByRole('button', { name: 'Start override', exact: true }).click();
+  await expect(page).toHaveURL(/\/emergency-overrides\/[0-9a-f-]{36}$/);
+  return page.url().split('/').pop() ?? '';
 }

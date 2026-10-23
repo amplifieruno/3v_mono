@@ -1,5 +1,5 @@
 import { useList, useT } from '@burojs/react';
-import { Siren } from 'lucide-react';
+import { Icon } from '@burojs/ui-shadcn';
 import type * as React from 'react';
 import { useEnumLabel } from '../blocks/charts/use-enum-label';
 import { EMERGENCY_OVERRIDE_RESOURCE } from '../data/resource-names';
@@ -7,6 +7,7 @@ import { OVERRIDE_MODE_ENUM } from '../enums/access';
 import { formatDateTime, instantOf } from '../fields/date-time-format';
 import { RecordLink } from '../modules/access/record-link';
 import { type ActiveOverride, OVERRIDE_BANNER_POLL_MS, activeOverrides } from './active-overrides';
+import { NAV_ICONS } from './nav';
 
 /** At most this many active overrides are named; the rest are counted. */
 const SHOWN = 3;
@@ -46,14 +47,24 @@ export function ActiveOverrideBanner(): React.ReactElement | null {
         });
         return (
           <p key={row.id} className="flex items-center gap-2" data-testid="override-banner:item">
-            <Siren aria-hidden="true" className="size-4 shrink-0 text-destructive" />
+            <Icon
+              name={NAV_ICONS.emergencyOverrides}
+              className="size-4 shrink-0 text-destructive"
+            />
             <span className="font-medium">{text}</span>
-            <RecordLink resource={EMERGENCY_OVERRIDE_RESOURCE} id={row.id} name={t('console.overrideBanner.open')} fallback="" />
+            <RecordLink
+              resource={EMERGENCY_OVERRIDE_RESOURCE}
+              id={row.id}
+              name={t('console.overrideBanner.open')}
+              fallback=""
+            />
           </p>
         );
       })}
       {rows.length > SHOWN ? (
-        <p className="text-muted-foreground">{t('console.overrideBanner.more', { params: { count: rows.length - SHOWN } })}</p>
+        <p className="text-muted-foreground">
+          {t('console.overrideBanner.more', { params: { count: rows.length - SHOWN } })}
+        </p>
       ) : null}
     </div>
   );
