@@ -19,7 +19,9 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      '/auth': {
+      // A regex key: only `/auth/…`, never an app route that starts with `/auth` (`/authenticate-a-face`,
+      // `/authentication-sessions`, `/authentication-attempts` would otherwise 404 on reload).
+      '^/auth/': {
         target: 'http://localhost:4100',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/auth/, ''),
