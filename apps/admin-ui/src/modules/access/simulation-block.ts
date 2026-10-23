@@ -38,6 +38,7 @@ export const simulationBlock = defineBlock('itap:access-policy-simulation', {
     withVersion: 'With this version',
     drift: 'Changed since',
     unknownPerson: 'Unknown face',
+    gonePerson: 'Person deleted or not visible',
     gonePlace: 'Deleted or not visible',
     simulated: 'Simulated {{time}}.',
   },

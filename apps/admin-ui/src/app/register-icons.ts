@@ -107,6 +107,8 @@ import {
   ChartPie,
   SendHorizontal,
   Archive,
+  Ticket,
+  ScrollText,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -219,6 +221,8 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   ChartPie,
   SendHorizontal,
   Archive,
+  Ticket,
+  ScrollText,
 };
 
 /**

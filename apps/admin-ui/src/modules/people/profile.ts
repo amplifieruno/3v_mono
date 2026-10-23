@@ -1,6 +1,7 @@
 import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
+import { profileAccessPanel } from '../access/access-tabs';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
 import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
@@ -237,6 +238,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               { key: 'watch-lists', texts: 'Watch lists' },
             ),
             subjectSegmentsPanel(l, 'profiles'),
+            profileAccessPanel(l),
             l.panel(
               [
                 l.place(facts, {

@@ -49,7 +49,7 @@ export function SimulationTable({ samples, names, t }: SimulationTableProps): Re
               <TableCell className="whitespace-nowrap tabular-nums">{formatDateTime(instantOf(sample.decided_at) ?? 0)}</TableCell>
               <TableCell>
                 {sample.profile_id !== null ? (
-                  <RecordLink resource={PROFILE_RESOURCE} id={sample.profile_id} name={names.profiles[sample.profile_id]} fallback={t('gonePlace')} />
+                  <RecordLink resource={PROFILE_RESOURCE} id={sample.profile_id} name={names.profiles[sample.profile_id]} fallback={t('gonePerson')} />
                 ) : (
                   <RecordLink
                     resource={IDENTITY_RESOURCE}

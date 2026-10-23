@@ -18,7 +18,8 @@ points). Add rows with each list's create button and remove them from the
 list. A version waiting for approval is frozen, so the approver approves
 exactly what was submitted: its tabs show every subject and target, read only,
 and **Edit** says why it is not offered. A published or superseded version is
-history and never changes.
+history and never changes. Once the policy is archived, none of its versions
+can be edited, submitted or rolled back any more (the buttons say why).
 
 ## Approval
 
@@ -26,6 +27,11 @@ history and never changes.
 *Access policies*. The **Approval** tab says who submitted the version and
 when, who approved it, and the reason of its last rejection (a version
 rejected because its policy was archived reads `policy_archived`).
+
+## Decisions
+
+A version's **Decisions** tab lists the decisions it decided at the doors,
+newest first; each opens with how it was decided.
 
 ## Simulate
 

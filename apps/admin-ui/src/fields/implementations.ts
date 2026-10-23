@@ -7,6 +7,7 @@ import { customFieldsImplementations } from './custom-fields-impl';
 import { dashboardWidgetsImplementations } from './dashboard-widgets-impl';
 import { dateTimeImplementations } from './date-time-impl';
 import { detectionFaceImplementations } from './detection-face-impl';
+import { grantUseImplementations } from './grant-use-impl';
 import { eventRuleParametersImplementations } from './event-rule-parameters-impl';
 import { facePhotosImplementations } from './face-photos-impl';
 import { imageSizeImplementations } from './image-size-impl';
@@ -37,7 +38,7 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * (`itap.record-scoped-relation`), write-only secrets (`itap.secret`), files sent inside an
  * action's input (`itap.inline-file`), face photos for the enrollment actions (`itap.face-photos`),
  * the photos to split off an identity (`itap.split-photos`), timestamps with their time of day
- * (`itap.date-time`), a detection’s face (`itap.detection-face`), an event rule version's parameters
+ * (`itap.date-time`), a detection’s face (`itap.detection-face`), an access grant’s use (`itap.grant-use`), an event rule version's parameters
  * by rule type (`itap.event-rule-parameters`), an incident activity's details in one line
  * (`itap.incident-activity-details`), an operator workspace's panels (`itap.workspace-panels`) and a
  * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
@@ -66,6 +67,7 @@ export const itapFieldImplementations = composeFieldImplementations(
   splitPhotosImplementations,
   dateTimeImplementations,
   detectionFaceImplementations,
+  grantUseImplementations,
   eventRuleParametersImplementations,
   incidentActivityDetailsImplementations,
   workspacePanelsImplementations,

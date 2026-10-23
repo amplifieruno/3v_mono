@@ -195,4 +195,10 @@ export default {
   access_policy_version: {
     doc: { topics: { index: 'Policy versions: drafts, frozen pending versions, approval and simulation' } },
   },
+  access_grant: {
+    doc: { topics: { index: 'Access grants: area or access point, validity, single use, revoking' } },
+  },
+  access_decision: {
+    doc: { topics: { index: 'Access decisions: the decision log, how a door decided (the trace) and Test access' } },
+  },
 } satisfies TranslationBundle;

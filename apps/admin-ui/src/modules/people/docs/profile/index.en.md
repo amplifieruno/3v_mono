@@ -114,6 +114,9 @@ of the edit form, each with the reason. Its restriction is never lifted.
   menu) adds the person to a segment by hand; opening a manual membership
   offers **Remove from segment**. A person whose processing is restricted
   cannot join segments. See *Segments*.
+- **Access**: the person's access grants (**+ Create** grants one) and the
+  doors' decisions about them, newest first. See *Access grants* and *Access
+  decisions*.
 - **Activity**: the person's last 30 days, computed hourly from the tracking
   sessions of the linked identities: **Visits in 30 days** (each facility and
   day counts once), **Average stay**, **After-hours visits**, **Last seen**,

@@ -117,7 +117,9 @@ describe.skipIf(!DEV_STACK_ENABLED)('Hasura mapping against the live schema (org
       const rowType = await typeOf(namedType(list.type));
       const columns = new Set((rowType?.fields ?? []).map((field) => field.name));
       for (const column of mapping.selectFields) {
-        if (!columns.has(column)) problems.push(`${where}: no column ${column}`);
+        // A nested selection (`policy { is_archived }`, G75) names a relationship of the row type.
+        const name = column.split(/[\s{]/u)[0] ?? column;
+        if (!columns.has(name)) problems.push(`${where}: no column ${column}`);
       }
       const orderBy = mapping.orderByField ?? 'id';
       if (!columns.has(orderBy)) problems.push(`${where}: no order column ${orderBy}`);

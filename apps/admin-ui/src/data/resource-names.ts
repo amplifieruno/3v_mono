@@ -106,3 +106,6 @@ export const ACCESS_POLICY_TARGET_RESOURCE = 'access_policy_target';
 export const ACCESS_POLICY_FACILITY_TARGET_RESOURCE = 'access_policy_facility_target';
 export const ACCESS_POLICY_AREA_TARGET_RESOURCE = 'access_policy_area_target';
 export const ACCESS_POLICY_ACCESS_POINT_TARGET_RESOURCE = 'access_policy_access_point_target';
+export const ACCESS_GRANT_RESOURCE = 'access_grant';
+export const ACCESS_DECISION_RESOURCE = 'access_decision';
+export const EMERGENCY_OVERRIDE_RESOURCE = 'emergency_override';

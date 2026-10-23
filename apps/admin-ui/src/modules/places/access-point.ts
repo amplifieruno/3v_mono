@@ -13,6 +13,8 @@ import {
 } from '../../enums/places';
 import { type FieldProblem, problemIssue } from '../../fields/field-issue';
 import { planPosition } from '../../fields/plan-position';
+import { accessPointAccessPanel } from '../access/access-tabs';
+import { checkAccessFlow } from '../access/check-access-flow';
 import {
   ACCESS_POINT_DEVICE_RESOURCE,
   ACCESS_POINT_RESOURCE,
@@ -184,6 +186,7 @@ export const accessPoint = defineResource(ACCESS_POINT_RESOURCE, {
   data: { provider: 'hasura', scope: { facility: { field: 'facility_id' } } },
   prefill: { fromQuery: ['facility_id', 'area_id'] },
   fields: accessPointFields,
+  actions: (r) => ({ item: [r.action.flow('test_access', checkAccessFlow)] }),
   views: {
     list: {
       columns: ['name', 'kind', 'facility_id', 'area_id', 'from_area_id', 'direction', 'is_entry_exit', 'status'],
@@ -224,6 +227,7 @@ export const accessPoint = defineResource(ACCESS_POINT_RESOURCE, {
               ],
               { key: 'devices', texts: 'Devices' },
             ),
+            accessPointAccessPanel(l),
           ],
           { key: 'sections' },
         ),

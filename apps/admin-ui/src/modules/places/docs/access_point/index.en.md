@@ -42,4 +42,12 @@ is removed from its row's menu. The details show the bound devices as links to
 their pages. The devices themselves are managed under **Devices**, where each
 device lists the access points it is bound to.
 
+## Access
+
+An access point's **Access** tab lists its access grants (and creates one for
+the door) and the decisions it made, newest first. **Test access** asks the
+access engine now whether a person or a recognised face would pass the door
+and shows the decision with how it was made; the decision is recorded like
+any other (see *Access decisions*).
+
 The sidebar facility picker narrows the list to one facility.

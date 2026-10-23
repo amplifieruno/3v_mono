@@ -44,6 +44,12 @@ export default {
       newIdentity: 'New identity',
       none: 'No photo',
     },
+    /** An access grant's use (`src/fields/grant-use-impl.ts`). */
+    grantUse: {
+      used: 'Used',
+      unused: 'Unused',
+      reusable: 'Reusable',
+    },
     /** The file sent inside an action's input (`src/fields/inline-file-impl.ts`). */
     inlineFile: {
       choose: 'Choose file',

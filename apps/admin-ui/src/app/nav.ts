@@ -137,6 +137,11 @@ export const NAV_ICONS = {
   submitForApproval: 'SendHorizontal',
   archivePolicy: 'Archive',
   simulatePolicy: 'FlaskConical',
+  accessGrants: 'Ticket',
+  revokeGrant: 'Ban',
+  accessDecisions: 'ScrollText',
+  checkAccess: 'ScanFace',
+  emergencyOverrides: 'Siren',
 } as const;
 
 /**

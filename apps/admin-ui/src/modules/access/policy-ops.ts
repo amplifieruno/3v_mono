@@ -21,7 +21,7 @@ const MEMBER: Readonly<Record<string, SqlRefusalText>> = {
 };
 const VERSION_GONE: Readonly<Record<string, SqlRefusalText>> = {
   access_policy_version_not_found: 'The version no longer exists (a discarded draft?): reload the policy.' + NOTHING,
-  access_policy_archived: 'The policy was archived meanwhile: its versions can no longer change.' + NOTHING,
+  access_policy_archived: 'The policy is archived: this version can no longer be submitted or approved.' + NOTHING,
 };
 
 /** What `create_access_policy_draft` raises (`itap.create_draft_version` / `create_draft_version_from`). */

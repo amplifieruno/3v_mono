@@ -13,6 +13,7 @@ import {
   ACCESS_POLICY_TARGET_RESOURCE,
   ACCESS_POLICY_VERSION_RESOURCE,
 } from '../../data/resource-names';
+import { versionDecisionsPanel } from './access-tabs';
 import { POLICY_VERSION_COLUMNS, accessPolicyVersionFields } from './policy-version-fields';
 import { VERSION_CHECKS, VERSION_RULES } from './policy-version-rules';
 import { SUBJECT_COLUMNS } from './policy-subjects';
@@ -176,6 +177,7 @@ export const accessPolicyVersion = defineResource(ACCESS_POLICY_VERSION_RESOURCE
               ],
               { key: 'approval', texts: 'Approval' },
             ),
+            versionDecisionsPanel(l),
           ],
           { key: 'sections' },
         ),
@@ -187,6 +189,8 @@ export const accessPolicyVersion = defineResource(ACCESS_POLICY_VERSION_RESOURCE
         l.grid(['effect', 'priority']),
         'schedule',
         l.grid(['valid_from', 'valid_until']),
+        // Hidden for a deny, and then not sent: a value kept from an earlier allow stays stored but
+        // the engine reads max_risk on an allow only (buro sends no null for a hidden field, G74).
         l.field('max_risk', { when: l.equals(l.ref('values', 'effect'), 'allow') }),
       ],
     },

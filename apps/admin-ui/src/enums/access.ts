@@ -7,11 +7,13 @@ export const ACCESS_EFFECT_ENUM = 'access_effect';
 export const ACCESS_POLICY_VERSION_STATUS_ENUM = 'access_policy_version_status';
 export const ACCESS_DECISION_RESULT_ENUM = 'access_decision_result';
 export const ACCESS_DECISION_REASON_ENUM = 'access_decision_reason';
+export const OVERRIDE_MODE_ENUM = 'override_mode';
 
 export const ACCESS_EFFECTS = ['allow', 'deny'] as const;
 /** The rows of `version_statuses`, read with the meaning they have for access policies (approval). */
 export const ACCESS_POLICY_VERSION_STATUSES = ['draft', 'pending_approval', 'published', 'superseded'] as const;
 export const ACCESS_DECISION_RESULTS = ['granted', 'denied'] as const;
+export const OVERRIDE_MODES = ['lock_all', 'unlock_all', 'evacuation'] as const;
 export const ACCESS_DECISION_REASONS = [
   'override_lock',
   'override_unlock',
@@ -116,10 +118,24 @@ export const accessDecisionReasonEnum = defineEnum({
   },
 });
 
+export const overrideModeEnum = defineEnum({
+  name: OVERRIDE_MODE_ENUM,
+  values: enumValues(OVERRIDE_MODES, { lock_all: 'destructive', unlock_all: 'warning', evacuation: 'warning' }),
+  texts: {
+    lock_all: { label: 'Lock all', doc: { summary: 'Every covered door refuses everyone, access grants included.' } },
+    unlock_all: { label: 'Unlock all', doc: { summary: 'Every covered door opens for everyone.' } },
+    evacuation: {
+      label: 'Evacuation',
+      doc: { summary: 'Exits open for everyone (even under a lock); entries keep deciding as usual.' },
+    },
+  },
+});
+
 /** Each enum above by the Hasura enum table holding its values. */
 export const ACCESS_ENUM_TABLES: Readonly<Record<string, string>> = {
   [ACCESS_EFFECT_ENUM]: 'access_effects',
   [ACCESS_POLICY_VERSION_STATUS_ENUM]: 'version_statuses',
   [ACCESS_DECISION_RESULT_ENUM]: 'access_decision_results',
   [ACCESS_DECISION_REASON_ENUM]: 'access_decision_reasons',
+  [OVERRIDE_MODE_ENUM]: 'override_modes',
 };

@@ -141,12 +141,14 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function, inbox function, segment membership write, report write, search and saved search writes, bulk job writes and access policy functions', () => {
+  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function, inbox function, segment membership write, report write, search and saved search writes, bulk job writes, access policy functions, grant revocation and access tests', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
       'access.approveAccessPolicyVersion',
       'access.archiveAccessPolicy',
+      'access.checkAccess',
       'access.createAccessPolicyDraft',
       'access.rejectAccessPolicyVersion',
+      'access.revokeAccessGrant',
       'access.submitAccessPolicyVersion',
       'bulk-jobs.cancelBulkJob',
       'bulk-jobs.createBulkJob',

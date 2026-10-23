@@ -44,6 +44,32 @@ export function openVersionExists(policyField: 'id' | 'policy_id'): FlowUnknownC
   };
 }
 
+/**
+ * Check again after a lost "Roll back to this version": applied when the policy has a draft
+ * numbered above the source version (the copy takes the next number). A version waiting for
+ * approval does not count: a roll back is refused while one is open.
+ */
+export const rollbackDraftExists: FlowUnknownCheck = async ({ record, data }) => {
+  const policyId = record?.policy_id;
+  const version = record?.version;
+  if (typeof policyId !== 'string' || policyId === '' || typeof version !== 'number') return 'unknown';
+  try {
+    const { data: rows } = await data.list(resourceByName(ACCESS_POLICY_VERSION_RESOURCE) as never, {
+      filter: {
+        and: [
+          { field: 'policy_id', op: 'eq', value: policyId },
+          { field: 'status', op: 'eq', value: 'draft' },
+          { field: 'version', op: 'gt', value: version },
+        ],
+      },
+      pagination: { kind: 'offset', page: 1, pageSize: 1 },
+    } as never);
+    return (rows as readonly unknown[]).length > 0 ? 'applied' : 'not-applied';
+  } catch {
+    return 'unknown';
+  }
+};
+
 /** The flow's record id for a placement: a flow form's layout is typed without a record (G20). */
 const recordId = ref('record', 'id') as unknown as ScreenRef<'record'>;
 
@@ -170,7 +196,7 @@ export const rollbackFlow = {
     mutation: createAccessPolicyDraft,
     retry: 'never',
     input: { policyId: ref('record', 'policy_id'), fromVersionId: ref('record', 'id') },
-    onUnknown: { check: openVersionExists('policy_id') },
+    onUnknown: { check: rollbackDraftExists },
   },
   then: {
     notify: { params: { version: ref('result', 'version') } },

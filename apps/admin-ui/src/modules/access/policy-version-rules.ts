@@ -18,6 +18,16 @@ export const FOUR_EYES_REASON = 'You submitted this version: another member must
 /** Why a pending version cannot be edited or have its subjects and targets changed. */
 export const PENDING_FROZEN_REASON =
   'Waiting for approval: the version is frozen so the approver approves exactly what was submitted. Reject it to change it.';
+/** Why a version of an archived policy is not submitted, rolled back or edited. */
+export const ARCHIVED_REASON = 'The policy is archived: its versions can no longer be edited, submitted or rolled back.';
+
+/** Whether the rule's record is a version of an archived policy (`policy { is_archived }`, selected with the version). */
+export function policyArchived(ctx: Pick<RuleContext, 'record'>): boolean {
+  if (isProbe(ctx)) return false;
+  const policy = (ctx.record as Row)?.policy;
+  return typeof policy === 'object' && policy !== null && (policy as Readonly<Record<string, unknown>>).is_archived === true;
+}
+
 /** Why a published or superseded version cannot be edited. */
 export const HISTORY_REASON =
   'A version that was in force is history and never changes: use “Draft a change” on the policy, or “Roll back to this version”.';
@@ -27,8 +37,17 @@ export const HISTORY_REASON =
  *   `access_policy_version_pending`), a published or superseded one is history.
  * - Four-eyes: the member who submitted a version is not offered "Approve"; the database refuses
  *   a forced call (`four_eyes_required`).
+ * - A version of an archived policy is not edited, submitted or rolled back (the database refuses
+ *   with `access_policy_archived`).
  */
 export const VERSION_RULES: Rule[] = [
+  {
+    target: { kind: 'action', name: ['edit', 'submit', 'rollback'] },
+    deny: 'run',
+    when: policyArchived,
+    fallback: 'disable',
+    reason: ARCHIVED_REASON,
+  },
   {
     target: { kind: 'action', name: ['edit', 'delete'] },
     deny: 'run',

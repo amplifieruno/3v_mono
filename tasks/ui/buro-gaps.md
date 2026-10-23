@@ -788,6 +788,11 @@ migration `1792365700277`.
   message, and the fields' `doc.summary` say an active member is required.
 - **Expected from a framework:** a record form that places a write's `validation` issues on their
   fields (or form-level with their text), as flows do.
+- **Also (plan 10):** a policy version waiting for approval is frozen by the database: a child write
+  (adding a subject or target through the twin resources) is refused with
+  `access_policy_version_pending`, which the related list's create form shows only as the generic
+  refusal. The version page offers no add there (the frozen list is read only), so it is reached
+  only by a stale page.
 
 ### G49. A link cannot target an enum (enum-set junctions)
 - **Need:** a notification rule's event types and channels (plan 06 Task 1) are rows of junction
@@ -1152,3 +1157,30 @@ migration `1792365700277`.
   and runs `useCustomQuery`, so changing them simulates again (`src/modules/access/simulation-*`).
 - **Expected from a framework:** `submit: { query }` for a read-only flow (no idempotency key, no
   lost-answer check), or a block-hosted "dry run" step whose answer `then.open` can show.
+
+### G74. A field hidden by a condition keeps its stored value on save
+- **Need:** a policy version's **Maximum risk** applies to an allow only; the draft form hides it for
+  a deny (`l.field('max_risk', { when: effect = allow })`), and a value kept from an earlier allow
+  should be cleared when the version is saved as a deny.
+- **Framework (0.6.0):** a field hidden by a layout `when` is not sent as `null` (phase 6 ruling on
+  `max_cycles`, `tasks/ui/rulings-06-notifications.md`; not re-measured here), and a record form
+  has no hook to change the values it writes. **[ruling]**
+- **Workaround:** none in the console. The access engine reads `max_risk` on an allow only
+  (`itap.evaluate_access`), so a stale value on a deny decides nothing; the show page hides it for
+  a deny too. No database trigger was added (it would only tidy a value nothing reads).
+- **Expected from a framework:** a form option to send `null` for fields hidden by a condition, or a
+  `submit.transform` on record forms.
+
+### G75. A record page cannot read a related record's column
+- **Need:** a policy version's rules (no edit, submit or roll back) depend on its policy's
+  `is_archived`.
+- **Framework (0.6.0):** dotted relation columns (`policy_id.is_archived`) are read by lists only:
+  `@burojs/hasura` adds `relationSelection` to list reads, while `one` selects
+  `mapping.selectFields` alone, so a rule on the record page never sees them. **[code]**
+  (`packages/hasura/src/data-provider.ts` `one`)
+- **Workaround:** the mapping's `selectFields` carry a nested selection, `'policy { is_archived }'`
+  (`src/modules/access/index.ts`), so list, many and one rows hold `policy.is_archived`; the rule reads
+  it (`policyArchived`, `src/modules/access/policy-version-rules.ts`). Checked against the dev stack
+  (`tests/integration/access-grants.dev.test.ts`).
+- **Expected from a framework:** `one` reads the dotted relation columns a screen or a rule declares,
+  like lists do.
