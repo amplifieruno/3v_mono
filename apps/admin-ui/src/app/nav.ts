@@ -181,6 +181,15 @@ export const NAV_ICONS = {
   completeRequest: 'CheckCheck',
   retryRequest: 'RotateCcw',
   processingActivities: 'BookCheck',
+  integrations: 'Cable',
+  syncRuns: 'History',
+  runSync: 'RefreshCw',
+  setSecret: 'KeyRound',
+  clearSecret: 'Eraser',
+  integrationSchedule: 'CalendarClock',
+  exportDefinitions: 'FileOutput',
+  exportJobs: 'FileClock',
+  runExport: 'Play',
 } as const;
 
 /**

@@ -18,6 +18,7 @@ import {
 import { AUTH_RECORD_ENUMS, AUTH_RECORD_ENUM_TABLES } from './face-auth-records';
 import { COMPLIANCE_ENUMS, COMPLIANCE_ENUM_TABLES } from './compliance';
 import { COMPLIANCE_RECORD_ENUMS, COMPLIANCE_RECORD_ENUM_TABLES } from './compliance-records';
+import { INTEGRATION_CONSOLE_ONLY_ENUMS, INTEGRATION_ENUMS, INTEGRATION_ENUM_TABLES } from './compliance-integrations';
 import {
   DEVICES_ENUM_TABLES,
   deviceEventKindEnum,
@@ -232,6 +233,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   ...AUTH_RECORD_ENUMS,
   ...COMPLIANCE_ENUMS,
   ...COMPLIANCE_RECORD_ENUMS,
+  ...INTEGRATION_ENUMS,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -253,6 +255,8 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   SAVED_SEARCH_RUN_STATUS_ENUM,
   // `bulk_jobs.options.update_key` (a jsonb key checked by `itap.valid_bulk_job_options`).
   BULK_UPDATE_KEY_ENUM,
+  // `integration_sync_runs.status` and the job `trigger` columns (CHECK constraints).
+  ...INTEGRATION_CONSOLE_ONLY_ENUMS,
 ]);
 
 /**
@@ -283,4 +287,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...AUTH_RECORD_ENUM_TABLES,
   ...COMPLIANCE_ENUM_TABLES,
   ...COMPLIANCE_RECORD_ENUM_TABLES,
+  ...INTEGRATION_ENUM_TABLES,
 };

@@ -1,6 +1,10 @@
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import {
   DSR_RESOURCE,
+  EXPORT_DEFINITION_RESOURCE,
+  EXPORT_JOB_RESOURCE,
+  INTEGRATION_RESOURCE,
+  INTEGRATION_SYNC_RUN_RESOURCE,
   LEGAL_HOLD_RESOURCE,
   PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE,
   PROCESSING_ACTIVITY_RESOURCE,
@@ -17,7 +21,17 @@ import { DSR_OPERATIONS, completeDataSubjectRequest, createDataSubjectRequest, r
 import { dsrStepsBlock } from './dsr-steps-block';
 import { dataSubjectRequestProgress, dsrProgressOperation, holdNamesOperation, legalHoldNames } from './dsr-steps-query';
 import { dataSubject, dsrSubjectOperation } from './dsr-subject-query';
+import { exportDefinition } from './export-definition';
+import { exportDefinitionFields } from './export-definition-fields';
+import { exportJob, exportJobFields } from './export-job';
+import { EXPORT_OPERATIONS, runExport } from './export-ops';
 import { legalHoldNoticeBlock } from './hold-notice-block';
+import { integration } from './integration';
+import { integrationFields } from './integration-fields';
+import { INTEGRATION_OPERATIONS, runIntegrationSync, setIntegrationSchedule, setIntegrationSecret } from './integration-ops';
+import { integrationSyncRun, syncRunFields } from './integration-sync-run';
+import { jobWatchBlock } from './job-watch-block';
+import { jobStatusOperation, jobStatusQuery } from './job-watch-query';
 import { holdNoticeOperation, legalHoldsCovering } from './hold-notice-query';
 import { legalHold, legalHoldFields } from './legal-hold';
 import { endHoldOperation, endLegalHold } from './legal-hold-ops';
@@ -50,7 +64,8 @@ const targetTables = Object.fromEntries(
  * identities and incidents; data subject requests (one "new request" flow per type, the
  * background job's steps, Reject / Complete / Retry, the bundle through `open_file`, erasure
  * behind a review and a typed confirmation) and the records of processing with their data
- * classes and DPIA.
+ * classes and DPIA; integrations (settings, schedule, write-only secret, Run sync) with their
+ * sync log, and export definitions (Run now) with their jobs, whose files only the owner opens.
  */
 export const complianceModule = {
   name: 'compliance-module',
@@ -81,6 +96,16 @@ export const complianceModule = {
     dsrErasureReviewBlock,
     processingActivity,
     processingActivityDataClass,
+    integration,
+    setIntegrationSecret,
+    runIntegrationSync,
+    setIntegrationSchedule,
+    integrationSyncRun,
+    exportDefinition,
+    exportJob,
+    runExport,
+    jobStatusQuery,
+    jobWatchBlock,
   ],
   tables: {
     [RETENTION_POLICY_RESOURCE]: hasuraTable('retention_policies', { selectFields: selectFieldsOf(retentionPolicyFields) }),
@@ -91,6 +116,14 @@ export const complianceModule = {
     [DSR_RESOURCE]: hasuraTable('data_subject_requests', { selectFields: selectFieldsOf(dsrFields), orderByField: 'received_at' }),
     [PROCESSING_ACTIVITY_RESOURCE]: hasuraTable('processing_activities', { selectFields: selectFieldsOf(processingActivityFields) }),
     [PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE]: hasuraTable('processing_activity_data_classes', { selectFields: selectFieldsOf(activityDataClassFields) }),
+    [INTEGRATION_RESOURCE]: hasuraTable('integrations', { selectFields: selectFieldsOf(integrationFields) }),
+    [INTEGRATION_SYNC_RUN_RESOURCE]: hasuraTable('integration_sync_runs', {
+      selectFields: selectFieldsOf(syncRunFields),
+      orderByField: 'started_at',
+      noAggregate: true,
+    }),
+    [EXPORT_DEFINITION_RESOURCE]: hasuraTable('export_definitions', { selectFields: selectFieldsOf(exportDefinitionFields) }),
+    [EXPORT_JOB_RESOURCE]: hasuraTable('export_jobs', { selectFields: selectFieldsOf(exportJobFields) }),
   },
   operations: [
     setPolicyActiveOperation,
@@ -103,5 +136,8 @@ export const complianceModule = {
     holdNamesOperation,
     dsrSubjectOperation,
     erasureHoldsOperation,
+    ...INTEGRATION_OPERATIONS,
+    ...EXPORT_OPERATIONS,
+    jobStatusOperation,
   ],
 } as const satisfies ConsoleModule;

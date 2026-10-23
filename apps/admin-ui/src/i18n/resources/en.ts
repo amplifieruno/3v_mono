@@ -245,4 +245,10 @@ export default {
   processing_activity: {
     doc: { topics: { index: 'Processing activities: legal basis, retention, data classes and the impact assessment (DPIA)' } },
   },
+  integration: {
+    doc: { topics: { index: 'Integrations: settings, field mapping, schedule, the write-only secret, Run sync and the sync log' } },
+  },
+  export_definition: {
+    doc: { topics: { index: 'Exports: definitions, filters, full and incremental mode, Run now, jobs and owner-only files' } },
+  },
 } satisfies TranslationBundle;

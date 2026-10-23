@@ -4,6 +4,8 @@ import { DsrErasureReviewView } from './dsr-erasure-review-view';
 import { dsrStepsBlock } from './dsr-steps-block';
 import { DsrStepsView } from './dsr-steps-view';
 import { legalHoldNoticeBlock } from './hold-notice-block';
+import { jobWatchBlock } from './job-watch-block';
+import { JobWatchView } from './job-watch-view';
 import { LegalHoldNoticeView } from './hold-notice-view';
 import { retentionPlanBlock } from './retention-plan-block';
 import { RetentionPlanView } from './retention-plan-view';
@@ -14,4 +16,5 @@ export const complianceViews = [
   implementBlock(legalHoldNoticeBlock, { component: LegalHoldNoticeView }),
   implementBlock(dsrStepsBlock, { component: DsrStepsView }),
   implementBlock(dsrErasureReviewBlock, { component: DsrErasureReviewView }),
+  implementBlock(jobWatchBlock, { component: JobWatchView }),
 ] as const;

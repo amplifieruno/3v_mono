@@ -134,3 +134,7 @@ export const LEGAL_HOLD_FACILITY_TARGET_RESOURCE = 'legal_hold_facility_target';
 export const DSR_RESOURCE = 'data_subject_request';
 export const PROCESSING_ACTIVITY_RESOURCE = 'processing_activity';
 export const PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE = 'processing_activity_data_class';
+export const INTEGRATION_RESOURCE = 'integration';
+export const INTEGRATION_SYNC_RUN_RESOURCE = 'integration_sync_run';
+export const EXPORT_DEFINITION_RESOURCE = 'export_definition';
+export const EXPORT_JOB_RESOURCE = 'export_job';

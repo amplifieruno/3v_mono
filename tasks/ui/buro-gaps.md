@@ -151,6 +151,10 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Also (phase 4):** `merge_into` (Merge into this identity) works around it: its `submit.input`
   function remembers the first identity it sends, by the kept identity's id, in a module-level map,
   and the check reads that identity back (`merged` = applied). Unknown after a reload of the console.
+- **Also (phase 12):** the integration's `schedule` flow (cron and zone into `config`): the check
+  cannot compare the stored schedule with the one typed; saving it twice is harmless, so the
+  warning is accepted. Set secret / Clear secret, Run sync and Run now have checks over the record
+  (`has_secret`, a manual run or job started in the last two minutes).
 - **Expected from a framework:** the submitted input (or the values) in the check context.
 
 ### G13. No current-record screen: a one-row resource needs a custom page
@@ -1337,3 +1341,20 @@ migration `1792365700277`.
   and the dev-stack test files the request through the console's operation.
 - **Expected from a framework:** the scripted reads resolve a handle the way the runtime does
   (`handleRef`), name or `{ id }`.
+
+### G83. A field cannot stand for one key of a jsonb column
+- **Need:** an integration's schedule lives in `integrations.config` (`schedule_cron`,
+  `schedule_timezone`, beside connector settings). The list and page should show it as the cron
+  field's sentence, and an input should edit it with the cron field, without the rest of `config`.
+- **Framework (0.6.0):** a resource field is a column; `@burojs/hasura`'s `selectFields` are
+  passed through, so an alias over a JSON path (`schedule_cron: config(path: "schedule_cron")`)
+  would read, but nothing maps it back on write, and the schema-mapping contract test reads every
+  `selectFields` entry as a column name. There is no computed / virtual field derived from another
+  field's value either. **[code]**
+- **Workaround:** `config` keeps the kit's JSON input and gets a display of its own
+  (`itap.integration-config`: the schedule as the cron sentence with its zone, then each other
+  setting); the item flow **Schedule** edits the two keys with `cronField` and `timezone()` and
+  writes the whole object back (`_set`, every other key kept; Hasura refuses `_append` and
+  `_delete_key` on one column in one update). The list shows no schedule column.
+- **Expected from a framework:** a field declared over a path of a JSON column (read and written
+  as that key), or a derived read-only field (`compute: (record) => ...`) usable in lists.

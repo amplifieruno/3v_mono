@@ -181,6 +181,12 @@ export default {
       open: 'Open the inbox',
     },
     /** The write-only secret field (`src/fields/secret-impl.ts`). */
+    /** An integration's settings and field mapping in words (`src/fields/integration-config-display.tsx`). */
+    integrationConfig: {
+      schedule: 'Schedule: {{when}} ({{zone}})',
+      noSchedule: 'No schedule: syncs run by hand only.',
+      noMapping: 'No field mapping.',
+    },
     secret: {
       hidden: 'Not shown',
       remove: 'Remove the stored value',
@@ -305,6 +311,18 @@ export default {
       },
       secret: {
         required: 'Enter a secret: a new record needs one.',
+      },
+      integration: {
+        configNotObject: 'Enter a JSON object of settings, or {} for none.',
+        scheduleCron:
+          'schedule_cron must be a cron the platform accepts (minute hour day month weekday), such as "0 2 * * *"; use Schedule to pick one.',
+        scheduleTimezone: 'schedule_timezone must be a time zone such as "Europe/Moscow" or "UTC".',
+        fixtureFile: 'fixture_file_id must be the id of an uploaded file.',
+        mappingNotObject: 'Enter a JSON object of source field → column, or {} for none.',
+        mappingColumn: 'Source field “{{field}}” must map to a column name.',
+      },
+      export: {
+        filtersNotObject: 'Enter the filters as a JSON object, such as {"status": {"_eq": "active"}}, or {} for every row.',
       },
       webhookSecret: {
         length: 'Enter a secret of {{min}} to {{max}} characters.',

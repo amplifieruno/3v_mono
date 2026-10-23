@@ -122,6 +122,8 @@ import {
   FileDown,
   Eraser,
   BookCheck,
+  Cable,
+  FileOutput,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -249,6 +251,8 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   FileDown,
   Eraser,
   BookCheck,
+  Cable,
+  FileOutput,
 };
 
 /**

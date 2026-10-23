@@ -55,6 +55,9 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // a lost `authenticate_face` opened (G12), and a resend would be a second attempt with the same
   // frames (a replay). The unknown screen stands; the tester article points to the attempts log.
   { code: 'flow.unknown-unhandled', location: 'face_auth_tester toolbar.item.0.submit' },
+  // `schedule` on an integration: the check sees no submitted cron (G12). Saving the same schedule
+  // twice is harmless; the unknown screen tells the user to look at the integration's schedule first.
+  { code: 'flow.unknown-unhandled', location: 'integration toolbar.item.1.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {
