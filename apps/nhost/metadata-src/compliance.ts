@@ -85,6 +85,8 @@ export const complianceTables: TableSpec[] = [
     relationshipNames: { integration_sync_runs_integration_fkey: 'sync_runs' },
     insertOnlyColumns: ['kind'],
     secretColumns: ['secret'],
+    // Whether a secret is stored (the value itself is never selectable).
+    computedFields: [{ name: 'has_secret', function: 'integration_has_secret' }],
     extraPermissions: {
       insert_permissions: [
         {

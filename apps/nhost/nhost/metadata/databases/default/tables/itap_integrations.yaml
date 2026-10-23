@@ -49,6 +49,12 @@ array_relationships:
         column_mapping:
           organization_id: organization_id
           id: integration_id
+computed_fields:
+  - name: has_secret
+    definition:
+      function:
+        schema: itap
+        name: integration_has_secret
 insert_permissions:
   - role: org_admin
     permission:
@@ -89,6 +95,8 @@ select_permissions:
         - provider
         - status
         - updated_at
+      computed_fields:
+        - has_secret
       filter:
         organization_id:
           _eq: X-Hasura-Organization-Id
