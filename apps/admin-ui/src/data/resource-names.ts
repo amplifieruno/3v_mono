@@ -131,3 +131,6 @@ export const LEGAL_HOLD_PROFILE_TARGET_RESOURCE = 'legal_hold_profile_target';
 export const LEGAL_HOLD_IDENTITY_TARGET_RESOURCE = 'legal_hold_identity_target';
 export const LEGAL_HOLD_INCIDENT_TARGET_RESOURCE = 'legal_hold_incident_target';
 export const LEGAL_HOLD_FACILITY_TARGET_RESOURCE = 'legal_hold_facility_target';
+export const DSR_RESOURCE = 'data_subject_request';
+export const PROCESSING_ACTIVITY_RESOURCE = 'processing_activity';
+export const PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE = 'processing_activity_data_class';

@@ -17,6 +17,7 @@ import {
 } from './face-auth';
 import { AUTH_RECORD_ENUMS, AUTH_RECORD_ENUM_TABLES } from './face-auth-records';
 import { COMPLIANCE_ENUMS, COMPLIANCE_ENUM_TABLES } from './compliance';
+import { COMPLIANCE_RECORD_ENUMS, COMPLIANCE_RECORD_ENUM_TABLES } from './compliance-records';
 import {
   DEVICES_ENUM_TABLES,
   deviceEventKindEnum,
@@ -230,6 +231,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   authAttributeEnum,
   ...AUTH_RECORD_ENUMS,
   ...COMPLIANCE_ENUMS,
+  ...COMPLIANCE_RECORD_ENUMS,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -280,4 +282,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...FACE_AUTH_ENUM_TABLES,
   ...AUTH_RECORD_ENUM_TABLES,
   ...COMPLIANCE_ENUM_TABLES,
+  ...COMPLIANCE_RECORD_ENUM_TABLES,
 };

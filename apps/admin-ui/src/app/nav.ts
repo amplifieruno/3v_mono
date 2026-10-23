@@ -171,6 +171,16 @@ export const NAV_ICONS = {
   retentionRuns: 'FileClock',
   legalHolds: 'Gavel',
   endHold: 'CircleStop',
+  dataSubjectRequests: 'FileUser',
+  newAccessRequest: 'FileSearch',
+  newPortabilityRequest: 'FileDown',
+  newErasureRequest: 'Eraser',
+  newRestrictionRequest: 'ShieldBan',
+  newRectificationRequest: 'FilePen',
+  rejectRequest: 'CircleX',
+  completeRequest: 'CheckCheck',
+  retryRequest: 'RotateCcw',
+  processingActivities: 'BookCheck',
 } as const;
 
 /**

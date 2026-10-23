@@ -21,6 +21,7 @@ import { enrollFaceFlow } from './enrollment-flows';
 import { PROFILE_ACTIVITY_ROWS, profileActivity } from './profile-activity';
 import { EMPLOYEE_FIELD_NAMES, profileFields } from './profile-fields';
 import { PROFILE_RULES } from './profile-rules';
+import { profileRequestsPanel } from './profile-requests-tab';
 import { profileVisitsPanel } from './profile-visits-tab';
 import { profileSavedViews } from './profile-views';
 import { liftRestrictionFlow, restrictProcessingFlow } from './restriction';
@@ -256,6 +257,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               ],
               { key: 'activity', texts: 'Activity' },
             ),
+            profileRequestsPanel(l),
           ],
           { key: 'sections' },
         ),

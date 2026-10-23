@@ -239,4 +239,10 @@ export default {
   legal_hold: {
     doc: { topics: { index: 'Legal holds: what a hold covers, dates that move one way, ending a hold, notices' } },
   },
+  data_subject_request: {
+    doc: { topics: { index: 'Data subject requests: filing per type, deadlines, the background job, bundles, erasure under legal holds' } },
+  },
+  processing_activity: {
+    doc: { topics: { index: 'Processing activities: legal basis, retention, data classes and the impact assessment (DPIA)' } },
+  },
 } satisfies TranslationBundle;

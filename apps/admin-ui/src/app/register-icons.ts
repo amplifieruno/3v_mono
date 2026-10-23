@@ -117,6 +117,11 @@ import {
   CirclePause,
   CirclePlay,
   Gavel,
+  FileUser,
+  FileSearch,
+  FileDown,
+  Eraser,
+  BookCheck,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -239,6 +244,11 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   CirclePause,
   CirclePlay,
   Gavel,
+  FileUser,
+  FileSearch,
+  FileDown,
+  Eraser,
+  BookCheck,
 };
 
 /**

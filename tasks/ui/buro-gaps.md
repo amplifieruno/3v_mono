@@ -1308,3 +1308,32 @@ migration `1792365700277`.
   (`ref('values', 'application_id', 'is_sandbox')` resolved through the target), or form-scoped
   sources keyed by values.
 
+
+### G81. A flow's confirmation cannot ask the user to type what they confirm
+- **Need:** "Erasure request" (phase 12, Review Focus 1) is irreversible: it must not be filed until
+  the member types the person's code, after seeing what will be erased and which legal holds keep
+  part of it.
+- **Framework (0.6.0):** `confirm: true` asks a yes/no question (`texts.confirm`); it has no input
+  and no "type to confirm" option, and a flow's `review` draws blocks only (no fields). **[code]**
+  (`docs/actions-and-tabs-guide.md` "Flows", `FlowConfig.confirm`).
+- **Workaround:** a form field `confirmation` below the review block in the form body
+  (`itap:dsr-erasure-review`, placed again on the review step), and an error check
+  (`dsrErasureConfirmation`, `src/modules/compliance/dsr-erasure-flow.ts`) that reads the chosen
+  profile through the check's data access and blocks the submit unless the typed text is its code.
+  The confirmation is never sent; the database knows nothing of it.
+- **Expected from a framework:** `confirm: { type: ref(...) }` (a typed confirmation whose expected
+  value comes from the record or a source), shown on the confirm step.
+
+### G82. `runFlow`'s scripted reads do not answer a handle whose `ref` is a name
+- **Need:** testing the erasure flow's typed confirmation end to end with `runFlow` (the check reads
+  the profile through `data.one`).
+- **Framework (0.6.0):** the runtime's data access accepts a handle `{ kind: 'resource', ref: '<name>' }`
+  (how `resourceByName` names a resource that would otherwise be imported in a cycle), but
+  `@burojs/testing`'s scripted `data.one` / `list` / `many` key rows by `resource.ref.id`, so such a
+  read finds no row (`one` throws `run-flow-missing`, `list` answers `[]`). **[run]**
+  (`@burojs/testing` `dist/index.js` `runFlow` data access).
+- **Workaround:** the check is a named function (`confirmationMismatch`) tested directly with a
+  data access of the runtime's shape; `runFlow` covers the refusals (no confirmation, wrong code)
+  and the dev-stack test files the request through the console's operation.
+- **Expected from a framework:** the scripted reads resolve a handle the way the runtime does
+  (`handleRef`), name or `{ id }`.
