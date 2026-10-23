@@ -48,7 +48,10 @@ export const auditEntryFields = {
     open: 'none',
     texts: {
       label: 'By',
-      doc: { summary: 'The member whose session made the change; empty for the platform’s own jobs (retention, syncs, the seed) and for former members.' },
+      doc: {
+        summary:
+          'The member whose session made the change. Empty for the platform’s own jobs (retention, syncs, the seed) and for entries anonymized by the audit retention; an account no longer in the organization (membership removed) shows its id.',
+      },
     },
   }),
   reason: f.string({

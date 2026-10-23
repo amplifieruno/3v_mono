@@ -70,6 +70,7 @@ export function AuditDiffView({ props, t }: Props): React.ReactElement {
   let body: React.ReactNode;
   if (diff.kind === 'none') body = <p className="text-sm text-muted-foreground">{t('none')}</p>;
   else if (diff.kind === 'retention') body = <p className="text-sm">{t('retention')}</p>;
+  else if (diff.kind === 'anonymized') body = <p className="text-sm">{t('anonymized')}</p>;
   else if (diff.kind === 'changes') {
     body = (
       <>

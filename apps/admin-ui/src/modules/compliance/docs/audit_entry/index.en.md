@@ -22,8 +22,14 @@ Old entries leave only through retention (the `audit_log` class keeps at least
 - A row purged by retention, or erased by a data subject request, is recorded
   without its values. Only the fact that it was purged is kept.
 - **By** is empty for the platform's own jobs (retention, integration syncs,
-  the seed) and for members who left. The **reason** names the request
-  (`dsr:DSR-…`) or the integration (`integration:INT-…`) behind a job's change.
+  the seed) and for entries the audit retention anonymized. A deactivated
+  member still shows by name; an account whose membership was removed shows its
+  id. The **reason** names the request (`dsr:DSR-…`) or the integration
+  (`integration:INT-…`) behind a job's change.
+- An entry whose values were **erased** later reads "Values erased": an
+  erasure request blanks the earlier entries about the person, and the audit
+  log's retention policy can anonymize old entries. When it happened and the
+  kind of change are kept.
 
 Personal records of other members (their dashboards, saved searches,
 subscriptions, workspaces and searches) are not shown. Each member sees only
@@ -32,7 +38,9 @@ the entries for their own.
 ## Finding entries
 
 Filter by **Entity**, **Action**, **By** and **When** (a time range), or by
-**Record** (the record's id) to see the whole history of one record. The saved
+**Record** (the record's id) to see the whole history of one record. Pick the
+**Entity** first when you filter by record: the log is looked up by kind of
+record, then id, so the two together answer fastest. The saved
 views **Removed rows**, **Sensitive data viewed** and **Exports** are one
 click away. The list loads 50 entries at a time and counts them only when you
 ask.

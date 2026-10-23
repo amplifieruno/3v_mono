@@ -1358,7 +1358,8 @@ migration `1792365700277`.
   two `update_integrations_by_pk` root fields with one `_delete_key` each (Hasura refuses `_append`
   with `_delete_key`, and several keys per `_delete_key`, on one column); `@include` picks the
   branch and the root fields share one transaction. Other settings are never rewritten, so a
-  concurrent edit of them is kept. The list shows no schedule column.
+  concurrent edit of them is kept. Side effect: clearing a schedule writes two audit rows (one
+  per `_delete_key` root field), setting one writes one. The list shows no schedule column.
 - **Expected from a framework:** a field declared over a path of a JSON column (read and written
   as that key), or a derived read-only field (`compute: (record) => ...`) usable in lists.
 

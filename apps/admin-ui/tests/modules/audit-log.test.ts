@@ -74,6 +74,9 @@ describe('an audit entry’s changes', () => {
       ],
     });
     expect(auditDiff('switch_org', null)).toEqual({ kind: 'none' });
+    // Blanked later by an erasure or the audit retention, whatever the original action was.
+    for (const action of ['insert', 'update', 'delete', 'merge']) expect(auditDiff(action, { anonymized: true })).toEqual({ kind: 'anonymized' });
+    expect(auditDiff('update', { anonymized: { old: false, new: true } }).kind).toBe('changes');
     expect(auditRecordName({ name: { old: 'A', new: 'B' } })).toBe('B');
     expect(auditRecordName({ code: 'DEVICE-00001', password: '[redacted]' })).toBe('DEVICE-00001');
     expect(auditRecordName({ status: { old: 'a', new: 'b' } })).toBeNull();

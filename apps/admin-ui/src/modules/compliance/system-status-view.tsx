@@ -56,7 +56,8 @@ function StatusBody({ status, t }: { readonly status: SystemStatus; readonly t: 
  * the answer holds, a failed probe as down with its error (Review Focus 5). Only reads.
  */
 export function SystemStatusView({ t }: Props): React.ReactElement {
-  const status = useCustomQuery(systemStatusQuery, {});
+  // The probes take up to 3 s each: check on opening and on demand, not on every return to the tab.
+  const status = useCustomQuery(systemStatusQuery, {}, { refetchOnWindowFocus: false });
   let body: React.ReactNode;
   if (status.isError || status.data === null) body = <p className="text-sm text-destructive" role="alert">{t('failed')}</p>;
   else if (status.data === undefined) body = <p className="text-sm text-muted-foreground">{t('checking')}</p>;

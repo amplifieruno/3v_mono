@@ -5,6 +5,9 @@
  *   object is opened into its changed keys (`config.schedule_cron`), up to {@link MAX_DEPTH} levels;
  * - `insert` / `delete`: the whole row as it was written or removed (one value per column);
  * - retention and erasure: `{ "retention": true }` (the row was purged, its values are not kept);
+ * - `{ "anonymized": true }`, any action: the entry's own values were erased later, by a data
+ *   subject request (erasure blanks the earlier entries about the person) or by the audit log's
+ *   retention policy (action anonymize);
  * - any other action: the details the function recorded (`{ code, partial, … }`).
  * The database already stores secrets as `"[redacted]"`; on top of that a key named like a secret
  * (password, secret, token, hash) is shown as redacted whatever it holds, at any depth.
@@ -26,6 +29,7 @@ export interface AuditDiffRow {
 export type AuditDiff =
   | { readonly kind: 'none' }
   | { readonly kind: 'retention' }
+  | { readonly kind: 'anonymized' }
   | { readonly kind: 'changes'; readonly rows: readonly AuditDiffRow[] }
   | { readonly kind: 'created' | 'removed' | 'details'; readonly rows: readonly AuditDiffRow[] };
 
@@ -88,7 +92,9 @@ const columnRows = (row: Json, side: 'before' | 'after'): AuditDiffRow[] =>
 /** The entry's `changes`, read by its `action`. */
 export function auditDiff(action: unknown, changes: unknown): AuditDiff {
   if (!isObject(changes) || Object.keys(changes).length === 0) return { kind: 'none' };
-  if (changes.retention === true && Object.keys(changes).length === 1) return { kind: 'retention' };
+  const only = (key: string) => changes[key] === true && Object.keys(changes).length === 1;
+  if (only('retention')) return { kind: 'retention' };
+  if (only('anonymized')) return { kind: 'anonymized' };
   if (action === 'update' && Object.values(changes).every(isChange)) {
     const rows = Object.keys(changes)
       .sort()
