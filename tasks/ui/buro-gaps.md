@@ -1383,3 +1383,12 @@ migration `1792365700277`.
 - **Expected from a framework:** hash a keyed digest (per-tab random salt / HMAC key kept in
   memory), or leave `sensitive` field values out of the body hash, or a flow option
   (`submit.attempts: 'memory'`) that keeps the attempt out of storage.
+
+### G85. A block prop cannot be named `action`
+- **Need:** the audit entry's diff block (`itap:audit-diff`, phase 12) takes the entry's action and
+  its changes as props, read from the record (`l.ref('record', 'action')`).
+- **Framework (0.6.0):** `defineBlock` refuses a prop named `action` ("a key the config parser
+  reserves; rename the prop"); the reserved keys are not listed in the block guide. **[code]**
+- **Workaround:** the prop is `auditAction`.
+- **Expected from a framework:** the reserved prop names listed in the guide (or props kept in a
+  namespace of their own so no name collides with the config keys).

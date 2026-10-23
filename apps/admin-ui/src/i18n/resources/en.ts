@@ -251,4 +251,12 @@ export default {
   export_definition: {
     doc: { topics: { index: 'Exports: definitions, filters, full and incremental mode, Run now, jobs and owner-only files' } },
   },
+  audit_entry: {
+    doc: {
+      topics: {
+        index: 'Audit log: what is recorded, filters, reading a change, redacted secrets, links to records',
+        status: 'System status: services, background jobs and their lag, queues, the last retention run',
+      },
+    },
+  },
 } satisfies TranslationBundle;

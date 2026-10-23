@@ -138,3 +138,4 @@ export const INTEGRATION_RESOURCE = 'integration';
 export const INTEGRATION_SYNC_RUN_RESOURCE = 'integration_sync_run';
 export const EXPORT_DEFINITION_RESOURCE = 'export_definition';
 export const EXPORT_JOB_RESOURCE = 'export_job';
+export const AUDIT_ENTRY_RESOURCE = 'audit_entry';

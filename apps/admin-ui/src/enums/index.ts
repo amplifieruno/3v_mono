@@ -18,6 +18,7 @@ import {
 import { AUTH_RECORD_ENUMS, AUTH_RECORD_ENUM_TABLES } from './face-auth-records';
 import { COMPLIANCE_ENUMS, COMPLIANCE_ENUM_TABLES } from './compliance';
 import { COMPLIANCE_RECORD_ENUMS, COMPLIANCE_RECORD_ENUM_TABLES } from './compliance-records';
+import { AUDIT_CONSOLE_ONLY_ENUMS, AUDIT_ENUMS, AUDIT_ENUM_TABLES } from './compliance-audit';
 import { INTEGRATION_CONSOLE_ONLY_ENUMS, INTEGRATION_ENUMS, INTEGRATION_ENUM_TABLES } from './compliance-integrations';
 import {
   DEVICES_ENUM_TABLES,
@@ -234,6 +235,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   ...COMPLIANCE_ENUMS,
   ...COMPLIANCE_RECORD_ENUMS,
   ...INTEGRATION_ENUMS,
+  ...AUDIT_ENUMS,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -257,6 +259,8 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   BULK_UPDATE_KEY_ENUM,
   // `integration_sync_runs.status` and the job `trigger` columns (CHECK constraints).
   ...INTEGRATION_CONSOLE_ONLY_ENUMS,
+  // `audit_log.entity` (a table name, free text).
+  ...AUDIT_CONSOLE_ONLY_ENUMS,
 ]);
 
 /**
@@ -288,4 +292,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...COMPLIANCE_ENUM_TABLES,
   ...COMPLIANCE_RECORD_ENUM_TABLES,
   ...INTEGRATION_ENUM_TABLES,
+  ...AUDIT_ENUM_TABLES,
 };

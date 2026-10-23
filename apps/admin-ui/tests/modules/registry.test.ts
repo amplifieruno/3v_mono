@@ -100,6 +100,7 @@ describe('module registries', () => {
       'compliance.setIntegrationSchedule',
       'compliance.setIntegrationSecret',
       'compliance.setRetentionPolicyActive',
+      'compliance.systemStatus',
       'devices.recognitionStart',
       'devices.recognitionStatus',
       'devices.recognitionStop',

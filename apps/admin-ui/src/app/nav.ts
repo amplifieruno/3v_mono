@@ -190,6 +190,8 @@ export const NAV_ICONS = {
   exportDefinitions: 'FileOutput',
   exportJobs: 'FileClock',
   runExport: 'Play',
+  auditLog: 'ScrollText',
+  systemStatus: 'Activity',
 } as const;
 
 /**

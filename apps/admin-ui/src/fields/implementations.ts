@@ -13,6 +13,7 @@ import { facePhotosImplementations } from './face-photos-impl';
 import { imageSizeImplementations } from './image-size-impl';
 import { incidentActivityDetailsImplementations } from './incident-activity-details-impl';
 import { inlineFileImplementations } from './inline-file-impl';
+import { auditRecordImplementations } from './audit-record-impl';
 import { integrationConfigImplementations } from './integration-config-impl';
 import { notificationConditionsImplementations } from './notification-conditions-impl';
 import { planPositionImplementations } from './plan-position-impl';
@@ -49,7 +50,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * (`itap.cron`), a report's or template's parameters (`itap.report-parameters`) and a search's filters
  * in words (`itap.search-filters`), and a bulk job's error sentences, options and search photos
  * (`itap.bulk-error`, `itap.bulk-options`, `itap.bulk-search-photos`), and an integration's settings or
- * field mapping in words (`itap.integration-config`, display only).
+ * field mapping in words (`itap.integration-config`, display only), and an audit entry's record as a
+ * link to its page (`itap.audit-record`, display only).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -58,6 +60,7 @@ export const itapFieldImplementations = composeFieldImplementations(
   storageFileImplementations,
   timezoneImplementations,
   integrationConfigImplementations,
+  auditRecordImplementations,
   timeWindowsImplementations,
   stringListImplementations,
   customFieldsImplementations,

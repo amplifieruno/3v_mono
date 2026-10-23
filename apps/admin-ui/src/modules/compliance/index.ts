@@ -1,5 +1,6 @@
 import { hasuraTable, selectFieldsOf } from '../../data/mapping';
 import {
+  AUDIT_ENTRY_RESOURCE,
   DSR_RESOURCE,
   EXPORT_DEFINITION_RESOURCE,
   EXPORT_JOB_RESOURCE,
@@ -13,6 +14,8 @@ import {
   RETENTION_RUN_RESOURCE,
 } from '../../data/resource-names';
 import type { ConsoleModule } from '../module';
+import { auditDiffBlock } from './audit-diff-block';
+import { auditEntry, auditEntryFields } from './audit-entry';
 import { dataSubjectRequest } from './dsr';
 import { erasureHolds, erasureHoldsOperation } from './dsr-erasure-holds-query';
 import { dsrErasureReviewBlock } from './dsr-erasure-review-block';
@@ -46,6 +49,9 @@ import { retentionPolicyFields } from './retention-policy-fields';
 import { deletePolicyOperation, deleteRetentionPolicy, setPolicyActiveOperation, setRetentionPolicyActive } from './retention-policy-ops';
 import { retentionRun, retentionRunFields } from './retention-run';
 import { retentionRunClass, retentionRunClassFields } from './retention-run-class';
+import { systemStatusBlock } from './system-status-block';
+import { systemStatusPage } from './system-status-page';
+import { systemStatusOperation, systemStatusQuery } from './system-status-query';
 
 // `hold { starts_at ends_at }`: a target's Delete rule reads whether its hold is in force (G75).
 const targetTables = Object.fromEntries(
@@ -65,7 +71,9 @@ const targetTables = Object.fromEntries(
  * background job's steps, Reject / Complete / Retry, the bundle through `open_file`, erasure
  * behind a review and a typed confirmation) and the records of processing with their data
  * classes and DPIA; integrations (settings, schedule, write-only secret, Run sync) with their
- * sync log, and export definitions (Run now) with their jobs, whose files only the owner opens.
+ * sync log, and export definitions (Run now) with their jobs, whose files only the owner opens;
+ * the system status page (probes, cron lag, queues, last retention run) and the audit log (read-only,
+ * filterable, each entry's changes field by field, linked to the record where it has a page).
  */
 export const complianceModule = {
   name: 'compliance-module',
@@ -106,6 +114,11 @@ export const complianceModule = {
     runExport,
     jobStatusQuery,
     jobWatchBlock,
+    systemStatusQuery,
+    systemStatusBlock,
+    systemStatusPage,
+    auditEntry,
+    auditDiffBlock,
   ],
   tables: {
     [RETENTION_POLICY_RESOURCE]: hasuraTable('retention_policies', { selectFields: selectFieldsOf(retentionPolicyFields) }),
@@ -124,6 +137,7 @@ export const complianceModule = {
     }),
     [EXPORT_DEFINITION_RESOURCE]: hasuraTable('export_definitions', { selectFields: selectFieldsOf(exportDefinitionFields) }),
     [EXPORT_JOB_RESOURCE]: hasuraTable('export_jobs', { selectFields: selectFieldsOf(exportJobFields) }),
+    [AUDIT_ENTRY_RESOURCE]: hasuraTable('audit_log', { selectFields: selectFieldsOf(auditEntryFields), orderByField: 'occurred_at', noAggregate: true }),
   },
   operations: [
     setPolicyActiveOperation,
@@ -139,5 +153,6 @@ export const complianceModule = {
     ...INTEGRATION_OPERATIONS,
     ...EXPORT_OPERATIONS,
     jobStatusOperation,
+    systemStatusOperation,
   ],
 } as const satisfies ConsoleModule;
