@@ -1,6 +1,7 @@
 import { composeFieldImplementations } from '@burojs/react';
 import { shadcnFieldImplementations } from '@burojs/ui-shadcn';
 import { areaShapeImplementations } from './area-shape-impl';
+import { bulkFieldImplementations } from './bulk-fields-impl';
 import { cronImplementations } from './cron-impl';
 import { customFieldsImplementations } from './custom-fields-impl';
 import { dashboardWidgetsImplementations } from './dashboard-widgets-impl';
@@ -42,7 +43,8 @@ import { workspacePanelsImplementations } from './workspace-panels-impl';
  * notification rule's conditions (`itap.notification-conditions`) and a segment's conditions
  * (`itap.segment-conditions`) and a dashboard's widgets (`itap.dashboard-widgets`), a report schedule's cron with its sentence
  * (`itap.cron`), a report's or template's parameters (`itap.report-parameters`) and a search's filters
- * in words (`itap.search-filters`).
+ * in words (`itap.search-filters`), and a bulk job's error sentences, options and search photos
+ * (`itap.bulk-error`, `itap.bulk-options`, `itap.bulk-search-photos`).
  * Handed to `<BuroProvider fieldImplementations>` and to `checkApp`, which
  * checks each literal `meta` against its schema.
  */
@@ -73,4 +75,5 @@ export const itapFieldImplementations = composeFieldImplementations(
   cronImplementations,
   reportParametersImplementations,
   searchFiltersImplementations,
+  bulkFieldImplementations,
 );

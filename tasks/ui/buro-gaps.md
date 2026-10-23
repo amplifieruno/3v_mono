@@ -1100,3 +1100,27 @@ migration `1792365700277`.
 - **Workaround:** both flows are tested on screen over a fake Hasura
   (`tests/modules/saved-search-page.test.tsx`); Run now (no sources) is tested with `runFlow`.
 - **Expected from a framework:** `queries` scripts in `RunFlowOptions`, as `mutations`.
+
+### G70. A related list has no filters of its own
+- **Need:** a bulk job's rows listed by outcome (failed first, succeeded, all), with columns that
+  depend on the job's kind (profile rows vs bulk search rows).
+- **Framework (0.6.0):** `relatedList` takes a fixed `where`, `columns`, `search` and `pageSize`; it
+  has no filter bar, saved views or outcome chips, and its columns cannot follow the record. **[code]**
+  (`buro:related-list` props)
+- **Workaround:** the job page has tabs "Failed rows", "Succeeded" and "All rows", each placing two
+  related lists with a fixed `outcome in [...]` where, one per kind, shown by a `when` on the
+  record's kind (`src/modules/search/bulk-job.ts`).
+- **Expected from a framework:** a related list placement with `filters` (pinned fields, saved
+  views) as a resource list has, and per-placement column sets chosen by a condition.
+
+### G71. A form cannot produce a file from what was entered
+- **Need:** a bulk face search reads a CSV of the member's own search photo ids; members pick
+  photos, they do not write CSV files of file ids.
+- **Framework (0.6.0):** no file field (G2) and no hook between a form's values and an upload: a
+  flow's `submit.input` is synchronous and cannot upload. **[code]**
+- **Workaround:** a custom field input (`itap.bulk-search-photos`,
+  `src/fields/bulk-search-photos-input.tsx`) uploads each photo as a `search` image, writes the CSV
+  (`bulk-search-csv.ts`) and uploads it as the `bulk_input` file, writing that file's id as the
+  value. Photos and CSV files of an abandoned form stay in the bucket (as with any upload field).
+- **Expected from a framework:** `f.file` with a "derived file" step, or an async `submit.prepare`
+  step a flow runs before its mutation.

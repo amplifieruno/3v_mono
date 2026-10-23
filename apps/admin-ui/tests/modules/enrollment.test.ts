@@ -141,8 +141,11 @@ describe('enrollment refusals', () => {
     expect(read({ code: 'internal', message: 'Internal error' }, {})).toBeNull();
   });
 
-  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function, inbox function, segment membership write, report write, search and saved search writes', () => {
+  it('should register a reader for each enrollment action, identity governance write, profile merge, document upload, visit step, event rule function, incident function, shift handover function, inbox function, segment membership write, report write, search and saved search writes, and bulk job writes', () => {
     expect(Object.keys(ACTION_REFUSALS).sort()).toEqual([
+      'bulk-jobs.cancelBulkJob',
+      'bulk-jobs.createBulkJob',
+      'bulk-jobs.retryBulkJob',
       'inbox.acknowledgeNotification',
       'inbox.markAllNotificationsRead',
       'inbox.markNotificationRead',

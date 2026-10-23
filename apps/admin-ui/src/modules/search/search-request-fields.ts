@@ -1,5 +1,5 @@
 import { f } from '@burojs/field-types';
-import { SAVED_SEARCH_RESOURCE } from '../../data/resource-names';
+import { BULK_JOB_RESOURCE, SAVED_SEARCH_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { SEARCH_STATUS_ENUM, SEARCH_STATUSES, SEARCH_TYPE_ENUM, SEARCH_TYPES } from '../../enums/search';
 import { dateTime } from '../../fields/date-time';
@@ -122,10 +122,13 @@ export const searchRequestFields = {
       doc: { summary: 'The saved search whose scheduled run this was; empty for a search run by hand (Run now included).' },
     },
   }),
-  bulk_job_id: f.uuid({
+  bulk_job_id: f.relation({
+    to: BULK_JOB_RESOURCE,
     system: true,
     nullable: true,
-    in: [],
+    in: ['show'],
+    open: 'page',
+    providerOptions: { relationship: 'bulk_job' },
     texts: { label: 'Bulk job', doc: { summary: 'The bulk search job whose row this search was; empty for a search run by hand.' } },
   }),
 };

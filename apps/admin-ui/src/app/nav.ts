@@ -124,6 +124,12 @@ export const NAV_ICONS = {
   newSavedSearch: 'BookmarkPlus',
   editSavedSearch: 'FilePen',
   runSavedSearch: 'Play',
+  bulkJobs: 'Layers',
+  importProfiles: 'FileUp',
+  updateProfiles: 'FilePen',
+  bulkSearch: 'Images',
+  retryBulkJob: 'RotateCcw',
+  cancelBulkJob: 'CircleStop',
 } as const;
 
 /**

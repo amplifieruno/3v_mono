@@ -93,3 +93,5 @@ export const REPORT_SEGMENT_RESOURCE = 'report_segment';
 export const SEARCH_REQUEST_RESOURCE = 'search_request';
 export const SEARCH_WORKSPACE_RESOURCE = 'search_workspace';
 export const SAVED_SEARCH_RESOURCE = 'saved_search';
+export const BULK_JOB_RESOURCE = 'bulk_job';
+export const BULK_JOB_ROW_RESOURCE = 'bulk_job_row';

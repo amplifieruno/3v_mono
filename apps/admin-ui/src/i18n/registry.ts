@@ -29,6 +29,10 @@ const reportsGlob = import.meta.glob('./reports/*.ts', {
 const searchGlob = import.meta.glob('./search/*.ts', {
   eager: true,
 }) as Record<string, LocaleGlobModule>;
+/* Bulk jobs: error sentences, options in words and the photo picker, merged into `common`. */
+const bulkGlob = import.meta.glob('./bulk/*.ts', {
+  eager: true,
+}) as Record<string, LocaleGlobModule>;
 const enumGlob = import.meta.glob('./enums/*.ts', { eager: true }) as Record<
   string,
   LocaleGlobModule
@@ -46,7 +50,7 @@ const resourceGlob = import.meta.glob('./resources/*.ts', {
  *  - 0: the framework's `common` strings (`@burojs/react`'s `en`);
  *  - 10: app chrome in `common` (`./locales/*.ts`), with the segment
  *    conditions', the dashboard editor's and the reports' texts merged in (`./segment-conditions/*.ts`,
- *    `./dashboards/*.ts`, `./reports/*.ts`, `./search/*.ts`);
+ *    `./dashboards/*.ts`, `./reports/*.ts`, `./search/*.ts`, `./bulk/*.ts`);
  *  - 10: enum labels in `enums` (`./enums/*.ts`);
  *  - 10: per-resource docs and translations in `resources` (`./resources/*.ts`).
  */
@@ -67,6 +71,7 @@ export function buildLocaleRegistry(): LocaleRegistry {
     { glob: dashboardsGlob, source: 'app:dashboards', namespace: 'common' },
     { glob: reportsGlob, source: 'app:reports', namespace: 'common' },
     { glob: searchGlob, source: 'app:search', namespace: 'common' },
+    { glob: bulkGlob, source: 'app:bulk', namespace: 'common' },
     { glob: enumGlob, source: 'app:enums', namespace: 'enums' },
     { glob: resourceGlob, source: 'app:resources', namespace: 'resources' },
   ] as const;

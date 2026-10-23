@@ -115,6 +115,14 @@ import {
   searchStatusEnum,
   searchTypeEnum,
 } from './search';
+import {
+  BULK_ENUM_TABLES,
+  BULK_UPDATE_KEY_ENUM,
+  bulkJobKindEnum,
+  bulkJobRowOutcomeEnum,
+  bulkJobStatusEnum,
+  bulkUpdateKeyEnum,
+} from './bulk';
 
 /** Every enum the console registers (`app-definition.ts` uses each by its name). */
 export const ITAP_ENUMS: readonly EnumDef[] = [
@@ -188,6 +196,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   searchGenderEnum,
   searchLinkedEnum,
   savedSearchRunStatusEnum,
+  bulkJobKindEnum,
+  bulkJobStatusEnum,
+  bulkJobRowOutcomeEnum,
+  bulkUpdateKeyEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -207,6 +219,8 @@ export const CONSOLE_ONLY_ENUMS: ReadonlySet<string> = new Set([
   SEARCH_LINKED_ENUM,
   // `saved_searches.last_run_status` (a CHECK constraint).
   SAVED_SEARCH_RUN_STATUS_ENUM,
+  // `bulk_jobs.options.update_key` (a jsonb key checked by `itap.valid_bulk_job_options`).
+  BULK_UPDATE_KEY_ENUM,
 ]);
 
 /**
@@ -231,4 +245,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...SEGMENT_ENUM_TABLES,
   ...REPORT_ENUM_TABLES,
   ...SEARCH_ENUM_TABLES,
+  ...BULK_ENUM_TABLES,
 };

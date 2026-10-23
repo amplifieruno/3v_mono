@@ -186,4 +186,7 @@ export default {
   saved_search: {
     doc: { topics: { index: 'Saved searches: Run now, schedules, alerts on new matches and the baseline' } },
   },
+  bulk_job: {
+    doc: { topics: { index: 'Bulk jobs: profile import and update, bulk face search, CSV columns, rows, Cancel and Retry' } },
+  },
 } satisfies TranslationBundle;
