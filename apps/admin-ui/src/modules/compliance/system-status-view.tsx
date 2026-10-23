@@ -25,11 +25,11 @@ function Section(props: { readonly title: string; readonly scope: string; readon
 function StatusBody({ status, t }: { readonly status: SystemStatus; readonly t: T }): React.ReactElement {
   return (
     <>
-      <p className="flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
         <span className="font-medium">{t('overall')}</span>
         <LevelBadge level={status.status} t={t} testId="system-status:overall" />
         <span className="text-muted-foreground">{t('checkedAt', { params: { time: timeOf(status.generated_at, '—') } })}</span>
-      </p>
+      </div>
       <Section title={t('services')} scope={t('platform')} testId="system-status:services-card">
         <ServicesTable checks={status.checks} t={t} />
       </Section>

@@ -1393,3 +1393,24 @@ migration `1792365700277`.
 - **Workaround:** the prop is `auditAction`.
 - **Expected from a framework:** the reserved prop names listed in the guide (or props kept in a
   namespace of their own so no name collides with the config keys).
+
+### G86. A list's title cell nests the relation's link inside the record link
+- **Need:** resources whose `displayField` is a relation (junction rows such as segment members,
+  watch list entries, and the duplicate pairs `identity_duplicate_candidates`) listed with a
+  record page.
+- **Framework (0.6.0):** the title cell wraps the value in a link to the record, and the relation
+  display inside renders its own link to the related record, so the list has `<a>` inside `<a>`.
+  React warns "In HTML, `<a>` cannot be a descendant of `<a>`" (seen on Identity duplicates);
+  clicks go to whichever link is innermost. **[code]**
+- **Workaround:** none; the relation stays the display field (it is what names the row).
+- **Expected from a framework:** in a cell that already links to the record, a relation renders
+  as text (or the title cell links only when its value is not itself a link).
+
+### G87. A dialog renders without a `DialogTitle`
+- **Need:** none specific; seen in the dev log while flows and pickers were open.
+- **Framework (0.6.0):** Radix logs "`DialogContent` requires a `DialogTitle`" for one of the kit's
+  dialogs; the console declares no dialog of its own, so the warning comes from `@burojs/ui-shadcn`.
+  The exact dialog was not pinned down. **[code]**
+- **Workaround:** none.
+- **Expected from a framework:** every kit dialog carries a title (visually hidden when the
+  design has none).
