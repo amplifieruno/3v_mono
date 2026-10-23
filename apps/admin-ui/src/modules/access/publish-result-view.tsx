@@ -25,7 +25,7 @@ export function PublishResultView({ props, t }: Props): React.ReactElement {
 
   let body: React.ReactNode;
   if (terminals === null) {
-    const scope = facilityId === null ? t('everyFacility') : (facilityName ?? '…');
+    const scope = facilityId === null ? t('everyFacility') : t('selectedFacility', { params: { name: facilityName ?? '…' } });
     body = (
       <p className="text-sm text-muted-foreground" data-testid="publish-intro">
         {t('intro', { params: { facility: scope } })}

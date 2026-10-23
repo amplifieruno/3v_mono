@@ -173,7 +173,7 @@ describe('the Terminals page', () => {
     const rows = await within(block).findAllByTestId('terminal-sync-row');
     expect(rows.map((row) => row.getAttribute('data-state'))).toEqual(['current', 'behind', 'unreachable']);
     expect(within(rows[1]!).getByText(/Urgent change pending for 12 s/)).toBeDefined();
-    expect((await screen.findByTestId('publish-intro')).textContent).toMatch(/every access terminal of every facility \(the facility selected/);
+    expect((await screen.findByTestId('publish-intro')).textContent).toMatch(/every access terminal of every facility \(none is selected in the sidebar\), whatever/);
     fireEvent.click(await screen.findByRole('button', { name: /Publish policy to terminals/ }));
     const rowsOut = await screen.findAllByTestId('publish-row', {}, { timeout: 3000 });
     expect(rowsOut).toHaveLength(2);
