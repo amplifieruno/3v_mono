@@ -194,6 +194,13 @@ Evidence: **[run]** reproduced by running it; **[code]** read in the framework s
 - **Expected from a framework:** the record form runs the field's declared constraints, with
   range-aware default messages; a provider hook mapping a server refusal (constraint name) to a
   field issue, rendered on the field as flows already do.
+- **Phase 12 Task 1 (met again):** a retention policy's record form (create / edit) cannot show
+  the database's refusals on a field: below the class floor (`retention_policies_retain_days`), an
+  action the class does not take, a facility on an organization-only class, a second active policy
+  for the same scope (unique index). The form checks restate all four (the last one as an async
+  check over `data.list`), so the write is not sent; a refusal that still happens (a concurrent
+  admin) shows the generic alert. Activation, the only other way to a second active policy, is a
+  flow over a custom update with `sqlRefusals` (`src/modules/compliance/retention-policy-*`).
 
 ### G15. The list search box names only the first search field
 - **buro answer (2026-10-22):** open question upstream.
@@ -887,6 +894,11 @@ migration `1792365700277`.
   The dialog then shows the framework's "The server refused the values" line above the reason.
 - **Expected from a framework:** a per-resource refusal reader for create / update / delete (or
   the provider's `details` rendered by the delete dialog), so a built-in write can say why.
+- **Phase 12 Task 1:** the same workaround for retention policies: `delete` is a flow over
+  `deleteRetentionPolicy` mapping `processing_activities_retention_policy_fkey` (a record of
+  processing names the policy). A legal hold target's Delete stays the built-in one, disabled by a
+  rule with the reason while its hold is in force, so the guard (`legal_hold_active`) is not met
+  from the console.
 
 ### G55. A flow without a form or a review cannot show its answer in a block
 - **Need:** "Evaluate now" on a dynamic segment (`evaluate_segment`) needs no input but must show
@@ -1170,6 +1182,10 @@ migration `1792365700277`.
   and runs `useCustomQuery`, so changing them simulates again (`src/modules/access/simulation-*`).
 - **Expected from a framework:** `submit: { query }` for a read-only flow (no idempotency key, no
   lost-answer check), or a block-hosted "dry run" step whose answer `then.open` can show.
+- **Phase 12 Task 1:** the retention plan (`retention_plan`, a STABLE query) is a custom page
+  placing the block `itap:retention-plan` (as-of picker, "Count again"), not a flow, for the same
+  reason; the dev test counts runs, run classes, retention queue rows and retention audit rows
+  before and after to show it writes nothing.
 
 ### G74. A field hidden by a condition keeps its stored value on save
 - **Need:** a policy version's **Maximum risk** applies to an allow only; the draft form hides it for
@@ -1197,6 +1213,8 @@ migration `1792365700277`.
   (`tests/integration/access-grants.dev.test.ts`).
 - **Expected from a framework:** `one` reads the dotted relation columns a screen or a rule declares,
   like lists do.
+- **Phase 12 Task 1:** a legal hold target's Delete rule reads its hold's dates through
+  `hold { starts_at ends_at }` in the twins' `selectFields` (`src/modules/compliance/index.ts`).
 
 ### G76. The shell has no banner slot
 - **Need:** an emergency override active in the selected facility is announced above every page

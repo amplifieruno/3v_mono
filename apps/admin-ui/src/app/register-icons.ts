@@ -116,6 +116,7 @@ import {
   AppWindow,
   CirclePause,
   CirclePlay,
+  Gavel,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -237,6 +238,7 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   AppWindow,
   CirclePause,
   CirclePlay,
+  Gavel,
 };
 
 /**

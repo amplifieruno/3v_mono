@@ -9,8 +9,11 @@ import {
   ACCESS_POLICY_TARGET_RESOURCE,
   CLIENT_APPLICATION_FACILITY_RESOURCE,
   FACILITY_RESOURCE,
+  LEGAL_HOLD_FACILITY_TARGET_RESOURCE,
   NOTIFICATION_SUBSCRIPTION_RESOURCE,
   REPORT_FACILITY_RESOURCE,
+  RETENTION_POLICY_RESOURCE,
+  RETENTION_RUN_CLASS_RESOURCE,
 } from '../../src/data/resource-names';
 import { hasuraOperation } from '../../src/data/operations';
 import { CONSOLE_MODULES, HASURA_OPERATIONS, ITAP_TABLES } from '../../src/modules';
@@ -79,6 +82,11 @@ describe('module registries', () => {
       'bulk-jobs.cancelBulkJob',
       'bulk-jobs.createBulkJob',
       'bulk-jobs.retryBulkJob',
+      'compliance.deleteRetentionPolicy',
+      'compliance.endLegalHold',
+      'compliance.legalHoldsCovering',
+      'compliance.retentionPlan',
+      'compliance.setRetentionPolicyActive',
       'devices.recognitionStart',
       'devices.recognitionStatus',
       'devices.recognitionStop',
@@ -220,8 +228,13 @@ describe('module registries', () => {
     // Personal lists show all of the member's own rows: a facility there is a filter, not a place. A
     // report's facilities describe what it covers (its chips), so they are never narrowed either; nor
     // are an access policy version's targets: whoever approves a version must see every place it names.
-    // A client application's facilities describe the application, like a report's.
+    // A client application's facilities describe the application, like a report's. Compliance
+    // governs the whole organization: retention policies (an organization-wide policy and each
+    // facility's own are read together), what the runs did per scope, and a hold's facilities.
     const personal = new Set([
+      RETENTION_POLICY_RESOURCE,
+      RETENTION_RUN_CLASS_RESOURCE,
+      LEGAL_HOLD_FACILITY_TARGET_RESOURCE,
       NOTIFICATION_SUBSCRIPTION_RESOURCE,
       REPORT_FACILITY_RESOURCE,
       ACCESS_POLICY_TARGET_RESOURCE,

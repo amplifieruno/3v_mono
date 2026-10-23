@@ -2,6 +2,7 @@ import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
 import { profileAccessPanel } from '../access/access-tabs';
+import { profileHoldNotice } from '../compliance/hold-notice';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
 import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
@@ -104,6 +105,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
     show: {
       header: (l) => [l.grid(['profile_type', 'status', 'access_level', 'has_face', 'is_blacklisted'])],
       body: (l) => [
+        profileHoldNotice(l),
         l.panel(['restricted_at', 'restricted_by', 'restriction_reason'], {
           key: 'restricted-notice',
           tone: 'warning',

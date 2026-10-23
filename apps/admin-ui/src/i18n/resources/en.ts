@@ -225,4 +225,18 @@ export default {
   face_auth_tester: {
     doc: { topics: { index: 'Authenticate a face: testing an application with 3 to 5 frames and reading the decision' } },
   },
+  retention_policy: {
+    doc: {
+      topics: {
+        index: 'Retention policies: data classes, class rules, floors, facility policies, activation',
+        plan: 'Retention plan: the dry run of the nightly purge, counting rows per class',
+      },
+    },
+  },
+  retention_run: {
+    doc: { topics: { index: 'Retention runs: what each nightly purge did per class, and the file deletion queue' } },
+  },
+  legal_hold: {
+    doc: { topics: { index: 'Legal holds: what a hold covers, dates that move one way, ending a hold, notices' } },
+  },
 } satisfies TranslationBundle;

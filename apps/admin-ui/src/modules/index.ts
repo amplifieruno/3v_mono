@@ -1,6 +1,7 @@
 import { filesModule } from '../fields/open-file';
 import { accessModule } from './access';
 import { analyticsModule } from './analytics';
+import { complianceModule } from './compliance';
 import { devicesModule } from './devices';
 import { faceAuthModule } from './face-auth';
 import { type ConsoleModule, collectOperations, collectRefusals, collectTables } from './module';
@@ -31,6 +32,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   analyticsModule,
   accessModule,
   faceAuthModule,
+  complianceModule,
   filesModule,
 ];
 

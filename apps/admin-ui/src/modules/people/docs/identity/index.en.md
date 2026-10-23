@@ -67,8 +67,10 @@ the same person.
 
 The platform keeps its own crop of each accepted face. The uploaded originals
 (kind `face_source`) are deleted about an hour after upload, whatever the
-answer, so a refused form can still be sent again in the meantime; erasing the
-person or deleting a crop removes its original at once.
+answer, so a refused form can still be sent again in the meantime. Erasing the
+person or deleting a crop queues its original for deletion with the crop; the
+queue is drained within about 10 minutes. The one-hour sweep of originals ignores
+legal holds: a raw upload is not a record, and a hold keeps the crop.
 
 ## The identity page
 

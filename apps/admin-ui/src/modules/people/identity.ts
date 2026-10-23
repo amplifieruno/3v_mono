@@ -1,6 +1,7 @@
 import { type Check, type CheckDI, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
+import { identityHoldNotice } from '../compliance/hold-notice';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
 import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
@@ -122,6 +123,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
     show: {
       header: (l) => [l.grid(['status', 'source', 'is_synthetic'])],
       body: (l) => [
+        identityHoldNotice(l),
         // A merged identity says so in its status, and Edit and Add photos give the reason.
         l.panel(['matching_enabled'], {
           key: 'matching-notice',

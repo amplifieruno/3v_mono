@@ -123,3 +123,11 @@ export const AUTHENTICATION_SESSION_RESOURCE = 'authentication_session';
 export const AUTHENTICATION_ATTEMPT_RESOURCE = 'authentication_attempt';
 /** The "Authenticate a face" page's record: the organization's settings row (G63, as the search workspace). */
 export const AUTH_TESTER_RESOURCE = 'face_auth_tester';
+export const RETENTION_POLICY_RESOURCE = 'retention_policy';
+export const RETENTION_RUN_RESOURCE = 'retention_run';
+export const RETENTION_RUN_CLASS_RESOURCE = 'retention_run_class';
+export const LEGAL_HOLD_RESOURCE = 'legal_hold';
+export const LEGAL_HOLD_PROFILE_TARGET_RESOURCE = 'legal_hold_profile_target';
+export const LEGAL_HOLD_IDENTITY_TARGET_RESOURCE = 'legal_hold_identity_target';
+export const LEGAL_HOLD_INCIDENT_TARGET_RESOURCE = 'legal_hold_incident_target';
+export const LEGAL_HOLD_FACILITY_TARGET_RESOURCE = 'legal_hold_facility_target';

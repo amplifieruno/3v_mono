@@ -1,6 +1,7 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
+import { incidentHoldNotice } from '../compliance/hold-notice';
 import {
   INCIDENT_ACTIVITY_RESOURCE,
   INCIDENT_EVENT_HISTORY_RESOURCE,
@@ -166,6 +167,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
             { key, texts },
           );
         return [
+          incidentHoldNotice(l),
           l.tabs(
             [
               l.panel(

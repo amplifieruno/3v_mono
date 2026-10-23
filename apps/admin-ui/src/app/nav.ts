@@ -164,6 +164,13 @@ export const NAV_ICONS = {
   approveAttempt: 'Check',
   rejectAttempt: 'CircleX',
   authTester: 'ScanFace',
+  retentionPolicies: 'CalendarX',
+  activatePolicy: 'CirclePlay',
+  deactivatePolicy: 'CirclePause',
+  retentionPlan: 'ClipboardList',
+  retentionRuns: 'FileClock',
+  legalHolds: 'Gavel',
+  endHold: 'CircleStop',
 } as const;
 
 /**
