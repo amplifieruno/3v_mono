@@ -159,6 +159,11 @@ export const NAV_ICONS = {
   shareAttribute: 'ListPlus',
   rotateKey: 'RotateCw',
   revokeKey: 'Ban',
+  authSessions: 'History',
+  authAttempts: 'ScanFace',
+  approveAttempt: 'Check',
+  rejectAttempt: 'CircleX',
+  authTester: 'ScanFace',
 } as const;
 
 /**

@@ -15,6 +15,7 @@ import {
   clientApplicationPlatformEnum,
   clientApplicationStatusEnum,
 } from './face-auth';
+import { AUTH_RECORD_ENUMS, AUTH_RECORD_ENUM_TABLES } from './face-auth-records';
 import {
   DEVICES_ENUM_TABLES,
   deviceEventKindEnum,
@@ -226,6 +227,7 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   clientApplicationStatusEnum,
   authModeEnum,
   authAttributeEnum,
+  ...AUTH_RECORD_ENUMS,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -274,4 +276,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...BULK_ENUM_TABLES,
   ...ACCESS_ENUM_TABLES,
   ...FACE_AUTH_ENUM_TABLES,
+  ...AUTH_RECORD_ENUM_TABLES,
 };

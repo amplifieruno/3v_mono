@@ -216,4 +216,13 @@ export default {
       },
     },
   },
+  authentication_session: {
+    doc: { topics: { index: 'Authentication sessions: statuses, recaptures, second factors and expiry' } },
+  },
+  authentication_attempt: {
+    doc: { topics: { index: 'Authentication attempts: outcomes, confidence against the threshold, evidence and the review of partial matches' } },
+  },
+  face_auth_tester: {
+    doc: { topics: { index: 'Authenticate a face: testing an application with 3 to 5 frames and reading the decision' } },
+  },
 } satisfies TranslationBundle;

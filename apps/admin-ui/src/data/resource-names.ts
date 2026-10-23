@@ -121,3 +121,5 @@ export const CLIENT_APPLICATION_ATTRIBUTE_RESOURCE = 'client_application_attribu
 export const CLIENT_APPLICATION_KEY_RESOURCE = 'client_application_key';
 export const AUTHENTICATION_SESSION_RESOURCE = 'authentication_session';
 export const AUTHENTICATION_ATTEMPT_RESOURCE = 'authentication_attempt';
+/** The "Authenticate a face" page's record: the organization's settings row (G63, as the search workspace). */
+export const AUTH_TESTER_RESOURCE = 'face_auth_tester';

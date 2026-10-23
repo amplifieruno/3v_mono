@@ -1035,6 +1035,9 @@ migration `1792365700277`.
   G13/G16) of `search_workspace`, a read-only twin resource over the organization's
   `organization_settings` row, whose show tree places the item flow `search` inline
   (`src/modules/search/search-workspace.ts`). The item flow keeps the typed fields and checks.
+- **Also used by:** the "Authenticate a face" page (phase 11 task 3): `face_auth_tester`, a second
+  read-only twin over `organization_settings`, places the item flow `authenticate`
+  (`src/modules/face-auth/tester.ts`).
 - **Expected from a framework:** the page inline host resolving a resource-level flow's chrome from
   its resource and name; `checkApp` passing pages to the resource view; app flows taking the same
   field declarations as resource flows.
@@ -1262,3 +1265,7 @@ migration `1792365700277`.
   alert) and the "API keys" article say a dismissed secret is gone and the key is revoked and
   rotated again. Expected: a `then.open` option that keeps the dialog open until the block's own
   button closes it.
+- **Also (phase 11 task 3):** "Authenticate a face" (`authenticate_face`) has the same wall: a lost
+  answer cannot be checked (the check sees no answer, so no session id, G12) and a resend would be
+  a replay of the same frames; accepted `flow.unknown-unhandled` for `face_auth_tester
+  toolbar.item.0.submit`, and the tester article points to the sessions log.

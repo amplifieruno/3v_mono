@@ -204,12 +204,14 @@ describe('refusals through the provider', () => {
     const names = Object.keys(ACTION_REFUSALS).filter((key) => key.startsWith(`${FACE_AUTH_BINDING}.`));
     expect(names.sort()).toEqual(
       [
+        'authenticateFace',
         'bindAccessPoint',
         'bindAttribute',
         'bindFacility',
         'bindMode',
         'bindSegment',
         'deleteClientApplication',
+        'reviewAuthenticationAttempt',
         'revokeClientKey',
         'rotateClientKey',
         'setClientApplicationStatus',

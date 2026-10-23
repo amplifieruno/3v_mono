@@ -87,4 +87,11 @@ creates one and shows its secret once; **Revoke key** on a row retires one for
 good. At most two keys are active. A revoked application gets no new keys. See
 the **API keys** article.
 
+## Sessions and attempts
+
+The **Sessions** and **Attempts** tabs list the application's authentications,
+newest first; each opens its page. Partial matches waiting for a decision are in
+the attempts' **Waiting for review** view (see **Authentication attempts**). To
+try the application's settings yourself, use **Authenticate a face**.
+
 How an integrator calls the API is in the **Integration** article.

@@ -51,6 +51,10 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // screen stands; the "API keys" article tells the administrator to revoke a key whose secret they
   // never received.
   { code: 'flow.unknown-unhandled', location: 'client_application toolbar.item.5.submit' },
+  // `authenticate` ("Authenticate a face"): the check sees no answer, so it cannot name the session
+  // a lost `authenticate_face` opened (G12), and a resend would be a second attempt with the same
+  // frames (a replay). The unknown screen stands; the tester article points to the attempts log.
+  { code: 'flow.unknown-unhandled', location: 'face_auth_tester toolbar.item.0.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

@@ -1,14 +1,21 @@
 import { type Layout, type ScreenCondition, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
-import { CLIENT_APPLICATION_KEY_RESOURCE, CLIENT_APPLICATION_RESOURCE } from '../../data/resource-names';
+import {
+  AUTHENTICATION_ATTEMPT_RESOURCE,
+  AUTHENTICATION_SESSION_RESOURCE,
+  CLIENT_APPLICATION_KEY_RESOURCE,
+  CLIENT_APPLICATION_RESOURCE,
+} from '../../data/resource-names';
 import { CLIENT_APPLICATION_COLUMNS, clientApplicationFields } from './application-fields';
 import { deleteFlow, reactivateFlow, revokeFlow, suspendFlow } from './application-flows';
 import { APPLICATION_RULES, THRESHOLD_CHECKS } from './application-rules';
 import { BINDING_FLOWS } from './binding-flows';
 import { type BindingKind, bindingOf } from './binding-targets';
+import { AUTHENTICATION_ATTEMPT_COLUMNS } from './attempt-fields';
 import { CLIENT_KEY_COLUMNS } from './key';
 import { rotateKeyFlow } from './key-flows';
+import { AUTHENTICATION_SESSION_COLUMNS } from './session-fields';
 
 type Fields = typeof clientApplicationFields;
 
@@ -47,12 +54,30 @@ function bindingPanel(l: Layout<Fields>, kind: BindingKind, description: string,
   );
 }
 
+/** A tab listing the application's sessions or attempts, newest first, each opening its page. */
+function logPanel(l: Layout<Fields>, resource: string, key: string, title: string, columns: readonly string[]) {
+  return l.panel(
+    [
+      l.place(relatedList(resourceByName(resource)), {
+        key: `${key}-list`,
+        props: {
+          where: [{ field: 'application_id', op: 'eq', value: l.ref('record', 'id') }],
+          columns: columns.filter((column) => column !== 'application_id'),
+          open: 'page',
+        },
+      }),
+    ],
+    { key, texts: title },
+  );
+}
+
 /**
  * Client applications of the face authentication service (`itap.client_applications`): what may
  * call the API, whom it may authenticate (bound segments and facilities, narrowed by its doors and
  * work schedules), how (modes, thresholds, liveness) and what it learns (attributes). Suspend,
  * Reactivate and Revoke change its status; revoked is terminal. Its API keys are on the Keys tab
- * (Rotate key shows a new secret once). Sessions and attempts are added by phase 11 task 3. The integrator's view: the "Integration" article.
+ * (Rotate key shows a new secret once); its sessions and attempts on their tabs. The integrator's
+ * view: the "Integration" article.
  */
 export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
   texts: {
@@ -172,6 +197,8 @@ export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
               ],
               { key: 'keys', texts: 'Keys' },
             ),
+            logPanel(l, AUTHENTICATION_SESSION_RESOURCE, 'sessions', 'Sessions', AUTHENTICATION_SESSION_COLUMNS),
+            logPanel(l, AUTHENTICATION_ATTEMPT_RESOURCE, 'attempts', 'Attempts', AUTHENTICATION_ATTEMPT_COLUMNS),
           ],
           { key: 'sections' },
         ),
