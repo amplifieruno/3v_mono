@@ -137,8 +137,15 @@ describe('refusals', () => {
 describe('the hold notice', () => {
   it('should ask for the record and what it is linked to', () => {
     expect(noticeInput({ profileId: PROFILE })).toEqual({ profileIds: [PROFILE], identityIds: [], identityProfileIds: [PROFILE], incidentIds: [], facilityIds: [] });
-    expect(noticeInput({ identityId: 'i1', linkedProfileId: PROFILE })).toEqual({ profileIds: [PROFILE], identityIds: ['i1'], identityProfileIds: [], incidentIds: [], facilityIds: [] });
-    expect(noticeInput({ identityId: 'i1', linkedProfileId: null }).profileIds).toEqual([]);
+    // An identity asks for its profile and the profile's other identities (siblings).
+    expect(noticeInput({ identityId: 'i1', linkedProfileId: PROFILE })).toEqual({
+      profileIds: [PROFILE],
+      identityIds: ['i1'],
+      identityProfileIds: [PROFILE],
+      incidentIds: [],
+      facilityIds: [],
+    });
+    expect(noticeInput({ identityId: 'i1', linkedProfileId: null })).toMatchObject({ profileIds: [], identityProfileIds: [] });
     expect(noticeInput({ incidentId: 'x1', facilityId: 'f1' })).toMatchObject({ incidentIds: ['x1'], facilityIds: ['f1'] });
   });
 

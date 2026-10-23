@@ -23,6 +23,8 @@ export const legalHoldNoticeBlock = defineBlock('itap:legal-hold-notice', {
     until: 'until {{at}}',
     viaFacility: '(covers its facility)',
     viaLink: '(covers a linked record)',
+    reach:
+      'Shown: holds that name this record or a record directly linked to it. A hold can also reach it further away (completed merges, other identities of the same person, a held person an incident names); the retention plan and runs count those rows as kept.',
   },
   props: {
     profileId: id,

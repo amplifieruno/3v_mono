@@ -59,6 +59,7 @@ export function LegalHoldNoticeView({ props, t }: Props): React.ReactElement | n
           );
         })}
       </ul>
+      <p className="text-xs text-muted-foreground">{t('reach')}</p>
     </div>
   );
 }

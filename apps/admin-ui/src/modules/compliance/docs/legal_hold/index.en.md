@@ -24,7 +24,8 @@ On the hold's page, one tab per kind of target, each with **+ Create**:
   into it, and every row about them (detections, sessions, events, decisions,
   attempts, files);
 - **Identities**: one tracked face, such as an unknown person seen at an
-  incident, with the profile it is linked to;
+  incident, and the whole person behind it: its profile, the profile's other
+  identities and the identities merged with it;
 - **Incidents**: an incident with its notes, activities, linked events and
   reports;
 - **Facilities**: every row recorded at the facility.
@@ -33,9 +34,12 @@ A target is added once per hold; removing one is refused while the hold is in
 force (Delete is disabled with the reason).
 
 Profiles, identities and incidents covered by a hold in force say so at the
-top of their page, with a link to each hold. The notice follows the record and
-what it is directly linked to (a profile's identities, an identity's profile,
-an incident's facility); the retention run also follows completed merges.
+top of their page, with a link to each hold. The notice shows holds that name
+this record or a record directly linked to it: a profile's identities; an
+identity's profile and that profile's other identities; an incident's facility
+and the people it names. A hold can also reach a record further away, through
+completed merges or the wider person graph; the retention plan and runs count
+those rows as kept.
 
 ## Dates move one way
 

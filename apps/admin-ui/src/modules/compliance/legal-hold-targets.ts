@@ -42,7 +42,7 @@ export const HOLD_TARGETS: readonly HoldTargetSpec[] = [
     to: IDENTITY_RESOURCE,
     label: 'Held identity',
     labelPlural: 'Held identities',
-    summary: 'A tracked face the hold covers, with the profile it is linked to and every row about it, such as an unknown face seen at an incident.',
+    summary: 'A tracked face the hold covers, such as an unknown face seen at an incident: the whole person behind it (its profile, the profile’s other identities, identities merged with it) and every row about them.',
     title: 'Identities',
   },
   {

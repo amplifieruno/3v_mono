@@ -8,8 +8,13 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
 import { sqlRefusals } from '../../src/data/sql-refusals';
-import { LEGAL_HOLD_PROFILE_TARGET_RESOURCE, LEGAL_HOLD_RESOURCE, RETENTION_POLICY_RESOURCE } from '../../src/data/resource-names';
-import type { HeldBy } from '../../src/modules/compliance/hold-notice-query';
+import {
+  LEGAL_HOLD_IDENTITY_TARGET_RESOURCE,
+  LEGAL_HOLD_PROFILE_TARGET_RESOURCE,
+  LEGAL_HOLD_RESOURCE,
+  RETENTION_POLICY_RESOURCE,
+} from '../../src/data/resource-names';
+import { type HeldBy, noticeInput } from '../../src/modules/compliance/hold-notice-query';
 import { LEGAL_HOLD_REFUSALS } from '../../src/modules/compliance/legal-hold-ops';
 import type { RetentionPlan } from '../../src/modules/compliance/retention-plan-query';
 import { COMPLIANCE_BINDING, RETENTION_POLICY_REFUSALS } from '../../src/modules/compliance/retention-policy-ops';
@@ -27,7 +32,8 @@ import { offsetPage } from '../support/pagination';
  * - a legal hold on a seeded profile with a target: the notice's read finds it; its end is set,
  *   shortened, an extension and a move of the start are refused by the database (the console
  *   never offers the start: Review Focus 3); the target cannot be removed while the hold is in
- *   force; "End now" ends it, a second end is refused (mapped); the target then goes.
+ *   force; "End now" ends it, a second end is refused (mapped); the target then goes;
+ * - a hold on identities is seen from a sibling identity's page and from an incident naming one.
  * Cleanup with the admin secret (holds have no delete permission, audit rows are append-only).
  */
 
@@ -52,6 +58,9 @@ describe.skipIf(!DEV_STACK_ENABLED)('retention and legal holds against the dev s
   let token: () => Promise<string | null>;
   let facility = '';
   let person = '';
+  /** A seeded identity linked to a profile (the sibling case) and an incident naming a seeded identity. */
+  let linked = { identity: '', profile: '' };
+  let named = { incident: '', identity: '' };
   const policies: string[] = [];
   const holds: string[] = [];
   const targets: string[] = [];
@@ -122,7 +131,15 @@ describe.skipIf(!DEV_STACK_ENABLED)('retention and legal holds against the dev s
     const data = await graphql(`{
       facilities(where: { name: { _eq: "Nova Tower" } }) { id }
       profiles(where: { erased_at: { _is_null: true }, processing_restricted: { _eq: false }, _not: { legal_hold_targets: {} } }, order_by: { code: asc }, limit: 1) { id }
+      identities(where: { profile_id: { _is_null: false } }, order_by: { code: asc }, limit: 1) { id profile_id }
+      incident_identities(order_by: { created_at: asc }, limit: 1) { incident_id identity_id }
     }`);
+    const [identity] = data.identities as { id: string; profile_id: string }[];
+    const [naming] = data.incident_identities as { incident_id: string; identity_id: string }[];
+    linked = { identity: identity?.id ?? '', profile: identity?.profile_id ?? '' };
+    named = { incident: naming?.incident_id ?? '', identity: naming?.identity_id ?? '' };
+    expect(linked.profile).not.toBe('');
+    expect(named.incident).not.toBe('');
     facility = String((data.facilities as { id: string }[])[0]?.id ?? '');
     person = String((data.profiles as { id: string }[])[0]?.id ?? '');
     expect(facility).not.toBe('');
@@ -244,5 +261,29 @@ describe.skipIf(!DEV_STACK_ENABLED)('retention and legal holds against the dev s
     expect(after.find((row) => row.id === hold.id)).toBeUndefined();
     await remove(LEGAL_HOLD_PROFILE_TARGET_RESOURCE, String(target.id));
     expect(await list(LEGAL_HOLD_PROFILE_TARGET_RESOURCE, { field: 'hold_id', op: 'eq', value: hold.id })).toHaveLength(0);
+  }, 60_000);
+
+  it('should show a hold to a sibling identity’s page and to an incident naming the held identity', async () => {
+    const hold = await create(LEGAL_HOLD_RESOURCE, { name: 'Dev test hold, people', reason: 'Dev test claim', starts_at: at(-0.1) });
+    holds.push(String(hold.id));
+    for (const identity of new Set([linked.identity, named.identity])) {
+      const target = await create(LEGAL_HOLD_IDENTITY_TARGET_RESOURCE, { hold_id: hold.id, identity_id: identity });
+      targets.push(String(target.id));
+    }
+    const covering = async (input: Partial<Record<string, string[]>>) =>
+      ((await custom('queries', 'legalHoldsCovering', {
+        profileIds: [],
+        identityIds: [],
+        identityProfileIds: [],
+        incidentIds: [],
+        facilityIds: [],
+        ...input,
+      })) as HeldBy[]).find((row) => row.id === hold.id);
+    // Another identity of the same profile: its page asks for its profile's identities (noticeInput).
+    const sibling = noticeInput({ identityId: crypto.randomUUID(), linkedProfileId: linked.profile });
+    expect(await covering(sibling)).toMatchObject({ via: ['identity'] });
+    expect(await covering(noticeInput({ incidentId: named.incident }))).toMatchObject({ via: ['identity'] });
+    expect(await covering(noticeInput({ incidentId: crypto.randomUUID() }))).toBeUndefined();
+    expect(await custom('mutations', 'endLegalHold', { holdId: hold.id })).toMatchObject({ id: hold.id });
   }, 60_000);
 });

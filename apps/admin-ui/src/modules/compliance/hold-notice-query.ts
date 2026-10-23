@@ -10,13 +10,14 @@ const ids = z.array(z.string().uuid());
 
 /**
  * What a record page asks about: the record itself and what it is linked to. A profile asks for
- * targets naming it and identities linked to it; an identity for itself and its profile; an
- * incident for itself and its facility.
+ * targets naming it and identities linked to it; an identity for itself, its profile and the
+ * profile's other identities; an incident for itself, its facility and the people it names
+ * (identity targets, and profile targets through their identities).
  */
 export const holdNoticeInput = z.object({
   profileIds: ids,
   identityIds: ids,
-  /** Identity targets whose identity is linked to one of these profiles. */
+  /** Identity targets whose identity is linked to one of these profiles (a person's identities, an identity's siblings). */
   identityProfileIds: ids,
   incidentIds: ids,
   facilityIds: ids,
@@ -37,11 +38,11 @@ export const one = (value: string | null | undefined): string[] => (typeof value
 
 /** The read the notice makes for its props (empty lists match nothing). */
 export function noticeInput(props: NoticeProps): HoldNoticeInput {
-  const profile = one(props.profileId);
+  const people = [...one(props.profileId), ...one(props.linkedProfileId)];
   return {
-    profileIds: [...profile, ...one(props.linkedProfileId)],
+    profileIds: people,
     identityIds: one(props.identityId),
-    identityProfileIds: profile,
+    identityProfileIds: people,
     incidentIds: one(props.incidentId),
     facilityIds: one(props.facilityId),
   };
@@ -91,6 +92,9 @@ export const holdNoticeOperation = hasuraOperation(COMPLIANCE_BINDING, 'legalHol
       { identity: { profile_id: { _in: $identityProfiles } } }
       { incident_id: { _in: $incidents } }
       { facility_id: { _in: $facilities } }
+      { identity: { incident_identities: { incident_id: { _in: $incidents } } } }
+      { identity: { profile: { identities: { incident_identities: { incident_id: { _in: $incidents } } } } } }
+      { profile: { identities: { incident_identities: { incident_id: { _in: $incidents } } } } }
     ]
   }) {
     profile_id
@@ -115,9 +119,10 @@ export const holdNoticeOperation = hasuraOperation(COMPLIANCE_BINDING, 'legalHol
 });
 
 /**
- * The legal holds in force now that cover a record directly or through what it is linked to (a
- * profile's identities, an identity's profile, an incident's facility). The banner's read; the
- * retention engine itself also follows completed merges (`itap.legal_hold_subjects`).
+ * The legal holds in force now that name a record or a record directly linked to it (a profile's
+ * identities; an identity's profile and its sibling identities; an incident's facility and the
+ * people it names). The banner's read; the retention engine also follows completed merges and the
+ * whole person graph (`itap.legal_hold_subjects`), which this read does not.
  */
 export const legalHoldsCovering = defineQuery('itap:legal-holds-covering', {
   binding: holdNoticeOperation.binding,
