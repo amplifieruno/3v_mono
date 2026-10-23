@@ -1141,6 +1141,11 @@ migration `1792365700277`.
   (`flows-runtime.js`) runs the notify in a `useEffect` after the success render, by which time the
   runner is gone. jsdom's `act` flushes the effect first, so unit tests pass and hide it. **[run]**
 - **Workaround:** none; the mutation applies, the toast is missing.
+- **Measured (phase 10):** the access policy **Archive** and the version **Roll back to this version**
+  (confirm only, launched from the record's "More" menu) kept their toast, and Roll back its
+  `then.open` of the new draft, in a real browser (Chromium through the Vite dev server, a scratch
+  Playwright probe). Not every confirm-only flow loses its effects; which launch paths do was not
+  narrowed down.
 - **Expected from a framework:** `then` effects run from the launcher or before `onClose`.
 
 ### G73. A flow cannot submit a read-only query (a dry run)
