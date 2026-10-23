@@ -1354,7 +1354,32 @@ migration `1792365700277`.
 - **Workaround:** `config` keeps the kit's JSON input and gets a display of its own
   (`itap.integration-config`: the schedule as the cron sentence with its zone, then each other
   setting); the item flow **Schedule** edits the two keys with `cronField` and `timezone()` and
-  writes the whole object back (`_set`, every other key kept; Hasura refuses `_append` and
-  `_delete_key` on one column in one update). The list shows no schedule column.
+  writes only those keys through a custom mutation: setting merges them (`_append`), removing runs
+  two `update_integrations_by_pk` root fields with one `_delete_key` each (Hasura refuses `_append`
+  with `_delete_key`, and several keys per `_delete_key`, on one column); `@include` picks the
+  branch and the root fields share one transaction. Other settings are never rewritten, so a
+  concurrent edit of them is kept. The list shows no schedule column.
 - **Expected from a framework:** a field declared over a path of a JSON column (read and written
   as that key), or a derived read-only field (`compute: (record) => ...`) usable in lists.
+
+### G84. A lost answer leaves an unsalted hash of a write-only secret in `sessionStorage`
+- **Need:** "Set secret" on an integration (phase 12) sends a write-only secret; nothing derived
+  from it should outlive the dialog in the browser.
+- **Framework (0.6.0):** every flow submit writes a write-ahead attempt
+  (`buro:attempt:v1:<user>:<flow>:<slot>` in `sessionStorage`, also offered to the user's other tabs
+  over `BroadcastChannel('buro:attempts')`) carrying `bodyHash`: SHA-256 over the canonical JSON of
+  `{ op, target, id, input }`, unsalted, the secret included. On success (or a definite refusal) the
+  entry is removed; after a lost answer it stays `unknown` for the tab's life (up to
+  `ATTEMPT_MAX_AGE_MS`). `retry: 'never'` changes only the replay, and neither the field's
+  `sensitive` flag nor any provider option keeps a value out of the hash or turns the store off
+  (`createAttemptsStore` / `ports.hash` are internal). The id and the rest of the input are known,
+  so a weak secret could be tested offline against the stored hash. **[code]**
+  (`@burojs/core` `flows/machine.ts` submit, `flows/intent-key.ts` `bodyHash`,
+  `@burojs/react` `flows/attempts-store.ts`)
+- **Workaround:** none through an extension point; the risk is bounded (same tab and user, only
+  after a lost answer, a strong secret is not guessable). `tests/modules/integrations-exports-page.test.tsx`
+  pins both cases (no entry after success; an `unknown` entry with a hash, never the value, after a
+  lost answer) so a fix in buro shows up.
+- **Expected from a framework:** hash a keyed digest (per-tab random salt / HMAC key kept in
+  memory), or leave `sensitive` field values out of the body hash, or a flow option
+  (`submit.attempts: 'memory'`) that keeps the attempt out of storage.

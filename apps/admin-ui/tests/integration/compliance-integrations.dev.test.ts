@@ -153,7 +153,6 @@ describe.skipIf(!DEV_STACK_ENABLED)('integrations and exports against the dev st
       statements.push(`delete from itap.audit_log where entity_id in (${quoted(files)})`);
       statements.push(`select itap.enqueue_unused_files('${organization}', array[${quoted(files)}]::uuid[], 'test:compliance-integrations')`);
     }
-    statements.push(`delete from itap.audit_log where occurred_at >= now() and entity in ('integrations', 'export_definitions', 'export_jobs')`);
     await sql(statements.join(';\n'));
   }, 60_000);
 
@@ -184,12 +183,12 @@ describe.skipIf(!DEV_STACK_ENABLED)('integrations and exports against the dev st
   }, 60_000);
 
   it('should set and remove a schedule keeping the other settings, and refuse a paused sync', async () => {
-    const before = await one(INTEGRATION_RESOURCE, throwaway);
-    await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, config: before.config, cron: '0 3 * * *', timezone: 'Europe/Moscow' });
+    await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, cron: '0 3 * * *', timezone: 'Europe/Moscow' });
     expect((await one(INTEGRATION_RESOURCE, throwaway)).config).toEqual({ endpoint: 'https://example.test/hook', schedule_cron: '0 3 * * *', schedule_timezone: 'Europe/Moscow' });
-    const scheduled = await one(INTEGRATION_RESOURCE, throwaway);
-    await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, config: scheduled.config, cron: null, timezone: null });
-    expect((await one(INTEGRATION_RESOURCE, throwaway)).config).toEqual({ endpoint: 'https://example.test/hook' });
+    // A setting changed after the page was read is kept: the flow writes only the schedule keys.
+    await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, input: { config: { endpoint: 'https://example.test/other', schedule_cron: '0 3 * * *', schedule_timezone: 'Europe/Moscow' } } });
+    await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, cron: null, timezone: null });
+    expect((await one(INTEGRATION_RESOURCE, throwaway)).config).toEqual({ endpoint: 'https://example.test/other' });
 
     await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, input: { status: 'paused' } });
     expect(await refused(custom('mutations', COMPLIANCE_BINDING, 'runIntegrationSync', { integrationId: throwaway }))).toMatchObject({
@@ -198,10 +197,22 @@ describe.skipIf(!DEV_STACK_ENABLED)('integrations and exports against the dev st
     });
   }, 60_000);
 
-  it('should run the HR fixture sync and log a run that writes nothing new', async () => {
+  it('should run the HR fixture sync and log a run that writes nothing new', async ({ skip }) => {
     expect(workday).not.toBeNull();
+    expect(workday?.status, 'the seeded HR integration must be active to sync').toBe('active');
     const id = String(workday?.id);
-    const started = (await custom('mutations', COMPLIANCE_BINDING, 'runIntegrationSync', { integrationId: id })) as Row;
+    // A scheduled sync may be running right now: retry for a while, then skip with the reason.
+    let started: Row | null = null;
+    for (let attempt = 0; started === null; attempt += 1) {
+      const answer = await custom('mutations', COMPLIANCE_BINDING, 'runIntegrationSync', { integrationId: id }).then(
+        (row) => ({ row: row as Row }),
+        (error: unknown) => ({ error }),
+      );
+      if ('row' in answer) started = answer.row;
+      else if ((answer.error as { code?: unknown }).code !== 'integration_sync_running') throw answer.error;
+      else if (attempt >= 20) skip('the seeded HR integration is still syncing (scheduled run); nothing was asserted');
+      else await pause(3000);
+    }
     runs.push(String(started.run_id));
     expect(started.status).toBe('running');
     const status = async () => (await custom('queries', COMPLIANCE_BINDING, 'jobStatus', { job: 'sync_run', id: String(started.run_id) })) as Row;

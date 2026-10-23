@@ -105,39 +105,44 @@ export const runIntegrationSync = defineMutation('itap:run-integration-sync', {
 
 export const scheduleInput = z.object({
   integrationId: z.string().uuid(),
-  config: z.record(z.string(), z.unknown()).nullable(),
   cron: z.string().nullable(),
   timezone: z.string().nullable(),
 });
 
-/** The integration's settings with the schedule set (cron and zone) or removed (no cron). */
-export function withSchedule(config: Readonly<Record<string, unknown>> | null, cron: string | null, timezone: string | null): Record<string, unknown> {
-  const rest: Record<string, unknown> = { ...config };
-  delete rest.schedule_cron;
-  delete rest.schedule_timezone;
+/** The schedule keys to merge into `config`, or `null` when the schedule is removed (no cron). */
+export function scheduleKeys(cron: string | null, timezone: string | null): { schedule_cron: string; schedule_timezone: string } | null {
   const expression = cron?.trim() ?? '';
-  if (expression === '') return rest;
-  return { ...rest, schedule_cron: expression, schedule_timezone: timezone === null || timezone === '' ? 'UTC' : timezone };
+  if (expression === '') return null;
+  return { schedule_cron: expression, schedule_timezone: timezone === null || timezone === '' ? 'UTC' : timezone };
 }
 
+/**
+ * Touches only the two schedule keys of `config`, so a concurrent edit of another setting is kept:
+ * setting merges them (`_append`); removing deletes each with its own root field (Hasura refuses
+ * `_append` with `_delete_key`, and more than one key per `_delete_key`, on one column). Root
+ * fields of one mutation run in one transaction; `@include` picks the branch.
+ */
 export const scheduleOperation: HasuraOperationEntry = hasuraOperation(
   COMPLIANCE_BINDING,
   'setIntegrationSchedule',
   {
     kind: 'mutation',
-    document: `mutation SetIntegrationSchedule($id: uuid!, $config: jsonb!) {
-  update_integrations_by_pk(pk_columns: { id: $id }, _set: { config: $config }) { id config next_sync_at }
+    document: `mutation SetIntegrationSchedule($id: uuid!, $schedule: jsonb!, $set: Boolean!, $clear: Boolean!) {
+  set: update_integrations_by_pk(pk_columns: { id: $id }, _append: { config: $schedule }) @include(if: $set) { id config next_sync_at }
+  clearCron: update_integrations_by_pk(pk_columns: { id: $id }, _delete_key: { config: "schedule_cron" }) @include(if: $clear) { id }
+  clearZone: update_integrations_by_pk(pk_columns: { id: $id }, _delete_key: { config: "schedule_timezone" }) @include(if: $clear) { id config next_sync_at }
 }`,
     variables: (input) => {
-      const { integrationId, config, cron, timezone } = input as z.infer<typeof scheduleInput>;
-      return { id: integrationId, config: withSchedule(config, cron, timezone) };
+      const { integrationId, cron, timezone } = input as z.infer<typeof scheduleInput>;
+      const keys = scheduleKeys(cron, timezone);
+      return { id: integrationId, schedule: keys ?? {}, set: keys !== null, clear: keys === null };
     },
-    mapResult: (data) => rootOf(data, 'update_integrations_by_pk') ?? null,
+    mapResult: (data) => rootOf(data, 'set') ?? rootOf(data, 'clearZone') ?? null,
   },
   sqlRefusals(SCHEDULE_REFUSALS),
 );
 
-/** "Schedule": writes `config.schedule_cron` / `schedule_timezone`, keeping every other setting. */
+/** "Schedule": writes only `config.schedule_cron` / `schedule_timezone`; every other setting is untouched. */
 export const setIntegrationSchedule = defineMutation('itap:set-integration-schedule', {
   binding: scheduleOperation.binding,
   input: schema(scheduleInput),

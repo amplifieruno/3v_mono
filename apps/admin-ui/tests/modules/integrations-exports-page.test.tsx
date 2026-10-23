@@ -64,7 +64,7 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
   const { query } = JSON.parse(String(init?.body)) as GraphqlBody;
   if (query.includes('SetIntegrationSecret')) return hasuraResponse({ data: { set_integration_secret: { integration_id: INTEGRATION, has_secret: true } } });
   if (query.includes('RunIntegrationSync')) return hasuraResponse({ data: { run_integration_sync: { run_id: RUN, integration_id: INTEGRATION, status: 'running' } } });
-  if (query.includes('SetIntegrationSchedule')) return hasuraResponse({ data: { update_integrations_by_pk: { id: INTEGRATION, config: {}, next_sync_at: null } } });
+  if (query.includes('SetIntegrationSchedule')) return hasuraResponse({ data: { set: { id: INTEGRATION, config: {}, next_sync_at: null } } });
   if (query.includes('RunExport')) return hasuraResponse({ data: { insert_export_jobs_one: { id: JOB, status: 'queued' } } });
   if (query.includes('OpenFile')) return hasuraResponse({ data: { open_file: { url: 'https://files.test/export.csv', expires_at: AT } } });
   if (query.includes('JobStatus')) return hasuraResponse({ data: { export_jobs_by_pk: { id: JOB, status: 'completed' } } });
@@ -90,6 +90,9 @@ function persisted(): string {
   const dump = (storage: Storage) => Object.keys(storage).map((key) => `${key}=${storage.getItem(key) ?? ''}`).join('\n');
   return [dump(localStorage), dump(sessionStorage), routerLocation(), document.title].join('\n');
 }
+
+/** buro's flow attempts in this tab (`buro:attempt:v1:<user>:<flow>:<slot>`). */
+const attemptKeys = (): string[] => Object.keys(sessionStorage).filter((key) => key.startsWith('buro:attempt:'));
 
 async function menuItem(name: RegExp): Promise<void> {
   fireEvent.keyDown((await screen.findAllByRole('button', { name: 'More' }))[0]!, { key: 'Enter' });
@@ -184,6 +187,32 @@ describe('an integration', () => {
     expect(bodies().filter((body) => !body.query.includes('set_integration_secret')).some((body) => JSON.stringify(body).includes(SECRET))).toBe(false);
     expect(persisted()).not.toContain(SECRET);
     expect(document.body.textContent).not.toContain(SECRET);
+    // buro's write-ahead attempt (a hash over the body, secret included) is removed on success.
+    expect(attemptKeys()).toEqual([]);
+  });
+
+  it('should show what a lost Set secret answer leaves in the tab (G84)', async () => {
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(init?.body).includes('SetIntegrationSecret')) throw new TypeError('Failed to fetch');
+      return serve(input, init);
+    });
+    renderAt(`/integrations/${INTEGRATION}`);
+    await menuItem(/Set secret/);
+    const dialog = await screen.findByRole('dialog');
+    const box = (await within(dialog).findAllByLabelText(/New secret/)).find((node) => node instanceof HTMLInputElement) as HTMLInputElement;
+    fireEvent.change(box, { target: { value: SECRET } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Set secret/ }));
+    await waitFor(() => expect(mutations()).toHaveLength(1));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Never the secret itself; but see G84 for the body hash buro may keep after a lost answer.
+    expect(persisted()).not.toContain(SECRET);
+    const kept = attemptKeys().map((key) => sessionStorage.getItem(key) ?? '');
+    expect(kept.every((entry) => !entry.includes(SECRET))).toBe(true);
+    // G84: the attempt stays `unknown` with an unsalted SHA-256 over the body (the secret included)
+    // and buro 0.6.0 offers no opt-out; this pins the behaviour so a fix in buro shows up here.
+    expect(kept.map((entry) => JSON.parse(entry) as Record<string, unknown>)).toEqual([
+      expect.objectContaining({ mutation: 'itap:set-integration-secret', state: 'unknown', bodyHash: expect.stringMatching(/^[0-9a-f]{64}$/) }),
+    ]);
   });
 
   it('should not offer Clear secret while none is stored', async () => {
@@ -193,7 +222,7 @@ describe('an integration', () => {
     expect(screen.queryByRole('menuitem', { name: /Clear secret/ })).toBeNull();
   });
 
-  it('should edit the schedule with the cron field, keeping the other settings', async () => {
+  it('should edit the schedule with the cron field, writing only its two keys', async () => {
     renderAt(`/integrations/${INTEGRATION}`);
     await menuItem(/Schedule/);
     const dialog = await screen.findByRole('dialog');
@@ -204,7 +233,9 @@ describe('an integration', () => {
     await waitFor(() => expect(mutations().map((body) => body.query)).toEqual([expect.stringContaining('SetIntegrationSchedule')]));
     expect(mutations()[0]?.variables).toEqual({
       id: INTEGRATION,
-      config: { external_id_field: 'EmployeeNumber', schedule_cron: '30 6 * * 1', schedule_timezone: 'Europe/Moscow' },
+      schedule: { schedule_cron: '30 6 * * 1', schedule_timezone: 'Europe/Moscow' },
+      set: true,
+      clear: false,
     });
   });
 

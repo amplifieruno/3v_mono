@@ -164,7 +164,6 @@ export const scheduleFlow = {
     mutation: setIntegrationSchedule,
     input: {
       integrationId: ref('record', 'id'),
-      config: ref('record', 'config'),
       cron: ref('values', 'cron'),
       timezone: ref('values', 'timezone'),
     },

@@ -7,7 +7,7 @@ import { exportFiltersProblem } from '../../src/modules/compliance/export-defini
 import { EXPORT_JOB_RULES, ownedByOther } from '../../src/modules/compliance/export-job';
 import { runExportOperation } from '../../src/modules/compliance/export-ops';
 import { INTEGRATION_CHECKS, INTEGRATION_RULES } from '../../src/modules/compliance/integration';
-import { runSyncOperation, scheduleOperation, setSecretOperation, withSchedule } from '../../src/modules/compliance/integration-ops';
+import { runSyncOperation, scheduleOperation, scheduleKeys, setSecretOperation } from '../../src/modules/compliance/integration-ops';
 import { expectTranslated } from '../support/field-issues';
 
 /**
@@ -60,12 +60,23 @@ describe('Run sync', () => {
 });
 
 describe('the integration schedule', () => {
-  it('should set or remove the schedule keeping every other setting', () => {
-    const config = { endpoint: 'https://siem.example.test', schedule_cron: '0 * * * *', schedule_timezone: 'UTC' };
-    expect(withSchedule(config, '0 2 * * *', 'Europe/Moscow')).toEqual({ endpoint: config.endpoint, schedule_cron: '0 2 * * *', schedule_timezone: 'Europe/Moscow' });
-    expect(withSchedule(config, '', null)).toEqual({ endpoint: config.endpoint });
-    expect(withSchedule(null, ' 5 4 * * 1 ', null)).toEqual({ schedule_cron: '5 4 * * 1', schedule_timezone: 'UTC' });
-    expect(scheduleOperation.document.variables?.({ integrationId: 'i1', config, cron: null, timezone: null })).toEqual({ id: 'i1', config: { endpoint: config.endpoint } });
+  it('should set or remove only the two schedule keys', () => {
+    expect(scheduleKeys('0 2 * * *', 'Europe/Moscow')).toEqual({ schedule_cron: '0 2 * * *', schedule_timezone: 'Europe/Moscow' });
+    expect(scheduleKeys(' 5 4 * * 1 ', null)).toEqual({ schedule_cron: '5 4 * * 1', schedule_timezone: 'UTC' });
+    expect(scheduleKeys('', 'UTC')).toBeNull();
+    const variables = scheduleOperation.document.variables;
+    expect(variables?.({ integrationId: 'i1', cron: '0 2 * * *', timezone: 'UTC' })).toEqual({
+      id: 'i1',
+      schedule: { schedule_cron: '0 2 * * *', schedule_timezone: 'UTC' },
+      set: true,
+      clear: false,
+    });
+    expect(variables?.({ integrationId: 'i1', cron: null, timezone: null })).toEqual({ id: 'i1', schedule: {}, set: false, clear: true });
+    // No whole-config write: merge, or one `_delete_key` per root field.
+    const query = scheduleOperation.document.document;
+    expect(query).not.toMatch(/_set/);
+    expect(query.match(/_delete_key: \{ config: "schedule_(cron|timezone)" \}/g)).toHaveLength(2);
+    expect(scheduleOperation.document.mapResult?.({ clearZone: { id: 'i1' } })).toEqual({ id: 'i1' });
   });
 
   it('should refuse settings the CHECKs refuse, with translatable issues', async () => {
