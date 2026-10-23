@@ -17,7 +17,8 @@ modes, thresholds and the attributes it receives.
    refused before anything is sent. Identical frames, or a still picture held
    to the camera, are refused as an attack; sending the same frames twice reads
    as a replayed sequence. The frames are stored as your own search images:
-   visible to you only, never to the rest of the organization.
+   visible to you only, never to the rest of the organization, and deleted
+   within minutes of the test, whatever its outcome.
 3. **Authenticate**. The form makes way for the decision.
 
 ## The decision

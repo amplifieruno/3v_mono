@@ -79,8 +79,8 @@ export const authReviewStatusEnum = defineEnum({
   texts: {
     none: { label: 'No review', doc: { summary: 'The attempt needs no manual review.' } },
     pending: { label: 'Pending review', doc: { summary: 'A partial match after the last recapture, waiting for an administrator.' } },
-    approved: { label: 'Approved', doc: { summary: 'A reviewer confirmed the person: the session succeeded.' } },
-    rejected: { label: 'Rejected', doc: { summary: 'A reviewer refused the person: the session failed.' } },
+    approved: { label: 'Approved', doc: { summary: 'A reviewer confirmed the person: the session, if still open, succeeded.' } },
+    rejected: { label: 'Rejected', doc: { summary: 'A reviewer refused the person: the session, if still open, failed.' } },
   },
 });
 

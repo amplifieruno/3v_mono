@@ -72,9 +72,10 @@ Authenticate a face).
   deep link answered hasura-auth's "404 page not found". The key is now `^/auth/`. Production nginx
   already uses `location /auth/`.
 - **Data layer:** no migration and no metadata change this phase (`git diff fdd6846..HEAD --
-  apps/nhost packages` is empty). One backend change: `4b622f2` — `rotate_client_key` passes
+  apps/nhost packages` is empty). Backend changes: `4b622f2` — `rotate_client_key` passes
   `member_required` / `organization_required` on as their own codes (`auth-service/keys.ts`, with
-  `keys.test.ts`).
+  `keys.test.ts`); final review — `authenticate_face` queues the caller's tester frames for deletion
+  (`actions/faceAuth.ts`, with `faceAuth.test.ts`).
 
 ## Reusable for later phases
 
@@ -121,9 +122,12 @@ Authenticate a face).
 ## Known limits
 
 - Sessions and attempts have no `facility_id`: the logs are not narrowed by the sidebar facility.
-- Tester frames are kept: owner-only `search` files are purged by retention only through
-  `search_requests.image_file_id` (`itap.purge_search_history`), which tester frames are not, so they
-  stay until deleted.
+- Tester frames are queued for deletion (final review fix): once the files pass validation,
+  `authenticate_face` queues the caller's own `search` frames in `itap.pending_file_deletions`
+  (reason `auth_tester_frame`) whatever the outcome, and the `drain_file_deletions` cron (10 min)
+  deletes them; a frame stays until then, and is kept if queueing fails (non-fatal). Evidence
+  captures and other kinds are never queued. The REST API takes frames inline (base64, never stored),
+  so only its evidence capture is persisted, under the attempt's retention.
 - A lost tester answer has no Check again (G79/G12): the article points to the sessions log; a resend
   would read as a replayed sequence.
 - The photo attribute in the decision links the URL the backend presigns; its host is the storage URL

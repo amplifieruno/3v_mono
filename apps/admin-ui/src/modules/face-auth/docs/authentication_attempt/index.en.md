@@ -38,9 +38,10 @@ partial matches whose review is pending.
 
 On such an attempt, **Approve** or **Reject** asks for a **note** (why the
 person was or was not accepted). Approving confirms the matched person: the
-session succeeds and closes, and the authentication success event is raised,
-so notification rules and webhooks see it. Rejecting fails and closes the
-session and raises the failure event. A sandbox application raises no events.
+session, if still open, succeeds and closes, and the authentication success
+event is raised, so notification rules and webhooks see it. Rejecting fails and
+closes the session (if still open) and raises the failure event. A session that
+has already expired stays expired. A sandbox application raises no events.
 The attempt then shows **Reviewed by**, **Reviewed** and the **Review note** on
 its Review tab; the decision is also in the audit log.
 

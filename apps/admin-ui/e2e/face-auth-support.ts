@@ -6,21 +6,23 @@ import { runSql } from './access-cleanup';
 export interface FaceAuthRun {
   /** Run marker: applications are named `<run> …`. */
   readonly run: string;
-  /** When the run began (ISO): the admin's search uploads and file audit rows from then on are the run's. */
+  /** When the run began (ISO): file audit rows from then on are the run's. */
   readonly startedAt: string;
   readonly organizationId: string;
   readonly userId: string;
+  /** The tester frames this run uploaded (ids from its `POST /v1/files` answers). */
+  readonly frames: string[];
 }
 
 const quoted = (ids: Iterable<string>): string => [...ids].map((id) => `'${id}'`).join(', ') || 'null';
 
 const ids = async (sql: string): Promise<string[]> => (await runSql(sql)).map(([id]) => id ?? '').filter((id) => id !== '');
 
-/** The tester frames the run uploaded: the admin's owner-only search files of the organization since the run began. */
-export async function runFrames(run: FaceAuthRun): Promise<string[]> {
+/** Of the run's tester frames, those `authenticate_face` queued for deletion (reason `auth_tester_frame`). */
+export async function queuedFrames(run: FaceAuthRun): Promise<string[]> {
   return ids(
-    `select id from storage.files where bucket_id = '${run.organizationId}' and metadata->>'kind' = 'search'
-       and uploaded_by_user_id = '${run.userId}' and created_at >= '${run.startedAt}'`,
+    `select file_id from itap.pending_file_deletions where reason = 'auth_tester_frame'
+       and organization_id = '${run.organizationId}' and file_id in (${quoted(run.frames)})`,
   );
 }
 
@@ -68,7 +70,7 @@ export async function seedPendingPartial(run: FaceAuthRun, applicationId: string
  * Removes everything a run wrote, with the admin secret: the events of the run's attempts with what
  * they fanned out, sequence digests, attempts, sessions, the applications (bindings and keys
  * cascade), the audit rows of all of them (ids read first: a delete audits by id), the evidence
- * captures and tester frames (`deleteFile` runs the console's `delete_file` as the admin), and the
+ * captures and the run's own tester frames (`deleteFile` runs the console's `delete_file` as the admin), and the
  * audit rows of those file deletions. Answers what is left (0 when clean).
  */
 export async function removeFaceAuthRun(run: FaceAuthRun, deleteFile: (id: string) => Promise<void>): Promise<number> {
@@ -102,7 +104,7 @@ export async function removeFaceAuthRun(run: FaceAuthRun, deleteFile: (id: strin
       `delete from ${appAudit}`,
     ].join('; '),
   );
-  const files = [...evidence, ...(await runFrames(run))];
+  const files = [...evidence, ...run.frames];
   for (const file of files) await deleteFile(file).catch(() => undefined);
   await runSql(
     [

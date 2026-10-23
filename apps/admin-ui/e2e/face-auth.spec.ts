@@ -4,7 +4,7 @@ import { type Locator, type Page, expect, test } from '@playwright/test';
 import { runSql } from './access-cleanup';
 import { graphqlAs } from './access-support';
 import { ADMIN_EMAIL, NOVA_FACILITY, NOVA_NAME, devStackEnabled, openSignedIn } from './dev-stack';
-import { type FaceAuthRun, removeFaceAuthRun, seedPendingPartial } from './face-auth-support';
+import { type FaceAuthRun, queuedFrames, removeFaceAuthRun, seedPendingPartial } from './face-auth-support';
 
 test.skip(!devStackEnabled, 'needs the dev stack and seed (ITAP_DEV_STACK=1)');
 
@@ -32,7 +32,14 @@ test.describe.serial('face authentication smoke', () => {
     const [[organizationId = '', userId = ''] = []] = await runSql(
       `select o.id, (select id from auth.users where email = '${ADMIN_EMAIL}') from itap.organizations o where o.name = '${NOVA_NAME}'`,
     );
-    run = { run: RUN, startedAt: new Date().toISOString(), organizationId, userId };
+    run = { run: RUN, startedAt: new Date().toISOString(), organizationId, userId, frames: [] };
+    const frameIds = run.frames;
+    // The run's tester frames: the ids of its own uploads (cleanup deletes these, never other files).
+    page.on('response', async (response) => {
+      if (response.request().method() !== 'POST' || !/\/v1\/files$/u.test(new URL(response.url()).pathname) || !response.ok()) return;
+      const body = (await response.json().catch(() => ({}))) as { processedFiles?: { id?: string }[] };
+      for (const file of body.processedFiles ?? []) if (file.id) frameIds.push(file.id);
+    });
   });
 
   test.afterAll(async () => {
@@ -170,6 +177,10 @@ test.describe.serial('face authentication smoke', () => {
     // person-03 is a seeded employee, in the bound Employees segment.
     await expect(decision).toHaveAttribute('data-outcome', 'success');
     await expect(decision.getByRole('link', { name: 'Open the session' })).toBeVisible();
+    // The frames are biometric: authenticate_face queued every one for deletion (drain_file_deletions).
+    if (run === undefined) throw new Error('no run');
+    expect(run.frames).toHaveLength(3);
+    expect((await queuedFrames(run)).sort()).toEqual([...run.frames].sort());
   });
 
   test('should approve a pending partial match with a note and show the reviewer', async () => {
