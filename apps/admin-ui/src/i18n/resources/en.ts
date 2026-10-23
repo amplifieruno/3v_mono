@@ -207,4 +207,12 @@ export default {
   terminal_policy_sync: {
     doc: { topics: { index: 'Terminals: policy sync, epochs, Publish policy to terminals and the sync log' } },
   },
+  client_application: {
+    doc: {
+      topics: {
+        index: 'Client applications: population, modes, thresholds, attributes, sandbox and status',
+        integration: 'Integration: keys, the authentication sequence, signing and what the settings mean for callers',
+      },
+    },
+  },
 } satisfies TranslationBundle;

@@ -112,6 +112,10 @@ import {
   RadioTower,
   FileClock,
   Upload,
+  FingerprintPattern,
+  AppWindow,
+  CirclePause,
+  CirclePlay,
 } from 'lucide-react';
 import { NAV_ICONS } from './nav';
 
@@ -229,6 +233,10 @@ const LUCIDE_NAV_ICONS: Readonly<Record<string, IconComponent>> = {
   RadioTower,
   FileClock,
   Upload,
+  FingerprintPattern,
+  AppWindow,
+  CirclePause,
+  CirclePlay,
 };
 
 /**

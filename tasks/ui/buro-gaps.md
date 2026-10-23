@@ -1218,3 +1218,24 @@ migration `1792365700277`.
   (`src/modules/access/terminals-page.ts`).
 - **Expected from a framework:** app flow forms with portable field declarations (the manifest
   shape of a field), or a resource-less flow form that accepts `f.*` fields in trusted code.
+
+### G78. A related list's "+ Create" cannot say why the database refused it
+- **Need:** a client application's bindings (segments, facilities, access points, modes, attributes)
+  are junction rows added from the application's page; a sandbox application binding a facility or
+  an access point is refused by the database (`sandbox_location_binding`, plan 11 Review Focus 5)
+  and a binding already there by its unique key, and the user must read why.
+- **Framework (0.6.0):** a related list placement's "+ Create" opens the target resource's quick
+  create (`quick.create`, `ui-shadcn/src/blocks/related-list-view.tsx`), which writes through the
+  provider's `createOne`; a refusal keeps the provider's classification (`forbidden` / `conflict`)
+  and the record form shows one generic alert (`failureText`, G14). A resource has no refusal
+  reader for its own writes, and a resource cannot replace its built-in create with a flow that
+  the related list would open (G54 is the same for delete). **[code]**
+- **Workaround:** the junction resources are read and delete only (`operations: { create: false,
+  edit: false }`); each kind is added by a flow on the application ("Add segment", "Add facility",
+  "Add access point", "Allow mode", "Share attribute", `src/modules/face-auth/binding-flows.ts`)
+  over a custom insert (`insert_<junction>_one`) bound with `sqlRefusals`, so the sandbox guard,
+  the duplicate key and a vanished target read as sentences on the flow form. The flows sit in the
+  record's "More" menu, not beside the list they add to. A lost answer has no Check again (the
+  check sees no submitted value, G12): accepted in `tests/check-app.test.ts`.
+- **Expected from a framework:** a per-resource refusal reader for create / update / delete (as
+  G54), or a related list placement whose "+ Create" may open a named flow of the owner resource.

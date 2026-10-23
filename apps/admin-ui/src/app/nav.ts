@@ -147,6 +147,16 @@ export const NAV_ICONS = {
   terminals: 'RadioTower',
   terminalSyncLog: 'FileClock',
   publishPolicy: 'Upload',
+  faceAuth: 'FingerprintPattern',
+  clientApplications: 'AppWindow',
+  suspendApplication: 'CirclePause',
+  reactivateApplication: 'CirclePlay',
+  revokeApplication: 'Ban',
+  bindSegment: 'Group',
+  bindFacility: 'Building',
+  bindAccessPoint: 'DoorOpen',
+  allowMode: 'ScanFace',
+  shareAttribute: 'ListPlus',
 } as const;
 
 /**
@@ -167,6 +177,7 @@ export const NAV_SECTIONS = {
   notifications: 'notifications',
   analytics: 'analytics',
   access: 'access',
+  faceAuth: 'face-auth',
   compliance: 'compliance',
 } as const;
 
@@ -249,6 +260,14 @@ export const accessSection = defineSection({
   icon: NAV_ICONS.access,
   texts: 'Access control',
   order: 80,
+  collapsible: true,
+});
+
+export const faceAuthSection = defineSection({
+  name: NAV_SECTIONS.faceAuth,
+  icon: NAV_ICONS.faceAuth,
+  texts: 'Face authentication',
+  order: 85,
   collapsible: true,
 });
 

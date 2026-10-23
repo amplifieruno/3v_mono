@@ -111,3 +111,13 @@ export const ACCESS_DECISION_RESOURCE = 'access_decision';
 export const EMERGENCY_OVERRIDE_RESOURCE = 'emergency_override';
 export const EMERGENCY_OVERRIDE_AREA_RESOURCE = 'emergency_override_area';
 export const TERMINAL_POLICY_SYNC_RESOURCE = 'terminal_policy_sync';
+export const CLIENT_APPLICATION_RESOURCE = 'client_application';
+export const CLIENT_APPLICATION_SEGMENT_RESOURCE = 'client_application_segment';
+export const CLIENT_APPLICATION_FACILITY_RESOURCE = 'client_application_facility';
+export const CLIENT_APPLICATION_ACCESS_POINT_RESOURCE = 'client_application_access_point';
+export const CLIENT_APPLICATION_MODE_RESOURCE = 'client_application_mode';
+export const CLIENT_APPLICATION_ATTRIBUTE_RESOURCE = 'client_application_attribute';
+/** Registered by phase 11 tasks 2 and 3 (keys; sessions and attempts); named here so task 1 can link them. */
+export const CLIENT_APPLICATION_KEY_RESOURCE = 'client_application_key';
+export const AUTHENTICATION_SESSION_RESOURCE = 'authentication_session';
+export const AUTHENTICATION_ATTEMPT_RESOURCE = 'authentication_attempt';

@@ -7,6 +7,7 @@ import { hasuraTable } from '../../src/data/mapping';
 import {
   ACCESS_POLICY_FACILITY_TARGET_RESOURCE,
   ACCESS_POLICY_TARGET_RESOURCE,
+  CLIENT_APPLICATION_FACILITY_RESOURCE,
   FACILITY_RESOURCE,
   NOTIFICATION_SUBSCRIPTION_RESOURCE,
   REPORT_FACILITY_RESOURCE,
@@ -81,6 +82,13 @@ describe('module registries', () => {
       'devices.recognitionStart',
       'devices.recognitionStatus',
       'devices.recognitionStop',
+      'face-auth.bindAccessPoint',
+      'face-auth.bindAttribute',
+      'face-auth.bindFacility',
+      'face-auth.bindMode',
+      'face-auth.bindSegment',
+      'face-auth.deleteClientApplication',
+      'face-auth.setClientApplicationStatus',
       'health-chart.deviceHealthSeries',
       'identity-timeline.identityTimeline',
       'identity-timeline.placeNames',
@@ -208,11 +216,13 @@ describe('module registries', () => {
     // Personal lists show all of the member's own rows: a facility there is a filter, not a place. A
     // report's facilities describe what it covers (its chips), so they are never narrowed either; nor
     // are an access policy version's targets: whoever approves a version must see every place it names.
+    // A client application's facilities describe the application, like a report's.
     const personal = new Set([
       NOTIFICATION_SUBSCRIPTION_RESOURCE,
       REPORT_FACILITY_RESOURCE,
       ACCESS_POLICY_TARGET_RESOURCE,
       ACCESS_POLICY_FACILITY_TARGET_RESOURCE,
+      CLIENT_APPLICATION_FACILITY_RESOURCE,
     ]);
     const unscoped = bound
       .filter((resource) => !personal.has(resource.name))

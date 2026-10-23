@@ -9,6 +9,13 @@ import {
   terminalSyncResultEnum,
 } from './access';
 import {
+  FACE_AUTH_ENUM_TABLES,
+  authAttributeEnum,
+  authModeEnum,
+  clientApplicationPlatformEnum,
+  clientApplicationStatusEnum,
+} from './face-auth';
+import {
   DEVICES_ENUM_TABLES,
   deviceEventKindEnum,
   deviceHealthEnum,
@@ -215,6 +222,10 @@ export const ITAP_ENUMS: readonly EnumDef[] = [
   accessDecisionReasonEnum,
   overrideModeEnum,
   terminalSyncResultEnum,
+  clientApplicationPlatformEnum,
+  clientApplicationStatusEnum,
+  authModeEnum,
+  authAttributeEnum,
 ];
 
 /** Registered enums that are console-only choices of a form, with no Hasura enum table. */
@@ -262,4 +273,5 @@ export const ENUM_TABLES: Readonly<Record<string, string>> = {
   ...SEARCH_ENUM_TABLES,
   ...BULK_ENUM_TABLES,
   ...ACCESS_ENUM_TABLES,
+  ...FACE_AUTH_ENUM_TABLES,
 };

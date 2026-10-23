@@ -41,6 +41,11 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // may have many segments; the unknown screen tells the user to look at the template's Segments
   // tab first (a resend with the same name would be refused as a duplicate anyway).
   { code: 'flow.unknown-unhandled', location: 'segment_template toolbar.item.0.submit' },
+  // The binding flows of a client application (`bind_segment`, `bind_facility`,
+  // `bind_access_point`, `allow_mode`, `share_attribute`): the check sees no submitted value (G12).
+  // Nothing is resent; the unknown screen tells the user to look at the application's lists first,
+  // and a second send of a binding that landed is refused as "already bound".
+  ...[0, 1, 2, 3, 4].map((item) => ({ code: 'flow.unknown-unhandled', location: `client_application toolbar.item.${item}.submit` })),
 ];
 
 describe('checkApp over the console and its bundles', () => {

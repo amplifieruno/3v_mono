@@ -2,6 +2,7 @@ import { filesModule } from '../fields/open-file';
 import { accessModule } from './access';
 import { analyticsModule } from './analytics';
 import { devicesModule } from './devices';
+import { faceAuthModule } from './face-auth';
 import { type ConsoleModule, collectOperations, collectRefusals, collectTables } from './module';
 import { monitoringModule } from './monitoring';
 import { notificationsModule } from './notifications';
@@ -29,6 +30,7 @@ export const CONSOLE_MODULES: readonly ConsoleModule[] = [
   segmentsModule,
   analyticsModule,
   accessModule,
+  faceAuthModule,
   filesModule,
 ];
 
