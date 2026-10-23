@@ -18,7 +18,7 @@ export const terminalSyncBlock = defineBlock('itap:terminal-sync-status', {
     summaryOverview: '{{current}} of {{total}} terminals hold the current rule set (epoch {{epoch}}).',
     summaryStarted: '{{received}} of {{total}} terminals of the facility have received this override.',
     summaryEnded: '{{received}} of {{total}} terminals of the facility have received the end of this override.',
-    unreachableNote: '{{count}} unreachable: they get it once they are back online (the minute sync retries).',
+    unreachableNote: '{{count}} unreachable: they get it once they are back online (the sync retries every minute while an urgent change is pending).',
     colTerminal: 'Terminal',
     colState: 'State',
     colEpoch: 'Epoch held',

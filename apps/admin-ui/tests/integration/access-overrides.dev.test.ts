@@ -7,7 +7,8 @@ import {
 } from '@burojs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createItapHasuraProvider } from '../../src/data/provider';
-import { EMERGENCY_OVERRIDE_RESOURCE, TERMINAL_POLICY_SYNC_RESOURCE } from '../../src/data/resource-names';
+import { EMERGENCY_OVERRIDE_RESOURCE, FACILITY_RESOURCE, TERMINAL_POLICY_SYNC_RESOURCE } from '../../src/data/resource-names';
+import { emergencyOverrideFields } from '../../src/modules/access/override';
 import { ACCESS_BINDING } from '../../src/modules/access/policy-ops';
 import type { PublishOutput, TerminalStatus } from '../../src/modules/access/terminal-ops';
 import { terminalState, terminalsOf } from '../../src/modules/access/terminal-sync-format';
@@ -20,7 +21,7 @@ import { offsetPage } from '../support/pagination';
  * reads active, and every reachable terminal of the facility picks it up (the urgent push of the
  * `policy_urgent_epoch_bumped` trigger, bounded wait); ending it needs a reason, the end is kept,
  * a second end is refused, and every reachable terminal picks up the end while the offline one
- * reads unreachable (Review Focus 3); the sync log has a row per terminal; "Publish policy to
+ * reads unreachable (Review Focus 3); the end of a lock is urgent too and arrives within seconds; the sync log has a row per terminal; "Publish policy to
  * terminals" answers per terminal. Cleanup with the admin secret under the retention context: the
  * override, its areas, its events and what they fanned out, its audit rows and this test's sync
  * log rows (device sync state and the policy epoch counters stay advanced).
@@ -49,7 +50,8 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
   let token: () => Promise<string | null>;
   let facility = '';
   let area = '';
-  let overrideId = '';
+  /** Every override this file started (cleaned up after). */
+  const overrideIds: string[] = [];
   const startedAt = new Date().toISOString();
 
   const custom = async (kind: 'mutations' | 'queries', operation: string, input: Row): Promise<unknown> => {
@@ -58,9 +60,9 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
       ? provider.mutations?.custom?.(createMutationDescriptor(descriptor as never) as never, mutationContext())
       : provider.queries?.custom?.(createQueryDescriptor(descriptor as never) as never, queryContext());
   };
-  const list = async (resource: string, filter: Row, pagination: Row = offsetPage(1, 50)): Promise<Row[]> => {
+  const list = async (resource: string, filter: Row, pagination: Row = offsetPage(1, 50), relations: Row = {}): Promise<Row[]> => {
     const { data } = (await provider.queries?.list?.(
-      createQueryDescriptor({ ...IDENTITY, kind: 'list', ref: { namespace: 'default', id: resource }, resource, pagination, filter } as never) as never,
+      createQueryDescriptor({ ...IDENTITY, kind: 'list', ref: { namespace: 'default', id: resource }, resource, pagination, filter, ...relations } as never) as never,
       queryContext(),
     )) as { data: Row[] };
     return data;
@@ -117,11 +119,13 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
   }, 60_000);
 
   afterAll(async () => {
-    if (overrideId === '') return;
-    const events = `(select e.id from itap.events e where e.dedup_key in ('override:${overrideId}:started', 'override:${overrideId}:ended'))`;
+    if (overrideIds.length === 0) return;
+    const ids = overrideIds.map((id) => `'${id}'`).join(', ');
+    const keys = overrideIds.flatMap((id) => [`'override:${id}:started'`, `'override:${id}:ended'`]).join(', ');
+    const events = `(select e.id from itap.events e where e.dedup_key in (${keys}))`;
     // The area rows' ids, read first: deleting them writes audit rows keyed by them.
-    const areaRows = (await sql(`select id from itap.emergency_override_areas where override_id = '${overrideId}'`)).result ?? [];
-    const audited = [overrideId, ...areaRows.slice(1).map(([id]) => id)].map((id) => `'${id}'`).join(', ');
+    const areaRows = (await sql(`select id from itap.emergency_override_areas where override_id in (${ids})`)).result ?? [];
+    const audited = [...overrideIds, ...areaRows.slice(1).map(([id]) => id)].map((id) => `'${id}'`).join(', ');
     await sql(
       [
         "select set_config('itap.retention_context', 'on', true)",
@@ -130,15 +134,15 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
         `delete from itap.webhook_deliveries where event_id in ${events}`,
         `delete from itap.incident_events where event_id in ${events}`,
         `delete from itap.events where id in ${events}`,
-        `delete from itap.emergency_override_areas where override_id = '${overrideId}'`,
-        `delete from itap.emergency_overrides where id = '${overrideId}'`,
+        `delete from itap.emergency_override_areas where override_id in (${ids})`,
+        `delete from itap.emergency_overrides where id in (${ids})`,
         `delete from itap.terminal_policy_syncs where facility_id = '${facility}' and created_at >= '${startedAt}'`,
         `delete from itap.audit_log where entity in ('emergency_overrides', 'emergency_override_areas') and entity_id in (${audited})`,
       ].join('; '),
     );
     const left = await sql(
-      `select (select count(*) from itap.emergency_overrides where id = '${overrideId}')
-         + (select count(*) from itap.events where dedup_key like 'override:${overrideId}:%')
+      `select (select count(*) from itap.emergency_overrides where id in (${ids}))
+         + (select count(*) from itap.events where dedup_key in (${keys}))
          + (select count(*) from itap.audit_log where entity in ('emergency_overrides', 'emergency_override_areas') and entity_id in (${audited}))`,
     );
     expect(left.result?.[1]?.[0]).toBe('0');
@@ -162,11 +166,20 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
       endsAt: minutesFromNow(10),
       areaIds: [area],
     })) as Row;
-    overrideId = String(started.id);
+    const overrideId = String(started.id);
+    overrideIds.push(overrideId);
     const stored = await one(EMERGENCY_OVERRIDE_RESOURCE, overrideId);
     expect(stored).toMatchObject({ facility_id: facility, mode: 'unlock_all', justification: 'Dev test: unlock the first area for a delivery', ended_at: null });
-    const active = await list(EMERGENCY_OVERRIDE_RESOURCE, { and: [{ field: 'ended_at', op: 'isNull' }, { field: 'facility_id', op: 'eq', value: facility }] });
-    expect(active.map((row) => row.id)).toContain(overrideId);
+    // As the shell banner reads them: active ones, with the facility's name through the hop the
+    // console declares (`facility_id`'s providerOptions: Hasura's relationship `facility`).
+    const hop = { field: 'facility_id', resource: FACILITY_RESOURCE, providerOptions: emergencyOverrideFields.facility_id.meta.providerOptions };
+    const active = await list(
+      EMERGENCY_OVERRIDE_RESOURCE,
+      { and: [{ field: 'ended_at', op: 'isNull' }, { field: 'facility_id', op: 'eq', value: facility }] },
+      offsetPage(1, 50),
+      { relationColumns: ['facility_id.name'], paths: { facility_id: hop } },
+    );
+    expect(active.find((row) => row.id === overrideId)).toMatchObject({ 'facility_id.name': 'Nova Tower' });
 
     const afterStart = await reachableReceived(String(stored.started_at));
     expect(afterStart.length).toBeGreaterThan(1);
@@ -187,6 +200,27 @@ describe.skipIf(!DEV_STACK_ENABLED)('emergency overrides and terminal sync again
     const log = await list(TERMINAL_POLICY_SYNC_RESOURCE, { and: [{ field: 'facility_id', op: 'eq', value: facility }, { field: 'created_at', op: 'gte', value: endedAt }] }, { kind: 'cursor', limit: 100 });
     const logged = new Set(log.filter((row) => row.result === 'synced').map((row) => row.device_id));
     for (const row of afterEnd.filter((r) => r.reachable)) expect(logged.has(row.device_id), row.device_name).toBe(true);
+  }, 240_000);
+
+  it('should push the end of a lock to every reachable terminal within seconds too (every end is urgent)', async () => {
+    const started = (await custom('mutations', 'startEmergencyOverride', {
+      facilityId: facility,
+      mode: 'lock_all',
+      justification: 'Dev test: lock the first area briefly',
+      endsAt: minutesFromNow(10),
+      areaIds: [area],
+    })) as Row;
+    const overrideId = String(started.id);
+    overrideIds.push(overrideId);
+    await reachableReceived(String((await one(EMERGENCY_OVERRIDE_RESOURCE, overrideId)).started_at));
+    await custom('mutations', 'endEmergencyOverride', { overrideId, reason: 'Lock no longer needed' });
+    const endedAt = String((await one(EMERGENCY_OVERRIDE_RESOURCE, overrideId)).ended_at);
+    const from = Date.now();
+    const rows = await reachableReceived(endedAt);
+    expect(Date.now() - from).toBeLessThan(30_000);
+    const states = rows.map((row) => [row.device_name, terminalState(row, endedAt)] as const);
+    expect(states.filter(([, state]) => state === 'received').length).toBeGreaterThan(1);
+    expect(states.every(([, state]) => state === 'received' || state === 'unreachable'), JSON.stringify(states)).toBe(true);
   }, 240_000);
 
   it('should publish to the facility’s terminals and answer per terminal', async () => {

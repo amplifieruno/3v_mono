@@ -6,23 +6,10 @@ import { EMERGENCY_OVERRIDE_RESOURCE } from '../data/resource-names';
 import { OVERRIDE_MODE_ENUM } from '../enums/access';
 import { formatDateTime, instantOf } from '../fields/date-time-format';
 import { RecordLink } from '../modules/access/record-link';
-import { facility } from '../modules/places/facility';
 import { type ActiveOverride, OVERRIDE_BANNER_POLL_MS, activeOverrides } from './active-overrides';
-import { FACILITY_PAGE_SIZE } from './facility-picker';
 
 /** At most this many active overrides are named; the rest are counted. */
 const SHOWN = 3;
-
-/** The facilities' names, read as the sidebar's facility picker reads them (one cached list). */
-function useFacilityNames(): ReadonlyMap<string, string> {
-  const facilities = useList(facility, {
-    scope: 'none',
-    pagination: { kind: 'offset', page: 1, pageSize: FACILITY_PAGE_SIZE },
-    sort: [{ field: 'name', direction: 'asc' }],
-  });
-  const rows = (facilities.data?.data ?? []) as readonly { readonly id: string; readonly name: string }[];
-  return new Map(rows.map((row) => [row.id, row.name]));
-}
 
 /**
  * The shell's emergency banner: every emergency override active now in the facility selected in
@@ -33,11 +20,11 @@ function useFacilityNames(): ReadonlyMap<string, string> {
 export function ActiveOverrideBanner(): React.ReactElement | null {
   const t = useT();
   const modeLabel = useEnumLabel(OVERRIDE_MODE_ENUM);
-  const facilityNames = useFacilityNames();
   const overrides = useList(EMERGENCY_OVERRIDE_RESOURCE, {
     filter: { field: 'ended_at', op: 'isNull' },
     sort: [{ field: 'started_at', direction: 'desc' }],
     pagination: { kind: 'offset', page: 1, pageSize: 20 },
+    relationColumns: ['facility_id.name'],
     refetchInterval: OVERRIDE_BANNER_POLL_MS,
   });
   const rows = activeOverrides((overrides.data?.data ?? []) as readonly ActiveOverride[]);
@@ -53,7 +40,7 @@ export function ActiveOverrideBanner(): React.ReactElement | null {
         const text = t('console.overrideBanner.active', {
           params: {
             mode: modeLabel(row.mode),
-            facility: (row.facility_id === undefined ? undefined : facilityNames.get(row.facility_id)) ?? t('console.overrideBanner.facility'),
+            facility: row['facility_id.name'] ?? t('console.overrideBanner.facility'),
             until: ends === null ? '—' : formatDateTime(ends),
           },
         });

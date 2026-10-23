@@ -58,7 +58,7 @@ export const terminalsPage = defineCustomPage({
   order: 60,
   body: (l) => [
     l.place(terminalSyncBlock, { key: 'terminals', props: { facilityId: l.ref('scope', 'facility') } }),
-    l.place(publishResultBlock, { key: 'publish-intro', props: {} }),
+    l.place(publishResultBlock, { key: 'publish-intro', props: { facilityId: l.ref('scope', 'facility') } }),
     l.place(inlineFlow, { key: 'publish', props: { flow: publishPolicyAction } }),
   ],
 });

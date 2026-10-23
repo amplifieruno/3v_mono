@@ -20,6 +20,7 @@ const HOUR = 3_600_000;
 const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
 
 let overrideRow: Record<string, unknown> = {};
+let bannerReads = 0;
 
 const terminal = (id: string, name: string, extra: Record<string, unknown>) => ({
   device_id: id,
@@ -76,12 +77,14 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
       },
     });
   }
-  if (query.includes('items: facilities(')) return hasuraResponse({ data: { items: [{ id: FACILITY, name: 'Nova Tower' }] } });
   if (query.includes('_aggregate')) return hasuraResponse({ data: { meta: { aggregate: { count: 1 } } } });
   if (query.includes('emergency_overrides_by_pk')) return hasuraResponse({ data: { item: overrideRow } });
   // The banner's read of active overrides (and the overrides list).
   if (query.includes("emergency_overrides(")) {
-    return hasuraResponse({ data: { items: overrideRow.ended_at === null ? [overrideRow] : [] } });
+    // The banner reads the facility's name through the `facility` relationship (providerOptions hint).
+    const rows = overrideRow.ended_at === null ? [{ ...overrideRow, buro_rel_0: { name: 'Nova Tower' } }] : [];
+    if (query.includes('buro_rel_0: facility { name }')) bannerReads += 1;
+    return hasuraResponse({ data: { items: rows } });
   }
   return hasuraResponse({ data: { items: [] } });
 }
@@ -112,6 +115,7 @@ beforeEach(() => {
     ended_by: null,
     end_reason: null,
   };
+  bannerReads = 0;
   localStorage.clear();
   vi.stubGlobal('fetch', vi.fn(serve));
 });
@@ -129,6 +133,7 @@ describe('an active override', () => {
     const banner = await screen.findByTestId('override-banner');
     expect(banner.textContent, banner.textContent ?? '').toMatch(/Emergency override active: Lock all at Nova Tower, until/);
     expect(within(banner).getByRole('link', { name: 'Open the override' })).toBeDefined();
+    expect(bannerReads).toBeGreaterThan(0);
     fireEvent.click(await screen.findByRole('button', { name: /^End now/ }));
     const dialog = await screen.findByRole('dialog');
     expect(await within(dialog).findByRole('textbox')).toBeDefined();
@@ -168,7 +173,7 @@ describe('the Terminals page', () => {
     const rows = await within(block).findAllByTestId('terminal-sync-row');
     expect(rows.map((row) => row.getAttribute('data-state'))).toEqual(['current', 'behind', 'unreachable']);
     expect(within(rows[1]!).getByText(/Urgent change pending for 12 s/)).toBeDefined();
-    expect(await screen.findByText(/pushes the current rule set/)).toBeDefined();
+    expect((await screen.findByTestId('publish-intro')).textContent).toMatch(/every access terminal of every facility \(the facility selected/);
     fireEvent.click(await screen.findByRole('button', { name: /Publish policy to terminals/ }));
     const rowsOut = await screen.findAllByTestId('publish-row', {}, { timeout: 3000 });
     expect(rowsOut).toHaveLength(2);

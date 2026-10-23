@@ -115,6 +115,8 @@ const startFields = {
       doc: { summary: 'Lock all doors, unlock all doors, or evacuation (exits open, entries decide as usual).' },
     },
   }),
+  // buro keeps chosen areas when the facility changes (no dependent-field reset); an area of
+  // another facility is refused by the server (`area_not_found`, mapped) and nothing starts.
   area_ids: f.relationMany({
     to: AREA_RESOURCE,
     candidates: [{ field: 'facility_id', op: 'eq', value: ref('values', 'facility_id') }],
@@ -217,14 +219,14 @@ const endFields = {
 
 /**
  * "End now" on an active override: `end_emergency_override` ends it before its planned end, with
- * a reason. The doors decide by their policies again at once; terminals are told (an urgent
- * change for unlock and evacuation, the next sync for a lock) and the Terminals tab shows each
+ * a reason. The doors decide by their policies again at once; terminals are told within seconds
+ * (every end is an urgent change, whatever the mode) and the Terminals tab shows each
  * one picking up the end (plan 10 Review Focus 3).
  */
 export const endOverrideFlow = {
   texts: {
     label: 'End now',
-    notify: 'Override ended: the doors decide by their policies again. Terminals pick up the end with their next sync.',
+    notify: 'Override ended: the doors decide by their policies again. Terminals pick up the end within seconds.',
     doc: {
       summary:
         'Ends the override before its planned end, with a reason: the doors return to their policies and grants, and every terminal of the facility is told.',

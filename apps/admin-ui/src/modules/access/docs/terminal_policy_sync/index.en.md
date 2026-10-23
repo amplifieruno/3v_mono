@@ -8,7 +8,8 @@ rule set's version, its **epoch**, and terminals are brought up to it:
 - within seconds when access narrows (a deny, a revoked grant, an override
   started or ended): an **urgent** change, which every terminal must receive
   within the organization's revocation bound;
-- otherwise with the sync that runs every minute.
+- otherwise within 15 minutes: the sync that runs every minute pushes a
+  terminal that is behind once its last sync is 15 minutes old.
 
 ## Terminals page
 
@@ -16,11 +17,12 @@ rule set's version, its **epoch**, and terminals are brought up to it:
 selected in the sidebar (or of every facility) with its state:
 
 - **Current**: it holds the current epoch;
-- **Behind**: it holds an older epoch and receives the current one with the
-  next sync;
+- **Behind**: it holds an older epoch and receives the current one within
+  15 minutes (within seconds for an urgent change);
 - **Never synced**;
 - **Unreachable**: the terminal is offline or unhealthy; it keeps its older
-  rule set and is tried again every minute.
+  rule set and is tried again by the sync (every minute while an urgent
+  change is pending for it).
 
 Each row shows the epoch held, the last sync and any error, an urgent change
 still pending (and for how long) and whether the terminal is outside the

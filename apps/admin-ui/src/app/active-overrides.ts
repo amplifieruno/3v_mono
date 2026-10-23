@@ -9,6 +9,8 @@ export interface ActiveOverride {
   readonly mode: string;
   readonly ends_at: string;
   readonly facility_id?: string;
+  /** The facility's name, read through the `facility` relationship. */
+  readonly 'facility_id.name'?: string | null;
 }
 
 /** The rows still deciding at `now`: not ended and not run out (the minute job closes those). */

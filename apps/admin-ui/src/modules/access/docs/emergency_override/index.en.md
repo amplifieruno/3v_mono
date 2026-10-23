@@ -51,8 +51,8 @@ with the reason "expired". An override is never edited or deleted.
 An override's **Terminals** tab lists every access terminal of its facility
 and whether each has received the override (synced since it started) or,
 once ended, its end (synced since it ended). It reads again every few
-seconds. Unlocks and evacuations, and their ends, reach terminals within
-seconds; the end of a lock reaches them with the minute sync. An unreachable
+seconds. Every start and every end, whatever the mode, is an urgent change:
+it reaches every reachable terminal within seconds. An unreachable
 terminal gets it when it is back online; terminals also stop applying an
 override at its planned end by themselves.
 

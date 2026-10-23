@@ -31,6 +31,8 @@ export const emergencyOverrideFields = {
     to: FACILITY_RESOURCE,
     system: true,
     open: 'page',
+    // Hasura names the relationship `facility` (the banner reads `facility_id.name` through it).
+    providerOptions: { relationship: 'facility' },
     texts: { label: 'Facility', doc: { summary: 'The site whose doors the override covers (all of them, or only those of its areas).' } },
   }),
   mode: enumField(OVERRIDE_MODES, OVERRIDE_MODE_ENUM, {

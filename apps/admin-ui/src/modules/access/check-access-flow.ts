@@ -19,7 +19,11 @@ interface SentTest {
 
 const sent = new Map<string, SentTest>();
 
-/** The baseline the flow's `with` read, or `null` (no decision at the door yet, or unreadable). */
+/**
+ * The baseline the flow's `with` read, or `null` (no decision at the door yet, or still loading or
+ * failed). A `null` baseline drops the time bound, so the check leans toward "applied" by intent:
+ * an earlier decision about the person at the door reads as this test, and nothing is resent.
+ */
 function baselineOf(source: unknown): LatestDecision | null {
   const parsed = latestDecision.nullable().safeParse((source as { readonly latest?: unknown } | null | undefined)?.latest ?? null);
   return parsed.success ? parsed.data : null;
@@ -44,6 +48,7 @@ export const decisionRecorded: FlowUnknownCheck = async ({ record, data }) => {
   const test = typeof id === 'string' ? sent.get(id) : undefined;
   if (test === undefined || typeof id !== 'string') return 'unknown';
   const who = test.profileId !== null ? { field: 'profile_id', value: test.profileId } : test.identityId !== null ? { field: 'identity_id', value: test.identityId } : null;
+  // No baseline (none, still loading, failed): no time bound, leaning toward "applied" by intent.
   const since = test.baseline;
   try {
     const { data: rows } = await data.list(resourceByName(ACCESS_DECISION_RESOURCE) as never, {

@@ -3,7 +3,7 @@ import type { TerminalStatus } from './terminal-ops';
 /**
  * Where one terminal stands, as the sync status block says it:
  * - against the rule set (no override in view): `current` (holds the organization's epoch),
- *   `behind` (an older epoch, pushed with the next sync), `never` (never synced);
+ *   `behind` (an older epoch: pushed within 15 minutes, or seconds when urgent), `never` (never synced);
  * - against an override: `received` (synced since the override started, or since it ended),
  *   `waiting` (not yet);
  * - `unreachable` either way when the terminal is offline or unhealthy and not up to date.

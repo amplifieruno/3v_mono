@@ -1,7 +1,7 @@
-import { type BlockViewProps, useCustomQuery } from '@burojs/react';
+import { type BlockViewProps, useCustomQuery, useOne } from '@burojs/react';
 import { EnumBadge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@burojs/ui-shadcn';
 import type * as React from 'react';
-import { DEVICE_RESOURCE } from '../../data/resource-names';
+import { DEVICE_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 import { TERMINAL_SYNC_RESULTS, TERMINAL_SYNC_RESULT_ENUM } from '../../enums/access';
 import type { publishResultBlock } from './publish-result-block';
 import { RecordLink } from './record-link';
@@ -19,9 +19,19 @@ export function PublishResultView({ props, t }: Props): React.ReactElement {
   const terminals = props.terminals ?? null;
   const names = useCustomQuery(terminalSyncStatus, {}, { enabled: terminals !== null && terminals.length > 0 });
   const nameOf = new Map((names.data ?? []).map((row) => [row.device_id, row.device_name]));
+  const facilityId = props.facilityId ?? null;
+  const facility = useOne(FACILITY_RESOURCE, { id: facilityId ?? '', enabled: terminals === null && facilityId !== null });
+  const facilityName = (facility.data?.data as { readonly name?: string } | null | undefined)?.name;
 
   let body: React.ReactNode;
-  if (terminals === null) body = <p className="text-sm text-muted-foreground">{t('intro')}</p>;
+  if (terminals === null) {
+    const scope = facilityId === null ? t('everyFacility') : (facilityName ?? '…');
+    body = (
+      <p className="text-sm text-muted-foreground" data-testid="publish-intro">
+        {t('intro', { params: { facility: scope } })}
+      </p>
+    );
+  }
   else if (terminals.length === 0) body = <p className="text-sm">{t('nothing')}</p>;
   else {
     const synced = terminals.filter((row) => row.result === 'synced').length;
