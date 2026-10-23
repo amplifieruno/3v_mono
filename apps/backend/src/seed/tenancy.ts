@@ -26,34 +26,52 @@ export const SEED_ORGS = {
 const SEED_TIMEZONE = 'Europe/Moscow';
 const SEED_LOCALE = 'en';
 
-type UserRow = { id: string; passwordHash: string | null };
+/** The names the console shows for the seeded users (auth.users.displayName). */
+export const SEED_DISPLAY_NAMES: Record<keyof typeof SEED_EMAILS, string> = {
+  admin: 'Org Admin',
+  novaAdmin: 'Nova Admin',
+  riversideAdmin: 'Riverside Admin',
+  operator: 'Security Operator',
+};
+
+type UserRow = { id: string; passwordHash: string | null; displayName: string | null };
 
 const FIND_USER = `
-  query SeedFindUser($email: citext!) { users(where: { email: { _eq: $email } }) { id passwordHash } }
+  query SeedFindUser($email: citext!) { users(where: { email: { _eq: $email } }) { id passwordHash displayName } }
 `;
 const INSERT_USER = `
   mutation SeedInsertUser($object: users_insert_input!) { insertUser(object: $object) { id } }
 `;
-const UPDATE_USER_HASH = `
-  mutation SeedUpdateUser($id: uuid!, $hash: String!) {
-    updateUser(pk_columns: { id: $id }, _set: { passwordHash: $hash }) { id }
+const UPDATE_USER = `
+  mutation SeedUpdateUser($id: uuid!, $set: users_set_input!) {
+    updateUser(pk_columns: { id: $id }, _set: $set) { id }
   }
 `;
 
-/** Creates the user when missing; only rewrites the password hash if the stored one no longer matches. */
-async function upsertUser(ctx: SeedContext, email: string, password: string): Promise<string> {
+/**
+ * Creates the user when missing (with its display name); on an existing user only rewrites the
+ * password hash if the stored one no longer matches and sets the display name when it is blank.
+ */
+export async function upsertUser(
+  ctx: Pick<SeedContext, 'admin'>,
+  email: string,
+  password: string,
+  displayName: string,
+): Promise<string> {
   const { users } = await ctx.admin.request<{ users: UserRow[] }>(FIND_USER, { email });
   const existing = users[0];
   if (existing) {
+    const set: { passwordHash?: string; displayName?: string } = {};
     const matches = existing.passwordHash ? await bcrypt.compare(password, existing.passwordHash) : false;
-    if (!matches) {
-      await ctx.admin.request(UPDATE_USER_HASH, { id: existing.id, hash: await bcrypt.hash(password, 10) });
-    }
+    if (!matches) set.passwordHash = await bcrypt.hash(password, 10);
+    if (!existing.displayName?.trim()) set.displayName = displayName;
+    if (Object.keys(set).length > 0) await ctx.admin.request(UPDATE_USER, { id: existing.id, set });
     return existing.id;
   }
   const data = await ctx.admin.request<{ insertUser: { id: string } | null }>(INSERT_USER, {
     object: {
       email,
+      displayName,
       passwordHash: await bcrypt.hash(password, 10),
       defaultRole: 'user',
       locale: SEED_LOCALE,
@@ -106,10 +124,10 @@ export async function seedTenancy(ctx: SeedContext): Promise<SeedTenancyResult> 
   if (!password) throw new Error('SEED_PASSWORD is required to seed users');
 
   const users = {
-    admin: await upsertUser(ctx, SEED_EMAILS.admin, password),
-    novaAdmin: await upsertUser(ctx, SEED_EMAILS.novaAdmin, password),
-    riversideAdmin: await upsertUser(ctx, SEED_EMAILS.riversideAdmin, password),
-    operator: await upsertUser(ctx, SEED_EMAILS.operator, password),
+    admin: await upsertUser(ctx, SEED_EMAILS.admin, password, SEED_DISPLAY_NAMES.admin),
+    novaAdmin: await upsertUser(ctx, SEED_EMAILS.novaAdmin, password, SEED_DISPLAY_NAMES.novaAdmin),
+    riversideAdmin: await upsertUser(ctx, SEED_EMAILS.riversideAdmin, password, SEED_DISPLAY_NAMES.riversideAdmin),
+    operator: await upsertUser(ctx, SEED_EMAILS.operator, password, SEED_DISPLAY_NAMES.operator),
   };
   const orgs = {
     nova: await upsertOrg(ctx, SEED_ORGS.nova),
