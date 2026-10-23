@@ -7,6 +7,7 @@ import { ClientKeyError, issueClientKey } from '../auth-service/keys.js';
 import { runAuthentication } from '../auth-service/pipeline.js';
 import { authenticationResponse } from '../auth-service/response.js';
 import { createAuthServiceDeps } from '../auth-service/service.js';
+import type { HasuraClient } from '../hasura/client.js';
 import { OWNER_ONLY_FILE_KINDS, SENSITIVE_FILE_KINDS } from '../storage/storageClient.js';
 import { ActionError, defineAction, type ActionContext } from './types.js';
 
@@ -54,33 +55,79 @@ const authenticateInput = z.object({
 
 type FileRow = { id: string; bucketId: string; metadata: { kind?: unknown } | null; uploadedByUserId: string | null };
 
+/** `metadata.kind` of the tester's frames: owner-only search images of their uploader. */
+const SEARCH_FILE_KIND = 'search';
+
+/** The queue reason of a tester probe frame (`itap.pending_file_deletions.reason`). */
+export const PROBE_FRAME_REASON = 'auth_tester_frame';
+
+const QUEUE_FRAMES = `
+  mutation QueueProbeFrames($objects: [pending_file_deletions_insert_input!]!) {
+    insert_pending_file_deletions(objects: $objects, on_conflict: { constraint: pending_file_deletions_file_key, update_columns: [] }) {
+      affected_rows
+    }
+  }
+`;
+
+/**
+ * Queues the tester's probe frames for deletion by the `drain_file_deletions` cron: only the caller's own `search`
+ * files (the frames the tester uploaded), never evidence or files of other kinds. Idempotent (a file already queued
+ * is left as it is; the drain skips a file referenced again) and never fails the answer: a frame that could not be
+ * queued stays, as before.
+ */
+export async function queueProbeFrames(admin: HasuraClient, org: string, frames: readonly FileRow[]): Promise<void> {
+  const ids = [...new Set(frames.map((f) => f.id))];
+  if (ids.length === 0) return;
+  const objects = ids.map((file_id) => ({ organization_id: org, file_id, reason: PROBE_FRAME_REASON }));
+  await admin.request(QUEUE_FRAMES, { objects }).catch(() => undefined);
+}
+
 /**
  * authenticate_face (org_admin console test): the same pipeline as POST /v1/auth/authenticate over 3–5 stored files
  * of the organization, under a new console session (device_ref `console:<user>`), recorded like any attempt. The
  * session binding does not apply (no client key); the attack outcome comes from the real sequence checks only.
+ * Once the files pass validation, the caller's own `search` frames are queued for deletion whatever the outcome
+ * (decision or refusal): tester frames are biometric data nothing else references.
  */
 export const authenticateFace = defineAction(authenticateInput, async (ctx) => {
   const org = organizationOf(ctx);
   const input = ctx.input;
+  if (input.mode === 'identification' && input.claimed_identity_id) {
+    throw new ActionError('invalid_input', 'claimed_identity_id is only accepted in verification mode');
+  }
   const startedAt = Date.now();
   const requestId = randomUUID();
   const deps = createAuthServiceDeps(ctx.env);
   const { files } = await ctx.admin.request<{ files: FileRow[] }>(FILES, { ids: input.file_ids });
   const byId = new Map(files.map((f) => [f.id, f]));
-  const frames = await Promise.all(
-    input.file_ids.map(async (id) => {
-      const file = byId.get(id);
-      const kind = typeof file?.metadata?.kind === 'string' ? file.metadata.kind : undefined;
-      const foreignPrivate = kind !== undefined && OWNER_ONLY_FILE_KINDS.has(kind) && file?.uploadedByUserId !== ctx.session.userId;
-      // Sensitive kinds (evidence captures, profile documents, DSR exports) are never probes.
-      const sensitive = kind !== undefined && SENSITIVE_FILE_KINDS.has(kind);
-      if (!file || file.bucketId !== org || foreignPrivate || sensitive) throw new ActionError('file_not_found', 'File not found');
-      return deps.storage.download(id);
-    }),
-  );
-  if (input.mode === 'identification' && input.claimed_identity_id) {
-    throw new ActionError('invalid_input', 'claimed_identity_id is only accepted in verification mode');
+  const probes = input.file_ids.map((id) => {
+    const file = byId.get(id);
+    const kind = typeof file?.metadata?.kind === 'string' ? file.metadata.kind : undefined;
+    const foreignPrivate = kind !== undefined && OWNER_ONLY_FILE_KINDS.has(kind) && file?.uploadedByUserId !== ctx.session.userId;
+    // Sensitive kinds (evidence captures, profile documents, DSR exports) are never probes.
+    const sensitive = kind !== undefined && SENSITIVE_FILE_KINDS.has(kind);
+    if (!file || file.bucketId !== org || foreignPrivate || sensitive) throw new ActionError('file_not_found', 'File not found');
+    return { file, ownFrame: kind === SEARCH_FILE_KIND && file.uploadedByUserId === ctx.session.userId };
+  });
+  const ownFrames = probes.filter((p) => p.ownFrame).map((p) => p.file);
+  try {
+    return await decide(ctx, deps, { org, input, probes: probes.map((p) => p.file.id), startedAt, requestId });
+  } finally {
+    await queueProbeFrames(ctx.admin, org, ownFrames);
   }
+});
+
+type DecideArgs = {
+  org: string;
+  input: z.infer<typeof authenticateInput>;
+  probes: string[];
+  startedAt: number;
+  requestId: string;
+};
+
+async function decide(ctx: ActionContext<unknown>, deps: ReturnType<typeof createAuthServiceDeps>, args: DecideArgs) {
+  const { org, input, startedAt, requestId } = args;
+  const frames = await Promise.all(args.probes.map((id) => deps.storage.download(id)));
   const claim = input.claimed_identity_id ? claimedRef(input.claimed_identity_id) : undefined;
   try {
     const session = await deps.store.openSession({
@@ -130,4 +177,4 @@ export const authenticateFace = defineAction(authenticateInput, async (ctx) => {
     if (known) throw new ActionError(known.code, known.message);
     throw error;
   }
-});
+}
