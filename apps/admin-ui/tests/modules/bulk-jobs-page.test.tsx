@@ -183,6 +183,7 @@ describe('bulk job page', () => {
     fireEvent.click(within(confirm).getByRole('button', { name: /Cancel job|Confirm|Continue/u }));
     await waitFor(() => expect(sent('cancel_bulk_job(')).toBeDefined());
     expect(sent('cancel_bulk_job(')?.variables).toEqual({ job: JOB });
+    expect(await screen.findByText('The job is cancelled.')).toBeDefined();
     expect(await screen.findByText('Cancelled: the job stopped; rows applied before stay applied.', {}, { timeout: 8000 })).toBeDefined();
     expect((await screen.findByTestId('bulk-job-sum')).textContent).toBe('40 rows: 9 succeeded, 1 failed, 0 skipped, 30 not reached');
     expect(screen.queryByText('Checking for progress every few seconds…')).toBeNull();

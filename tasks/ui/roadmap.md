@@ -15,7 +15,7 @@ and ends. Branch `feat/ui-console`.
 | 6 ✅ | Notifications | rules, templates, recipient groups, escalation policies, on-call, subscriptions, user inbox, deliveries, webhooks (+ deliveries) (done, `summary-06-notifications.md`) | 5 |
 | 7 ✅ | Segments | segments manual/dynamic, conditions editor over `segment_fields`, `preview_segment`/`evaluate_segment`, members history, daily stats, templates (done, `summary-07-segments.md`) | 4 |
 | 8 ✅ | Analytics | dashboards (renderer + editor), occupancy/flow/heatmap/timeline blocks, reports (templates, schedules, files, retry), stats views (done, `summary-08-analytics.md`) | 5, 7 |
-| 9 | Search & bulk | `search_faces` (upload + webcam capture), results, saved searches, bulk jobs (+ rows, retry/cancel) | 4 |
+| 9 ✅ | Search & bulk | `search_faces` (upload + webcam capture), results, saved searches, bulk jobs (+ rows, retry/cancel) (done, `summary-09-search.md`) | 4 |
 | 10 | Access control | access policies (versions, four-eyes flows, simulate), grants, emergency overrides, decisions, terminal sync, `publish_policy_to_terminals` | 4, 7 |
 | 11 | Face authentication | client applications (+ bindings), keys (`rotate_client_key`), sessions, attempts, review, `authenticate_face` | 4, 7, 10 |
 | 12 | Compliance | retention policies + plan + runs, legal holds, DSR, processing activities, integrations (+ secret, sync runs), exports, system status, audit log | all |
