@@ -1149,6 +1149,11 @@ migration `1792365700277`.
   `then.open` of the new draft, in a real browser (Chromium through the Vite dev server, a scratch
   Playwright probe). Not every confirm-only flow loses its effects; which launch paths do was not
   narrowed down.
+- **Measured (phase 11):** the client application's **Suspend**, **Reactivate** and **Revoke** (confirm
+  only, "More" menu of the record page) and **Revoke key** (confirm only, the row menu of a related
+  list on the application's Keys tab) all showed their toasts in Chromium through the Vite dev
+  server; `e2e/face-auth.spec.ts` asserts each toast, so a regression fails the smoke suite. A row
+  menu of a related list is therefore a second launch path that keeps its effects.
 - **Expected from a framework:** `then` effects run from the launcher or before `onClose`.
 
 ### G73. A flow cannot submit a read-only query (a dry run)
