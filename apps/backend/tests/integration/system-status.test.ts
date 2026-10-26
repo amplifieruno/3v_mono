@@ -69,6 +69,30 @@ describe('get_system_status', () => {
     await runSql(`delete from itap.pending_file_deletions where file_id = '${upload.id}'`);
   });
 
+  it('should count a run overtaken by a later delivered run as missed, not as lag', async () => {
+    const { orgA, user } = await createTwoOrgs();
+    // Fake trigger names: Hasura delivers only `scheduled` rows of triggers it knows, so these rows stay untouched.
+    const overtaken = `test_overtaken_${orgA.id.slice(0, 8)}`;
+    const behind = `test_behind_${orgA.id.slice(0, 8)}`;
+    await runSql(
+      `insert into hdb_catalog.hdb_cron_events (trigger_name, scheduled_time, status) values
+         ('${overtaken}', now() - interval '3 hours', 'locked'),
+         ('${overtaken}', now() - interval '1 minute', 'delivered'),
+         ('${behind}', now() - interval '3 hours', 'delivered'),
+         ('${behind}', now() - interval '2 hours', 'locked')`,
+    );
+    try {
+      const s = (await asOrgAdmin(user.id, orgA.id).request<{ get_system_status: Status }>(STATUS)).get_system_status;
+      const a = s.crons.find((c) => c.name === overtaken);
+      const b = s.crons.find((c) => c.name === behind);
+      expect(a).toMatchObject({ lag_seconds: 0, status: 'degraded' });
+      expect(b?.lag_seconds).toBeGreaterThan(3600);
+      expect(b?.status).toBe('down');
+    } finally {
+      await runSql(`delete from hdb_catalog.hdb_cron_events where trigger_name in ('${overtaken}', '${behind}')`);
+    }
+  });
+
   it('should refuse callers without an organization admin session', async () => {
     const { user } = await createTwoOrgs();
     await expectError(asUser(user.id).request(STATUS));
