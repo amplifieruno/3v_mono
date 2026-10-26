@@ -70,7 +70,7 @@ Docker:
 
 ## Framework gaps (buro 0.6.0)
 
-`buro-gaps.md` logs 87 gaps (G1–G87), each with the need, where it bit, the workaround and the
+`buro-gaps.md` logs 89 gaps (G1–G89), each with the need, where it bit, the workaround and the
 evidence.
 
 | State | Count | Gaps |

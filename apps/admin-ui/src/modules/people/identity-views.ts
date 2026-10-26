@@ -5,6 +5,15 @@
 export function identitySavedViews() {
   return [
     {
+      // The faces cameras saw, latest first (identities never seen sort last only here: G88).
+      id: 'seen',
+      texts: 'Seen by cameras',
+      state: {
+        filters: [{ field: 'last_seen_at', op: 'isNotNull' }],
+        sort: [{ field: 'last_seen_at', direction: 'desc' as const }],
+      },
+    },
+    {
       id: 'unknown',
       texts: 'Unknown people',
       state: {

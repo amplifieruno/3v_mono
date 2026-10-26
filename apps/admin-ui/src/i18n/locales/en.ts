@@ -258,6 +258,13 @@ export default {
     },
   },
   /**
+   * Overrides the framework's `filters.valueFor`: a pinned list filter with nothing chosen shows
+   * this text on its button, and "Value for Severity" read as a placeholder (buro gap G89).
+   */
+  filters: {
+    valueFor: '{{field}}',
+  },
+  /**
    * Refusals of the reusable fields' validators (`src/fields/field-issue.ts`): key
    * `validation.itap.<code>`, the code's params interpolated. Each text equals the
    * English default the validator carries (`tests/support/field-issues.ts`).

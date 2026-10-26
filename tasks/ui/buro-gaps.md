@@ -1414,3 +1414,27 @@ migration `1792365700277`.
 - **Workaround:** none.
 - **Expected from a framework:** every kit dialog carries a title (visually hidden when the
   design has none).
+
+### G88. A list sort's `nulls` placement is dropped on offset pages
+- **Need:** the identities list opens on the identities seen most recently
+  (`defaultSort: [{ field: 'last_seen_at', direction: 'desc', nulls: 'last' }]`); identities never
+  seen (no `last_seen_at`) belong at the end.
+- **Framework (0.6.0):** `SortEntry` takes `nulls`, but `@burojs/hasura` builds the offset query's
+  `order_by` as `{field: desc}` and drops it (its own doc comment says "the OFFSET path ignores
+  `nulls` outright"); the cursor path refuses it. Postgres sorts NULLs first in a descending
+  order, so the list opens on archived and never-seen identities with 0 detections. **[code]**
+- **Workaround:** the declaration carries `nulls: 'last'` (right once the provider honours it);
+  the demo recording opens the list with a filter on "Last seen" instead.
+- **Expected from a framework:** the offset path emits `desc_nulls_last` / `asc_nulls_first`
+  (Hasura's order-by enum has them), and the cursor path builds the `IS NULL` branches.
+
+### G89. An empty pinned filter shows "Value for <field>" on its button
+- **Need:** pinned list filters (`views.list.filters.pinned`) on events, incidents, access
+  decisions and the operator workspace read like the field they filter ("Severity ▾").
+- **Framework (0.6.0):** the select-list and boolean value controls use their aria label,
+  `filters.valueFor` = "Value for {{field}}", as the button text while nothing is chosen, so a
+  list opens with "Value for Severity", "Value for Event", "Value for Facility". **[code]**
+- **Workaround:** the console's `common` bundle overrides `filters.valueFor` with `{{field}}`
+  (the aria label becomes the field name too, which still names the control).
+- **Expected from a framework:** a separate placeholder key for the empty trigger (the field
+  label by default), the "Value for …" text kept for the aria label only.

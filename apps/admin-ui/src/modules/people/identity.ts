@@ -113,7 +113,8 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
     list: {
       columns: ['primary_photo_file_id', 'code', 'status', 'profile_id', 'source', 'last_seen_at', 'detection_count'],
       optionalColumns: ['matching_enabled', 'is_synthetic', 'age', 'first_seen_at', 'link_strength', 'is_primary_for_profile'],
-      defaultSort: [{ field: 'last_seen_at', direction: 'desc' }],
+      // Never-seen identities last; @burojs/hasura ignores `nulls` on offset pages for now (buro gap G88).
+      defaultSort: [{ field: 'last_seen_at', direction: 'desc', nulls: 'last' }],
       search: { fields: ['code'] },
       filters: {
         fields: ['status', 'source', 'profile_id', 'matching_enabled', 'is_synthetic', 'last_seen_at', 'first_seen_at'],

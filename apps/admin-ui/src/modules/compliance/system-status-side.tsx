@@ -57,10 +57,10 @@ export function LastRetention({ retention, t }: { readonly retention: SystemStat
       : t('retentionStarted', { params: { time: timeOf(retention.started_at ?? retention.scheduled_at, '—') } });
   return (
     <div className="flex flex-col gap-1 text-sm" data-testid="system-status:retention">
-      <p className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <EnumBadge enumName={RETENTION_RUN_STATUS_ENUM} value={retention.status} />
         <span>{when}</span>
-      </p>
+      </div>
       {retention.error === null ? null : <p className="text-destructive break-words">{retention.error}</p>}
       <RecordLink resource={RETENTION_RUN_RESOURCE} id={retention.run_id} name={t('retentionOpen')} fallback="" />
     </div>
