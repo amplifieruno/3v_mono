@@ -1,7 +1,7 @@
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import type { Locator } from "@playwright/test";
-import type { Box, Mark, Timeline } from "../src/timeline";
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import type { Locator } from '@playwright/test';
+import type { Box, Mark, Timeline } from '../src/timeline';
 
 /** Writes what happened when during a recording, so the edit can cut waits and aim the camera. */
 export class Marks {
@@ -19,7 +19,7 @@ export class Marks {
   }
 
   private async boxOf(loc: Locator): Promise<Box> {
-    await loc.scrollIntoViewIfNeeded();
+    await loc.scrollIntoViewIfNeeded({ timeout: 5_000 });
     const b = await loc.boundingBox();
     if (!b) throw new Error(`${this.scene}: element has no box`);
     return { x: b.x, y: b.y, w: b.width, h: b.height };
@@ -29,7 +29,7 @@ export class Marks {
   async click(loc: Locator, label?: string): Promise<void> {
     this.marks.push({
       t: this.now(),
-      type: "click",
+      type: 'click',
       box: await this.boxOf(loc),
       label,
     });
@@ -41,7 +41,7 @@ export class Marks {
   async focus(loc: Locator, label?: string): Promise<void> {
     this.marks.push({
       t: this.now(),
-      type: "focus",
+      type: 'focus',
       box: await this.boxOf(loc),
       label,
     });
@@ -49,17 +49,18 @@ export class Marks {
 
   /** Runs `fn` as a wait the edit speeds up. */
   async wait<T>(reason: string, fn: () => Promise<T>): Promise<T> {
-    this.marks.push({ t: this.now(), type: "wait_start", reason });
+    this.marks.push({ t: this.now(), type: 'wait_start', reason });
     try {
       return await fn();
     } finally {
-      this.marks.push({ t: this.now(), type: "wait_end" });
+      this.marks.push({ t: this.now(), type: 'wait_end' });
     }
   }
 
-  /** A named moment callouts can attach to. */
-  shot(name: string): void {
-    this.marks.push({ t: this.now(), type: "shot", name });
+  /** A named moment callouts can attach to; with `loc`, callouts point at that element. */
+  async shot(name: string, loc?: Locator): Promise<void> {
+    const box = loc ? await this.boxOf(loc.first()).catch(() => undefined) : undefined;
+    this.marks.push({ t: this.now(), type: 'shot', name, box });
   }
 
   async save(dir: string, duration: number): Promise<Timeline> {
@@ -68,10 +69,7 @@ export class Marks {
       duration,
       marks: this.marks,
     };
-    await writeFile(
-      join(dir, `${this.scene}.timeline.json`),
-      JSON.stringify(timeline, null, 2),
-    );
+    await writeFile(join(dir, `${this.scene}.timeline.json`), JSON.stringify(timeline, null, 2));
     return timeline;
   }
 }

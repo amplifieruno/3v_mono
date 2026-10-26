@@ -9,7 +9,8 @@
     "record": "tsx record/run.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cameras": "tsx record/start-cameras.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.534",

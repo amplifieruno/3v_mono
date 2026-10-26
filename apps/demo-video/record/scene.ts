@@ -1,5 +1,5 @@
-import type { Page } from "@playwright/test";
-import type { Marks } from "./marks";
+import type { Page } from '@playwright/test';
+import type { Marks } from './marks';
 
 /** A storyboard scene: `start` is opened and settled before the screencast starts. */
 export type RecordedScene = {
