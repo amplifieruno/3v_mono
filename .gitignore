@@ -39,3 +39,5 @@ temp
 playwright-output/
 
 dist/
+# Superpowers scratch (brainstorm mockups, plan ledgers)
+.superpowers/
