@@ -14,7 +14,8 @@ export const recognition: RecordedScene = {
     await m.wait('first known face', () =>
       named.waitFor({ timeout: 60_000 }).catch(() => overlay.waitFor()),
     );
-    await m.focus(overlay, 'named box');
+    // A light push-in only: closer, the boxes visibly trail the faces.
+    await m.focus(overlay, 'named box', 1.15);
     await m.shot(
       'named-box',
       page.locator('text').filter({ hasText: /Isabella Donovan|Emma Dawson|Thomas Kirby/ }),

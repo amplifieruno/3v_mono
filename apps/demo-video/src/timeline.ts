@@ -5,7 +5,7 @@ export type Box = { x: number; y: number; w: number; h: number };
 
 /** A moment the recording script marked; `t` is seconds from the clip start. */
 export type Mark =
-  | { t: number; type: 'click' | 'focus'; box: Box; label?: string }
+  | { t: number; type: 'click' | 'focus'; box: Box; label?: string; zoom?: number }
   | { t: number; type: 'wait_start' | 'wait_end'; reason?: string }
   | { t: number; type: 'shot'; name: string; box?: Box };
 
@@ -103,7 +103,7 @@ function aims(tl: Timeline): Aim[] {
     const next = targets[i + 1];
     const look = LOOK[m.type];
     const end = Math.min(m.t + look.hold, next ? next.t - LEAD : Infinity);
-    return { start, end, cam: aim(m.box, look.zoom) };
+    return { start, end, cam: aim(m.box, m.zoom ?? look.zoom) };
   });
 }
 

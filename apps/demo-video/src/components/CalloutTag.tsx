@@ -8,10 +8,12 @@ interface CalloutTagProps {
   /** Seconds since the callout appeared, and until it leaves. */
   age: number;
   left: number;
+  /** Which way the tag goes from the spot; by default away from the frame centre. */
+  side?: 'left' | 'right';
 }
 
 /** An accent mono tag joined by a drawn line to a spot on the footage. */
-export const CalloutTag = ({ text, at, age, left }: CalloutTagProps): React.ReactElement => {
+export const CalloutTag = ({ text, at, age, left, side }: CalloutTagProps): React.ReactElement => {
   const draw = interpolate(age, [0, 0.45], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -26,8 +28,13 @@ export const CalloutTag = ({ text, at, age, left }: CalloutTagProps): React.Reac
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-  const toLeft = at.x > 960;
-  const len = 170;
+  const len = side ? 70 : 170;
+  // JetBrains Mono at 24 px is about 14.5 px a character, plus 28 px padding.
+  const width = text.length * 14.5 + 28;
+  const preferLeft = side ? side === 'left' : at.x > 960;
+  const fitsLeft = at.x - len - width > 24;
+  const fitsRight = at.x + len + width < 1896;
+  const toLeft = preferLeft ? fitsLeft || !fitsRight : !fitsRight && fitsLeft;
   const lineX = toLeft ? at.x - len * draw : at.x;
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: out }}>

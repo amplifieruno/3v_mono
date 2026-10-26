@@ -1,7 +1,7 @@
 import type { Box } from './timeline';
 
 /** A tag drawn onto the footage at a `shot` mark; it points at `target`, or else at the shot's own box. */
-export type Callout = { at: string; text: string; target?: Box };
+export type Callout = { at: string; text: string; target?: Box; side?: 'left' | 'right' };
 
 export type ConsoleScene = {
   id: string;
@@ -74,7 +74,7 @@ export const SCENES: Scene[] = [
     clip: 'recognition',
     seconds: 18,
     callouts: [
-      { at: 'named-box', text: 'Known person, recognised' },
+      { at: 'named-box', text: 'Known person', side: 'right' },
       { at: 'wall', text: 'Every camera, live' },
     ],
   },

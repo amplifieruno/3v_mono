@@ -113,8 +113,25 @@ export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): Reac
         if (!window || !box) return null;
         const [start, end] = window;
         if (t < start || t > end) return null;
-        const target = viewToFrame(toScreen(cam, { x: box.x + box.w / 2, y: box.y + box.h / 2 }));
-        return <CalloutTag key={c.text} text={c.text} at={target} age={t - start} left={end - t} />;
+        // With an explicit side the line leaves from that edge of the element, so the tag never covers it.
+        const anchorX =
+          c.side === 'right' ? box.x + box.w : c.side === 'left' ? box.x : box.x + box.w / 2;
+        const raw = viewToFrame(toScreen(cam, { x: anchorX, y: box.y + box.h / 2 }));
+        // Keep the pointed-at spot inside the panel so the tag is never clipped.
+        const target = {
+          x: Math.min(PANEL.x + PANEL.w - 40, Math.max(PANEL.x + 40, raw.x)),
+          y: Math.min(PANEL.y + PANEL.h - 40, Math.max(PANEL.y + 40, raw.y)),
+        };
+        return (
+          <CalloutTag
+            key={c.text}
+            text={c.text}
+            at={target}
+            age={t - start}
+            left={end - t}
+            side={c.side}
+          />
+        );
       })}
     </>
   );

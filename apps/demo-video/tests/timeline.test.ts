@@ -179,3 +179,8 @@ test('a callout lasts until the next shot, at most 3.5 s, and never past the sce
   expect(calloutWindow(t, segs, 'c', 12)).toEqual([10.3, 11.6]);
   expect(calloutWindow(t, segs, 'missing', 20)).toBeUndefined();
 });
+
+test('a focus mark can ask for its own zoom', () => {
+  const c = cameraAt(tl([{ t: 2, type: 'focus', zoom: 1.15, box: { x: 900, y: 500, w: 100, h: 40 } }]), 4);
+  expect(c.scale).toBeCloseTo(1.15, 2);
+});

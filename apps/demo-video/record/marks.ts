@@ -37,13 +37,14 @@ export class Marks {
     await loc.click();
   }
 
-  /** Points the camera at an element without clicking. */
-  async focus(loc: Locator, label?: string): Promise<void> {
+  /** Points the camera at an element without clicking; `zoom` overrides the default closer look. */
+  async focus(loc: Locator, label?: string, zoom?: number): Promise<void> {
     this.marks.push({
       t: this.now(),
       type: 'focus',
       box: await this.boxOf(loc),
       label,
+      zoom,
     });
   }
 
