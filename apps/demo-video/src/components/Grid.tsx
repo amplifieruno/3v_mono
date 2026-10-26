@@ -1,10 +1,14 @@
-import { AbsoluteFill } from 'remotion';
-import { C, WIDTH } from '../style';
+import { AbsoluteFill } from "remotion";
+import { C, WIDTH } from "../style";
 
 const CELL = Math.round(WIDTH * 0.046);
 
 /** The engineering-grid ground every frame sits on. */
-export function Grid({ children }: { children?: React.ReactNode }): React.ReactElement {
+export function Grid({
+  children,
+}: {
+  children?: React.ReactNode;
+}): React.ReactElement {
   return (
     <AbsoluteFill
       style={{
