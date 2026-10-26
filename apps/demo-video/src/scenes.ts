@@ -57,7 +57,11 @@ export const SCENES: Scene[] = [
     clip: 'overview',
     seconds: 14,
     callouts: [
-      { at: 'workspace', text: 'Live events, as they happen' },
+      {
+        at: 'workspace',
+        text: 'Cameras and events, live',
+        target: { x: 310, y: 222, w: 490, h: 275 },
+      },
       { at: 'dashboard', text: 'Who is on site now' },
     ],
   },

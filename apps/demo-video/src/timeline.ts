@@ -152,3 +152,21 @@ export function shotOf(
   );
   return m && { t: m.t, box: m.box };
 }
+
+/** Output seconds [start, end] a callout on shot `name` is on screen: from just after the shot until the next shot, at most 3.5 s, and 0.4 s before the scene ends. */
+export function calloutWindow(
+  tl: Timeline,
+  segs: Segment[],
+  name: string,
+  sceneSeconds: number,
+): [number, number] | undefined {
+  const shot = shotOf(tl, name);
+  if (!shot) return undefined;
+  const start = outputTimeAt(segs, shot.t) + 0.3;
+  const next = tl.marks
+    .filter((m) => m.type === 'shot' && m.t > shot.t)
+    .reduce((min, m) => Math.min(min, m.t), Infinity);
+  const nextOut = next === Infinity ? Infinity : outputTimeAt(segs, next);
+  const end = Math.min(start + 3.5, nextOut, sceneSeconds - 0.4);
+  return [Math.round(start * 1000) / 1000, Math.round(end * 1000) / 1000];
+}

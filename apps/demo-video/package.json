@@ -7,10 +7,14 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "record": "tsx record/run.ts",
+    "cameras": "tsx record/start-cameras.ts",
+    "render": "remotion render src/index.ts ItapDemo out/itap-demo.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted",
+    "render:draft": "remotion render src/index.ts ItapDemo out/draft.mp4 --scale=0.5 --muted",
+    "render:light": "ffmpeg -v error -y -i out/itap-demo.mp4 -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -movflags +faststart -an out/itap-demo-light.mp4",
+    "sheet": "scripts/contact-sheet.sh out/itap-demo.mp4 out/itap-demo-sheet.png",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit",
-    "cameras": "tsx record/start-cameras.ts"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@remotion/cli": "4.0.534",

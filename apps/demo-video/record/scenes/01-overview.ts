@@ -6,7 +6,19 @@ export const overview: RecordedScene = {
   id: 'overview',
   start: '/workspace',
   async record(page, m) {
-    await page.waitForTimeout(1200);
+    // The stream player retries every 20 s; wait (sped up in the edit) until every tile is live.
+    await m.wait('camera streams', () =>
+      page
+        .waitForFunction(
+          () => {
+            const text = document.body.innerText;
+            return (text.match(/Stream live/g) ?? []).length >= 4 && !text.includes('Stream down');
+          },
+          undefined,
+          { timeout: 90_000, polling: 500 },
+        )
+        .catch(() => undefined),
+    );
     await m.shot('workspace', page.getByRole('main').getByRole('table').first());
     await page.waitForTimeout(1500);
     for (const section of ['Places', 'Devices', 'People', 'Monitoring']) {

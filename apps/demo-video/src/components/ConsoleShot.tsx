@@ -9,9 +9,9 @@ import {
 import type { ConsoleScene } from '../scenes';
 import { PANEL, PANEL_SCALE, viewToFrame } from '../layout';
 import {
+  calloutWindow,
   cameraAt,
   outputDuration,
-  outputTimeAt,
   planSegments,
   scaleSegments,
   shotOf,
@@ -108,15 +108,13 @@ export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): Reac
         </div>
       </div>
       {scene.callouts.map((c) => {
-        const shot = shotOf(timeline, c.at);
-        const box = c.target ?? shot?.box;
-        if (!shot || !box) return null;
-        const start = outputTimeAt(fitted, shot.t) + 0.3;
-        const age = t - start;
-        const left = frames / fps - 0.4 - t;
-        if (age < 0 || left < 0) return null;
+        const window = calloutWindow(timeline, fitted, c.at, frames / fps);
+        const box = c.target ?? shotOf(timeline, c.at)?.box;
+        if (!window || !box) return null;
+        const [start, end] = window;
+        if (t < start || t > end) return null;
         const target = viewToFrame(toScreen(cam, { x: box.x + box.w / 2, y: box.y + box.h / 2 }));
-        return <CalloutTag key={c.text} text={c.text} at={target} age={age} left={left} />;
+        return <CalloutTag key={c.text} text={c.text} at={target} age={t - start} left={end - t} />;
       })}
     </>
   );

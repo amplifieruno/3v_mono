@@ -18,8 +18,8 @@ export class Marks {
     return (performance.now() - this.t0) / 1000;
   }
 
-  private async boxOf(loc: Locator): Promise<Box> {
-    await loc.scrollIntoViewIfNeeded({ timeout: 5_000 });
+  private async boxOf(loc: Locator, scroll = true): Promise<Box> {
+    if (scroll) await loc.scrollIntoViewIfNeeded({ timeout: 5_000 });
     const b = await loc.boundingBox();
     if (!b) throw new Error(`${this.scene}: element has no box`);
     return { x: b.x, y: b.y, w: b.width, h: b.height };
@@ -59,7 +59,7 @@ export class Marks {
 
   /** A named moment callouts can attach to; with `loc`, callouts point at that element. */
   async shot(name: string, loc?: Locator): Promise<void> {
-    const box = loc ? await this.boxOf(loc.first()).catch(() => undefined) : undefined;
+    const box = loc ? await this.boxOf(loc.first(), false).catch(() => undefined) : undefined;
     this.marks.push({ t: this.now(), type: 'shot', name, box });
   }
 

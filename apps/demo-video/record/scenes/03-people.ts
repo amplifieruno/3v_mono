@@ -1,7 +1,7 @@
 import type { RecordedScene } from '../scene';
 import { openRow, scroll, tab } from '../ui';
 
-/** Scene 3: faces seen today, one person's photos and their day as a timeline. */
+/** Scene 3: faces seen today, one person's photos and their day as a timeline (Thomas Kirby is IDENTITY-00003 in the seed). */
 export const people: RecordedScene = {
   id: 'people',
   // The "Seen by cameras" view: identities seen at least once, latest first (no ids, survives re-seeds).
@@ -11,7 +11,7 @@ export const people: RecordedScene = {
   async record(page, m) {
     await m.shot('faces', page.getByRole('row').nth(1).getByRole('img').first());
     await page.waitForTimeout(2500);
-    await openRow(page, m, ['Thomas Kirby']);
+    await openRow(page, m, ['IDENTITY-00003'], 'IDENTITY-00003');
     await tab(page, m, 'Photos');
     await m.shot('photos', page.getByRole('tabpanel').getByRole('img').first());
     await page.waitForTimeout(2500);

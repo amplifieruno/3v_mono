@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import {
+  calloutWindow,
   cameraAt,
   type Mark,
   outputDuration,
@@ -164,4 +165,17 @@ test('shotOf finds a named shot and its box', () => {
   expect(shotOf(t, 'trace')).toEqual({ t: 3, box });
   expect(shotOf(t, 'plain')).toEqual({ t: 5, box: undefined });
   expect(shotOf(t, 'missing')).toBeUndefined();
+});
+
+test('a callout lasts until the next shot, at most 3.5 s, and never past the scene', () => {
+  const t = tl([
+    { t: 2, type: 'shot', name: 'a' },
+    { t: 4, type: 'shot', name: 'b' },
+    { t: 10, type: 'shot', name: 'c' },
+  ]);
+  const segs = planSegments(t);
+  expect(calloutWindow(t, segs, 'a', 20)).toEqual([2.3, 4]);
+  expect(calloutWindow(t, segs, 'b', 20)).toEqual([4.3, 7.8]);
+  expect(calloutWindow(t, segs, 'c', 12)).toEqual([10.3, 11.6]);
+  expect(calloutWindow(t, segs, 'missing', 20)).toBeUndefined();
 });
