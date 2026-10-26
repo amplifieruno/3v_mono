@@ -48,6 +48,11 @@ export class Marks {
     });
   }
 
+  /** The page is about to scroll: open callouts end here. */
+  scrolled(): void {
+    this.marks.push({ t: this.now(), type: 'scroll' });
+  }
+
   /** Runs `fn` as a wait the edit speeds up. */
   async wait<T>(reason: string, fn: () => Promise<T>): Promise<T> {
     this.marks.push({ t: this.now(), type: 'wait_start', reason });

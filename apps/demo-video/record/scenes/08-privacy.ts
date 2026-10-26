@@ -10,7 +10,7 @@ export const privacy: RecordedScene = {
     await openRow(page, m, ['Erasure']);
     await m.shot('steps', page.getByRole('tabpanel').getByRole('listitem').first());
     await page.waitForTimeout(1200);
-    await scroll(page, 450, 2000);
+    await scroll(page, m, 450, 2000);
     await page.waitForTimeout(800);
     await navTo(page, m, 'Retention plan');
     await m.shot('retention');

@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import {
   calloutWindow,
   cameraAt,
+  fitRate,
   type Mark,
   outputDuration,
   outputTimeAt,
@@ -181,6 +182,59 @@ test('a callout lasts until the next shot, at most 3.5 s, and never past the sce
 });
 
 test('a focus mark can ask for its own zoom', () => {
-  const c = cameraAt(tl([{ t: 2, type: 'focus', zoom: 1.15, box: { x: 900, y: 500, w: 100, h: 40 } }]), 4);
+  const c = cameraAt(
+    tl([{ t: 2, type: 'focus', zoom: 1.15, box: { x: 900, y: 500, w: 100, h: 40 } }]),
+    4,
+  );
   expect(c.scale).toBeCloseTo(1.15, 2);
+});
+
+function maxStep(t: Timeline, from: number, to: number): number {
+  let prev = cameraAt(t, from);
+  let worst = 0;
+  for (let s = from + 0.001; s <= to; s += 0.001) {
+    const c = cameraAt(t, s);
+    // A smooth 0.6 s pan moves a few px per ms; a jump changes scale by 0.3+ or pans hundreds of px at once.
+    worst = Math.max(
+      worst,
+      Math.abs(c.scale - prev.scale) / 0.01,
+      Math.abs(c.cx - prev.cx) / 20,
+      Math.abs(c.cy - prev.cy) / 20,
+    );
+    prev = c;
+  }
+  return worst;
+}
+
+test('the camera never jumps between close clicks', () => {
+  const box = (x: number) => ({ x, y: 500, w: 100, h: 40 });
+  const t = tl([
+    { t: 2, type: 'click', box: box(200) },
+    { t: 2.5, type: 'click', box: box(1500) },
+    { t: 3.9, type: 'click', box: box(800) },
+  ]);
+  expect(maxStep(t, 0, 8)).toBeLessThan(1);
+});
+
+test('the camera never jumps from a focus into a click', () => {
+  const t = tl([
+    { t: 2, type: 'focus', box: { x: 300, y: 300, w: 100, h: 40 } },
+    { t: 4, type: 'click', box: { x: 1400, y: 800, w: 100, h: 40 } },
+  ]);
+  expect(maxStep(t, 0, 9)).toBeLessThan(1);
+});
+
+test('a scroll ends an open callout', () => {
+  const t = tl([
+    { t: 2, type: 'shot', name: 'a' },
+    { t: 3, type: 'scroll' },
+  ]);
+  expect(calloutWindow(t, planSegments(t), 'a', 20)).toEqual([2.3, 3]);
+});
+
+test('fitRate slows short clips a little, speeds long ones up, never below 0.85', () => {
+  expect(fitRate(10, 10)).toBe(1);
+  expect(fitRate(12, 10)).toBeCloseTo(1.2);
+  expect(fitRate(9, 10)).toBeCloseTo(0.9);
+  expect(fitRate(5, 10)).toBe(0.85);
 });

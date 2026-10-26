@@ -13,7 +13,7 @@ export const incidents: RecordedScene = {
     await openRow(page, m, ['Blacklist match', 'Critical']);
     await m.shot('incident', page.getByText('Escalation', { exact: false }));
     await page.waitForTimeout(1500);
-    await scroll(page, 400, 1500);
+    await scroll(page, m, 400, 1500);
     await page.waitForTimeout(1500);
     await navTo(page, m, 'Notification rules');
     await openRow(page, m, ['Blacklist matches']);

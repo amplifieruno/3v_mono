@@ -54,7 +54,8 @@ export async function tab(page: Page, m: Marks, name: string): Promise<void> {
 }
 
 /** Scrolls the page smoothly by `dy` px. */
-export async function scroll(page: Page, dy: number, ms = 1200): Promise<void> {
+export async function scroll(page: Page, m: Marks, dy: number, ms = 1200): Promise<void> {
+  m.scrolled();
   await page.mouse.move(1100, 600);
   const steps = Math.max(1, Math.round(ms / 40));
   for (let i = 0; i < steps; i++) {
@@ -65,7 +66,7 @@ export async function scroll(page: Page, dy: number, ms = 1200): Promise<void> {
 }
 
 /** Scrolls until a heading or element is near the top third of the screen. */
-export async function scrollTo(page: Page, loc: Locator, ms = 1200): Promise<void> {
+export async function scrollTo(page: Page, m: Marks, loc: Locator, ms = 1200): Promise<void> {
   const box = await loc.boundingBox();
-  if (box) await scroll(page, box.y - 220, ms);
+  if (box) await scroll(page, m, box.y - 220, ms);
 }

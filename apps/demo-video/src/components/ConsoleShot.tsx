@@ -11,6 +11,7 @@ import { PANEL, PANEL_SCALE, viewToFrame } from '../layout';
 import {
   calloutWindow,
   cameraAt,
+  fitRate,
   outputDuration,
   planSegments,
   scaleSegments,
@@ -34,29 +35,34 @@ export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): Reac
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const segs = planSegments(timeline);
-  const k = Math.max(1, outputDuration(segs) / (frames / fps));
+  const k = fitRate(outputDuration(segs), frames / fps);
   const fitted = scaleSegments(segs, k);
   const t = frame / fps;
   const src = sourceTimeAt(fitted, t);
   const cam = cameraAt(timeline, src);
   const src0 = staticFile(`clips/${scene.clip}.mp4`);
 
+  // Pieces sit on exact cumulative times, and each starts where sourceTimeAt says, so footage, camera,
+  // cursor and callouts share one clock instead of drifting a frame per segment.
+  let exact = 0;
   let from = 0;
-  const pieces = fitted.map((s, i) => {
-    const len = Math.max(1, Math.round(((s.to - s.from) / s.rate) * fps));
-    const el = (
-      <Sequence key={i} from={from} durationInFrames={len} layout="none">
+  const pieces = fitted.flatMap((s, i) => {
+    exact += (s.to - s.from) / s.rate;
+    const end = Math.min(frames, Math.round(exact * fps));
+    const start = from;
+    if (end <= start) return [];
+    from = end;
+    return [
+      <Sequence key={i} from={start} durationInFrames={end - start} layout="none">
         <OffthreadVideo
           src={src0}
-          startFrom={Math.round(s.from * fps)}
+          startFrom={Math.round(sourceTimeAt(fitted, start / fps) * fps)}
           playbackRate={s.rate}
           muted
           style={{ width: 1920, height: 1080 }}
         />
-      </Sequence>
-    );
-    from += len;
-    return el;
+      </Sequence>,
+    ];
   });
   const tail =
     from < frames ? (

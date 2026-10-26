@@ -72,7 +72,7 @@ export const SCENES: Scene[] = [
     label: 'RECOGNITION',
     title: 'Every camera knows who it sees',
     clip: 'recognition',
-    seconds: 18,
+    seconds: 20,
     callouts: [
       { at: 'named-box', text: 'Known person', side: 'right' },
       { at: 'wall', text: 'Every camera, live' },
@@ -112,7 +112,7 @@ export const SCENES: Scene[] = [
     label: 'ACCESS',
     title: 'Who gets in, and why',
     clip: 'access',
-    seconds: 18,
+    seconds: 15,
     callouts: [
       { at: 'trace', text: 'The policy that said no' },
       { at: 'policies', text: 'Why doors were denied' },
@@ -138,7 +138,7 @@ export const SCENES: Scene[] = [
     label: 'ANALYTICS',
     title: 'See how the building lives',
     clip: 'analytics',
-    seconds: 14,
+    seconds: 16,
     callouts: [
       { at: 'heatmap', text: 'Busiest hours' },
       { at: 'flows', text: 'Where people go' },

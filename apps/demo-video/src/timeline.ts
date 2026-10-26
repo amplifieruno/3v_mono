@@ -7,7 +7,8 @@ export type Box = { x: number; y: number; w: number; h: number };
 export type Mark =
   | { t: number; type: 'click' | 'focus'; box: Box; label?: string; zoom?: number }
   | { t: number; type: 'wait_start' | 'wait_end'; reason?: string }
-  | { t: number; type: 'shot'; name: string; box?: Box };
+  | { t: number; type: 'shot'; name: string; box?: Box }
+  | { t: number; type: 'scroll' };
 
 export type Timeline = { clip: string; duration: number; marks: Mark[] };
 
@@ -107,19 +108,25 @@ function aims(tl: Timeline): Aim[] {
   });
 }
 
-/** Where the camera looks at `sourceSeconds`: rest, moving to a target, holding, or easing back. */
+/** The camera inside one aim's window: move from `from`, hold, then ease back to rest. */
+function regime(a: Aim, from: Camera, s: number): Camera {
+  if (s < a.start + MOVE) return mix(from, a.cam, (s - a.start) / MOVE);
+  if (s < a.end) return a.cam;
+  return mix(a.cam, REST, (s - a.end) / MOVE);
+}
+
+/** Where the camera looks at `sourceSeconds`. Each move starts from wherever the camera is, so it never jumps. */
 export function cameraAt(tl: Timeline, sourceSeconds: number): Camera {
-  let cam = REST;
-  for (const a of aims(tl)) {
-    if (sourceSeconds < a.start) return cam;
-    const from = cam;
-    if (sourceSeconds < a.start + MOVE) return mix(from, a.cam, (sourceSeconds - a.start) / MOVE);
-    if (sourceSeconds < a.end) return a.cam;
-    cam = mix(a.cam, REST, (sourceSeconds - a.end) / MOVE);
-    if (sourceSeconds < a.end + MOVE) return cam;
-    cam = REST;
+  const list = aims(tl);
+  let from = REST;
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    if (sourceSeconds < a.start) return from;
+    const next = list[i + 1];
+    if (!next || sourceSeconds < next.start) return regime(a, from, sourceSeconds);
+    from = regime(a, from, next.start);
   }
-  return cam;
+  return from;
 }
 
 /** The output second at which source second `sourceSeconds` is shown. */
@@ -153,7 +160,7 @@ export function shotOf(
   return m && { t: m.t, box: m.box };
 }
 
-/** Output seconds [start, end] a callout on shot `name` is on screen: from just after the shot until the next shot, at most 3.5 s, and 0.4 s before the scene ends. */
+/** Output seconds [start, end] a callout on shot `name` is on screen: from just after the shot until the next shot or scroll, at most 3.5 s, and 0.4 s before the scene ends. */
 export function calloutWindow(
   tl: Timeline,
   segs: Segment[],
@@ -164,9 +171,14 @@ export function calloutWindow(
   if (!shot) return undefined;
   const start = outputTimeAt(segs, shot.t) + 0.3;
   const next = tl.marks
-    .filter((m) => m.type === 'shot' && m.t > shot.t)
+    .filter((m) => (m.type === 'shot' || m.type === 'scroll') && m.t > shot.t)
     .reduce((min, m) => Math.min(min, m.t), Infinity);
   const nextOut = next === Infinity ? Infinity : outputTimeAt(segs, next);
   const end = Math.min(start + 3.5, nextOut, sceneSeconds - 0.4);
   return [Math.round(start * 1000) / 1000, Math.round(end * 1000) / 1000];
+}
+
+/** How much faster (or, a little, slower) a clip of `outSeconds` plays to fill `availSeconds`. */
+export function fitRate(outSeconds: number, availSeconds: number): number {
+  return Math.max(0.85, outSeconds / availSeconds);
 }

@@ -18,7 +18,7 @@ export const people: RecordedScene = {
     await tab(page, m, 'Timeline');
     await m.shot('timeline', page.getByRole('tabpanel').getByRole('listitem').first());
     await page.waitForTimeout(1500);
-    await scroll(page, 500, 2500);
+    await scroll(page, m, 500, 2500);
     await page.waitForTimeout(1000);
   },
 };
