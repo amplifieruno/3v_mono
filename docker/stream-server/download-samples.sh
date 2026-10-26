@@ -23,7 +23,7 @@ mkdir -p "$VIDEO_DIR"
 # Replace these with your own Pexels video URLs if needed
 # Find videos at: https://www.pexels.com/search/videos/people%20walking/
 declare -A VIDEOS=(
-  [entrance]="https://videos.pexels.com/video-files/18123867/18123867-hd_1920_1080_25fps.mp4"
+  [entrance]="https://videos.pexels.com/video-files/3254006/3254006-hd_1920_1080_25fps.mp4"
   [lobby]="https://videos.pexels.com/video-files/1721303/1721303-hd_1920_1080_25fps.mp4"
   [serverroom]="https://videos.pexels.com/video-files/20402896/20402896-sd_960_540_25fps.mp4"
   [warehouse]="https://videos.pexels.com/video-files/3205624/3205624-hd_1920_1080_25fps.mp4"
