@@ -1,33 +1,50 @@
 import type { RecordedScene } from '../scene';
-import { settle } from '../session';
+import { open, settle } from '../session';
 
-/** Scene 1: the operator workspace, a pass over the sections, the security dashboard. */
+/** Waits until every camera tile is live (the stream player retries every 20 s). */
+async function streamsLive(page: import('@playwright/test').Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const text = document.body.innerText;
+        return (text.match(/Stream live/g) ?? []).length >= 4 && !text.includes('Stream down');
+      },
+      undefined,
+      { timeout: 90_000, polling: 500 },
+    )
+    .catch(() => process.stdout.write('  overview: not every stream went live\n'));
+}
+
+/** Scene 1: the operator workspace with live cameras, then the dashboard. */
 export const overview: RecordedScene = {
   id: 'overview',
-  start: '/workspace',
-  async record(page, m) {
-    // The stream player retries every 20 s; wait (sped up in the edit) until every tile is live.
-    await m.wait('camera streams', () =>
-      page
-        .waitForFunction(
-          () => {
-            const text = document.body.innerText;
-            return (text.match(/Stream live/g) ?? []).length >= 4 && !text.includes('Stream down');
-          },
-          undefined,
-          { timeout: 90_000, polling: 500 },
-        )
-        .catch(() => undefined),
-    );
-    await m.shot('workspace', page.getByRole('main').getByRole('table').first());
-    await page.waitForTimeout(1500);
-    for (const section of ['Places', 'Devices', 'People', 'Monitoring']) {
-      await m.click(page.getByRole('button', { name: section, exact: true }).first(), section);
-      await page.waitForTimeout(700);
-    }
-    await m.click(page.getByRole('link', { name: 'Dashboard', exact: true }).first(), 'Dashboard');
-    await m.wait('load', () => settle(page));
-    await m.shot('dashboard', page.getByText('Occupancy now').first());
-    await page.waitForTimeout(2500);
-  },
+  beats: [
+    {
+      id: 'workspace',
+      async prepare(page) {
+        await open(page, '/workspace');
+        await streamsLive(page);
+      },
+      async record(page, m) {
+        await page.waitForTimeout(1500);
+        const cameras = page.getByText('Lobby Camera').first();
+        await m.focus(cameras, 'cameras', 1.15);
+        await page.waitForTimeout(1400);
+        await m.shot('workspace', page.getByText('Loading Dock Camera').first());
+        await page.waitForTimeout(4500);
+      },
+    },
+    {
+      id: 'dashboard',
+      async prepare(page) {
+        await open(page, '/dashboard');
+        await settle(page, 1000);
+      },
+      async record(page, m) {
+        await page.waitForTimeout(2000);
+        await m.shot('dashboard', page.getByText('On site now').first());
+        await page.waitForTimeout(4500);
+      },
+    },
+  ],
 };

@@ -6,41 +6,37 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
-import type { ConsoleScene } from '../scenes';
+import type { BeatSpec } from '../scenes';
 import { PANEL, PANEL_SCALE, viewToFrame } from '../layout';
 import {
   calloutWindow,
   cameraAt,
-  fitRate,
-  outputDuration,
   planSegments,
-  scaleSegments,
   shotOf,
   sourceTimeAt,
   type Timeline,
-  toScreen,
+  onView,
 } from '../timeline';
 import { CalloutTag } from './CalloutTag';
 import { Cursor } from './Cursor';
 
 interface ConsoleShotProps {
-  scene: ConsoleScene;
+  beat: BeatSpec;
   timeline: Timeline;
   /** Frames this shot lasts. */
   frames: number;
 }
 
-/** The recorded console inside its panel: waits sped up, fitted to the scene, camera, cursor and callouts on top. */
-export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): React.ReactElement => {
+/** One recorded beat inside its panel: waits sped up, camera, cursor and callouts on top. */
+export const ConsoleShot = ({ beat, timeline, frames }: ConsoleShotProps): React.ReactElement => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const segs = planSegments(timeline);
-  const k = fitRate(outputDuration(segs), frames / fps);
-  const fitted = scaleSegments(segs, k);
+  const fitted = segs;
   const t = frame / fps;
   const src = sourceTimeAt(fitted, t);
   const cam = cameraAt(timeline, src);
-  const src0 = staticFile(`clips/${scene.clip}.mp4`);
+  const src0 = staticFile(`clips/${beat.clip}.mp4`);
 
   // Pieces sit on exact cumulative times, and each starts where sourceTimeAt says, so footage, camera,
   // cursor and callouts share one clock instead of drifting a frame per segment.
@@ -113,7 +109,7 @@ export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): Reac
           </div>
         </div>
       </div>
-      {scene.callouts.map((c) => {
+      {beat.callouts.map((c) => {
         const window = calloutWindow(timeline, fitted, c.at, frames / fps);
         const box = c.target ?? shotOf(timeline, c.at)?.box;
         if (!window || !box) return null;
@@ -122,12 +118,10 @@ export const ConsoleShot = ({ scene, timeline, frames }: ConsoleShotProps): Reac
         // With an explicit side the line leaves from that edge of the element, so the tag never covers it.
         const anchorX =
           c.side === 'right' ? box.x + box.w : c.side === 'left' ? box.x : box.x + box.w / 2;
-        const raw = viewToFrame(toScreen(cam, { x: anchorX, y: box.y + box.h / 2 }));
-        // Keep the pointed-at spot inside the panel so the tag is never clipped.
-        const target = {
-          x: Math.min(PANEL.x + PANEL.w - 40, Math.max(PANEL.x + 40, raw.x)),
-          y: Math.min(PANEL.y + PANEL.h - 40, Math.max(PANEL.y + 40, raw.y)),
-        };
+        // A spot the camera does not show gets no callout: never point into the void.
+        const onScreen = onView(cam, { x: anchorX, y: box.y + box.h / 2 });
+        if (!onScreen) return null;
+        const target = viewToFrame(onScreen);
         return (
           <CalloutTag
             key={c.text}

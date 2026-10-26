@@ -1,13 +1,15 @@
 import { Composition, staticFile } from 'remotion';
 import { Video, type VideoProps } from './components/Video';
-import { FPS, SCENES, totalSeconds } from './scenes';
+import { sceneFrames } from './durations';
+import { FPS, SCENES } from './scenes';
 import { HEIGHT, WIDTH } from './style';
 import type { Timeline } from './timeline';
 
-/** Loads every recorded timeline once, before rendering. A missing clip leaves its scene on the grid. */
+/** Loads every recorded beat's timeline once, before rendering. A missing clip leaves its beat on the grid. */
 const loadTimelines = async (): Promise<Record<string, Timeline>> => {
+  const clips = SCENES.flatMap((s) => (s.kind === 'console' ? s.beats.map((b) => b.clip) : []));
   const entries = await Promise.all(
-    SCENES.flatMap((s) => (s.kind === 'console' ? [s.clip] : [])).map(async (clip) => {
+    clips.map(async (clip) => {
       const res = await fetch(staticFile(`clips/${clip}.timeline.json`));
       return res.ok ? ([clip, (await res.json()) as Timeline] as const) : null;
     }),
@@ -22,10 +24,15 @@ export const RemotionRoot = (): React.ReactElement => (
     fps={FPS}
     width={WIDTH}
     height={HEIGHT}
-    durationInFrames={totalSeconds(SCENES) * FPS}
+    durationInFrames={300}
     defaultProps={{ scenes: SCENES, timelines: {} } satisfies VideoProps}
-    calculateMetadata={async ({ props }) => ({
-      props: { ...props, timelines: await loadTimelines() },
-    })}
+    calculateMetadata={async ({ props }) => {
+      const timelines = await loadTimelines();
+      const durationInFrames = props.scenes.reduce(
+        (sum, s) => sum + sceneFrames(s, timelines, FPS),
+        0,
+      );
+      return { durationInFrames, props: { ...props, timelines } };
+    }}
   />
 );

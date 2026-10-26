@@ -3,15 +3,16 @@ import type { Box } from './timeline';
 /** A tag drawn onto the footage at a `shot` mark; it points at `target`, or else at the shot's own box. */
 export type Callout = { at: string; text: string; target?: Box; side?: 'left' | 'right' };
 
+/** One recorded shot of a scene; its length is the length of its footage. */
+export type BeatSpec = { clip: string; callouts: Callout[] };
+
 export type ConsoleScene = {
   id: string;
   kind: 'console';
   chapter: number;
   label: string;
   title: string;
-  clip: string;
-  seconds: number;
-  callouts: Callout[];
+  beats: BeatSpec[];
 };
 
 export type Scene =
@@ -45,7 +46,9 @@ export const OUTRO_TEXT = {
   ],
 };
 
-/** The storyboard (design.md §5). Callouts point at the box their `shot` mark recorded. */
+const beat = (clip: string, ...callouts: Callout[]): BeatSpec => ({ clip, callouts });
+
+/** The storyboard (design.md §5), cut as clean beats. Callouts point at the box their `shot` mark recorded. */
 export const SCENES: Scene[] = [
   { id: 'title', kind: 'title', seconds: 6 },
   {
@@ -54,15 +57,9 @@ export const SCENES: Scene[] = [
     chapter: 1,
     label: 'OVERVIEW',
     title: 'One console for the whole building',
-    clip: 'overview',
-    seconds: 14,
-    callouts: [
-      {
-        at: 'workspace',
-        text: 'Cameras and events, live',
-        target: { x: 310, y: 222, w: 490, h: 275 },
-      },
-      { at: 'dashboard', text: 'Who is on site now' },
+    beats: [
+      beat('overview-workspace', { at: 'workspace', text: 'Cameras and events, live' }),
+      beat('overview-dashboard', { at: 'dashboard', text: 'Who is on site now' }),
     ],
   },
   {
@@ -71,11 +68,9 @@ export const SCENES: Scene[] = [
     chapter: 2,
     label: 'RECOGNITION',
     title: 'Every camera knows who it sees',
-    clip: 'recognition',
-    seconds: 20,
-    callouts: [
-      { at: 'named-box', text: 'Known person', side: 'right' },
-      { at: 'wall', text: 'Every camera, live' },
+    beats: [
+      beat('recognition-camera', { at: 'named-box', text: 'Faces matched live' }),
+      beat('recognition-wall', { at: 'wall', text: 'Every camera, live' }),
     ],
   },
   {
@@ -84,12 +79,10 @@ export const SCENES: Scene[] = [
     chapter: 3,
     label: 'PEOPLE',
     title: "A person's whole day, in one timeline",
-    clip: 'people',
-    seconds: 18,
-    callouts: [
-      { at: 'faces', text: 'Faces seen today' },
-      { at: 'photos', text: 'Captures from every camera' },
-      { at: 'timeline', text: 'Arrivals, doors and zones, in order' },
+    beats: [
+      beat('people-faces', { at: 'faces', text: 'Faces seen today' }),
+      beat('people-photos', { at: 'photos', text: 'Captures from every camera' }),
+      beat('people-timeline', { at: 'timeline', text: 'Arrivals, doors and zones, in order' }),
     ],
   },
   {
@@ -98,11 +91,10 @@ export const SCENES: Scene[] = [
     chapter: 4,
     label: 'PLACES',
     title: 'Your building, floor by floor',
-    clip: 'places',
-    seconds: 16,
-    callouts: [
-      { at: 'tree', text: 'Live count for every area' },
-      { at: 'lobby', text: 'Occupancy per zone' },
+    beats: [
+      beat('places-tree', { at: 'tree', text: 'Live count for every area' }),
+      beat('places-lobby', { at: 'lobby', text: 'Occupancy per zone' }),
+      beat('places-floor12'),
     ],
   },
   {
@@ -111,11 +103,10 @@ export const SCENES: Scene[] = [
     chapter: 5,
     label: 'ACCESS',
     title: 'Who gets in, and why',
-    clip: 'access',
-    seconds: 15,
-    callouts: [
-      { at: 'trace', text: 'The policy that said no' },
-      { at: 'policies', text: 'Why doors were denied' },
+    beats: [
+      beat('access-list'),
+      beat('access-trace', { at: 'trace', text: 'The policy that said no' }),
+      beat('access-policies', { at: 'policies', text: 'Why doors were denied' }),
     ],
   },
   {
@@ -124,11 +115,10 @@ export const SCENES: Scene[] = [
     chapter: 6,
     label: 'INCIDENTS',
     title: 'Incidents raise themselves',
-    clip: 'incidents',
-    seconds: 18,
-    callouts: [
-      { at: 'incident', text: 'Escalated automatically' },
-      { at: 'rule-test', text: 'Try an alert before it goes live' },
+    beats: [
+      beat('incidents-events'),
+      beat('incidents-incident', { at: 'incident', text: 'Escalated automatically' }),
+      beat('incidents-rule', { at: 'rule-test', text: 'Try an alert before it goes live' }),
     ],
   },
   {
@@ -137,11 +127,10 @@ export const SCENES: Scene[] = [
     chapter: 7,
     label: 'ANALYTICS',
     title: 'See how the building lives',
-    clip: 'analytics',
-    seconds: 16,
-    callouts: [
-      { at: 'heatmap', text: 'Busiest hours' },
-      { at: 'flows', text: 'Where people go' },
+    beats: [
+      beat('analytics-charts'),
+      beat('analytics-heatmap', { at: 'heatmap', text: 'Busiest hours' }),
+      beat('analytics-flows', { at: 'flows', text: 'Where people go' }),
     ],
   },
   {
@@ -150,16 +139,12 @@ export const SCENES: Scene[] = [
     chapter: 8,
     label: 'PRIVACY',
     title: 'Privacy built in',
-    clip: 'privacy',
-    seconds: 16,
-    callouts: [
-      { at: 'steps', text: 'Erased on request, step by step' },
-      { at: 'status', text: 'Health at a glance' },
+    beats: [
+      beat('privacy-steps', { at: 'steps', text: 'Erased on request, step by step' }),
+      beat('privacy-retention'),
+      beat('privacy-status', { at: 'status', text: 'Health at a glance' }),
+      beat('privacy-help'),
     ],
   },
   { id: 'outro', kind: 'outro', seconds: 10 },
 ];
-
-export function totalSeconds(scenes: Scene[]): number {
-  return scenes.reduce((sum, s) => sum + s.seconds, 0);
-}

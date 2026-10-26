@@ -14,8 +14,8 @@ const SECTIONS = [
   'Search',
 ];
 
-/** Clicks a sidebar link, opening its section first when it is collapsed. */
-export async function navTo(page: Page, m: Marks, link: string): Promise<void> {
+/** Off camera: clicks a sidebar link, opening its section first when it is collapsed. */
+export async function navTo(page: Page, link: string): Promise<void> {
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   const target = nav.getByRole('link', { name: link, exact: true }).first();
   for (const section of SECTIONS) {
@@ -26,36 +26,45 @@ export async function navTo(page: Page, m: Marks, link: string): Promise<void> {
       await page.waitForTimeout(250);
     }
   }
-  await m.click(target, link);
-  await m.wait('load', () => settle(page));
+  await target.click();
+  await settle(page);
 }
 
-/** Opens the record of the first list row containing every text. */
-export async function openRow(
-  page: Page,
-  m: Marks,
-  texts: string[],
-  search?: string,
-): Promise<void> {
+/** Off camera: opens the record of the first list row containing every text. */
+export async function openRow(page: Page, texts: string[], search?: string): Promise<void> {
   if (search) {
-    await page.getByRole('searchbox').first().pressSequentially(search, { delay: 60 });
-    await m.wait('search', () => settle(page));
+    await page.getByRole('searchbox').first().fill(search);
+    await settle(page);
   }
   let row: Locator = page.getByRole('row');
   for (const text of texts) row = row.filter({ hasText: text });
-  await m.click(row.first().getByRole('link').first(), texts.join(' '));
-  await m.wait('load', () => settle(page));
+  await row.first().getByRole('link').first().click();
+  await settle(page);
 }
 
-/** Switches a record tab. */
-export async function tab(page: Page, m: Marks, name: string): Promise<void> {
-  await m.click(page.getByRole('tab', { name, exact: true }), name);
-  await m.wait('load', () => settle(page, 300));
+/** Off camera: switches a record tab. */
+export async function tab(page: Page, name: string): Promise<void> {
+  await page.getByRole('tab', { name, exact: true }).click();
+  await settle(page, 300);
 }
 
-/** Scrolls the page smoothly by `dy` px. */
-export async function scroll(page: Page, m: Marks, dy: number, ms = 1200): Promise<void> {
-  m.scrolled();
+/** Off camera: turns a list's auto-refresh off, so rows stay put under a callout. */
+export async function autoRefreshOff(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: 'Auto-refresh: on' });
+  if (await toggle.isVisible().catch(() => false)) {
+    await toggle.click();
+    await page.waitForTimeout(300);
+  }
+}
+
+/** Scrolls smoothly by `dy` px; on camera, pass the marks so open callouts end first. */
+export async function scroll(
+  page: Page,
+  m: Marks | undefined,
+  dy: number,
+  ms = 1200,
+): Promise<void> {
+  m?.scrolled();
   await page.mouse.move(1100, 600);
   const steps = Math.max(1, Math.round(ms / 40));
   for (let i = 0; i < steps; i++) {
@@ -65,8 +74,13 @@ export async function scroll(page: Page, m: Marks, dy: number, ms = 1200): Promi
   await page.waitForTimeout(300);
 }
 
-/** Scrolls until a heading or element is near the top third of the screen. */
-export async function scrollTo(page: Page, m: Marks, loc: Locator, ms = 1200): Promise<void> {
-  const box = await loc.boundingBox();
-  if (box) await scroll(page, m, box.y - 220, ms);
+/** Scrolls until an element sits about 200 px below the top. */
+export async function scrollTo(
+  page: Page,
+  m: Marks | undefined,
+  loc: Locator,
+  ms = 1200,
+): Promise<void> {
+  const box = await loc.first().boundingBox();
+  if (box) await scroll(page, m, box.y - 200, ms);
 }

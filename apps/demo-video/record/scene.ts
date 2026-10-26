@@ -1,9 +1,12 @@
 import type { Page } from '@playwright/test';
 import type { Marks } from './marks';
 
-/** A storyboard scene: `start` is opened and settled before the screencast starts. */
-export type RecordedScene = {
+/** One recorded shot: `prepare` runs off camera (navigation, tabs, scrolling), `record` is what the viewer sees. */
+export type Beat = {
   id: string;
-  start: string;
+  prepare(page: Page): Promise<void>;
   record(page: Page, m: Marks): Promise<void>;
 };
+
+/** A storyboard scene: its beats are cut together with crossfades. Clip names are `<scene>-<beat>`. */
+export type RecordedScene = { id: string; beats: Beat[] };

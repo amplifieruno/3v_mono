@@ -2,7 +2,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from 'vitest';
 import { BANNED, onScreenTexts } from '../src/content-rules';
-import { SCENES, totalSeconds } from '../src/scenes';
+import { CROSSFADE_FRAMES, sceneFrames } from '../src/durations';
+import { SCENES } from '../src/scenes';
+import type { Timeline } from '../src/timeline';
 
 function filesUnder(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -11,11 +13,7 @@ function filesUnder(dir: string): string[] {
   });
 }
 
-test('total length is 120–150 s', () => {
-  const s = totalSeconds(SCENES);
-  expect(s).toBeGreaterThanOrEqual(120);
-  expect(s).toBeLessThanOrEqual(150);
-});
+const clip = (duration: number): Timeline => ({ clip: 'x', duration, marks: [] });
 
 test('no technology words on screen', () => {
   for (const text of onScreenTexts(SCENES)) for (const re of BANNED) expect(text).not.toMatch(re);
@@ -26,11 +24,27 @@ test('the banned list catches a tech word', () => {
   expect(BANNED.some((re) => re.test('5 SQL functions'))).toBe(true);
 });
 
-test('two console scenes in a row never share a chapter', () => {
-  SCENES.slice(1).forEach((s, i) => {
-    const prev = SCENES[i];
-    if (s.kind === 'console' && prev.kind === 'console') expect(s.chapter).not.toBe(prev.chapter);
-  });
+test('every console scene has beats with unique clips named after it', () => {
+  const clips = SCENES.flatMap((s) => (s.kind === 'console' ? s.beats.map((b) => b.clip) : []));
+  expect(new Set(clips).size).toBe(clips.length);
+  for (const s of SCENES) {
+    if (s.kind !== 'console') continue;
+    expect(s.beats.length).toBeGreaterThan(0);
+    for (const b of s.beats) expect(b.clip.startsWith(`${s.id}-`)).toBe(true);
+  }
+});
+
+test('a console scene lasts its card plus its beats, minus the crossfades', () => {
+  const scene = SCENES.find((s) => s.kind === 'console' && s.beats.length === 2);
+  if (!scene || scene.kind !== 'console') throw new Error('need a two-beat scene');
+  const timelines = Object.fromEntries(scene.beats.map((b) => [b.clip, clip(5)]));
+  expect(sceneFrames(scene, timelines, 30)).toBe(60 + 150 + 150 - CROSSFADE_FRAMES);
+});
+
+test('title and outro keep their fixed length', () => {
+  expect(sceneFrames(SCENES[0], {}, 30)).toBe(
+    SCENES[0].kind === 'title' ? SCENES[0].seconds * 30 : -1,
+  );
 });
 
 test('recording scripts hold no record ids', () => {

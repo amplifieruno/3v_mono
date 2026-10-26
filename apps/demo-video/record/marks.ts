@@ -3,6 +3,9 @@ import { join } from 'node:path';
 import type { Locator } from '@playwright/test';
 import type { Box, Mark, Timeline } from '../src/timeline';
 
+const onPage = (b: Box): boolean =>
+  b.w > 0 && b.h > 0 && b.x >= 0 && b.y >= 0 && b.x + b.w <= 1920 && b.y + b.h <= 1080;
+
 /** Writes what happened when during a recording, so the edit can cut waits and aim the camera. */
 export class Marks {
   private readonly marks: Mark[] = [];
@@ -65,7 +68,17 @@ export class Marks {
 
   /** A named moment callouts can attach to; with `loc`, callouts point at that element. */
   async shot(name: string, loc?: Locator): Promise<void> {
-    const box = loc ? await this.boxOf(loc.first(), false).catch(() => undefined) : undefined;
+    let box = loc ? await this.boxOf(loc.first(), false).catch(() => undefined) : undefined;
+    if (loc && !box)
+      process.stdout.write(
+        `  ${this.scene}: shot "${name}" found no element, its callout is dropped\n`,
+      );
+    if (box && !onPage(box)) {
+      process.stdout.write(
+        `  ${this.scene}: shot "${name}" is off screen, its callout is dropped\n`,
+      );
+      box = undefined;
+    }
     this.marks.push({ t: this.now(), type: 'shot', name, box });
   }
 

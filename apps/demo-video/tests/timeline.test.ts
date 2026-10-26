@@ -2,15 +2,14 @@ import { expect, test } from 'vitest';
 import {
   calloutWindow,
   cameraAt,
-  fitRate,
   type Mark,
   outputDuration,
   outputTimeAt,
   planSegments,
-  scaleSegments,
   shotOf,
   sourceTimeAt,
   type Timeline,
+  onView,
   toScreen,
 } from '../src/timeline';
 
@@ -101,18 +100,18 @@ test('camera rests at scale 1 with no marks', () => {
   expect(cameraAt(tl([]), 3)).toEqual({ scale: 1, cx: 960, cy: 540 });
 });
 
-test('a click gets a short gentle push-in that stays inside the page', () => {
+test('a click never moves the camera', () => {
   const t = tl([{ t: 2, type: 'click', box: { x: 1800, y: 1000, w: 100, h: 40 } }]);
-  const c = cameraAt(t, 2.4);
-  expect(c.scale).toBeCloseTo(1.3, 1);
-  expect(c.cx).toBeLessThanOrEqual(1920 - 1920 / c.scale / 2 + 0.001);
-  expect(c.cy).toBeLessThanOrEqual(1080 - 1080 / c.scale / 2 + 0.001);
-  expect(cameraAt(t, 4).scale).toBeCloseTo(1);
+  expect(cameraAt(t, 2.4)).toEqual({ scale: 1, cx: 960, cy: 540 });
 });
 
-test('a focus holds a closer zoom', () => {
-  const c = cameraAt(tl([{ t: 2, type: 'focus', box: { x: 900, y: 500, w: 100, h: 40 } }]), 4);
-  expect(c.scale).toBeCloseTo(1.6, 1);
+test('a focus pulls in slowly and stays inside the page', () => {
+  const t = tl([{ t: 2, type: 'focus', box: { x: 1800, y: 1000, w: 100, h: 40 } }]);
+  expect(cameraAt(t, 2.2).scale).toBeLessThan(1.15);
+  const c = cameraAt(t, 4);
+  expect(c.scale).toBeCloseTo(1.25, 2);
+  expect(c.cx).toBeLessThanOrEqual(1920 - 1920 / c.scale / 2 + 0.001);
+  expect(c.cy).toBeLessThanOrEqual(1080 - 1080 / c.scale / 2 + 0.001);
 });
 
 test('camera eases back after the hold', () => {
@@ -130,20 +129,6 @@ test('outputTimeAt is the inverse of sourceTimeAt', () => {
   expect(outputTimeAt(s, 2)).toBeCloseTo(2);
   expect(outputTimeAt(s, 6.5)).toBeCloseTo(5.25);
   expect(outputTimeAt(s, 8.5)).toBeCloseTo(6);
-});
-
-test('scaleSegments speeds every segment by k', () => {
-  const s = scaleSegments(
-    [
-      { from: 0, to: 10, rate: 1 },
-      { from: 10, to: 16, rate: 6 },
-    ],
-    1.25,
-  );
-  expect(s).toEqual([
-    { from: 0, to: 10, rate: 1.25 },
-    { from: 10, to: 16, rate: 7.5 },
-  ]);
 });
 
 test('toScreen maps the camera centre to the screen centre', () => {
@@ -168,7 +153,7 @@ test('shotOf finds a named shot and its box', () => {
   expect(shotOf(t, 'missing')).toBeUndefined();
 });
 
-test('a callout lasts until the next shot, at most 3.5 s, and never past the scene', () => {
+test('a callout lasts until the next shot, at most 5 s, and never past the beat', () => {
   const t = tl([
     { t: 2, type: 'shot', name: 'a' },
     { t: 4, type: 'shot', name: 'b' },
@@ -176,7 +161,7 @@ test('a callout lasts until the next shot, at most 3.5 s, and never past the sce
   ]);
   const segs = planSegments(t);
   expect(calloutWindow(t, segs, 'a', 20)).toEqual([2.3, 4]);
-  expect(calloutWindow(t, segs, 'b', 20)).toEqual([4.3, 7.8]);
+  expect(calloutWindow(t, segs, 'b', 20)).toEqual([4.3, 9.3]);
   expect(calloutWindow(t, segs, 'c', 12)).toEqual([10.3, 11.6]);
   expect(calloutWindow(t, segs, 'missing', 20)).toBeUndefined();
 });
@@ -206,12 +191,12 @@ function maxStep(t: Timeline, from: number, to: number): number {
   return worst;
 }
 
-test('the camera never jumps between close clicks', () => {
+test('the camera never jumps between close focus marks', () => {
   const box = (x: number) => ({ x, y: 500, w: 100, h: 40 });
   const t = tl([
-    { t: 2, type: 'click', box: box(200) },
-    { t: 2.5, type: 'click', box: box(1500) },
-    { t: 3.9, type: 'click', box: box(800) },
+    { t: 2, type: 'focus', box: box(200) },
+    { t: 2.5, type: 'focus', box: box(1500) },
+    { t: 3.9, type: 'focus', box: box(800) },
   ]);
   expect(maxStep(t, 0, 8)).toBeLessThan(1);
 });
@@ -232,9 +217,9 @@ test('a scroll ends an open callout', () => {
   expect(calloutWindow(t, planSegments(t), 'a', 20)).toEqual([2.3, 3]);
 });
 
-test('fitRate slows short clips a little, speeds long ones up, never below 0.85', () => {
-  expect(fitRate(10, 10)).toBe(1);
-  expect(fitRate(12, 10)).toBeCloseTo(1.2);
-  expect(fitRate(9, 10)).toBeCloseTo(0.9);
-  expect(fitRate(5, 10)).toBe(0.85);
+test('onView hides points the camera does not show', () => {
+  const cam = { scale: 1.25, cx: 960, cy: 540 };
+  expect(onView(cam, { x: 960, y: 540 })).toEqual({ x: 960, y: 540 });
+  expect(onView(cam, { x: 100, y: 540 })).toBeUndefined();
+  expect(onView({ scale: 1, cx: 960, cy: 540 }, { x: 960, y: 1200 })).toBeUndefined();
 });

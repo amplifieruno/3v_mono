@@ -19,12 +19,13 @@ export type Camera = { scale: number; cx: number; cy: number };
 
 const PAGE_W = 1920;
 const PAGE_H = 1080;
-/** Clicks get a short gentle push-in; deliberate focus marks a closer, longer look. */
-const LOOK = { click: { zoom: 1.3, hold: 0.8 }, focus: { zoom: 1.6, hold: 2.5 } } as const;
+/** Only deliberate focus marks move the camera: a slow, gentle pull-in that holds. Clicks never do. */
+const FOCUS = { zoom: 1.25, hold: 3.5 } as const;
 const LEAD = 0.3;
-const MOVE = 0.6;
+const MOVE = 1.3;
 const REST: Camera = { scale: 1, cx: PAGE_W / 2, cy: PAGE_H / 2 };
-const ease = Easing.bezier(0.2, 0.7, 0.2, 1);
+/** Camera moves ease in and out, so they start and land gently. */
+const ease = Easing.bezier(0.45, 0, 0.25, 1);
 
 /** Merged wait spans, a missing `wait_end` closing at the clip end. */
 function waitSpans(tl: Timeline): Array<[number, number]> {
@@ -94,17 +95,16 @@ function mix(a: Camera, b: Camera, p: number): Camera {
 
 type Aim = { start: number; end: number; cam: Camera };
 
-/** Camera windows: each click/focus pulls the camera from LEAD before it, holds for its look or until the next one. */
+/** Camera windows: each focus pulls the camera from LEAD before it and holds until its time is up or the next one. */
 function aims(tl: Timeline): Aim[] {
   const targets = tl.marks
-    .filter((m): m is Extract<Mark, { box: Box }> => m.type === 'click' || m.type === 'focus')
+    .filter((m): m is Extract<Mark, { box: Box }> => m.type === 'focus')
     .sort((a, b) => a.t - b.t);
   return targets.map((m, i) => {
     const start = m.t - LEAD;
     const next = targets[i + 1];
-    const look = LOOK[m.type];
-    const end = Math.min(m.t + look.hold, next ? next.t - LEAD : Infinity);
-    return { start, end, cam: aim(m.box, m.zoom ?? look.zoom) };
+    const end = Math.min(m.t + FOCUS.hold, next ? next.t - LEAD : Infinity);
+    return { start, end, cam: aim(m.box, m.zoom ?? FOCUS.zoom) };
   });
 }
 
@@ -139,11 +139,6 @@ export function outputTimeAt(segs: Segment[], sourceSeconds: number): number {
   return out;
 }
 
-/** Plays every segment `k` times faster (fits a clip into its scene). */
-export function scaleSegments(segs: Segment[], k: number): Segment[] {
-  return segs.map((s) => ({ ...s, rate: s.rate * k }));
-}
-
 /** Where a page point lands on the 1920x1080 view through the camera. */
 export function toScreen(cam: Camera, p: { x: number; y: number }): { x: number; y: number } {
   return { x: PAGE_W / 2 + (p.x - cam.cx) * cam.scale, y: PAGE_H / 2 + (p.y - cam.cy) * cam.scale };
@@ -160,7 +155,7 @@ export function shotOf(
   return m && { t: m.t, box: m.box };
 }
 
-/** Output seconds [start, end] a callout on shot `name` is on screen: from just after the shot until the next shot or scroll, at most 3.5 s, and 0.4 s before the scene ends. */
+/** Output seconds [start, end] a callout on shot `name` is on screen: from just after the shot until the next shot or scroll, at most 5 s, and 0.4 s before the beat ends. */
 export function calloutWindow(
   tl: Timeline,
   segs: Segment[],
@@ -174,11 +169,15 @@ export function calloutWindow(
     .filter((m) => (m.type === 'shot' || m.type === 'scroll') && m.t > shot.t)
     .reduce((min, m) => Math.min(min, m.t), Infinity);
   const nextOut = next === Infinity ? Infinity : outputTimeAt(segs, next);
-  const end = Math.min(start + 3.5, nextOut, sceneSeconds - 0.4);
+  const end = Math.min(start + 5, nextOut, sceneSeconds - 0.4);
   return [Math.round(start * 1000) / 1000, Math.round(end * 1000) / 1000];
 }
 
-/** How much faster (or, a little, slower) a clip of `outSeconds` plays to fill `availSeconds`. */
-export function fitRate(outSeconds: number, availSeconds: number): number {
-  return Math.max(0.85, outSeconds / availSeconds);
+/** A page point on the view through the camera, or undefined when the camera does not show it. */
+export function onView(
+  cam: Camera,
+  p: { x: number; y: number },
+): { x: number; y: number } | undefined {
+  const v = toScreen(cam, p);
+  return v.x >= 0 && v.x <= PAGE_W && v.y >= 0 && v.y <= PAGE_H ? v : undefined;
 }

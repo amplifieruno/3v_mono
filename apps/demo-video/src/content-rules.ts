@@ -28,7 +28,9 @@ export const BANNED: RegExp[] = [
 /** Every text the video draws: titles, labels, callouts, title and outro cards. */
 export function onScreenTexts(scenes: Scene[]): string[] {
   const fromScenes = scenes.flatMap((s) =>
-    s.kind === 'console' ? [s.label, s.title, ...s.callouts.map((c) => c.text)] : [],
+    s.kind === 'console'
+      ? [s.label, s.title, ...s.beats.flatMap((b) => b.callouts.map((c) => c.text))]
+      : [],
   );
   return [
     ...fromScenes,
