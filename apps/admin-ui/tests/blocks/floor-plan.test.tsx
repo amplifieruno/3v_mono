@@ -12,7 +12,8 @@ import { fakeAdminAuth, installDomShims } from '../support/console-dom';
  * The `itap:floor-plan` block with fake rows: the plan's image (presigned from storage), the
  * shapes of the plan's area and of the areas inside it only (other floors and shapeless areas
  * are left out), labels with occupancy (red past capacity), the legend linking each area,
- * access points by kind, and devices by type and health with their coverage.
+ * access points by kind, and devices by type and health with their coverage, the access points
+ * and cameras named beside their icons.
  */
 
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -202,7 +203,13 @@ describe('floor plan block', () => {
           },
           { id: id(22), name: 'Unplaced', kind: 'gate', area_id: FLOOR, position: null },
           // Leads into an area of floor 3: drawn on that floor's plan, not this one.
-          { id: id(23), name: 'Kitchen door', kind: 'door', area_id: OTHER_ROOM, position: [10, 10] },
+          {
+            id: id(23),
+            name: 'Kitchen door',
+            kind: 'door',
+            area_id: OTHER_ROOM,
+            position: [10, 10],
+          },
         ],
       },
     });
@@ -216,7 +223,9 @@ describe('floor plan block', () => {
       'lucide-arrow-left-right',
     );
     expect(screen.queryByTestId(`floor-plan-access-point:${id(22)}`)).toBeNull();
-    expect(screen.queryByTestId(`floor-plan-access-point:${id(23)}`)).toBeNull();
+    expect(screen.queryByTestId(`floor-plan-access-point:${id(23)}`)).toBeNull(); // Each placed access point is named beside its icon.
+    expect(screen.getByTestId(`floor-plan-point-label:${id(20)}`).textContent).toBe('Main door');
+    expect(screen.getByTestId(`floor-plan-point-label:${id(21)}`).textContent).toBe('Turnstile 1');
   });
 
   it('should draw the positioned devices of the plan’s areas by type and health', async () => {
@@ -237,7 +246,17 @@ describe('floor plan block', () => {
         rows: [
           device(30, {
             name: 'Server room camera',
-            coverage: { type: 'Polygon', coordinates: [[[100, 100], [250, 60], [250, 140], [100, 100]]] },
+            coverage: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [100, 100],
+                  [250, 60],
+                  [250, 140],
+                  [100, 100],
+                ],
+              ],
+            },
           }),
           device(31, {
             name: 'Lobby terminal',
@@ -263,6 +282,11 @@ describe('floor plan block', () => {
     expect(terminal.querySelector('circle')?.getAttribute('class')).toContain('stroke-destructive');
     expect(screen.queryByTestId(`floor-plan-device:${id(32)}`)).toBeNull();
     expect(screen.queryByTestId(`floor-plan-device:${id(33)}`)).toBeNull();
+    // Cameras are named beside their icons; terminals go by the access point they serve.
+    expect(screen.getByTestId(`floor-plan-point-label:${id(30)}`).textContent).toBe(
+      'Server room camera',
+    );
+    expect(screen.queryByTestId(`floor-plan-point-label:${id(31)}`)).toBeNull();
     // The camera's coverage is drawn as a dashed outline.
     const drawing = screen.getByRole('img', { name: 'Floor plan Floor 2 with its areas' });
     const outlines = [...drawing.querySelectorAll('path')].filter((path) =>

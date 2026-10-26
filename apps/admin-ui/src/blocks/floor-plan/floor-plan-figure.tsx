@@ -1,6 +1,5 @@
 import type * as React from 'react';
 import { PlanCanvas } from '../../fields/plan-canvas';
-import { shapeLabelPoint } from '../../fields/plan-geometry';
 import type {
   FloorPlanRow,
   PlanAccessPointRow,
@@ -10,6 +9,7 @@ import type {
 import { PlanShapeOutline } from '../../fields/plan-shape-outline';
 import { FloorPlanDevices } from './floor-plan-devices';
 import { type FloorPlanT, isOverCapacity, occupancyText } from './floor-plan-occupancy';
+import { planLabels } from './floor-plan-placement';
 import { accessLevelStyle, accessPointIcon } from './floor-plan-style';
 
 export interface FloorPlanFigureProps {
@@ -29,7 +29,9 @@ const byAccessLevel = (area: PlanAreaRow): string => accessLevelStyle(area.acces
 /**
  * The plan's image with its areas' shapes (outer ones under inner ones, coloured by access
  * level or as `shapeClassOf` says, outlined red when over capacity), each labelled with its name and occupancy, and
- * the access points and devices as icons at their positions.
+ * the access points and devices as icons at their positions, the access points and cameras
+ * named beside their icons. Labels are placed apart from each other and from the icons
+ * (`./floor-plan-labels.ts`).
  */
 export function FloorPlanFigure({
   plan,
@@ -42,6 +44,17 @@ export function FloorPlanFigure({
   const unit = Math.max(plan.size.width, plan.size.height);
   const font = unit / 70;
   const icon = unit / 45;
+  const small = unit / 100;
+  const labels = planLabels({
+    plan,
+    areas,
+    accessPoints,
+    devices,
+    t,
+    font,
+    small,
+    radius: icon * 0.75,
+  });
   return (
     <PlanCanvas
       size={plan.size}
@@ -60,8 +73,11 @@ export function FloorPlanFigure({
         ) : null,
       )}
       {areas.map((area) => {
-        if (!area.shape || area.id === plan.area_id) return null;
-        const [x, y] = shapeLabelPoint(area.shape);
+        const label = labels.areas.get(area.id);
+        if (label === undefined) return null;
+        const { x, y } = label.place;
+        // One line ("name · occupancy") where the stacked label does not fit.
+        const stacked = label.lines.length > 1;
         return (
           <text
             key={area.id}
@@ -73,10 +89,10 @@ export function FloorPlanFigure({
             className="pointer-events-none fill-foreground stroke-background font-medium [paint-order:stroke]"
             strokeWidth={font / 4}
           >
-            <tspan x={x}>{area.name}</tspan>
+            <tspan x={x}>{stacked ? area.name : `${area.name} · `}</tspan>
             <tspan
-              x={x}
-              dy={font * 1.2}
+              x={stacked ? x : undefined}
+              dy={stacked ? font * 1.2 : undefined}
               className={isOverCapacity(area) ? 'fill-destructive' : undefined}
             >
               {occupancyText(area, t)}
@@ -110,6 +126,20 @@ export function FloorPlanFigure({
           </g>
         );
       })}
+      {labels.points.map(({ id, text, place }) => (
+        <text
+          key={id}
+          x={place.x}
+          y={place.y}
+          fontSize={small}
+          textAnchor={place.anchor}
+          data-testid={`floor-plan-point-label:${id}`}
+          className="pointer-events-none fill-foreground stroke-background [paint-order:stroke]"
+          strokeWidth={small / 4}
+        >
+          {text}
+        </text>
+      ))}
     </PlanCanvas>
   );
 }

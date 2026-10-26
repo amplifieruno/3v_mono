@@ -1,5 +1,4 @@
 import type { OrgKey } from './companies.js';
-import { isCamera, SEED_ACCESS_POINTS, SEED_DEVICES } from './devicePlan.js';
 import { flattenAreas, PLAN_HEIGHT, PLAN_SCALE_M_PER_PX, PLAN_WIDTH, type FacilitySpec } from './facilityPlan.js';
 import { renderFloorPlan, type FloorPlanDrawing } from './floorPlanImage.js';
 import type { SeedContext } from './tenancy.js';
@@ -13,26 +12,17 @@ const INSERT_PLAN = `
 
 type Target = { org: string; orgKey: OrgKey; facility: string; spec: FacilitySpec; areas: Map<string, string> };
 
-/** The drawing of the plan at `planKey`: its area and the descendants with geometry, access points and devices on it. */
+/** The drawing of the plan at `planKey`: its area and the descendants with geometry. */
 function drawing(target: Target, planKey: string, title: string): FloorPlanDrawing {
   const onPlan = (areaKey: string): boolean => areaKey === planKey || areaKey.startsWith(`${planKey}/`);
   const areas = flattenAreas(target.spec.root)
     .filter((a) => onPlan(a.key) && (a.node.rect || a.node.circle))
     .map((a) => a.node);
-  const markers: FloorPlanDrawing['markers'] = [];
-  for (const ap of SEED_ACCESS_POINTS[target.orgKey]) {
-    if (ap.position && onPlan(ap.area)) markers.push({ label: ap.name, point: ap.position, kind: 'access_point' });
-  }
-  for (const device of SEED_DEVICES[target.orgKey]) {
-    if (device.position && onPlan(device.area)) {
-      markers.push({ label: device.name, point: device.position, kind: isCamera(device) ? 'camera' : 'device' });
-    }
-  }
-  return { title, areas, markers };
+  return { title, areas };
 }
 
 /**
- * Floor plans of the planned areas that have none yet: a generated PNG (outlines, labels, markers) uploaded to the
+ * Floor plans of the planned areas that have none yet: a generated PNG (walls and title) uploaded to the
  * organization bucket (`metadata.kind = 'floor_plan'`), then the floor_plans row. A failed insert removes the upload.
  */
 export async function seedFloorPlans(ctx: SeedContext, target: Target): Promise<void> {

@@ -77,8 +77,9 @@ const LOBBY: AreaNode = {
       name: 'Loading Dock Geofence',
       type: 'virtual_zone',
       access: 'restricted',
-      description: 'Geofence around the loading dock apron (after-hours presence alerts)',
-      circle: { center: [1020, 170], radius: 140 },
+      description: 'Geofence around the loading dock door (after-hours presence alerts)',
+      // Around the dock door on the north wall, not centred on the dock, so the two shapes stay apart on the plan.
+      circle: { center: [1020, 120], radius: 100 },
     },
   ],
 };
