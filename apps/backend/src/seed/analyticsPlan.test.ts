@@ -92,6 +92,8 @@ describe('seed dashboards', () => {
     const [security, facility] = dashboards('fac-1');
     expect([security.is_shared, facility.is_shared]).toEqual([true, false]);
     expect(security.owner).not.toBe(facility.owner);
+    // One landing dashboard per owner.
+    expect([security.is_default, facility.is_default]).toEqual([true, true]);
     for (const d of [security, facility]) {
       expect(new Set(d.widgets.map((x) => x.id)).size).toBe(d.widgets.length);
       for (const widget of d.widgets) expect(validWidget(widget), widget.id).toBe(true);

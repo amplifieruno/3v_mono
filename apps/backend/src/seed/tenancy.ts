@@ -111,6 +111,22 @@ const ADD_MEMBERS = `
   }
 `;
 
+/**
+ * The admin belongs to both organizations, so sign-in opens the one they used last; a fresh seed has none (the reset
+ * removed it with the organizations) and would stop at the organization picker. Nova Tower, the demo organization, is
+ * recorded as last used only while nothing is recorded: a later switch made in the console stays.
+ */
+const ADMIN_LAST_ORGANIZATION = `
+  mutation SeedAdminLastOrganization($user: uuid!, $org: uuid!) {
+    insert_user_settings_one(object: { user_id: $user }, on_conflict: { constraint: user_settings_pkey, update_columns: [] }) {
+      user_id
+    }
+    update_user_settings(where: { user_id: { _eq: $user }, last_organization_id: { _is_null: true } }, _set: { last_organization_id: $org }) {
+      affected_rows
+    }
+  }
+`;
+
 const OPERATOR_LOCALE = `
   mutation SeedOperatorLocale($user: uuid!) {
     insert_user_settings_one(object: { user_id: $user, locale: "ru" }, on_conflict: { constraint: user_settings_pkey, update_columns: [] }) {
@@ -146,6 +162,7 @@ export async function seedTenancy(ctx: SeedContext): Promise<SeedTenancyResult> 
   });
   // Notification templates are chosen by the recipient's locale: the operator reads Russian.
   await ctx.admin.request(OPERATOR_LOCALE, { user: users.operator });
+  await ctx.admin.request(ADMIN_LAST_ORGANIZATION, { user: users.admin, org: orgs.nova });
 
   return { users, orgs };
 }

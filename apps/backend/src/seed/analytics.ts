@@ -15,7 +15,7 @@ import type { SeedContext, SeedTenancyResult } from './tenancy.js';
  *    locations, the last partial hour) and fills the stats of a database seeded before slice 7. Idempotent (an
  *    unchanged bucket is not rewritten).
  * 2. reports (analyticsReports), 3. searches and saved searches (analyticsSearch), 4. bulk jobs (analyticsBulk),
- * 5. dashboards: "Security overview" (shared, the admin's) and "Facility manager" (personal, the Nova Tower admin's),
+ * 5. dashboards: "Security overview" (shared, the admin's) and "Facility manager" (personal, the Nova Tower admin's), each its owner's landing dashboard,
  *    inserted with the owner's org_admin session (owner stamped from it), keyed by owner and name.
  * Riverside stays minimal: stats and the system report templates.
  */
@@ -77,7 +77,7 @@ export async function seedAnalytics(
   const owners = { admin, novaAdmin };
   for (const d of dashboards(facility)) {
     const owner = createHasuraClient(ctx.env, { role: 'org_admin', userId: owners[d.owner], organizationId: nova });
-    await owner.request(DASHBOARD, { object: { name: d.name, description: d.description, is_shared: d.is_shared, layout: { columns: 12 }, widgets: d.widgets } });
+    await owner.request(DASHBOARD, { object: { name: d.name, description: d.description, is_shared: d.is_shared, is_default: d.is_default, layout: { columns: 12 }, widgets: d.widgets } });
   }
   return { stats, reports, searches, bulk, dashboards: dashboards(facility).length, durationMs: Date.now() - started };
 }

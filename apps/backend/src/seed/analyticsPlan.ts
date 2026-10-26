@@ -107,19 +107,28 @@ export type DashboardWidget = {
   params: Record<string, unknown>;
   position: { x: number; y: number; w: number; h: number };
 };
-export type DashboardSpec = { name: string; description: string; is_shared: boolean; owner: 'admin' | 'novaAdmin'; widgets: DashboardWidget[] };
+/** `is_default`: the owner's landing dashboard ("On my Dashboard page"). */
+export type DashboardSpec = {
+  name: string;
+  description: string;
+  is_shared: boolean;
+  is_default: boolean;
+  owner: 'admin' | 'novaAdmin';
+  widgets: DashboardWidget[];
+};
 
 const w = (id: string, kind: string, title: string, query: string, params: Record<string, unknown>, x: number, y: number, width: number, h: number): DashboardWidget => ({
   id, kind, title, query, params, position: { x, y, w: width, h },
 });
 
-/** "Security overview" (shared, the admin's) and "Facility manager" (personal, the Nova Tower admin's). */
+/** "Security overview" (shared, the admin's) and "Facility manager" (personal, the Nova Tower admin's), each its owner's landing dashboard. */
 export function dashboards(facility: string): DashboardSpec[] {
   return [
     {
       name: 'Security overview',
       description: 'Live situation for the security desk',
       is_shared: true,
+      is_default: true,
       owner: 'admin',
       widgets: [
         w('kpis', 'kpi', 'Today', 'dashboard_kpis', {}, 0, 0, 12, 2),
@@ -133,6 +142,7 @@ export function dashboards(facility: string): DashboardSpec[] {
       name: 'Facility manager',
       description: 'Occupancy, flows and building health',
       is_shared: false,
+      is_default: true,
       owner: 'novaAdmin',
       widgets: [
         w('occupancy-week', 'occupancy_series', 'Occupancy, last 7 days', 'occupancy_series', { facility_id: facility, bucket: 'hour', days: 7 }, 0, 0, 8, 4),
