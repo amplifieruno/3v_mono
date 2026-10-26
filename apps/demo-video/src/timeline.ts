@@ -1,13 +1,13 @@
-import { Easing } from "remotion";
+import { Easing } from 'remotion';
 
 /** A box in CSS px of the 1920x1080 page. */
 export type Box = { x: number; y: number; w: number; h: number };
 
 /** A moment the recording script marked; `t` is seconds from the clip start. */
 export type Mark =
-  | { t: number; type: "click" | "focus"; box: Box; label?: string }
-  | { t: number; type: "wait_start" | "wait_end"; reason?: string }
-  | { t: number; type: "shot"; name: string };
+  | { t: number; type: 'click' | 'focus'; box: Box; label?: string }
+  | { t: number; type: 'wait_start' | 'wait_end'; reason?: string }
+  | { t: number; type: 'shot'; name: string; box?: Box };
 
 export type Timeline = { clip: string; duration: number; marks: Mark[] };
 
@@ -18,10 +18,10 @@ export type Camera = { scale: number; cx: number; cy: number };
 
 const PAGE_W = 1920;
 const PAGE_H = 1080;
-const ZOOM = 1.6;
+/** Clicks get a short gentle push-in; deliberate focus marks a closer, longer look. */
+const LOOK = { click: { zoom: 1.3, hold: 0.8 }, focus: { zoom: 1.6, hold: 2.5 } } as const;
 const LEAD = 0.3;
 const MOVE = 0.6;
-const HOLD = 2.5;
 const REST: Camera = { scale: 1, cx: PAGE_W / 2, cy: PAGE_H / 2 };
 const ease = Easing.bezier(0.2, 0.7, 0.2, 1);
 
@@ -31,9 +31,8 @@ function waitSpans(tl: Timeline): Array<[number, number]> {
   let depth = 0;
   let start = 0;
   for (const m of [...tl.marks].sort((a, b) => a.t - b.t)) {
-    if (m.type === "wait_start" && depth++ === 0) start = m.t;
-    if (m.type === "wait_end" && depth > 0 && --depth === 0)
-      spans.push([start, m.t]);
+    if (m.type === 'wait_start' && depth++ === 0) start = m.t;
+    if (m.type === 'wait_end' && depth > 0 && --depth === 0) spans.push([start, m.t]);
   }
   if (depth > 0) spans.push([start, tl.duration]);
   return spans.filter(([a, b]) => b > a);
@@ -53,8 +52,7 @@ export function planSegments(
     segs.push({ from: a, to: b, rate: Math.max(waitRate, (b - a) / maxWait) });
     cursor = b;
   }
-  if (cursor < tl.duration)
-    segs.push({ from: cursor, to: tl.duration, rate: 1 });
+  if (cursor < tl.duration) segs.push({ from: cursor, to: tl.duration, rate: 1 });
   return segs;
 }
 
@@ -73,13 +71,12 @@ export function sourceTimeAt(segs: Segment[], outSeconds: number): number {
   return segs.at(-1)?.to ?? 0;
 }
 
-function aim(box: Box): Camera {
-  const halfW = PAGE_W / ZOOM / 2;
-  const halfH = PAGE_H / ZOOM / 2;
-  const clamp = (v: number, lo: number, hi: number): number =>
-    Math.min(hi, Math.max(lo, v));
+function aim(box: Box, zoom: number): Camera {
+  const halfW = PAGE_W / zoom / 2;
+  const halfH = PAGE_H / zoom / 2;
+  const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
   return {
-    scale: ZOOM,
+    scale: zoom,
     cx: clamp(box.x + box.w / 2, halfW, PAGE_W - halfW),
     cy: clamp(box.y + box.h / 2, halfH, PAGE_H - halfH),
   };
@@ -96,19 +93,17 @@ function mix(a: Camera, b: Camera, p: number): Camera {
 
 type Aim = { start: number; end: number; cam: Camera };
 
-/** Camera windows: each click/focus pulls the camera from LEAD before it, holds up to HOLD or the next one. */
+/** Camera windows: each click/focus pulls the camera from LEAD before it, holds for its look or until the next one. */
 function aims(tl: Timeline): Aim[] {
   const targets = tl.marks
-    .filter(
-      (m): m is Extract<Mark, { box: Box }> =>
-        m.type === "click" || m.type === "focus",
-    )
+    .filter((m): m is Extract<Mark, { box: Box }> => m.type === 'click' || m.type === 'focus')
     .sort((a, b) => a.t - b.t);
   return targets.map((m, i) => {
     const start = m.t - LEAD;
     const next = targets[i + 1];
-    const end = Math.min(m.t + HOLD, next ? next.t - LEAD : Infinity);
-    return { start, end, cam: aim(m.box) };
+    const look = LOOK[m.type];
+    const end = Math.min(m.t + look.hold, next ? next.t - LEAD : Infinity);
+    return { start, end, cam: aim(m.box, look.zoom) };
   });
 }
 
@@ -118,12 +113,42 @@ export function cameraAt(tl: Timeline, sourceSeconds: number): Camera {
   for (const a of aims(tl)) {
     if (sourceSeconds < a.start) return cam;
     const from = cam;
-    if (sourceSeconds < a.start + MOVE)
-      return mix(from, a.cam, (sourceSeconds - a.start) / MOVE);
+    if (sourceSeconds < a.start + MOVE) return mix(from, a.cam, (sourceSeconds - a.start) / MOVE);
     if (sourceSeconds < a.end) return a.cam;
     cam = mix(a.cam, REST, (sourceSeconds - a.end) / MOVE);
     if (sourceSeconds < a.end + MOVE) return cam;
     cam = REST;
   }
   return cam;
+}
+
+/** The output second at which source second `sourceSeconds` is shown. */
+export function outputTimeAt(segs: Segment[], sourceSeconds: number): number {
+  let out = 0;
+  for (const s of segs) {
+    if (sourceSeconds <= s.to) return out + Math.max(0, sourceSeconds - s.from) / s.rate;
+    out += (s.to - s.from) / s.rate;
+  }
+  return out;
+}
+
+/** Plays every segment `k` times faster (fits a clip into its scene). */
+export function scaleSegments(segs: Segment[], k: number): Segment[] {
+  return segs.map((s) => ({ ...s, rate: s.rate * k }));
+}
+
+/** Where a page point lands on the 1920x1080 view through the camera. */
+export function toScreen(cam: Camera, p: { x: number; y: number }): { x: number; y: number } {
+  return { x: PAGE_W / 2 + (p.x - cam.cx) * cam.scale, y: PAGE_H / 2 + (p.y - cam.cy) * cam.scale };
+}
+
+/** A named moment and, when the script gave one, the box of what it is about. */
+export function shotOf(
+  tl: Timeline,
+  name: string,
+): { t: number; box: Box | undefined } | undefined {
+  const m = tl.marks.find(
+    (x): x is Extract<Mark, { type: 'shot' }> => x.type === 'shot' && x.name === name,
+  );
+  return m && { t: m.t, box: m.box };
 }

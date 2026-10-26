@@ -1,8 +1,9 @@
-import { C, FONT } from "../style";
-import { Rise } from "./Rise";
+import { TITLE_TEXT } from '../scenes';
+import { C, FONT } from '../style';
+import { Rise } from './Rise';
 
 const corner: React.CSSProperties = {
-  position: "absolute",
+  position: 'absolute',
   fontFamily: FONT.mono,
   fontSize: 22,
   lineHeight: 1.45,
@@ -10,23 +11,18 @@ const corner: React.CSSProperties = {
   fontWeight: 500,
 };
 
-/** Quiet mono marks in the frame corners. */
-export function Corners({
-  delay = 0.5,
-}: {
+interface CornersProps {
   delay?: number;
-}): React.ReactElement {
-  return (
-    <>
-      <Rise delay={delay} style={{ ...corner, left: 72, top: 60 }}>
-        ITAP · OCT 2026
-      </Rise>
-      <Rise
-        delay={delay + 0.1}
-        style={{ ...corner, right: 72, bottom: 60, textAlign: "right" }}
-      >
-        NOVA TOWER
-      </Rise>
-    </>
-  );
 }
+
+/** Quiet mono marks in the frame corners. */
+export const Corners = ({ delay = 0.5 }: CornersProps): React.ReactElement => (
+  <>
+    <Rise delay={delay} style={{ ...corner, left: 72, top: 60 }}>
+      {TITLE_TEXT.corners[0]}
+    </Rise>
+    <Rise delay={delay + 0.1} style={{ ...corner, right: 72, bottom: 60, textAlign: 'right' }}>
+      {TITLE_TEXT.corners[1]}
+    </Rise>
+  </>
+);

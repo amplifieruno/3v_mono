@@ -1,11 +1,11 @@
-import type { Box } from "./timeline";
+import type { Box } from './timeline';
 
-/** A tag drawn onto the footage; `at` is a `shot` mark name from the scene's timeline. */
-export type Callout = { at: string; text: string; target: Box };
+/** A tag drawn onto the footage at a `shot` mark; it points at `target`, or else at the shot's own box. */
+export type Callout = { at: string; text: string; target?: Box };
 
 export type ConsoleScene = {
   id: string;
-  kind: "console";
+  kind: 'console';
   chapter: number;
   label: string;
   title: string;
@@ -15,140 +15,145 @@ export type ConsoleScene = {
 };
 
 export type Scene =
-  | { id: "title" | "outro"; kind: "title" | "outro"; seconds: number }
+  | { id: 'title'; kind: 'title'; seconds: number }
+  | { id: 'outro'; kind: 'outro'; seconds: number }
   | ConsoleScene;
 
 export const FPS = 30;
 
 /** On-screen copy of the title and outro cards (design.md §4). */
 export const TITLE_TEXT = {
-  word: "ITAP",
-  tagline: "identity · tracking · access",
-  corners: ["ITAP · OCT 2026", "NOVA TOWER"],
+  word: 'ITAP',
+  tagline: 'identity · tracking · access',
+  corners: ['ITAP · OCT 2026', 'NOVA TOWER'],
 };
 export const OUTRO_TEXT = {
-  headline: "One platform for identity, access and safety",
+  headline: 'One platform for identity, access and safety',
   tags: [
-    "Live recognition",
-    "People",
-    "Places & floor plans",
-    "Devices",
-    "Access control",
-    "Face sign-in",
-    "Incidents",
-    "Notifications",
-    "Segments",
-    "Face search",
-    "Analytics",
-    "Privacy & compliance",
+    'Live recognition',
+    'People',
+    'Places & floor plans',
+    'Devices',
+    'Access control',
+    'Face sign-in',
+    'Incidents',
+    'Notifications',
+    'Segments',
+    'Face search',
+    'Analytics',
+    'Privacy & compliance',
   ],
 };
 
-const box = (x: number, y: number, w = 200, h = 40): Box => ({ x, y, w, h });
-
-/** The storyboard (design.md §5). Callout targets are tuned against the recorded footage. */
+/** The storyboard (design.md §5). Callouts point at the box their `shot` mark recorded. */
 export const SCENES: Scene[] = [
-  { id: "title", kind: "title", seconds: 6 },
+  { id: 'title', kind: 'title', seconds: 6 },
   {
-    id: "overview",
-    kind: "console",
+    id: 'overview',
+    kind: 'console',
     chapter: 1,
-    label: "OVERVIEW",
-    title: "One console for the whole building",
-    clip: "overview",
+    label: 'OVERVIEW',
+    title: 'One console for the whole building',
+    clip: 'overview',
     seconds: 14,
-    callouts: [{ at: "workspace", text: "Live events", target: box(600, 300) }],
+    callouts: [
+      { at: 'workspace', text: 'Live events, as they happen' },
+      { at: 'dashboard', text: 'Who is on site now' },
+    ],
   },
   {
-    id: "recognition",
-    kind: "console",
+    id: 'recognition',
+    kind: 'console',
     chapter: 2,
-    label: "RECOGNITION",
-    title: "Every camera knows who it sees",
-    clip: "recognition",
-    seconds: 22,
+    label: 'RECOGNITION',
+    title: 'Every camera knows who it sees',
+    clip: 'recognition',
+    seconds: 18,
     callouts: [
-      { at: "named-box", text: "Face matched", target: box(700, 400) },
-      { at: "named-box", text: "Known person · VIP", target: box(800, 450) },
+      { at: 'named-box', text: 'Known person, recognised' },
+      { at: 'wall', text: 'Every camera, live' },
     ],
   },
   {
-    id: "people",
-    kind: "console",
+    id: 'people',
+    kind: 'console',
     chapter: 3,
-    label: "PEOPLE",
+    label: 'PEOPLE',
     title: "A person's whole day, in one timeline",
-    clip: "people",
-    seconds: 16,
+    clip: 'people',
+    seconds: 18,
     callouts: [
-      {
-        at: "timeline",
-        text: "Every sighting, in order",
-        target: box(500, 400),
-      },
+      { at: 'faces', text: 'Faces seen today' },
+      { at: 'photos', text: 'Captures from every camera' },
+      { at: 'timeline', text: 'Arrivals, doors and zones, in order' },
     ],
   },
   {
-    id: "places",
-    kind: "console",
+    id: 'places',
+    kind: 'console',
     chapter: 4,
-    label: "PLACES",
-    title: "Your building, floor by floor",
-    clip: "places",
+    label: 'PLACES',
+    title: 'Your building, floor by floor',
+    clip: 'places',
     seconds: 16,
-    callouts: [{ at: "lobby", text: "Live occupancy", target: box(1000, 600) }],
+    callouts: [
+      { at: 'tree', text: 'Live count for every area' },
+      { at: 'lobby', text: 'Occupancy per zone' },
+    ],
   },
   {
-    id: "access",
-    kind: "console",
+    id: 'access',
+    kind: 'console',
     chapter: 5,
-    label: "ACCESS",
-    title: "Who gets in, and why",
-    clip: "access",
-    seconds: 20,
+    label: 'ACCESS',
+    title: 'Who gets in, and why',
+    clip: 'access',
+    seconds: 18,
     callouts: [
-      { at: "trace", text: "5 policies checked", target: box(500, 500) },
+      { at: 'trace', text: 'The policy that said no' },
+      { at: 'policies', text: 'Why doors were denied' },
     ],
   },
   {
-    id: "incidents",
-    kind: "console",
+    id: 'incidents',
+    kind: 'console',
     chapter: 6,
-    label: "INCIDENTS",
-    title: "Incidents raise themselves",
-    clip: "incidents",
+    label: 'INCIDENTS',
+    title: 'Incidents raise themselves',
+    clip: 'incidents',
+    seconds: 18,
+    callouts: [
+      { at: 'incident', text: 'Escalated automatically' },
+      { at: 'rule-test', text: 'Try an alert before it goes live' },
+    ],
+  },
+  {
+    id: 'analytics',
+    kind: 'console',
+    chapter: 7,
+    label: 'ANALYTICS',
+    title: 'See how the building lives',
+    clip: 'analytics',
+    seconds: 14,
+    callouts: [
+      { at: 'heatmap', text: 'Busiest hours' },
+      { at: 'flows', text: 'Where people go' },
+    ],
+  },
+  {
+    id: 'privacy',
+    kind: 'console',
+    chapter: 8,
+    label: 'PRIVACY',
+    title: 'Privacy built in',
+    clip: 'privacy',
     seconds: 16,
     callouts: [
-      {
-        at: "incident",
-        text: "Escalated automatically",
-        target: box(900, 500),
-      },
+      { at: 'steps', text: 'Erased on request, step by step' },
+      { at: 'status', text: 'Health at a glance' },
     ],
   },
-  {
-    id: "analytics",
-    kind: "console",
-    chapter: 7,
-    label: "ANALYTICS",
-    title: "See how the building lives",
-    clip: "analytics",
-    seconds: 14,
-    callouts: [{ at: "heatmap", text: "Busiest hours", target: box(600, 800) }],
-  },
-  {
-    id: "privacy",
-    kind: "console",
-    chapter: 8,
-    label: "PRIVACY",
-    title: "Privacy built in",
-    clip: "privacy",
-    seconds: 14,
-    callouts: [
-      { at: "steps", text: "Erased on request", target: box(500, 500) },
-    ],
-  },
-  { id: "outro", kind: "outro", seconds: 10 },
+  { id: 'outro', kind: 'outro', seconds: 10 },
 ];
 
 export function totalSeconds(scenes: Scene[]): number {
