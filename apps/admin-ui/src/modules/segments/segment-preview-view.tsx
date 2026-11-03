@@ -70,7 +70,7 @@ export function SegmentPreviewView({ props, t }: Props): React.ReactElement {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border p-3" data-testid="segment-preview" aria-label={t('label')} aria-live="polite">
+    <section className="flex flex-col gap-3 rounded-md border p-3" data-testid="segment-preview" aria-label={t('name')} aria-live="polite">
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="outline" size="sm" disabled={current === null || preview.isFetching} onClick={run}>
           <Eye className="size-4" aria-hidden />

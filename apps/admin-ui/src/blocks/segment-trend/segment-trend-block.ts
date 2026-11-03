@@ -14,6 +14,8 @@ export const SEGMENT_TREND_MAX = 10;
 export const segmentTrendBlock = defineBlock('itap:segment-trend', {
   texts: {
     label: 'Segment trends',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Segment trends',
     loading: 'Reading the segment figures…',
     failed: 'The segment figures could not be read.',
     none: 'No daily segment figures over the period yet: they are recorded when segments are evaluated (hourly).',

@@ -9,6 +9,8 @@ import { z } from 'zod';
 export const invitationTokenBlock = defineBlock('itap:invitation-token', {
   texts: {
     label: 'Invitation token',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Invitation token',
     intro:
       'Send this token to the invitee. It is shown only once and cannot be read again; if it is lost, revoke the invitation and invite again.',
     expires: 'Valid until {{expiresAt}}.',

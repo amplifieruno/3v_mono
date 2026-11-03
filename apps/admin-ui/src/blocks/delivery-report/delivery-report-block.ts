@@ -11,6 +11,8 @@ import { REPORT_PERIODS } from './delivery-report-query';
 export const deliveryReportBlock = defineBlock('itap:delivery-report', {
   texts: {
     label: 'Deliveries by channel',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Deliveries by channel',
     loading: 'Reading the report…',
     failed: 'The report could not be read.',
     channel: 'Channel',

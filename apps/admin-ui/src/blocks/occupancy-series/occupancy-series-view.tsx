@@ -44,7 +44,7 @@ export function OccupancySeriesView({ props, t }: BlockViewProps<typeof occupanc
   const start = points[0]?.label;
   const end = points[points.length - 1]?.label;
   return (
-    <section data-testid={TEST_ID} data-bucket={bucket} className="flex flex-col gap-3" aria-label={t('label')}>
+    <section data-testid={TEST_ID} data-bucket={bucket} className="flex flex-col gap-3" aria-label={t('name')}>
       <p className="text-sm">
         {t('peak', { params: { peak: totals.peak, when: totals.peakAt ?? '—' } })}
       </p>

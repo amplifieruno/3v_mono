@@ -46,7 +46,7 @@ export function HeatmapView({ props, t }: BlockViewProps<typeof heatmapBlock>): 
   const busiest = busiestCell(heat);
   if (busiest === null) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
   return (
-    <section data-testid={TEST_ID} data-by={by} data-source={props.source} className="flex flex-col gap-2" aria-label={t('label')}>
+    <section data-testid={TEST_ID} data-by={by} data-source={props.source} className="flex flex-col gap-2" aria-label={t('name')}>
       {read.truncated ? (
         <p className="text-xs text-warning-emphasis" role="note" data-testid={`${TEST_ID}:truncated`}>
           {t('truncated')}

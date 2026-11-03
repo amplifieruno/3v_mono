@@ -124,7 +124,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('work schedules against the dev stack (Nova 
           input: { name: 'dev-test refused', timezone: 'UTC', windows: [], ...input },
         }),
         JSON.stringify(input),
-      ).rejects.toMatchObject({ message: expect.stringContaining('Check constraint violation') });
+      ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('Check constraint violation') })] });
     }
   });
 });

@@ -27,7 +27,7 @@ export function InvitationTokenView({
     <div data-testid="invitation-token" className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">{t('intro')}</p>
       <div className="flex items-center gap-2">
-        <Input readOnly value={props.token} className="font-mono" aria-label={t('label')} />
+        <Input readOnly value={props.token} className="font-mono" aria-label={t('name')} />
         <Button type="button" variant="outline" onClick={copy}>
           <Copy className="size-4" aria-hidden />
           {t('copy')}

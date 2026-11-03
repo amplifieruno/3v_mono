@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const reportStatusBlock = defineBlock('itap:report-status', {
   texts: {
     label: 'Progress',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Progress',
     requested: 'Requested',
     generating: 'Generating',
     attempt: 'attempt {{attempt}} of {{max}}',

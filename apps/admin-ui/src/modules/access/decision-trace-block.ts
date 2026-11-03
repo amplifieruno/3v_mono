@@ -12,6 +12,8 @@ import { z } from 'zod';
 export const decisionTraceBlock = defineBlock('itap:access-decision-trace', {
   texts: {
     label: 'How the door decided',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'How the door decided',
     testIntro:
       'Asks the access engine now, as the door’s terminal would, for the person or face chosen, and shows the answer with its trace. This records a real decision (in the decision log, with an access event) and uses up a single-use grant that decides.',
     loading: 'Reading the decision…',

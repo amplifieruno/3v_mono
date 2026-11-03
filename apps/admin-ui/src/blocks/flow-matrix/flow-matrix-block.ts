@@ -14,6 +14,8 @@ export const FLOW_MAX_AREAS = 20;
 export const flowMatrixBlock = defineBlock('itap:flow-matrix', {
   texts: {
     label: 'Movement between areas',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Movement between areas',
     chooseFacility: 'Choose a facility in the sidebar to see how people move between its areas.',
     loading: 'Reading the movements…',
     failed: 'The movements could not be read.',

@@ -10,6 +10,8 @@ import { z } from 'zod';
 export const segmentStatsBlock = defineBlock('itap:segment-stats', {
   texts: {
     label: 'Last 30 days',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Last 30 days',
     none: 'No daily figures in the last 30 days yet: they are recorded when the segment is evaluated (hourly).',
     members: 'Members',
     churn: 'Added and removed',

@@ -7,6 +7,8 @@ import { defineBlock } from '@burojs/core';
  */
 export const SYSTEM_STATUS_TEXTS = {
   label: 'System status',
+  /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+  name: 'System status',
   intro:
     'The platform’s health as of the last check: each service with its response time, the background jobs (cron) and how late they run, the work still queued for this organization, and the last retention run.',
   refresh: 'Check again',

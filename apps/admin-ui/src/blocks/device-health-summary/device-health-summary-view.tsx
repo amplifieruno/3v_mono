@@ -30,7 +30,7 @@ export function DeviceHealthSummaryView({ props, t }: BlockViewProps<typeof devi
   const shown = attention.slice(0, props.limit);
   const def = app.registry.get(DEVICE_RESOURCE);
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('name')}>
       <p className="text-sm">{t('inService', { params: { count: devices.data.length } })}</p>
       <StackedBar testId={`${TEST_ID}:health`} parts={parts} ariaLabel={t('healthChart')} legend />
       <div className="flex flex-col gap-1">

@@ -63,7 +63,7 @@ export function SystemStatusView({ t }: Props): React.ReactElement {
   else if (status.data === undefined) body = <p className="text-sm text-muted-foreground">{t('checking')}</p>;
   else body = <StatusBody status={status.data} t={t} />;
   return (
-    <section className="flex flex-col gap-4" data-testid="system-status" aria-label={t('label')}>
+    <section className="flex flex-col gap-4" data-testid="system-status" aria-label={t('name')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">{t('intro')}</p>
         <Button type="button" variant="outline" disabled={status.isFetching} onClick={() => void status.refetch()}>

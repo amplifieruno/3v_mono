@@ -13,6 +13,8 @@ const text = () => prop(z.string().nullable().optional()).default(null);
 export const authDecisionBlock = defineBlock('itap:auth-decision', {
   texts: {
     label: 'Authentication decision',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Authentication decision',
     authenticated: 'Authenticated',
     notAuthenticated: 'Not authenticated',
     outcome: 'Outcome',

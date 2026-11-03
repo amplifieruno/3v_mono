@@ -52,7 +52,11 @@ const queryContext = (): QueryContext => ({ signal: new AbortController().signal
 type Row = Record<string, unknown>;
 const HOUR = 3_600_000;
 const at = (hours: number) => new Date(Date.now() + hours * HOUR).toISOString();
-const messageOf = (error: unknown): string => (typeof error === 'object' && error !== null ? String((error as { message?: unknown }).message ?? '') : String(error));
+/** The database's words in a refusal: the Hasura envelope the provider keeps in `details`. */
+const messageOf = (error: unknown): string => {
+  const details = (error as { details?: readonly { message?: unknown }[] } | null)?.details;
+  return String(details?.[0]?.message ?? '');
+};
 
 describe.skipIf(!DEV_STACK_ENABLED)('retention and legal holds against the dev stack (Nova Tower)', () => {
   let provider: DataProvider;

@@ -11,6 +11,8 @@ import { ANALYTICS_PERIODS } from './policy-analytics-query';
 export const policyAnalyticsBlock = defineBlock('itap:policy-analytics', {
   texts: {
     label: 'Policy analytics',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Policy analytics',
     loading: 'Reading the analytics…',
     failed: 'The analytics could not be read.',
     versionsTitle: 'Decisions by policy version',

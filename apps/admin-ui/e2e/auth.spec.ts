@@ -46,7 +46,7 @@ test.describe.serial('sign-in, organization switching, sign-out', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(organizationSwitcher(page, NOVA_NAME)).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
   });
 
   test('should switch to Riverside and list its facilities', async () => {
@@ -79,8 +79,9 @@ test.describe.serial('sign-in, organization switching, sign-out', () => {
       localStorage.setItem('itap:auth:v1', JSON.stringify(stored));
     });
 
-    // The next read renews the organization token, the refresh is refused, the session ends.
-    await page.getByRole('button', { name: 'Refresh' }).click();
+    // The next read renews the organization token, the refresh is refused, the session ends. A
+    // background read of the page may get there first and take the button with it.
+    await page.getByRole('button', { name: 'Refresh' }).click({ timeout: 5_000 }).catch(() => undefined);
     await expect(page).toHaveURL(/\/login$/);
     expect(await page.evaluate(() => localStorage.getItem('itap:auth:v1'))).toBeNull();
 

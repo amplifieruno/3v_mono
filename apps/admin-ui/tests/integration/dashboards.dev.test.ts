@@ -135,7 +135,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
     const wide = [widget('wide', 'kpi', 'dashboard_kpis', {}, 8, 0, 6)];
     expect(contractProblems(wide).map((problem) => problem.code)).toEqual(['dashboardWidgets.positionWidth']);
     await expect(mutate({ kind: 'createOne', input: { name: `dev-test refused ${Date.now()}`, widgets: wide } })).rejects.toMatchObject({
-      message: expect.stringContaining('Check constraint violation'),
+      details: [expect.objectContaining({ message: expect.stringContaining('Check constraint violation') })],
     });
   });
 

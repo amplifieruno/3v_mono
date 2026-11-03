@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -86,7 +87,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('subscriptions and deliveries against the de
         resource: NOTIFICATION_SUBSCRIPTION_RESOURCE,
         idField: 'id',
         kind,
-        input,
+        ...(kind === 'updateOne' ? { changes: setChanges(input) } : { input }),
         ...(id === undefined ? {} : { id }),
       } as never) as never,
       mutationContext(),

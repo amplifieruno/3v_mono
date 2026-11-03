@@ -91,7 +91,7 @@ export function IdentityTimelineView({ props, t }: TimelineProps): React.ReactEl
   }
   const known = names.data ?? {};
   return (
-    <section data-testid="identity-timeline" aria-label={t('label')} className="flex flex-col gap-4">
+    <section data-testid="identity-timeline" aria-label={t('name')} className="flex flex-col gap-4">
       {byDay(entries).map((group) => (
         <div key={group.day} className="flex flex-col gap-2">
           <h3 className="text-sm font-medium">{group.day}</h3>

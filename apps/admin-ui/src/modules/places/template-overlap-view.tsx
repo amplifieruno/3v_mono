@@ -44,7 +44,7 @@ export function TemplateOverlapView({
       <p className="text-sm font-medium">
         {t('creates', { params: { count: countTemplateNodes(nodes) } })}
       </p>
-      <TemplateTree nodes={nodes} label={t('label')} />
+      <TemplateTree nodes={nodes} label={t('name')} />
       {overlap.length === 0 ? null : (
         <p
           role="alert"

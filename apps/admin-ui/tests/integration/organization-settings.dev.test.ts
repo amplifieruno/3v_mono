@@ -117,15 +117,15 @@ describe.skipIf(!DEV_STACK_ENABLED)(
           checkRange(value, SETTINGS_RANGES[name]),
           `${name}=${value} in the form`,
         ).not.toBeNull();
-        // Hasura reports a CHECK violation to a non-admin role as `permission-error` (the provider's
-        // `forbidden`), with the constraint in the message: `tasks/ui/buro-gaps.md` G14.
+        // Hasura reports a CHECK violation to a non-admin role as `permission-error`; the provider
+        // reads it as `validation` / `invalid`, the constraint's words in `details`.
         await expect(
           update({ [name]: value }),
           `${name}=${value} on the server`,
         ).rejects.toMatchObject({
-          kind: 'forbidden',
-          code: 'permission-error',
-          message: expect.stringContaining('Check constraint violation'),
+          kind: 'validation',
+          code: 'invalid',
+          details: [expect.objectContaining({ message: expect.stringContaining('Check constraint violation') })],
         });
       }
     });

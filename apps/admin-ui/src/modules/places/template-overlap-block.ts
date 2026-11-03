@@ -12,6 +12,8 @@ import { z } from 'zod';
 export const templateOverlapBlock = defineBlock('itap:template-overlap', {
   texts: {
     label: 'Template preview',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Template preview',
     pick: 'Choose a template to see the areas it creates.',
     creates: 'Creates {{count}} areas:',
     overlap:

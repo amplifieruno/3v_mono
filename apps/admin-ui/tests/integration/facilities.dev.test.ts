@@ -154,7 +154,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
 
     await expect(
       mutate(FACILITY_RESOURCE, { kind: 'updateOne', id, changes: setChanges({ latitude: 91 }) }),
-    ).rejects.toMatchObject({ message: expect.stringContaining('Check constraint violation') });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('Check constraint violation') })] });
 
     await mutate(FACILITY_RESOURCE, { kind: 'deleteOne', id });
     facilities.splice(facilities.indexOf(id), 1);

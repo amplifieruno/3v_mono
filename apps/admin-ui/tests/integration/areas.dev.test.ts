@@ -135,10 +135,10 @@ describe.skipIf(!DEV_STACK_ENABLED)('areas against the dev stack (Nova Tower)', 
     expect(isInsideArea(leaf.path, String(top.id))).toBe(true);
     await expect(
       mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, changes: setChanges({ parent_id: leaf.id }) }),
-    ).rejects.toMatchObject({ message: expect.stringContaining('area_cycle') });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('area_cycle') })] });
     await expect(
       mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, changes: setChanges({ parent_id: top.id }) }),
-    ).rejects.toMatchObject({ message: expect.stringContaining('area_cycle') });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('area_cycle') })] });
 
     // A legal move rewrites the subtree's paths.
     const other = await createArea(`Other ${stamp}`, null);

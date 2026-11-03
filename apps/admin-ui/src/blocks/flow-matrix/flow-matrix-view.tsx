@@ -34,7 +34,7 @@ export function FlowMatrixView({ props, t }: BlockViewProps<typeof flowMatrixBlo
   const grid = flowGrid(flows.data, props.limit, t('unknownArea'));
   if (grid.total === 0) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('name')}>
       <p className="text-xs text-muted-foreground">{t('axes', { params: { total: grid.total } })}</p>
       <HeatGrid
         testId={`${TEST_ID}:grid`}

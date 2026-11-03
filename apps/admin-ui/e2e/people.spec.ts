@@ -385,7 +385,7 @@ test.describe.serial('people smoke', () => {
     verifiedSeed = { id: target.id, status: target.status };
 
     await page.goto(`/verification-requests/create?prefill.identity_id=${target.id}`);
-    await page.getByRole('textbox', { name: /^Reason/ }).fill(`${RUN} check against the ID card`);
+    await page.getByTestId('form-field-input:verification_request:create:reason').fill(`${RUN} check against the ID card`);
     await page.getByTestId('form-submit:verification_request:create').click();
     await expect(page).toHaveURL(/\/verification-requests\/[0-9a-f-]{36}$/);
     const requestId = page.url().split('/').pop() ?? '';

@@ -94,7 +94,7 @@ export function SearchResultsView({ props, t }: BlockViewProps<typeof searchResu
   if (run.data === undefined) return <BlockNote testId={TEST_ID}>{t('loading')}</BlockNote>;
   const data = run.data;
   return (
-    <section data-testid={TEST_ID} aria-label={t('label')} className="flex flex-col gap-4">
+    <section data-testid={TEST_ID} aria-label={t('name')} className="flex flex-col gap-4">
       <OutcomeHeader run={data} t={t} />
       {data.results.length === 0 ? null : (
         <ol className="flex flex-wrap gap-3">

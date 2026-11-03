@@ -31,7 +31,7 @@ export function DeliveriesView({ props, t }: BlockViewProps<typeof deliveriesBlo
   const labelOf = (outcome: string) => t(`outcome_${outcome}`);
   const totals = outcomeTotals(channels);
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-3" aria-label={t('name')}>
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {figures.map(([key, value]) => (
           <div key={key} className="flex flex-col gap-0.5" data-testid={`${TEST_ID}:${key}`}>

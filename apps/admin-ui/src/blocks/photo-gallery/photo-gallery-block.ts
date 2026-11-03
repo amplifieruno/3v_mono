@@ -11,6 +11,8 @@ import { identityPhotos } from './identity-photos-query';
 export const photoGalleryBlock = defineBlock('itap:photo-gallery', {
   texts: {
     label: 'Photos',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Photos',
     none: 'No photos yet. Use Add photos to give the platform the person’s face.',
     more: 'The newest {{shown}} of {{total}} photos.',
     primary: 'Primary',

@@ -1,12 +1,67 @@
 # buro framework gaps found while building the ITAP UI
 
-What the ITAP console needed from buro (`@burojs/*` 0.6.0) and did not find, or found broken.
+What the ITAP console needed from buro (`@burojs/*`, written at 0.6.0, running 0.11.0) and did not find, or found broken.
 Each entry: what is missing, where it bit us, what we did instead, and how sure we are.
 
 Checked against buro `origin/main` at the 0.6.0 release (`e8ff7ff`).
 
 Evidence: **[run]** reproduced by running it; **[code]** read in the framework source, not run;
 **[doc]** stated in buro's docs or `examples/marketplace-ops/docs/known-gaps.md`.
+
+## After the upgrade to 0.11.0 (2026-11-03)
+
+The entries below were written against 0.6.0 and keep that wording. The console now runs 0.11.0, so
+some of them are closed upstream and their workaround can go. Re-check an entry before relying on it.
+
+Closed by 0.11.0 and already adopted:
+
+- **G14** (range not enforced by the form): buro checks `min` / `max` / `integer` in forms. The console
+  states the range once, through `rangeValidator`, because its sentence names the range.
+- **G35** (review reads the values as its record): a review reads `record` and `values` separately.
+  Merge reviews read the record; the carried ids are gone from them.
+- **The `@burojs/react` StrictMode patch**: `InfiniteListObserver.activate()` is upstream. The patch is
+  removed.
+
+Fixed upstream, workaround still in the code:
+
+- **G12**: `onUnknown.check` receives the sent `input`, so most `flow.unknown-unhandled` entries in
+  `tests/check-app.test.ts` could get a real check.
+- **G33**: an Action's own code arrives as `validation` with `extensions.kind`, `applied` and `issues`.
+  `withActionRefusals` could shrink to the codes that need a sentence. SQL-function operations could
+  declare `execution: 'transactional'`.
+- **`access/version-flows.ts`** still hosts its review in a form because of G35.
+
+Still open, confirmed under 0.11.0:
+
+- **G84**: a lost answer still stores an unsalted `bodyHash` of the secret in `sessionStorage`
+  (`tests/modules/integrations-exports-page.test.tsx`). A sensitive field only keeps `input` out.
+
+New in 0.11.0:
+
+### G90. A page source that fails takes the whole screen down
+- **Need:** a custom page whose `with` source fails shows the load error with a retry.
+- **Framework (0.11.0 and `origin/main` at `e36ca6d`):** `FailedNode` reads `sources[name]`, but on a
+  custom page `snapshot.sources` is `undefined`, so it throws `Cannot read properties of undefined
+  (reading 'landing')` and the error boundary replaces the shell. **[run]** `/dashboard` with its
+  `landing` query failing. (`ui-shadcn/src/screen/nodes.tsx`)
+- **Workaround:** none. A failing dashboard query needs a reload.
+- **Expected from a framework:** `sources?.[name]`, then `LoadError` with its retry.
+
+### G92. A block view's `t('label')` returns the raw key
+- **Need:** a view names its region with the block's declared label, as it did under 0.6.
+- **Framework (0.11.0):** a block's `texts.label` is left out of its bundle (`declared-texts.ts`,
+  `slot !== 'label'`), so `t('label')` answers `blocks.itap:segment-trend.label` and every screen
+  reader hears that. No type error, no `checkApp` finding, no line in the migration guides. **[run]**
+- **Workaround:** the views read a second declared key, `name`, with the same text.
+- **Expected from a framework:** `t('label')` resolves, or `checkApp` reports a view key that has no text.
+
+### G91. A write-only column cannot be cleared from an edit form
+- **Need:** "Remove the stored value" on a secret the console never reads.
+- **Framework (since 0.7):** an edit sends what changed against the record it read. A field absent from
+  the baseline with an empty value produces no change, so nothing is sent and the user sees a success.
+  **[code]** (`core/src/data/change-diff.ts`)
+- **Workaround:** a separate flow writing the input as it stands (`clearPasswordFlow`).
+- **Expected from a framework:** a field option meaning "unread, an explicit null is a write".
 
 ## Open
 

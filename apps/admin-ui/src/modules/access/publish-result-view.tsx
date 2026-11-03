@@ -73,7 +73,7 @@ export function PublishResultView({ props, t }: Props): React.ReactElement {
     );
   }
   return (
-    <section className="flex flex-col gap-3" data-testid="publish-result" aria-label={t('label')}>
+    <section className="flex flex-col gap-3" data-testid="publish-result" aria-label={t('name')}>
       {body}
     </section>
   );

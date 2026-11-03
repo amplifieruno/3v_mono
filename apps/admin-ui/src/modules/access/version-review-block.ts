@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const versionReviewBlock = defineBlock('itap:access-policy-version-review', {
   texts: {
     label: 'Version under review',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Version under review',
     submitIntro:
       'Submitting freezes the version: nothing in it can change until another member approves it (it goes in force) or rejects it (it goes back to draft).',
     approveIntro:

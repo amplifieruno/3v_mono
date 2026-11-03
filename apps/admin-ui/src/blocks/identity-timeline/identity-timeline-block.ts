@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const identityTimelineBlock = defineBlock('itap:identity-timeline', {
   texts: {
     label: 'Timeline',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Timeline',
     loading: 'Reading the timeline…',
     failed: 'The timeline could not be read.',
     none: 'Nothing recorded yet: the timeline fills as cameras see this face.',

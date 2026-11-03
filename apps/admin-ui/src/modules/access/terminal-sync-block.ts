@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const terminalSyncBlock = defineBlock('itap:terminal-sync-status', {
   texts: {
     label: 'Terminal sync',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Terminal sync',
     loading: 'Reading the terminals…',
     failed: 'The terminals’ sync state could not be read.',
     none: 'No access terminal here: terminals are access terminals bound to an access point as its terminal.',

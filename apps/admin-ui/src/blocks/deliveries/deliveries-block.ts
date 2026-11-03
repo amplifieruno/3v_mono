@@ -10,6 +10,8 @@ import { REPORT_PERIODS } from '../delivery-report/delivery-report-query';
 export const deliveriesBlock = defineBlock('itap:deliveries', {
   texts: {
     label: 'Notification deliveries',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Notification deliveries',
     loading: 'Reading the deliveries…',
     failed: 'The deliveries could not be read.',
     none: 'No notification was sent over the period.',

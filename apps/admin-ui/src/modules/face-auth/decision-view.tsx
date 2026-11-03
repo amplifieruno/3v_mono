@@ -68,7 +68,7 @@ export function AuthDecisionView({ props, t }: Props): React.ReactElement {
   const attributes = Object.entries(props.attributes ?? {});
   const Icon = props.authenticated ? CircleCheck : CircleX;
   return (
-    <section className="flex flex-col gap-4" data-testid="auth-decision" data-outcome={props.outcome} aria-label={t('label')}>
+    <section className="flex flex-col gap-4" data-testid="auth-decision" data-outcome={props.outcome} aria-label={t('name')}>
       <p
         role="status"
         className={cn('flex items-center gap-2 text-base font-medium', props.authenticated ? 'text-emerald-700 dark:text-emerald-400' : 'text-destructive')}

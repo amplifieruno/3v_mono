@@ -9,7 +9,6 @@ const RUN = `e2e-${Date.now()}`;
 const SEEDED_DASHBOARD = 'Security overview';
 const SEEDED_TILES = 5;
 /** The seeded report whose upload failed, and a seeded completed one. */
-const FAILED_REPORT = 'REPORT-00010';
 const FAILED_ERROR = 'File upload failed: storage service unavailable (HTTP 503)';
 const COMPLETED_REPORT = 'Weekly occupancy 2026-10-12 - 2026-10-18';
 
@@ -136,10 +135,15 @@ test.describe.serial('analytics smoke', () => {
   });
 
   test('should show a failed seeded report with its error and Retry, and a completed one with its file', async () => {
+    // The seeded failed report: its code depends on the seed's order.
+    const failed = (
+      await graphql<{ reports: { code: string }[] }>('{ reports(where: {status: {_eq: failed}}, order_by: {code: asc}, limit: 1) { code } }')
+    ).reports[0];
+    if (!failed) throw new Error('the seed has no failed report');
     await page.goto('/reports');
     await page.getByTestId('list-saved-views:report').click();
     await page.getByRole('button', { name: 'Failed', exact: true }).click();
-    const failedRow = page.getByRole('row', { name: new RegExp(FAILED_REPORT) });
+    const failedRow = page.getByRole('row', { name: new RegExp(failed.code) });
     await expect(failedRow).toHaveCount(1);
     await failedRow.getByRole('button', { name: 'More' }).click();
     await expect(page.getByRole('menuitem', { name: 'Retry' })).toBeVisible();

@@ -218,7 +218,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('floor plans against the dev stack (Nova Tow
     await expect(
       mutate(AREA_RESOURCE, { kind: 'updateOne', id: zone.id, changes: setChanges({ shape: two }) }),
     ).rejects.toMatchObject({
-      message: expect.stringMatching(/areas_shape_valid|[Cc]heck constraint/),
+      details: [expect.objectContaining({ message: expect.stringMatching(/areas_shape_valid|[Cc]heck constraint/) })],
     });
   });
 });

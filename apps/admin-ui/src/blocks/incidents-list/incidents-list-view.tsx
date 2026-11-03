@@ -26,7 +26,7 @@ export function IncidentsListView({ props, t }: BlockViewProps<typeof incidentsL
   if (rows.length === 0) return <BlockNote testId={TEST_ID}>{t(props.status === 'open' ? 'noneOpen' : 'none')}</BlockNote>;
   const def = app.registry.get(INCIDENT_RESOURCE);
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-2" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-2" aria-label={t('name')}>
       <ul className="flex flex-col divide-y rounded-md border">
         {rows.map((row) => (
           <li key={row.id} data-testid={`${TEST_ID}-row`} className="flex flex-col gap-1 px-3 py-2 text-sm">

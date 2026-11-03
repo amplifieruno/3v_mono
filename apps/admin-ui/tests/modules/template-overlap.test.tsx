@@ -59,7 +59,7 @@ const render = (props: Record<string, unknown>) =>
     props: { facilityId: FACILITY, ...props },
     wrapper: Wrapper,
     messages: {
-      label: 'Template preview',
+      name: 'Template preview',
       pick: 'Choose a template to see the areas it creates.',
       creates: 'Creates {{count}} areas:',
       overlap:

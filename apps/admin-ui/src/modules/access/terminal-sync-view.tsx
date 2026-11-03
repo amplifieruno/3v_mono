@@ -104,7 +104,7 @@ export function TerminalSyncView({ props, t }: Props): React.ReactElement {
     );
   }
   return (
-    <section className="flex flex-col gap-3" data-testid="terminal-sync" aria-label={t('label')}>
+    <section className="flex flex-col gap-3" data-testid="terminal-sync" aria-label={t('name')}>
       {body}
     </section>
   );

@@ -19,7 +19,7 @@ export function PolicyAnalyticsView({ props, t }: Props): React.ReactElement {
   if (analytics.data === undefined) return <p className="text-sm text-muted-foreground">{t('loading')}</p>;
   const row = analytics.data.detail;
   return (
-    <section className="flex flex-col gap-6" data-testid="policy-analytics" aria-label={t('label')}>
+    <section className="flex flex-col gap-6" data-testid="policy-analytics" aria-label={t('name')}>
       <AnalyticsVersions row={row} t={t} />
       <AnalyticsDenials row={row} t={t} />
       <AnalyticsRuleSet row={row} t={t} />

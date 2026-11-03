@@ -106,7 +106,7 @@ export function DsrStepsView({ props, t }: Props): React.ReactElement {
   if (progress.data === undefined) return <p className="text-sm text-muted-foreground" data-testid="dsr-steps">{t('loading')}</p>;
   const { steps } = progress.data;
   return (
-    <section className="flex flex-col gap-2" data-testid="dsr-steps" aria-label={t('label')} data-status={progress.data.status}>
+    <section className="flex flex-col gap-2" data-testid="dsr-steps" aria-label={t('name')} data-status={progress.data.status}>
       <PartialNotice steps={steps} t={t} classLabel={classLabel} />
       {steps.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('none')}</p>

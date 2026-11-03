@@ -90,13 +90,13 @@ export function BulkJobProgressView({ props, t }: BlockViewProps<typeof bulkJobP
   const percent = progressPercent(job);
   const attempt = job.attempts - job.attempts_at_retry;
   return (
-    <section className="flex flex-col gap-3" data-testid={TEST_ID} data-status={job.status} aria-label={t('label')}>
+    <section className="flex flex-col gap-3" data-testid={TEST_ID} data-status={job.status} aria-label={t('name')}>
       {job.status === 'queued' ? <p className="text-sm text-muted-foreground">{t('waiting')}</p> : null}
       {percent === null ? (
         job.status === 'running' ? <p className="text-sm text-muted-foreground">{t('reading')}</p> : null
       ) : (
         <div className="flex flex-col gap-1">
-          <Progress value={percent} aria-label={t('label')} />
+          <Progress value={percent} aria-label={t('name')} />
           <span className="text-sm text-muted-foreground tabular-nums" data-testid="bulk-job-rows-read">
             {t('rows', { params: { processed: job.processed, total: job.total } })}
             {moving && attempt > 1 ? ` · ${t('attempt', { params: { attempt } })}` : ''}

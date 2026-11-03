@@ -52,7 +52,7 @@ export function PhotoGalleryView({ props, data, t }: BlockViewProps<typeof photo
     );
   }
   return (
-    <section data-testid="photo-gallery" aria-label={t('label')} className="flex flex-col gap-3">
+    <section data-testid="photo-gallery" aria-label={t('name')} className="flex flex-col gap-3">
       <ul className="flex flex-wrap gap-4">
         {photos.map((photo, index) => (
           <PhotoCard

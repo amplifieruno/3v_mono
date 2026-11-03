@@ -46,7 +46,7 @@ builder's (§9).
 
 ## 4. Constraints
 
-- `@burojs/*` from npm, all packages pinned to the same exact version (`0.6.0` now; upgrade by
+- `@burojs/*` from npm, all packages pinned to the same exact version (`0.11.0` now; upgrade by
   release). Peers: React 19, Tailwind v4, `i18next`, zod 3.x, `@tanstack/react-query` at buro's
   version.
 - Vite SPA + react-router 7 (buro's router adapter), as in `marketplace-ops`. No SSR.

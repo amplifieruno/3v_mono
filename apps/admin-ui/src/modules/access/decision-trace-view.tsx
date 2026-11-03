@@ -106,7 +106,7 @@ export function DecisionTraceView({ props, t }: Props): React.ReactElement {
     );
   }
   return (
-    <section className="flex flex-col gap-4" data-testid="decision-trace" aria-label={t('label')}>
+    <section className="flex flex-col gap-4" data-testid="decision-trace" aria-label={t('name')}>
       {body}
     </section>
   );

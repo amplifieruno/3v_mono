@@ -156,10 +156,10 @@ describe.skipIf(!DEV_STACK_ENABLED)('devices against the dev stack', () => {
     expect(streamUrlProblem(credentials)?.code).toBe('device.streamCredentials');
     await expect(
       mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ stream_url: credentials }) }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/no_credentials|[Cc]heck constraint/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/no_credentials|[Cc]heck constraint/) })] });
     await expect(
       mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ recognition_fps: 6 }) }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/recognition_fps_range|[Cc]heck constraint/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/recognition_fps_range|[Cc]heck constraint/) })] });
   });
 
   it('adds a covered area and reads it back through the junction', async () => {

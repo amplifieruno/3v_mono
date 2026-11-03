@@ -35,7 +35,8 @@ test.describe.serial('foundation smoke', () => {
 
   test('should show the dashboard figures as numbers', async () => {
     for (const label of KPI_LABELS) {
-      const tile = page.getByText(label, { exact: true }).locator('xpath=..');
+      // The page's own figures: a landing dashboard above them may show the same tile.
+      const tile = page.locator('[data-buro-fact]').getByText(label, { exact: true }).locator('xpath=..');
       await expect(tile).toContainText(label);
       // The value alone (tile text without its label) is a number, not a dash.
       await expect.poll(async () => (await tile.innerText()).replace(label, '').trim()).toMatch(/^\d+$/);

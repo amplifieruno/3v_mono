@@ -111,7 +111,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profiles against the dev stack', () => {
   it('should refuse an end date before the start date and a restriction column', async () => {
     const id = String(employee?.id);
     await expect(update(id, { end_date: '2000-01-01' })).rejects.toMatchObject({
-      message: expect.stringMatching(/profiles_dates_ordered|[Cc]heck constraint/),
+      details: [expect.objectContaining({ message: expect.stringMatching(/profiles_dates_ordered|[Cc]heck constraint/) })],
     });
     await expect(update(id, { processing_restricted: true })).rejects.toBeDefined();
   });

@@ -13,6 +13,8 @@ export const DEVICE_PROBLEMS_MAX = 20;
 export const deviceHealthSummaryBlock = defineBlock('itap:device-health-summary', {
   texts: {
     label: 'Device health',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Device health',
     loading: 'Reading the devices…',
     failed: 'The devices could not be read.',
     none: 'No device in service.',

@@ -146,7 +146,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom attributes and preferences (Nova Tow
       await expect(
         mutate(CUSTOM_ATTRIBUTE_RESOURCE, 'id', { kind: 'createOne', input }),
         JSON.stringify(input),
-      ).rejects.toMatchObject({ message: expect.stringContaining('Check constraint violation') });
+      ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('Check constraint violation') })] });
     }
   });
 

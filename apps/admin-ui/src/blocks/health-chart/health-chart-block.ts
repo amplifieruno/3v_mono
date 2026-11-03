@@ -12,6 +12,8 @@ import { deviceHealthSeries } from './health-series-query';
 export const healthChartBlock = defineBlock('itap:health-chart', {
   texts: {
     label: 'Health over 24 hours',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Health over 24 hours',
     none: 'No health samples in the last 24 hours.',
     cpu: 'CPU',
     memory: 'Memory',

@@ -32,7 +32,7 @@ export function HealthChartView({
   if (measures.length === 0) {
     // Samples but no measure (failed checks only): the failed checks, not an empty grid.
     return (
-      <section data-testid="health-chart" aria-label={t('label')}>
+      <section data-testid="health-chart" aria-label={t('name')}>
         {failed ? (
           <HealthErrorStrip points={points} t={t} />
         ) : (
@@ -42,7 +42,7 @@ export function HealthChartView({
     );
   }
   return (
-    <section data-testid="health-chart" className="flex flex-col gap-4" aria-label={t('label')}>
+    <section data-testid="health-chart" className="flex flex-col gap-4" aria-label={t('name')}>
       <div className="grid gap-4 md:grid-cols-2">
         {measures.map((measure) => (
           <HealthSparkline key={measure} measure={measure} points={points} t={t} />

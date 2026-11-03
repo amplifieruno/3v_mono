@@ -37,7 +37,7 @@ export function DeliveryReportView({ props, t }: Props): React.ReactElement {
   if (report.data === undefined) return <p className="text-sm text-muted-foreground">{t('loading')}</p>;
   const rows = report.data.channels;
   return (
-    <section className="flex flex-col gap-2" data-testid="delivery-report" aria-label={t('label')}>
+    <section className="flex flex-col gap-2" data-testid="delivery-report" aria-label={t('name')}>
       <div className="overflow-x-auto rounded-md border">
         <Table data-testid="delivery-report-table">
           <TableHeader>

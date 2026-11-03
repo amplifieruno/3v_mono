@@ -12,6 +12,8 @@ import { z } from 'zod';
 export const auditDiffBlock = defineBlock('itap:audit-diff', {
   texts: {
     label: 'What changed',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'What changed',
     field: 'Field',
     before: 'Before',
     after: 'After',

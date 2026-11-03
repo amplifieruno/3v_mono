@@ -79,7 +79,7 @@ export function VersionReviewView({ props, t }: Props): React.ReactElement {
     );
   }
   return (
-    <section className="flex flex-col gap-3" data-testid="policy-version-review" aria-label={t('label')}>
+    <section className="flex flex-col gap-3" data-testid="policy-version-review" aria-label={t('name')}>
       {intro}
       {body}
     </section>

@@ -139,10 +139,10 @@ describe.skipIf(!DEV_STACK_ENABLED)('recognition, health and events against the 
   it('should refuse a camera under maintenance and a sensor', async () => {
     await expect(
       custom('mutation', DEVICES_BINDING, 'recognitionStart', { deviceId: cameraId }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/active cameras only/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/active cameras only/) })] });
     await expect(
       custom('query', DEVICES_BINDING, 'recognitionStatus', { deviceId: sensorId }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/cameras only/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/cameras only/) })] });
   });
 
   it('should start and stop recognition and return the real flag', async () => {

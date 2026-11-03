@@ -88,7 +88,7 @@ export function AuditDiffView({ props, t }: Props): React.ReactElement {
     );
   }
   return (
-    <section className="flex flex-col gap-2" data-testid="audit-diff" data-kind={diff.kind} aria-label={t('label')}>
+    <section className="flex flex-col gap-2" data-testid="audit-diff" data-kind={diff.kind} aria-label={t('name')}>
       {body}
     </section>
   );

@@ -90,8 +90,12 @@ test.describe.serial('monitoring smoke', () => {
     await page.goto('/detections');
     const cells = page.locator('[data-testid^="list-cell:detection:"][data-testid$=":area_id"]');
     await expect(cells.first()).toBeVisible();
+    // The area names are read after the rows.
+    const areaNames = async (): Promise<string[]> =>
+      (await cells.allTextContents()).map((text) => text.trim()).filter((text) => text !== '');
+    await expect.poll(async () => (await areaNames()).length).toBeGreaterThan(0);
     // An area other than the newest detection's, so the filter has something to remove.
-    const before = (await cells.allTextContents()).map((text) => text.trim()).filter((text) => text !== '');
+    const before = await areaNames();
     const area = before.find((name) => name !== before[0]) ?? before[0];
     if (area === undefined) throw new Error('the seed has no detection with an area');
     expect(new Set(before).size).toBeGreaterThan(0);
@@ -284,7 +288,11 @@ test.describe.serial('monitoring smoke', () => {
     await page.getByTestId('form-field-input:watch_list_profile_entry:create:reason').fill(`${RUN} reason`);
     await page.getByTestId('form-field-input:watch_list_profile_entry:create:profile_id').click();
     await page.getByRole('combobox').last().fill(person.last_name);
-    await page.getByRole('option', { name: new RegExp(person.last_name) }).first().click();
+    // The last name may repeat: both names, so the entry lands on this person.
+    await page
+      .getByRole('option', { name: new RegExp(`(?=.*${person.first_name})(?=.*${person.last_name})`) })
+      .first()
+      .click();
     await page.getByTestId('form-submit:watch_list_profile_entry:create').click();
     await expect.poll(async () => (await entries()).map((e) => e.reason)).toEqual([`${RUN} reason`]);
     await expect(page.getByText(`${RUN} reason`)).toBeVisible();

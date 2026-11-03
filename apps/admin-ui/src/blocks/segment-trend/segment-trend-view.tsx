@@ -19,7 +19,7 @@ export function SegmentTrendView({ props, t }: BlockViewProps<typeof segmentTren
   const trends = segmentTrends(read.data, new Date(read.dataUpdatedAt), props.days, props.limit);
   if (trends.length === 0) return <BlockNote testId={TEST_ID}>{t('none')}</BlockNote>;
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-2" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-2" aria-label={t('name')}>
       {read.data.truncated ? (
         <p className="text-xs text-warning-emphasis" role="note" data-testid={`${TEST_ID}:truncated`}>
           {t('truncated')}

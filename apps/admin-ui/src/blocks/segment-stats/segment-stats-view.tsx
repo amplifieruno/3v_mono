@@ -40,7 +40,7 @@ export function SegmentStatsView({ props, t }: BlockViewProps<typeof segmentStat
     );
   }
   return (
-    <section data-testid="segment-stats" className="flex flex-col gap-2" aria-label={t('label')}>
+    <section data-testid="segment-stats" className="flex flex-col gap-2" aria-label={t('name')}>
       <div className="grid gap-4 md:grid-cols-2">
         <SegmentMembersChart points={points} t={t} />
         <SegmentChurnChart points={points} t={t} />

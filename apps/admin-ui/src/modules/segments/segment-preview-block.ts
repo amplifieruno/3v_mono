@@ -10,6 +10,8 @@ import { z } from 'zod';
 export const segmentPreviewBlock = defineBlock('itap:segment-preview', {
   texts: {
     label: 'Preview',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Preview',
     intro: 'See who these conditions match right now, before saving. Nothing is saved or changed.',
     run: 'Preview',
     rerun: 'Preview again',

@@ -10,6 +10,8 @@ import { publishResultRow } from './terminal-ops';
 export const publishResultBlock = defineBlock('itap:terminal-publish-result', {
   texts: {
     label: 'Publish result',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Publish result',
     intro:
       'Publish policy to terminals pushes the current rule set (policies in force, reusable grants, active overrides) now to every access terminal of {{facility}}, whatever epoch they hold. Terminals are otherwise synced within seconds of an urgent change and within 15 minutes of any other; offline ones keep their rule set until they are back.',
     everyFacility: 'every facility (none is selected in the sidebar)',

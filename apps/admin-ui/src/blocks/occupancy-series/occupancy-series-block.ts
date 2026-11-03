@@ -13,6 +13,8 @@ import { MAX_PERIOD_DAYS, SERIES_BUCKETS } from '../charts/period';
 export const occupancySeriesBlock = defineBlock('itap:occupancy-series', {
   texts: {
     label: 'Occupancy over time',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Occupancy over time',
     chooseFacility: 'Choose a facility in the sidebar to see its occupancy over time.',
     loading: 'Reading the occupancy figures…',
     failed: 'The occupancy figures could not be read.',

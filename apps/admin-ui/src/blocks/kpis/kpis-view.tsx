@@ -29,7 +29,7 @@ export function KpisView({ props, t }: BlockViewProps<typeof kpisBlock>): React.
     legend: <EnumBadge enumName={EVENT_SEVERITY_ENUM} value={part.key} presentation="plain" />,
   }));
   return (
-    <section data-testid={TEST_ID} className="flex flex-col gap-4" aria-label={t('label')}>
+    <section data-testid={TEST_ID} className="flex flex-col gap-4" aria-label={t('name')}>
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {props.figures.map((figure) => (
           <div key={figure} className="flex flex-col gap-1 rounded-md border p-3" data-testid={`kpi:${figure}`}>

@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const bulkJobProgressBlock = defineBlock('itap:bulk-job-progress', {
   texts: {
     label: 'Progress',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Progress',
     waiting: 'Waiting for a worker to start the job…',
     reading: 'Reading the file…',
     rows: '{{processed}} of {{total}} rows read',

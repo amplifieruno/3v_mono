@@ -33,7 +33,7 @@ export function DashboardGridView({ props, t }: BlockViewProps<typeof dashboardG
     })),
   );
   return (
-    <section data-testid={TEST_ID} aria-label={t('label')} className="flex flex-col gap-3">
+    <section data-testid={TEST_ID} aria-label={t('name')} className="flex flex-col gap-3">
       {intro}
       <div className={GRID_CLASSES}>
         {tiles.map((tile) => (

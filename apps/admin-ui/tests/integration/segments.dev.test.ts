@@ -136,8 +136,8 @@ describe.skipIf(!DEV_STACK_ENABLED)('segments against the dev stack', () => {
 
     const refused = mutate('deleteSegment', { segmentId: manual });
     await expect(refused).rejects.toMatchObject({ kind: 'validation', code: 'segment_referenced' });
-    await refused.catch((error: { details?: { issues?: { message: { default: string } }[] } }) => {
-      expect(error.details?.issues?.[0]?.message.default).toMatch(/^This segment is named by the conditions/);
+    await refused.catch((error: { issues?: { message: { default: string } }[] }) => {
+      expect(error.issues?.[0]?.message.default).toMatch(/^This segment is named by the conditions/);
     });
     expect(await segmentRow(manual)).not.toBeNull();
 

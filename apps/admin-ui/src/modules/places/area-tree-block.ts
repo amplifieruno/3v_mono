@@ -15,6 +15,8 @@ export const AREA_TREE_LIMIT = 100;
 export const areaTreeBlock = defineBlock('itap:area-tree', {
   texts: {
     label: 'Area tree',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Area tree',
     empty: 'This facility has no areas yet.',
     add: 'Add area',
     addInside: 'Add an area inside {{name}}',

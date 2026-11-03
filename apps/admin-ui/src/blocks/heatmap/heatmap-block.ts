@@ -27,6 +27,8 @@ export const HEATMAP_MAX_DAYS = 31;
 export const heatmapBlock = defineBlock('itap:heatmap', {
   texts: {
     label: 'Busy hours',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Busy hours',
     chooseFacility: 'Choose a facility in the sidebar to see its busy hours.',
     loading: 'Reading the hourly figures…',
     failed: 'The hourly figures could not be read.',

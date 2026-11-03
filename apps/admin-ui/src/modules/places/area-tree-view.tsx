@@ -63,7 +63,7 @@ export function AreaTreeView({
       {tree.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('empty')}</p>
       ) : (
-        <ul className="flex flex-col" aria-label={t('label')}>
+        <ul className="flex flex-col" aria-label={t('name')}>
           {visibleNodes(tree, collapsed).map((node) => (
             <AreaTreeRow
               key={node.area.id}

@@ -51,7 +51,7 @@ export function NotificationRuleTestView({ props, t }: Props): React.ReactElemen
   }
 
   return (
-    <section className="flex flex-col gap-4" data-testid="notification-rule-test" aria-label={t('label')}>
+    <section className="flex flex-col gap-4" data-testid="notification-rule-test" aria-label={t('name')}>
       <p className="text-sm text-muted-foreground">{t('intro')}</p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">

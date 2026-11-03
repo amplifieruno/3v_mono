@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const notificationRuleTestBlock = defineBlock('itap:notification-rule-test', {
   texts: {
     label: 'Test rule',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Test rule',
     intro:
       'The rule tried against the organization’s latest events, as if it were active. Nothing is sent and nothing is written.',
     events: 'Latest events to try',

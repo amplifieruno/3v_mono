@@ -81,7 +81,7 @@ export function ReportStatusView({ props, t }: BlockViewProps<typeof reportStatu
   }
   const steps = reportSteps(progress.data);
   return (
-    <section className="flex flex-col gap-2" data-testid="report-status" aria-label={t('label')} data-status={progress.data.status}>
+    <section className="flex flex-col gap-2" data-testid="report-status" aria-label={t('name')} data-status={progress.data.status}>
       <ol className="flex flex-col gap-1.5">
         {steps.map((step) => (
           <StepItem key={step.key} step={step} t={t} />

@@ -9,6 +9,8 @@ import { defineBlock } from '@burojs/core';
 export const retentionPlanBlock = defineBlock('itap:retention-plan', {
   texts: {
     label: 'Retention plan',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Retention plan',
     intro:
       'What the nightly retention run would purge if it ran at the chosen moment, per policy. This is a dry run: nothing is deleted, anonymized, archived or recorded, and no file is queued.',
     horizon: 'As of',

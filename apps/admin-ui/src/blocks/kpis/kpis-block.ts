@@ -28,6 +28,8 @@ export const kpiFigures = z
 export const kpisBlock = defineBlock('itap:kpis', {
   texts: {
     label: 'Key figures',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Key figures',
     loading: 'Reading the figures…',
     failed: 'The figures could not be read.',
     none: 'No figures: the session names no organization.',

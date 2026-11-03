@@ -78,6 +78,7 @@ const RERUN_TEXTS = {
 };
 
 const rerunSubmit = {
+  reread: true,
   mutation: searchFaces,
   retry: 'never' as const,
   input: ({ values, record }: { readonly values: Readonly<Record<string, unknown>>; readonly record?: unknown }) =>

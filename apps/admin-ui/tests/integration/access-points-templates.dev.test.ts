@@ -161,7 +161,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
         id: templateId,
         changes: setChanges({ structure: bad }),
       }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/structure_valid|[Cc]heck constraint/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/structure_valid|[Cc]heck constraint/) })] });
   });
 
   // Pins today's doubling; when bd 3v_mono-62p makes apply_facility_template skip names that
@@ -216,7 +216,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
         id: record.id,
         changes: setChanges({ from_area_id: office?.id }),
       }),
-    ).rejects.toMatchObject({ message: expect.stringMatching(/areas_differ|[Cc]heck constraint/) });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringMatching(/areas_differ|[Cc]heck constraint/) })] });
   });
 
   it('binds a device of the same facility to a seeded access point, once, and unbinds it', async () => {

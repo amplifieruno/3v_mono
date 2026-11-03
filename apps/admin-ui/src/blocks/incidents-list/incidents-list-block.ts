@@ -22,6 +22,8 @@ export const INCIDENT_LIST_MAX = 50;
 export const incidentsListBlock = defineBlock('itap:incidents-list', {
   texts: {
     label: 'Incidents',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Incidents',
     loading: 'Reading the incidents…',
     failed: 'The incidents could not be read.',
     noneOpen: 'No open incident.',

@@ -12,6 +12,8 @@ import { z } from 'zod';
 export const searchResultsBlock = defineBlock('itap:search-results', {
   texts: {
     label: 'Search results',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Search results',
     loading: 'Reading the search…',
     unreadable: 'The search could not be read. It may belong to another member’s history, or no longer exist.',
     pending: 'The search is still running…',

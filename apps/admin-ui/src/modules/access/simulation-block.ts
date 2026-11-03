@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const simulationBlock = defineBlock('itap:access-policy-simulation', {
   texts: {
     label: 'Simulation',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Simulation',
     intro:
       'The doors’ past decisions are evaluated again at their own time, once with the policies in force today and once with this version in force instead. Nothing is decided, recorded or sent.',
     period: 'Period',

@@ -219,7 +219,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('reports against the dev stack (Nova Tower)'
         kind: 'createOne',
         input: { name: `dev-test refused ${Date.now()}`, template_id: incident?.id, cron, timezone: 'UTC', channel: 'webhook', is_active: false },
       }),
-    ).rejects.toMatchObject({ message: expect.stringContaining('report_schedule_incident_template') });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('report_schedule_incident_template') })] });
     // The server's cron check and the field's agree.
     expect(cronSummary('0 7 * * MON')).toBeNull();
     await expect(
@@ -227,7 +227,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('reports against the dev stack (Nova Tower)'
         kind: 'createOne',
         input: { name: `dev-test cron ${Date.now()}`, template_id: weekly?.id, cron: '0 7 * * MON', timezone: 'UTC', channel: 'webhook', is_active: false },
       }),
-    ).rejects.toMatchObject({ message: expect.stringContaining('report_schedules_cron_valid') });
+    ).rejects.toMatchObject({ details: [expect.objectContaining({ message: expect.stringContaining('report_schedules_cron_valid') })] });
 
     await resourceMutation(REPORT_SCHEDULE_RESOURCE, { kind: 'deleteOne', id: String(result.record.id) });
     schedules.pop();

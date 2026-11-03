@@ -11,6 +11,8 @@ import { z } from 'zod';
 export const dsrStepsBlock = defineBlock('itap:dsr-steps', {
   texts: {
     label: 'Steps',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Steps',
     loading: 'Reading the request’s steps…',
     unreadable: 'The request’s steps could not be read.',
     none: 'No step yet: the background job picks the request up within seconds.',

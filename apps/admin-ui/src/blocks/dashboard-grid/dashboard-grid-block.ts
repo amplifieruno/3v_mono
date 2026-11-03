@@ -13,6 +13,8 @@ import { z } from 'zod';
 export const dashboardGridBlock = defineBlock('itap:dashboard-grid', {
   texts: {
     label: 'Dashboard',
+    /** The view's region name: `t('label')` does not resolve, buro keeps a block's label out of its bundle. */
+    name: 'Dashboard',
     empty: 'This dashboard has no widgets yet.',
     notList: 'The widgets cannot be read: they are not a list.',
     preview: 'Preview: the widgets as they will show, read live. Save to keep them.',
