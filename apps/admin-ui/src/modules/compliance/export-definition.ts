@@ -60,6 +60,7 @@ export const runExportFlow = {
     retry: 'never',
     input: { definitionId: ref('record', 'id') },
     onUnknown: { check: exportStarted },
+    reread: true,
   },
   then: { notify: true, open: { resource: EXPORT_JOB_RESOURCE, id: ref('result', 'id') } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -88,14 +89,14 @@ export const exportDefinition = defineResource(EXPORT_DEFINITION_RESOURCE, {
   data: { provider: 'hasura' },
   fields: exportDefinitionFields,
   rules: EXPORT_DEFINITION_RULES,
-  actions: (r) => ({ item: [r.action.flow('run_now', runExportFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('run_now', runExportFlow)] }),
   views: {
     list: {
       columns: ['code', 'name', 'entity', 'format', 'mode', 'schedule_cron', 'owner_id', 'next_run_at', 'is_active'],
-      defaultSort: [{ field: 'code', direction: 'asc' }],
+      initial: { sort: [{ field: 'code', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }, 'code'] },
       filters: { pinned: ['entity', 'owner_id'], fields: ['entity', 'format', 'mode', 'is_active', 'owner_id'] },
-      savedViews: [{ id: 'scheduled', texts: 'Scheduled', state: { filters: [{ field: 'schedule_cron', op: 'nnull', value: true }] } }],
+      savedViews: [{ id: 'scheduled', texts: 'Scheduled', state: { sort: [{ field: 'code', direction: 'asc' }], filters: [{ field: 'schedule_cron', op: 'nnull', value: true }] } }],
     },
     show: {
       header: (l) => [l.grid(['code', 'entity', 'format', 'owner_id'])],
@@ -118,7 +119,7 @@ export const exportDefinition = defineResource(EXPORT_DEFINITION_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EXPORT_JOB_RESOURCE)), {
+                l.place(relatedList(EXPORT_JOB_RESOURCE), {
                   key: 'export-definition-jobs',
                   props: { where: [{ field: 'definition_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...EXPORT_JOB_COLUMNS], open: 'page' },
                 }),

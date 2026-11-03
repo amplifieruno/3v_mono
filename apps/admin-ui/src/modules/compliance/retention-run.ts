@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { RETENTION_RUN_CLASS_RESOURCE, RETENTION_RUN_RESOURCE } from '../../data/resource-names';
 import { RETENTION_RUN_STATUSES, RETENTION_RUN_STATUS_ENUM } from '../../enums/compliance';
 import { enumField } from '../../enums/field';
@@ -52,15 +51,15 @@ export const retentionRun = defineResource(RETENTION_RUN_RESOURCE, {
   views: {
     list: {
       columns: ['scheduled_at', 'status', 'started_at', 'finished_at', 'error'],
-      defaultSort: [{ field: 'scheduled_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'scheduled_at', direction: 'desc' }] },
       filters: { pinned: ['status'], fields: ['status', 'scheduled_at'] },
-      savedViews: [{ id: 'not-completed', texts: 'Failed or interrupted', state: { filters: [{ field: 'status', op: 'in', value: ['failed', 'interrupted'] }] } }],
+      savedViews: [{ id: 'not-completed', texts: 'Failed or interrupted', state: { sort: [{ field: 'scheduled_at', direction: 'desc' }], filters: [{ field: 'status', op: 'in', value: ['failed', 'interrupted'] }] } }],
     },
     show: {
       header: (l) => [l.grid(['scheduled_at', 'status', 'started_at', 'finished_at'])],
       body: (l) => [
         l.panel(['error'], { key: 'run-error', tone: 'destructive', texts: { title: 'The run failed' }, when: l.present(l.ref('record', 'error')) }),
-        l.place(relatedList(resourceByName(RETENTION_RUN_CLASS_RESOURCE)), {
+        l.place(relatedList(RETENTION_RUN_CLASS_RESOURCE), {
           key: 'run-classes',
           texts: { title: 'Classes' },
           props: { where: [{ field: 'run_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...RUN_CLASS_COLUMNS, 'policy_id'], open: 'none' },

@@ -53,7 +53,7 @@ export const facilityTemplate = defineResource(FACILITY_TEMPLATE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'description', 'updated_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name'] },
     },
     show: {

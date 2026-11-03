@@ -52,6 +52,7 @@ export const markReadFlow = {
   when: UNREAD,
   submit: {
     mutation: markNotificationRead,
+    reread: true,
     // Idempotent: a read notification keeps its first read time.
     retry: 'after-auth-refresh',
     input,
@@ -80,6 +81,7 @@ export const acknowledgeNotificationFlow = {
   when: UNACKNOWLEDGED,
   submit: {
     mutation: acknowledgeNotification,
+    reread: true,
     // Idempotent: a repeat answers the acknowledged notification unchanged.
     retry: 'after-auth-refresh',
     input,

@@ -107,7 +107,7 @@ export const submitFlow = {
   surfaces: { default: 'menu', show: 'auto' },
   when: IS_DRAFT,
   form: reviewForm('submit'),
-  submit: { mutation: submitAccessPolicyVersion, retry: 'never', input: versionInput, onUnknown: { check: statusIs('pending_approval') } },
+  submit: { mutation: submitAccessPolicyVersion, reread: true, retry: 'never', input: versionInput, onUnknown: { check: statusIs('pending_approval') } },
   then: { notify: { params: { version: ref('result', 'version') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof reviewFields>;
 
@@ -129,7 +129,7 @@ export const approveFlow = {
   surfaces: { default: 'menu', show: 'auto' },
   when: IS_PENDING,
   form: reviewForm('approve'),
-  submit: { mutation: approveAccessPolicyVersion, retry: 'never', input: versionInput, onUnknown: { check: statusIs('published') } },
+  submit: { mutation: approveAccessPolicyVersion, reread: true, retry: 'never', input: versionInput, onUnknown: { check: statusIs('published') } },
   then: { notify: { params: { version: ref('result', 'version') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof reviewFields>;
 
@@ -167,6 +167,7 @@ export const rejectFlow = {
     retry: 'never',
     input: { versionId: ref('record', 'id'), reason: ref('values', 'reason') },
     onUnknown: { check: statusIs('draft') },
+    reread: true,
   },
   then: { notify: { params: { version: ref('result', 'version') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof rejectFields>;
@@ -197,6 +198,7 @@ export const rollbackFlow = {
     retry: 'never',
     input: { policyId: ref('record', 'policy_id'), fromVersionId: ref('record', 'id') },
     onUnknown: { check: rollbackDraftExists },
+    reread: true,
   },
   then: {
     notify: { params: { version: ref('result', 'version') } },

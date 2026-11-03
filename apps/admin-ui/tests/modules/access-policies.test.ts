@@ -188,9 +188,9 @@ describe('refusals through the provider (Review Focus 1)', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -205,7 +205,7 @@ describe('refusals through the provider (Review Focus 1)', () => {
     await expect(provider.mutations?.custom?.(call('approveAccessPolicyVersion'), {} as never)).rejects.toMatchObject({
       kind: 'validation',
       code: 'four_eyes_required',
-      details: { issues: [{ message: { default: expect.stringMatching(/another member must approve it/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/another member must approve it/) } }],
     });
   });
 
@@ -214,7 +214,7 @@ describe('refusals through the provider (Review Focus 1)', () => {
       providerFailing('Check constraint violation. version_open_exists').mutations?.custom?.(call('createAccessPolicyDraft'), {} as never),
     ).rejects.toMatchObject({
       code: 'version_open_exists',
-      details: { issues: [{ message: { default: expect.stringMatching(/already has an open version/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/already has an open version/) } }],
     });
     await expect(
       providerFailing('Check constraint violation. access_policy_version_incomplete').mutations?.custom?.(

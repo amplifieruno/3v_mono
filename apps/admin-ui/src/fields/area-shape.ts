@@ -1,4 +1,5 @@
 import type { FieldTexts } from '@burojs/core';
+import { ref } from '@burojs/core';
 import { type FieldValidator, type JsonFieldOpts, f } from '@burojs/field-types';
 import { problemValidator } from './field-issue';
 import { validateShape } from './plan-shape-check';
@@ -54,6 +55,7 @@ export function areaShape(opts: AreaShapeOptions) {
       facilityField: opts.facilityField ?? 'facility_id',
       areaField: opts.areaField,
       selfIsArea: opts.selfIsArea ?? false,
+      reads: [ref('values', opts.facilityField ?? 'facility_id'), ref('values', opts.areaField)],
     },
   };
 }

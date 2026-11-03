@@ -4,6 +4,7 @@ import {
   defineDataProvider,
   defineMutationHandler,
   isDataError,
+  type MessageReference,
 } from '@burojs/core';
 
 /** One server refusal of an action: the backend's `extensions.code` and its message. */
@@ -40,10 +41,15 @@ function refusalOf(error: DataError): ActionRefusalError | null {
   return null;
 }
 
+/** A refusal's text as buro resolves it: the bundle's entry for its code, else the English sentence. */
+function refusalMessage(issue: RefusalIssue): MessageReference {
+  return { key: `validation.itap.action.${issue.code}`, default: issue.message };
+}
+
 /**
  * The provider with each listed action's definite refusals turned into `validation` errors
  * carrying form issues (`tasks/ui/buro-gaps.md` G33). The Hasura provider classifies every
- * error of a custom mutation over an Action as "may have been applied" (`sent` or `protocol`),
+ * error of a custom mutation over an Action as "may have been applied" (`applied: 'unknown'`),
  * because the envelope does not say whether the action ran. The ITAP backend answers a
  * business refusal (bad photos, a duplicate face, a restricted person) with HTTP 400 and its
  * own `extensions.code` before it writes anything, so a reader that knows the action's codes
@@ -69,19 +75,16 @@ export function withActionRefusals(provider: DataProvider, refusals: ActionRefus
       const refusal = refusalOf(error);
       const issues = refusal === null ? null : reader(refusal, descriptor.input);
       if (refusal === null || issues === null) throw error;
+      const code = issues[0]?.code ?? refusal.code;
       const refused: DataError = {
         kind: 'validation',
         // The reader's code: an action's own code, or the refusal a SQL function raised.
-        code: issues[0]?.code ?? refusal.code,
-        message: refusal.message,
+        code,
+        // The reader knows the action answers this before writing anything.
+        applied: 'no',
         // The form resolves `message.key` first (no bundle entry: the English text stays), then `default`.
-        details: {
-          issues: issues.map((issue) => ({
-            ...issue,
-            message: { key: `validation.itap.action.${issue.code}`, default: issue.message },
-            severity: 'error',
-          })),
-        },
+        issues: issues.map((issue) => ({ ...issue, message: refusalMessage(issue), severity: 'error' as const })),
+        details: error.details,
       };
       throw refused;
     }

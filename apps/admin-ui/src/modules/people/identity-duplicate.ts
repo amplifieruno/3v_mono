@@ -80,8 +80,8 @@ export const identityDuplicate = defineResource(IDENTITY_DUPLICATE_RESOURCE, {
   fields: identityDuplicateFields,
   actions: (r) => ({
     item: [
-      r.action.flow('merge_identities', mergeDuplicateFlow),
-      r.action.flow('dismiss', {
+      r.item.flow('merge_identities', mergeDuplicateFlow),
+      r.item.flow('dismiss', {
         texts: {
           label: 'Not a duplicate',
           confirm: 'Mark the two as different people? The pair leaves the open queue; it can be reopened.',
@@ -92,15 +92,16 @@ export const identityDuplicate = defineResource(IDENTITY_DUPLICATE_RESOURCE, {
         surfaces: { default: 'menu', show: 'auto' },
         when: isOpen,
         confirm: true,
+        checks: [{ id: 'stillOpen', severity: 'error', when: cond.not(isOpen), texts: 'This pair is no longer open.' }],
         submit: {
           update: IDENTITY_DUPLICATE_RESOURCE,
           input: { status: 'dismissed' },
-          reread: { expect: isOpen },
+          reread: true,
           onUnknown: { check: fieldApplied(IDENTITY_DUPLICATE_RESOURCE, 'status', 'dismissed') },
         },
         then: { notify: true },
       }),
-      r.action.flow('reopen', {
+      r.item.flow('reopen', {
         texts: {
           label: 'Reopen',
           notify: 'Pair reopened.',
@@ -109,10 +110,11 @@ export const identityDuplicate = defineResource(IDENTITY_DUPLICATE_RESOURCE, {
         icon: NAV_ICONS.reopen,
         surfaces: { default: 'menu', show: 'menu' },
         when: cond.equals(ref('record', 'status'), 'dismissed'),
+        checks: [{ id: 'stillDismissed', severity: 'error', when: cond.not(cond.equals(ref('record', 'status'), 'dismissed')), texts: 'This pair is no longer dismissed.' }],
         submit: {
           update: IDENTITY_DUPLICATE_RESOURCE,
           input: { status: 'open' },
-          reread: { expect: cond.equals(ref('record', 'status'), 'dismissed') },
+          reread: true,
           onUnknown: { check: fieldApplied(IDENTITY_DUPLICATE_RESOURCE, 'status', 'open') },
         },
         then: { notify: true },
@@ -122,9 +124,9 @@ export const identityDuplicate = defineResource(IDENTITY_DUPLICATE_RESOURCE, {
   views: {
     list: {
       columns: ['identity_a_id', 'identity_b_id', 'similarity', 'status', 'detected_at'],
-      defaultSort: [{ field: 'detected_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'detected_at', direction: 'desc' }] },
       filters: { fields: ['status', 'detected_at'] },
-      savedViews: [{ id: 'open', texts: 'Open', state: { filters: [{ field: 'status', op: 'eq', value: 'open' }] } }],
+      savedViews: [{ id: 'open', texts: 'Open', state: { sort: [{ field: 'detected_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'open' }] } }],
     },
     show: {
       header: (l) => [l.grid(['status', 'similarity', 'detected_at', 'merge_id'])],

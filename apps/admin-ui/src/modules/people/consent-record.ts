@@ -123,7 +123,7 @@ export const consentRecord = defineResource(CONSENT_RECORD_RESOURCE, {
   checks: [consentOnErasedProfile],
   actions: (r) => ({
     item: [
-      r.action.flow('withdraw', {
+      r.item.flow('withdraw', {
         texts: {
           label: 'Withdraw',
           confirm: 'Record that the person withdrew this consent? The record is kept, marked withdrawn.',
@@ -146,11 +146,12 @@ export const consentRecord = defineResource(CONSENT_RECORD_RESOURCE, {
             texts:
               'Face matching stops at once for every identity linked to this person: cameras, face authentication and search no longer recognise them. Their face templates are deleted after the consent retention period unless consent is granted again.',
           },
+          { id: 'stillGranted', severity: 'error', when: cond.not(cond.equals(ref('record', 'status'), 'granted')), texts: 'This consent is no longer granted.' },
         ],
         submit: {
           update: CONSENT_RECORD_RESOURCE,
           input: { status: 'withdrawn' },
-          reread: { expect: cond.equals(ref('record', 'status'), 'granted') },
+          reread: true,
           onUnknown: { check: fieldApplied(CONSENT_RECORD_RESOURCE, 'status', 'withdrawn') },
         },
         then: { notify: true },
@@ -160,7 +161,7 @@ export const consentRecord = defineResource(CONSENT_RECORD_RESOURCE, {
   views: {
     list: {
       columns: ['purpose', 'status', 'method', 'granted_at', 'withdrawn_at', 'profile_id'],
-      defaultSort: [{ field: 'granted_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'granted_at', direction: 'desc' }] },
       filters: { fields: ['purpose', 'status', 'method'] },
     },
   },

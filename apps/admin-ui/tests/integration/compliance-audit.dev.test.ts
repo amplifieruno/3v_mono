@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -115,7 +116,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('system status and audit log against the dev
     const name = `Dev audit test ${Date.now()}`;
     const created = await mutate(COMPANY_RESOURCE, { kind: 'createOne', input: { name, kind: 'tenant', status: 'active' } });
     company = String(created.record.id);
-    await mutate(COMPANY_RESOURCE, { kind: 'updateOne', id: company, input: { name: `${name} renamed` } });
+    await mutate(COMPANY_RESOURCE, { kind: 'updateOne', id: company, changes: setChanges({ name: `${name} renamed` }) });
 
     const rows = await list(AUDIT_ENTRY_RESOURCE, {
       and: [

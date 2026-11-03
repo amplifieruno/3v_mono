@@ -133,7 +133,7 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
   rules: DECIDED_RULES,
   actions: (r) => ({
     item: [
-      r.action.flow('approve', {
+      r.item.flow('approve', {
         texts: {
           label: 'Approve',
           confirm: 'Confirm who this identity is? It becomes verified.',
@@ -150,10 +150,11 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
           retry: 'never',
           input: { requestId: ref('record', 'id'), reason: ref('values', 'reason') },
           onUnknown: { check: fieldApplied(VERIFICATION_REQUEST_RESOURCE, 'status', 'approved') },
+          reread: true,
         },
         then: { notify: true },
       }),
-      r.action.flow('reject', {
+      r.item.flow('reject', {
         texts: {
           label: 'Reject',
           notify: 'Request rejected.',
@@ -172,6 +173,7 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
           retry: 'never',
           input: { requestId: ref('record', 'id'), reason: ref('values', 'reason') },
           onUnknown: { check: fieldApplied(VERIFICATION_REQUEST_RESOURCE, 'status', 'rejected') },
+          reread: true,
         },
         then: { notify: true },
       }),
@@ -180,9 +182,9 @@ export const verificationRequest = defineResource(VERIFICATION_REQUEST_RESOURCE,
   views: {
     list: {
       columns: ['identity_id', 'status', 'assigned_to', 'requested_by', 'created_at', 'decided_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { fields: ['status', 'assigned_to', 'created_at'] },
-      savedViews: [{ id: 'pending', texts: 'Pending', state: { filters: [{ field: 'status', op: 'eq', value: 'pending' }] } }],
+      savedViews: [{ id: 'pending', texts: 'Pending', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'pending' }] } }],
     },
     show: {
       header: (l) => [l.grid(['status', 'created_at', 'decided_at'])],

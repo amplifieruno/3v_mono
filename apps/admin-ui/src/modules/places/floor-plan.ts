@@ -132,7 +132,7 @@ export const floorPlan = defineResource(FLOOR_PLAN_RESOURCE, {
         'width_px',
         'height_px',
       ],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name'] },
       filters: { fields: ['facility_id'] },
     },

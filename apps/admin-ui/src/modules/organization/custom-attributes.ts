@@ -126,7 +126,6 @@ export const customAttributeFields = {
   sort_order: f.number({
     required: true,
     default: 0,
-    integer: true,
     validate: rangeValidator(INT4),
     texts: {
       label: 'Sort order',
@@ -192,10 +191,10 @@ export const customAttributeDefinition = defineResource(CUSTOM_ATTRIBUTE_RESOURC
   views: {
     list: {
       columns: ['entity', 'label', 'key', 'data_type', 'required', 'is_active'],
-      defaultSort: [
+      initial: { sort: [
         { field: 'entity', direction: 'asc' },
         { field: 'sort_order', direction: 'asc' },
-      ],
+      ] },
       search: { fields: ['label', 'key'] },
       filters: { fields: ['entity', 'data_type', 'is_active'] },
     },

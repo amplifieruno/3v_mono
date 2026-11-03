@@ -1,7 +1,7 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { reportStatusBlock } from '../../blocks/report-status/report-status-block';
-import { resourceByName } from '../../data/resource-by-name';
 import { NOTIFICATION_DELIVERY_RESOURCE, REPORT_RESOURCE } from '../../data/resource-names';
 import { reportFields } from './report-fields';
 import { newReportFlow, retryReportFlow } from './report-flows';
@@ -43,21 +43,21 @@ export const report = defineResource(REPORT_RESOURCE, {
   builtinActions: { delete: false },
   fields: reportFields,
   actions: (r) => ({
-    resource: [r.action.flow('new_report', newReportFlow)],
-    item: [r.action.flow('retry', retryReportFlow)],
+    resource: [r.resource.flow('new_report', newReportFlow)],
+    item: [r.item.flow('retry', retryReportFlow)],
   }),
   views: {
     list: {
       columns: ['code', 'title', 'report_type', 'status', 'format', 'start_date', 'end_date', 'created_at', 'generated_at'],
       optionalColumns: ['schedule_id', 'created_by', 'incident_id'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       refetchInterval: REPORT_LIST_POLL_MS,
       search: { fields: ['code', { field: 'title', op: 'contains' }] },
       filters: {
         pinned: ['status', 'report_type'],
         fields: ['status', 'report_type', 'format', 'schedule_id', 'incident_id', 'created_by', 'requested_by_me', 'created_at'],
       },
-      savedViews: REPORT_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }] }, REPORT_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['code', 'report_type', 'status', 'format'])],
@@ -93,7 +93,7 @@ export const report = defineResource(REPORT_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
                     key: 'report-deliveries',
                     props: {
                       where: [{ field: 'report_id', op: 'eq', value: l.ref('record', 'id') }],

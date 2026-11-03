@@ -51,8 +51,6 @@ export const testerFields = {
   }),
   threshold: f.number({
     nullable: true,
-    min: THRESHOLD_RANGE.min,
-    max: THRESHOLD_RANGE.max,
     validate: rangeValidator(THRESHOLD_RANGE),
     texts: {
       label: 'Threshold',

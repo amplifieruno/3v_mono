@@ -89,7 +89,7 @@ describe('work schedule list', () => {
 });
 
 describe('work schedule form', () => {
-  it('should refuse an invalid window before any request and save an overnight window unchanged', async () => {
+  it('should refuse an invalid window before any request and save an overnight window as it reads', async () => {
     render(
       <MemoryRouter initialEntries={[`/work-schedules/${SCHEDULE}/edit`]}>
         <ConsoleApp auth={fakeAdminAuth(NOVA, 'Nova Tower Business Center')} />
@@ -113,9 +113,12 @@ describe('work schedule form', () => {
     expect(await screen.findByText(/Window 1: pick at least one day/)).toBeDefined();
     expect(mutations()).toHaveLength(0);
 
+    // The days back on and a later end: the overnight window is saved as it reads. An edit that
+    // changes nothing sends no request (buro 0.7, A95).
     for (const day of Array.from(days.querySelectorAll('button'))) fireEvent.click(day);
+    fireEvent.change(to, { target: { value: '07:00' } });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     await waitFor(() => expect(mutations()).toHaveLength(1));
-    expect((mutations()[0]?.variables?.set as { windows?: unknown }).windows).toEqual(WINDOWS);
+    expect((mutations()[0]?.variables?.set as { windows?: unknown }).windows).toEqual([{ ...WINDOWS[0], to: '07:00' }]);
   });
 });

@@ -69,10 +69,7 @@ export const exportDefinitionFields = {
   }),
   max_rows: f.number({
     nullable: true,
-    integer: true,
-    min: 1,
-    max: EXPORT_MAX_ROWS,
-    validate: rangeValidator({ min: 1, max: EXPORT_MAX_ROWS, integer: true }),
+    validate: rangeValidator({ min: 1, integer: true }),
     in: ['show', 'create', 'edit'],
     texts: {
       label: 'Rows per file',

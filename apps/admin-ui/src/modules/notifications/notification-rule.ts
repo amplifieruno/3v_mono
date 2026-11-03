@@ -1,7 +1,6 @@
 import { type Rule, defineResource, ref, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { notificationRuleTestBlock } from '../../blocks/notification-rule-test/notification-rule-test-block';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   NOTIFICATION_DELIVERY_RESOURCE,
   NOTIFICATION_RULE_CHANNEL_RESOURCE,
@@ -57,7 +56,7 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
   rules: RULE_RULES,
   actions: (r) => ({
     item: [
-      r.action.modal(
+      r.item.modal(
         'test',
         { block: notificationRuleTestBlock, props: { ruleId: ref('record', 'id') }, host: 'sheet' },
         {
@@ -78,16 +77,16 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
     list: {
       columns: [...NOTIFICATION_RULE_COLUMNS],
       optionalColumns: ['conditions', 'template_id', 'escalation_policy_id'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['code', { field: 'name', op: 'contains' }] },
       filters: {
         pinned: ['is_active', 'priority'],
         fields: ['is_active', 'priority', 'digest_mode', 'recipient_group_id', 'template_id', 'escalation_policy_id', 'last_triggered_at'],
       },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } },
-        { id: 'inactive', texts: 'Switched off', state: { filters: [{ field: 'is_active', op: 'eq', value: false }] } },
-        { id: 'digests', texts: 'Digests', state: { filters: [{ field: 'digest_mode', op: 'in', value: ['hourly', 'daily'] }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } },
+        { id: 'inactive', texts: 'Switched off', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: false }] } },
+        { id: 'digests', texts: 'Digests', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'digest_mode', op: 'in', value: ['hourly', 'daily'] }] } },
       ],
     },
     show: {
@@ -110,7 +109,7 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_RULE_EVENT_TYPE_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_RULE_EVENT_TYPE_RESOURCE), {
                     key: 'rule-event-types',
                     // Also seeds "+ Create": a new event type belongs to this rule.
                     props: { where: [...byRule], columns: ['event_type', 'created_at'], open: 'none' },
@@ -120,7 +119,7 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_RULE_CHANNEL_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_RULE_CHANNEL_RESOURCE), {
                     key: 'rule-channels',
                     props: { where: [...byRule], columns: ['channel', 'created_at'], open: 'none' },
                   }),
@@ -129,7 +128,7 @@ export const notificationRule = defineResource(NOTIFICATION_RULE_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
                     key: 'rule-deliveries',
                     props: {
                       where: [...byRule],

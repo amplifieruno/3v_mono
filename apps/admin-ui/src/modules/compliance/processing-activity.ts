@@ -1,7 +1,6 @@
 import { type Check, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE,
   PROCESSING_ACTIVITY_RESOURCE,
@@ -112,12 +111,12 @@ export const processingActivity = defineResource(PROCESSING_ACTIVITY_RESOURCE, {
   views: {
     list: {
       columns: ['code', 'name', 'legal_basis', 'dpia_status', 'retention_policy_id', 'owner_id', 'is_active', 'updated_at'],
-      defaultSort: [{ field: 'code', direction: 'asc' }],
+      initial: { sort: [{ field: 'code', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }, 'code'] },
       filters: { pinned: ['legal_basis', 'dpia_status'], fields: ['legal_basis', 'dpia_status', 'is_active', 'owner_id'] },
       savedViews: [
-        { id: 'dpia-open', texts: 'DPIA to do', state: { filters: [{ field: 'dpia_status', op: 'in', value: ['required', 'in_progress'] }] } },
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } },
+        { id: 'dpia-open', texts: 'DPIA to do', state: { sort: [{ field: 'code', direction: 'asc' }], filters: [{ field: 'dpia_status', op: 'in', value: ['required', 'in_progress'] }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'code', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } },
       ],
     },
     show: {
@@ -131,7 +130,7 @@ export const processingActivity = defineResource(PROCESSING_ACTIVITY_RESOURCE, {
             }),
             l.panel(
               [
-                l.place(relatedList(resourceByName(PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE)), {
+                l.place(relatedList(PROCESSING_ACTIVITY_DATA_CLASS_RESOURCE), {
                   key: 'activity-data-classes',
                   // Also seeds "+ Create": the new class is for this activity.
                   props: { where: [{ field: 'activity_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['data_class', 'created_at'], open: 'none' },

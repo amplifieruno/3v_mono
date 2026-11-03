@@ -1,7 +1,7 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Layout, type Rule, type RuleContext, defineResource, isRecordProbe, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { bulkJobProgressBlock } from '../../blocks/bulk-job-progress/bulk-job-progress-block';
-import { resourceByName } from '../../data/resource-by-name';
 import { BULK_JOB_RESOURCE, BULK_JOB_ROW_RESOURCE } from '../../data/resource-names';
 import { BULK_SUCCEEDED_OUTCOMES } from '../../enums/bulk';
 import { bulkJobFields } from './bulk-job-fields';
@@ -53,7 +53,7 @@ function rowsTab(l: JobLayout, key: string, title: string, outcomes: readonly st
     ...(outcomes === null ? [] : [{ field: 'outcome', op: 'in' as const, value: [...outcomes] }]),
   ];
   const list = (suffix: string, columns: readonly string[], search: boolean) =>
-    l.place(relatedList(resourceByName(BULK_JOB_ROW_RESOURCE)), {
+    l.place(relatedList(BULK_JOB_ROW_RESOURCE), {
       key: `${key}-${suffix}`,
       when: search ? l.equals(kind, 'bulk_search') : l.not(l.equals(kind, 'bulk_search')),
       props: { where, columns: [...columns], open: 'page' },
@@ -87,16 +87,16 @@ export const bulkJob = defineResource(BULK_JOB_RESOURCE, {
   fields: bulkJobFields,
   rules: BULK_JOB_RULES,
   actions: (r) => ({
-    resource: [r.action.flow('import_profiles', importProfilesFlow), r.action.flow('update_profiles', updateProfilesFlow), r.action.flow('bulk_search', bulkSearchFlow)],
-    item: [r.action.flow('cancel', cancelBulkJobFlow), r.action.flow('retry', retryBulkJobFlow)],
+    resource: [r.resource.flow('import_profiles', importProfilesFlow), r.resource.flow('update_profiles', updateProfilesFlow), r.resource.flow('bulk_search', bulkSearchFlow)],
+    item: [r.item.flow('cancel', cancelBulkJobFlow), r.item.flow('retry', retryBulkJobFlow)],
   }),
   views: {
     list: {
       columns: ['code', 'kind', 'status', 'total', 'succeeded', 'failed', 'skipped', 'owner_id', 'created_at', 'completed_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       search: { fields: ['code'] },
       filters: { pinned: ['status', 'kind'], fields: ['status', 'kind', 'owner_id', 'created_at'] },
-      savedViews: BULK_JOB_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }] }, BULK_JOB_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['code', 'kind', 'status', 'owner_id'])],

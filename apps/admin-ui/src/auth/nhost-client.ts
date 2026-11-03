@@ -26,8 +26,9 @@ function isTransient(status: number): boolean {
   return status === 408 || status === 429 || status >= 500;
 }
 
-function fail(kind: DataError['kind'], code: string, message: string, status?: number): DataError {
-  return status === undefined ? { kind, code, message } : { kind, code, message, status };
+function fail(kind: DataError['kind'], code: string, text: string, status?: number): DataError {
+  const error = { kind, code, message: { key: `errors.${code}`, default: text }, details: text };
+  return status === undefined ? error : { ...error, status };
 }
 
 async function readBody(response: Response): Promise<unknown> {
@@ -96,7 +97,8 @@ export function createNhostClient(options: NhostClientOptions): NhostClient {
       if (!response.ok) {
         const transient = isTransient(response.status);
         const code = transient ? 'sign-in-unavailable' : 'invalid-credentials';
-        throw fail(transient ? 'transport' : 'auth', code, errorMessage(body, 'Sign-in failed.'), response.status);
+        if (!transient) throw { kind: 'auth', code, message: { key: 'auth.invalidCredentials' }, details: errorMessage(body, 'Sign-in failed.'), status: response.status } satisfies DataError;
+        throw fail('transport', code, errorMessage(body, 'Sign-in failed.'), response.status);
       }
       return toSession(body, clock());
     },

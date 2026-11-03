@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Check, type CheckDI, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { photoGalleryBlock } from '../../blocks/photo-gallery/photo-gallery-block';
@@ -5,7 +6,6 @@ import { identityHoldNotice } from '../compliance/hold-notice';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
 import { subjectSegmentsPanel } from '../segments/segment-member-tabs';
 import { ADD_TO_SEGMENT_FLOW, addToSegmentFlow } from '../segments/segment-membership-flows';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   DETECTION_RESOURCE,
   EVENT_RESOURCE,
@@ -100,13 +100,13 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
   checks: IDENTITY_CHECKS,
   rules: IDENTITY_RULES,
   actions: (r) => ({
-    resource: [r.action.flow('create_from_photos', createIdentityFlow)],
+    resource: [r.resource.flow('create_from_photos', createIdentityFlow)],
     item: [
-      r.action.flow('add_photos', addPhotosFlow),
-      r.action.flow('merge_into', mergeIntoFlow),
-      r.action.flow('split', splitFlow),
-      r.action.flow('add_relationship', addRelationshipFlow),
-      r.action.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('identities')),
+      r.item.flow('add_photos', addPhotosFlow),
+      r.item.flow('merge_into', mergeIntoFlow),
+      r.item.flow('split', splitFlow),
+      r.item.flow('add_relationship', addRelationshipFlow),
+      r.item.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('identities')),
     ],
   }),
   views: {
@@ -114,12 +114,12 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
       columns: ['primary_photo_file_id', 'code', 'status', 'profile_id', 'source', 'last_seen_at', 'detection_count'],
       optionalColumns: ['matching_enabled', 'is_synthetic', 'age', 'first_seen_at', 'link_strength', 'is_primary_for_profile'],
       // Never-seen identities last; @burojs/hasura ignores `nulls` on offset pages for now (buro gap G88).
-      defaultSort: [{ field: 'last_seen_at', direction: 'desc', nulls: 'last' }],
+      initial: { sort: [{ field: 'last_seen_at', direction: 'desc', nulls: 'last' }] },
       search: { fields: ['code'] },
       filters: {
         fields: ['status', 'source', 'profile_id', 'matching_enabled', 'is_synthetic', 'last_seen_at', 'first_seen_at'],
       },
-      savedViews: identitySavedViews(),
+      savedViews: viewsOpeningAs({ sort: [{ field: 'last_seen_at', direction: 'desc', nulls: 'last' }] }, identitySavedViews()),
     },
     show: {
       header: (l) => [l.grid(['status', 'source', 'is_synthetic'])],
@@ -169,7 +169,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(DETECTION_RESOURCE)), {
+                l.place(relatedList(DETECTION_RESOURCE), {
                   key: 'identity-detections',
                   props: {
                     where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -182,7 +182,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(TRACKING_SESSION_RESOURCE)), {
+                l.place(relatedList(TRACKING_SESSION_RESOURCE), {
                   key: 'identity-sessions',
                   props: {
                     where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -195,7 +195,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'identity-events',
                   props: {
                     where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -208,7 +208,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(INCIDENT_IDENTITY_HISTORY_RESOURCE)), {
+                l.place(relatedList(INCIDENT_IDENTITY_HISTORY_RESOURCE), {
                   key: 'identity-incidents',
                   props: {
                     where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -221,7 +221,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(WATCH_LIST_IDENTITY_ENTRY_RESOURCE)), {
+                l.place(relatedList(WATCH_LIST_IDENTITY_ENTRY_RESOURCE), {
                   key: 'identity-watch-lists',
                   // Also seeds "+ Create": the new entry is for this identity; the form asks for the list.
                   props: { where: [{ field: 'identity_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...SUBJECT_ENTRY_COLUMNS], open: 'none' },
@@ -241,7 +241,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(VERIFICATION_REQUEST_RESOURCE)), {
+                l.place(relatedList(VERIFICATION_REQUEST_RESOURCE), {
                   key: 'identity-verification',
                   props: {
                     // Also seeds "+ Create": a new request is for this identity.
@@ -254,7 +254,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(IDENTITY_MERGE_RESOURCE)), {
+                l.place(relatedList(IDENTITY_MERGE_RESOURCE), {
                   key: 'identity-merges-in',
                   texts: { title: 'Identities merged into this one' },
                   props: {
@@ -263,7 +263,7 @@ export const identity = defineResource(IDENTITY_RESOURCE, {
                     open: 'page',
                   },
                 }),
-                l.place(relatedList(resourceByName(IDENTITY_MERGE_SOURCE_RESOURCE)), {
+                l.place(relatedList(IDENTITY_MERGE_SOURCE_RESOURCE), {
                   key: 'identity-merged-away',
                   texts: { title: 'This identity merged into another' },
                   props: {

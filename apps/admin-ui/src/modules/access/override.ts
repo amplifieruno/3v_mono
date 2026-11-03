@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { EMERGENCY_OVERRIDE_AREA_RESOURCE, EMERGENCY_OVERRIDE_RESOURCE, FACILITY_RESOURCE, USER_RESOURCE } from '../../data/resource-names';
 import { OVERRIDE_MODES, OVERRIDE_MODE_ENUM, OVERRIDE_MODE_TEXTS } from '../../enums/access';
 import { enumField } from '../../enums/field';
@@ -98,17 +97,17 @@ export const emergencyOverride = defineResource(EMERGENCY_OVERRIDE_RESOURCE, {
   fields: emergencyOverrideFields,
   rules: OVERRIDE_RULES,
   actions: (r) => ({
-    resource: [r.action.flow('start', startOverrideFlow)],
-    item: [r.action.flow('end', endOverrideFlow)],
+    resource: [r.resource.flow('start', startOverrideFlow)],
+    item: [r.item.flow('end', endOverrideFlow)],
   }),
   views: {
     list: {
       columns: ['started_at', 'facility_id', 'mode', 'ends_at', 'ended_at', 'started_by'],
-      defaultSort: [{ field: 'started_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'started_at', direction: 'desc' }] },
       filters: { pinned: ['facility_id', 'mode'], fields: ['facility_id', 'mode', 'started_at', 'ended_at'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'ended_at', op: 'isNull' }] } },
-        { id: 'ended', texts: 'Ended', state: { filters: [{ field: 'ended_at', op: 'isNotNull' }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'started_at', direction: 'desc' }], filters: [{ field: 'ended_at', op: 'isNull' }] } },
+        { id: 'ended', texts: 'Ended', state: { sort: [{ field: 'started_at', direction: 'desc' }], filters: [{ field: 'ended_at', op: 'isNotNull' }] } },
       ],
     },
     show: {
@@ -126,7 +125,7 @@ export const emergencyOverride = defineResource(EMERGENCY_OVERRIDE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EMERGENCY_OVERRIDE_AREA_RESOURCE)), {
+                l.place(relatedList(EMERGENCY_OVERRIDE_AREA_RESOURCE), {
                   key: 'override-areas',
                   texts: { title: 'Limited to these areas (none: the whole facility)' },
                   props: { where: [{ field: 'override_id', op: 'eq', value: l.ref('record', 'id') }], columns: ['area_id'], open: 'none' },

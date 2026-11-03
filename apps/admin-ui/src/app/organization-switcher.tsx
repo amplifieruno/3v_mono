@@ -1,4 +1,4 @@
-import { useDataRuntime, useIdentity, useT } from '@burojs/react';
+import { resolveErrorText, useDataRuntime, useI18nCaps, useIdentity, useT } from '@burojs/react';
 import { ScopeSwitcher, SidebarBrand, toast } from '@burojs/ui-shadcn';
 import type * as React from 'react';
 import type { ItapIdentity } from '../auth';
@@ -12,6 +12,7 @@ import { performOrganizationSwitch } from './scope';
  */
 export function OrganizationSwitcher(): React.ReactElement {
   const t = useT();
+  const caps = useI18nCaps();
   const { auth } = useConsole();
   const { dataSession } = useDataRuntime();
   const { data: identity } = useIdentity<ItapIdentity>();
@@ -25,7 +26,7 @@ export function OrganizationSwitcher(): React.ReactElement {
   const onChange = async (organizationId: string): Promise<void> => {
     if (organizationId === current) return;
     const result = await performOrganizationSwitch(auth, dataSession, organizationId);
-    if (!result.success) toast.error(result.error.message);
+    if (!result.success) toast.error(resolveErrorText(result.error, caps));
   };
 
   return (

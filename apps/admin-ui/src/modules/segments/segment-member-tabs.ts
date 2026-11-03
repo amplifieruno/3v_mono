@@ -1,5 +1,4 @@
 import { type Layout, type ScreenRef, ref, relatedList } from '@burojs/core';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   CURRENT_IDENTITY_MEMBER_COLUMNS,
   CURRENT_PROFILE_MEMBER_COLUMNS,
@@ -37,13 +36,13 @@ export function segmentMembersPanel<F extends Fields>(l: Layout<F>) {
       { field: subject, op: 'nnull', value: true },
     ] as const;
     return [
-      l.place(relatedList(resourceByName(resource)), {
+      l.place(relatedList(resource), {
         key: `segment-${target}-current`,
         when,
         texts: { title: 'Current members' },
         props: { where: [...mine, OPEN], columns: [...COLUMNS[target].current] },
       }),
-      l.place(relatedList(resourceByName(resource)), {
+      l.place(relatedList(resource), {
         key: `segment-${target}-past`,
         when,
         texts: { title: 'Earlier memberships' },
@@ -63,12 +62,12 @@ export function subjectSegmentsPanel<F extends Fields>(l: Layout<F>, target: Seg
   const mine = { field: subject, op: 'eq', value: recordRef('id') } as const;
   return l.panel(
     [
-      l.place(relatedList(resourceByName(resource)), {
+      l.place(relatedList(resource), {
         key: `${target}-segments-current`,
         texts: { title: 'Member now' },
         props: { where: [mine, OPEN], columns: [...SUBJECT_MEMBERSHIP_COLUMNS] },
       }),
-      l.place(relatedList(resourceByName(resource)), {
+      l.place(relatedList(resource), {
         key: `${target}-segments-past`,
         texts: { title: 'Earlier memberships' },
         props: { where: [mine, ENDED], columns: [...SUBJECT_MEMBERSHIP_COLUMNS] },

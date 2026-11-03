@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Layout, defineResource } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { dashboardGridBlock } from '../../blocks/dashboard-grid/dashboard-grid-block';
@@ -30,10 +31,10 @@ export const dashboard = defineResource(DASHBOARD_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'description', 'is_shared', 'owner_id', 'updated_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { fields: ['owned_by_me', 'is_shared', 'owner_id'] },
-      savedViews: DASHBOARD_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'name', direction: 'asc' }] }, DASHBOARD_SAVED_VIEWS),
       // No `is_default`: it is the owner's own landing choice, shown on the owner's record only.
     },
     show: {

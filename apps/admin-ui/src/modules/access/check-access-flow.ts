@@ -122,6 +122,7 @@ export const checkAccessFlow = {
     retry: 'never',
     input: ({ values, record, with: read }) => testInput(String(record?.id ?? ''), values, read.baseline),
     onUnknown: { check: decisionRecorded },
+    reread: true,
   },
   then: { open: { block: decisionTraceBlock, props: { decisionId: ref('result', 'id'), showDecisionLink: true } } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof testFields>;

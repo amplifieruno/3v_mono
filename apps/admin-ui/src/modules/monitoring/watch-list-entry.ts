@@ -34,11 +34,11 @@ export const watchListEntry = defineResource(WATCH_LIST_ENTRY_RESOURCE, {
     list: {
       columns: ['watch_list_id', 'profile_id', 'identity_id', 'reason', 'expires_at', 'active', 'created_at'],
       optionalColumns: ['added_by'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { pinned: ['watch_list_id', 'active'], fields: ['watch_list_id', 'active', 'profile_id', 'identity_id', 'expires_at', 'created_at'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'active', op: 'eq', value: true }] } },
-        { id: 'expired', texts: 'Expired', state: { filters: [{ field: 'active', op: 'eq', value: false }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'active', op: 'eq', value: true }] } },
+        { id: 'expired', texts: 'Expired', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'active', op: 'eq', value: false }] } },
       ],
     },
     show: {

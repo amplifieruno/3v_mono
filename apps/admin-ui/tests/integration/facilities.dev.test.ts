@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -146,13 +147,13 @@ describe.skipIf(!DEV_STACK_ENABLED)('facilities against the dev stack (Nova Towe
     await mutate(FACILITY_RESOURCE, {
       kind: 'updateOne',
       id,
-      input: { operating_hours: HOURS, latitude: 55.75, longitude: 37.62, status: 'maintenance' },
+      changes: setChanges({ operating_hours: HOURS, latitude: 55.75, longitude: 37.62, status: 'maintenance' }),
     });
     const { data } = await query(FACILITY_RESOURCE, { kind: 'one', id });
     expect(data).toMatchObject({ operating_hours: HOURS, latitude: 55.75, status: 'maintenance' });
 
     await expect(
-      mutate(FACILITY_RESOURCE, { kind: 'updateOne', id, input: { latitude: 91 } }),
+      mutate(FACILITY_RESOURCE, { kind: 'updateOne', id, changes: setChanges({ latitude: 91 }) }),
     ).rejects.toMatchObject({ message: expect.stringContaining('Check constraint violation') });
 
     await mutate(FACILITY_RESOURCE, { kind: 'deleteOne', id });

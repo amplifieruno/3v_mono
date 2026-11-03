@@ -1,4 +1,4 @@
-import { type CheckDI, type FlowConfig, type Layout, type ScreenRef, ref } from '@burojs/core';
+import { type CheckDI, type FlowConfig, type Layout } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
@@ -58,9 +58,6 @@ export async function erasureHoldsUnknown({ values, data }: Pick<CheckDI, 'value
   }
 }
 
-/** The review reads the flow's values as its record (G35). */
-const reviewProps = { profileId: ref('record', 'profile_id') as unknown as ScreenRef<'record'> };
-
 /**
  * "Erasure request" (Review Focus 1): the person, the dates and notes; the review of what will be
  * erased and which legal holds keep part of it (partial erasure); the person's code typed as
@@ -94,7 +91,7 @@ export const newErasureRequestFlow = {
       'confirmation',
     ],
   },
-  review: (l: Layout<typeof erasureFields>) => [l.place(dsrErasureReviewBlock, { key: 'erasure-review', props: reviewProps })],
+  review: (l: Layout<typeof erasureFields>) => [l.place(dsrErasureReviewBlock, { key: 'erasure-review' })],
   checks: [
     ...DSR_DATE_CHECKS,
     {

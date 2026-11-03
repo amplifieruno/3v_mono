@@ -48,13 +48,13 @@ export function ImageSizeInput(
     disabled,
     readOnly,
     meta,
-    form,
+    refValues,
     accessibility,
     testIds,
     issues,
   } = props;
   const t = useT();
-  const fileId = idOf(form?.[meta.imageField]);
+  const fileId = idOf(refValues[meta.imageField]);
   const size = useImageSize(fileId);
   // An image without a size of its own decodes at 0: no size to take, the user enters it.
   const decoded = size.data?.[meta.axis] ?? null;

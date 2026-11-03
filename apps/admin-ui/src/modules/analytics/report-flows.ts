@@ -186,6 +186,6 @@ export const retryReportFlow = {
   surfaces: { default: 'menu', show: 'auto', row: 'menu' },
   when: cond.equals(ref('record', 'status'), 'failed'),
   confirm: true,
-  submit: { mutation: retryReport, retry: 'never', input: { reportId: ref('record', 'id') }, onUnknown: { check: retried } },
+  submit: { mutation: retryReport, retry: 'never', input: { reportId: ref('record', 'id') }, onUnknown: { check: retried }, reread: true },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

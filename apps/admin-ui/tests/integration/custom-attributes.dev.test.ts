@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type AuthContext,
   type DataProvider,
@@ -96,7 +97,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom attributes and preferences (Nova Tow
       await mutate(USER_SETTINGS_RESOURCE, 'user_id', {
         kind: 'updateOne',
         id: userId,
-        input: saved,
+        changes: setChanges(saved),
       });
     }
   });
@@ -163,7 +164,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom attributes and preferences (Nova Tow
       await mutate(USER_SETTINGS_RESOURCE, 'user_id', {
         kind: 'updateOne',
         id: userId,
-        input: { locale: 'de-AT', timezone: 'Europe/Vienna' },
+        changes: setChanges({ locale: 'de-AT', timezone: 'Europe/Vienna' }),
       });
     }
     expect(checkLocale('de-AT')).toBeNull();

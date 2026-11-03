@@ -1,5 +1,5 @@
-import { type AppRuntime, defineAppDefinition } from '@burojs/core';
-import { HASURA_PROVIDER, createItapHasuraProvider } from '../data/provider';
+import { type AppRuntime, defineAppDefinition, defineDataProviderFactory } from '@burojs/core';
+import { HASURA_PROVIDER, createItapHasuraProvider, itapHasuraCapabilities } from '../data/provider';
 import { ITAP_ENUMS } from '../enums';
 import { CONSOLE_MODULES } from '../modules';
 import { helpBlock } from './blocks';
@@ -26,7 +26,7 @@ import { helpPage } from './pages';
  * then one `use` per module (`../modules/index.ts`). A new module is added
  * there, not here.
  */
-export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }) => {
+export const definition = defineAppDefinition({ name: 'itap-console', lists: { sortable: true } }, ({ use }) => {
   use(NAV_SECTIONS.overview, overviewSection);
   use(NAV_SECTIONS.organization, organizationSection);
   use(NAV_SECTIONS.places, placesSection);
@@ -53,7 +53,7 @@ export const definition = defineAppDefinition({ name: 'itap-console' }, ({ use }
 export function createConsoleRuntime(getToken: () => Promise<string | null>): AppRuntime {
   return definition.createRuntime({
     dataProviderFactories: {
-      [HASURA_PROVIDER]: () => createItapHasuraProvider(getToken),
+      [HASURA_PROVIDER]: defineDataProviderFactory(() => createItapHasuraProvider(getToken), itapHasuraCapabilities),
     },
   });
 }

@@ -53,9 +53,8 @@ export const facilityDailyStat = defineResource(FACILITY_DAILY_STAT_RESOURCE, {
     list: {
       columns: ['day', 'facility_id', 'unique_identities', 'known_identities', 'unknown_identities', 'visits', 'peak_occupancy', 'peak_hour'],
       optionalColumns: ['guest_visits', 'avg_visit_minutes', 'dwell_seconds'],
-      defaultSort: [{ field: 'day', direction: 'desc' }],
+      initial: { sort: [{ field: 'day', direction: 'desc' }], pageSize: 50 },
       sortTiebreaker: 'id',
-      pageSize: 50,
       filters: { fields: ['facility_id', 'day', 'unique_identities'] },
     },
     show: {

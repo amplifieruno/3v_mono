@@ -59,7 +59,7 @@ describe('the enum field check', () => {
       },
       actions: (r) => ({
         resource: [
-          r.action.flow('paint', {
+          r.resource.flow('paint', {
             form: { fields: { colour: f.enum(['red', 'blue'] as const) } },
             submit: { update: 'enum_probe', input: {} },
           }),

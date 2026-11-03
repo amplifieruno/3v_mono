@@ -24,7 +24,7 @@ const AGE_RANGE = { min: 0, max: 150, integer: true } as const;
 const RESULTS_RANGE = { min: 1, max: SEARCH_MAX_RESULTS, integer: true } as const;
 
 const age = (label: string, summary: string) =>
-  f.number({ nullable: true, min: 0, max: 150, integer: true, validate: rangeValidator(AGE_RANGE), texts: { label, doc: { summary } } });
+  f.number({ nullable: true, max: 150, validate: rangeValidator(AGE_RANGE), texts: { label, doc: { summary } } });
 
 /**
  * The fields of a search definition as a form edits them (exported for saved searches, Task 2):
@@ -91,8 +91,6 @@ export const searchFields = {
   seen_to: dateTime({ texts: { label: 'Seen until', doc: { summary: 'Only people with a visit that had started by this time.' } } }),
   threshold: f.number({
     nullable: true,
-    min: SEARCH_THRESHOLD_RANGE.min,
-    max: SEARCH_THRESHOLD_RANGE.max,
     validate: rangeValidator(SEARCH_THRESHOLD_RANGE),
     texts: {
       label: 'Threshold',
@@ -104,9 +102,6 @@ export const searchFields = {
   }),
   max_results: f.number({
     required: true,
-    min: 1,
-    max: SEARCH_MAX_RESULTS,
-    integer: true,
     validate: rangeValidator(RESULTS_RANGE),
     texts: { label: 'Results at most', doc: { summary: 'The most identities the search lists, best first (1–100).' } },
   }),

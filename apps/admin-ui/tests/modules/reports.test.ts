@@ -217,9 +217,9 @@ describe('report refusals', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -242,7 +242,7 @@ describe('report refusals', () => {
   it('should read the refusals of retry_report as sentences', async () => {
     await expect(refused('retryReport', 'Check constraint violation. report_not_failed')).rejects.toMatchObject({
       code: 'report_not_failed',
-      details: { issues: [{ message: { default: expect.stringMatching(/no longer failed/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/no longer failed/) } }],
     });
     await expect(refused('retryReport', 'Check constraint violation. report_not_found')).rejects.toMatchObject({ code: 'report_not_found' });
   });

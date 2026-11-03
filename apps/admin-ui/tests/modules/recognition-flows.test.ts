@@ -102,3 +102,22 @@ describe('recognition flows', () => {
     expect(HASURA_OPERATIONS.devices?.recognitionStatus?.kind).toBe('query');
   });
 });
+
+describe('remove password', () => {
+  beforeAll(async () => {
+    await app.ready;
+  });
+
+  it('should write null though the record never read the column (buro 0.7, A94)', async () => {
+    const flow = await runFlow(app, { resource: DEVICE_RESOURCE, action: 'clear_password' }, {
+      user: ADMIN,
+      record: camera,
+      rows: { [DEVICE_RESOURCE]: [camera] },
+    }).open();
+    await flow.submit();
+    await flow.accept();
+    expect(flow.submitted.map(({ call }) => call)).toEqual([
+      expect.objectContaining({ op: 'update', input: { password: null } }),
+    ]);
+  });
+});

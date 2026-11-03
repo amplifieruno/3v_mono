@@ -10,14 +10,15 @@ import { type ItapScope, applyFacility, readStoredFacility } from './scope';
  * the facility scope remembered for the new organization.
  */
 export function IdentitySync(): null {
-  const { data: identity } = useIdentity<ItapIdentity>();
+  const { data: identity, isPending } = useIdentity<ItapIdentity>();
   const { resolver } = useConsole();
   const { dataSession } = useDataRuntime();
   const organizationId = identity?.organizationId ?? null;
 
   React.useEffect(() => {
-    resolver.feedAuth(identity ?? null);
-  }, [resolver, identity]);
+    // `undefined` while the identity loads: the slices stay pending instead of reading "signed out".
+    resolver.feedAuth(isPending ? undefined : (identity ?? null));
+  }, [resolver, identity, isPending]);
 
   React.useEffect(() => {
     if (organizationId === null) return;

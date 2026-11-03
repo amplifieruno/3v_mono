@@ -26,16 +26,16 @@ export function PlanPositionInput(
     readOnly,
     meta,
     record,
-    form,
+    refValues,
     testIds,
     accessibility,
   } = props;
   const t = useT();
   const point = parsePoint(value);
   const state = usePlanContext({
-    facilityId: idOf(form?.[meta.facilityField]) ?? idOf(record?.[meta.facilityField]),
+    facilityId: idOf(refValues[meta.facilityField]) ?? idOf(record?.[meta.facilityField]),
     selfId: null,
-    startId: idOf((form ?? record)?.[meta.areaField]),
+    startId: idOf(refValues[meta.areaField] ?? record?.[meta.areaField]),
   });
   const plan = state.status === 'ready' ? state.plan : null;
   React.useEffect(

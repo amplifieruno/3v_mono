@@ -9,7 +9,7 @@ import { fakeAdminAuth, installDomShims } from '../support/console-dom';
 
 /**
  * The `itap.secret` input: an empty box leaves the stored secret alone (`undefined`, left out of
- * the payload), typing replaces it, and on a stored record "Remove" sends `null` to clear it.
+ * the payload) and typing replaces it.
  */
 
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -59,16 +59,10 @@ describe('secret input', () => {
     expect(onChange).toHaveBeenLastCalledWith(undefined);
   });
 
-  it('should send null to remove the stored secret, and undo it', async () => {
-    const { onChange, rerender } = renderInput(undefined, RECORD);
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove the stored value' }));
-    expect(onChange).toHaveBeenLastCalledWith(null);
-
-    rerender(null);
-    expect(((await screen.findByTestId('secret-input')) as HTMLInputElement).disabled).toBe(true);
-    expect(await screen.findByText('The stored value is removed on save.')).toBeDefined();
-    fireEvent.click(await screen.findByRole('button', { name: 'Keep the stored value' }));
-    expect(onChange).toHaveBeenLastCalledWith(undefined);
+  it('should offer no removal on a stored record: that is the Remove password flow', async () => {
+    renderInput(undefined, RECORD);
+    await screen.findByTestId('secret-input');
+    expect(screen.queryByRole('button', { name: 'Remove the stored value' })).toBeNull();
   });
 
   it('should offer no removal on a create form (nothing is stored yet)', async () => {

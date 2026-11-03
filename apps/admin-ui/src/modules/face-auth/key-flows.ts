@@ -62,6 +62,7 @@ export const rotateKeyFlow = {
     mutation: rotateClientKey,
     retry: 'never',
     input: { applicationId: ref('record', 'id'), expiresAt: ref('values', 'expires_at') },
+    reread: true,
   },
   then: {
     open: {
@@ -114,6 +115,7 @@ export const revokeKeyFlow = {
     retry: 'never',
     input: { keyId: ref('record', 'id') },
     onUnknown: { check: keyRevoked },
+    reread: true,
   },
   then: { notify: { params: { prefix: ref('result', 'key_prefix') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

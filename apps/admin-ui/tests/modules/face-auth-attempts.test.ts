@@ -199,10 +199,9 @@ describe('refusals', () => {
   const actionRefusal = (code: string, message = code.replace(/_/gu, ' ')): DataError => ({
     kind: 'protocol',
     code,
-    message,
     details: [{ message, extensions: { code } }],
   });
-  const sqlRefusal = (message: string): DataError => ({ kind: 'sent', code: 'permission-error', message, details: [{ message, extensions: { code: 'permission-error' } }] });
+  const sqlRefusal = (message: string): DataError => ({ kind: 'protocol', applied: 'unknown', code: 'permission-error', details: [{ message, extensions: { code: 'permission-error' } }] });
 
   it('should read the tester refusals as sentences, and leave unknown codes alone', async () => {
     for (const [code, text] of [
@@ -213,12 +212,12 @@ describe('refusals', () => {
     ] as const) {
       await expect(failing(actionRefusal(code)).mutations?.custom?.(call('authenticateFace'), {} as never)).rejects.toMatchObject({
         kind: 'validation',
-        details: { issues: [{ message: { default: expect.stringMatching(text) } }] },
+        issues: [{ message: { default: expect.stringMatching(text) } }],
       });
     }
     await expect(
       failing(actionRefusal('invalid_sequence', 'frames[1] is not a JPEG or PNG image')).mutations?.custom?.(call('authenticateFace'), {} as never),
-    ).rejects.toMatchObject({ details: { issues: [{ message: { default: expect.stringMatching(/frames\[1\] is not a JPEG/) } }] } });
+    ).rejects.toMatchObject({ issues: [{ message: { default: expect.stringMatching(/frames\[1\] is not a JPEG/) } }] });
     await expect(failing(actionRefusal('timeout')).mutations?.custom?.(call('authenticateFace'), {} as never)).rejects.toMatchObject({ kind: 'protocol' });
   });
 

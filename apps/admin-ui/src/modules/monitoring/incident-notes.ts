@@ -1,6 +1,5 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   INCIDENT_NOTE_FILE_HISTORY_RESOURCE,
   INCIDENT_NOTE_FILE_RESOURCE,
@@ -106,7 +105,7 @@ const FILE_TEXTS = {
 };
 
 const filesOf = (resource: string) =>
-  relatedList(resourceByName(resource));
+  relatedList(resource);
 
 /**
  * Notes of an open incident (`itap.incident_notes`): written on the incident's Notes tab, opened

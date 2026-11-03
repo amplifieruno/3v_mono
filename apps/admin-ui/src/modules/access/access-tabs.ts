@@ -1,5 +1,4 @@
 import { type Layout, type ScreenRef, ref, relatedList } from '@burojs/core';
-import { resourceByName } from '../../data/resource-by-name';
 import { ACCESS_DECISION_RESOURCE, ACCESS_GRANT_RESOURCE, TERMINAL_POLICY_SYNC_RESOURCE } from '../../data/resource-names';
 import { DECISION_RELATED_COLUMNS } from './decision-fields';
 import { GRANT_COLUMNS } from './grant-fields';
@@ -14,7 +13,7 @@ const recordId = ref('record', 'id') as unknown as ScreenRef<'record'>;
 
 /** The record's grants (also seeds "+ Create": a new grant is for this person or door). */
 function grantsList<F extends Fields>(l: Layout<F>, key: string, field: 'profile_id' | 'access_point_id') {
-  return l.place(relatedList(resourceByName(ACCESS_GRANT_RESOURCE)), {
+  return l.place(relatedList(ACCESS_GRANT_RESOURCE), {
     key,
     texts: { title: 'Access grants' },
     props: { where: [{ field, op: 'eq', value: recordId }], columns: GRANT_COLUMNS.filter((column) => column !== field), open: 'page' },
@@ -27,7 +26,7 @@ export function decisionsList<F extends Fields>(
   key: string,
   field: 'profile_id' | 'access_point_id' | 'policy_version_id' | 'override_id',
 ) {
-  return l.place(relatedList(resourceByName(ACCESS_DECISION_RESOURCE)), {
+  return l.place(relatedList(ACCESS_DECISION_RESOURCE), {
     key,
     texts: { title: 'Access decisions' },
     props: {
@@ -66,7 +65,7 @@ export function versionDecisionsPanel<F extends Fields>(l: Layout<F>) {
 export function deviceSyncNodes<F extends Fields>(l: Layout<F>) {
   return [
     l.place(terminalSyncBlock, { key: 'device-terminal-sync', props: { deviceId: recordId } }),
-    l.place(relatedList(resourceByName(TERMINAL_POLICY_SYNC_RESOURCE)), {
+    l.place(relatedList(TERMINAL_POLICY_SYNC_RESOURCE), {
       key: 'device-terminal-syncs',
       texts: { title: 'Sync log' },
       props: { where: [{ field: 'device_id', op: 'eq', value: recordId }], columns: [...DEVICE_SYNC_COLUMNS], open: 'page' },

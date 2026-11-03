@@ -2,7 +2,6 @@ import { defineResource, facts, relatedList } from '@burojs/core';
 import { healthChartBlock } from '../../blocks/health-chart/health-chart-block';
 import { liveCameraBlock } from '../../blocks/live-camera/live-camera-block';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   ACCESS_POINT_DEVICE_RESOURCE,
   DEVICE_AREA_RESOURCE,
@@ -16,6 +15,7 @@ import { deviceSyncNodes } from '../access/access-tabs';
 import { deviceFields } from './device-fields';
 import { CAMERA_FIELD_NAMES, TERMINAL_FIELD_NAMES } from './device-type-fields';
 import { RECOGNITION_STATUS_ROWS, recognitionStatus } from './recognition';
+import { clearPasswordFlow } from './clear-password-flow';
 import { startRecognitionFlow, stopRecognitionFlow } from './recognition-flows';
 
 /** How often the device list re-reads: the health check writes every minute. */
@@ -73,27 +73,28 @@ export const device = defineResource(DEVICE_RESOURCE, {
   // `when` keeps both off terminals and sensors and offers the one matching the camera's state.
   actions: (r) => ({
     item: [
-      r.action.flow('start_recognition', startRecognitionFlow),
-      r.action.flow('stop_recognition', stopRecognitionFlow),
+      r.item.flow('start_recognition', startRecognitionFlow),
+      r.item.flow('stop_recognition', stopRecognitionFlow),
+      r.item.flow('clear_password', clearPasswordFlow),
     ],
   }),
   views: {
     list: {
       columns: ['code', 'name', 'device_type', 'facility_id', 'area_id', 'status', 'health_status', 'last_seen_at'],
       optionalColumns: ['manufacturer', 'model', 'ip_address', 'recognition_enabled', 'policy_synced_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name', 'code', 'manufacturer', 'model'] },
       filters: { fields: ['device_type', 'status', 'health_status', 'facility_id', 'area_id'] },
       savedViews: [
         {
           id: 'offline',
           texts: 'Offline',
-          state: { filters: [{ field: 'health_status', op: 'eq', value: 'critical' }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'health_status', op: 'eq', value: 'critical' }] },
         },
         {
           id: 'cameras',
           texts: 'Cameras',
-          state: { filters: [{ field: 'device_type', op: 'in', value: [...CAMERA_DEVICE_TYPES] }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'device_type', op: 'in', value: [...CAMERA_DEVICE_TYPES] }] },
         },
       ],
       refetchInterval: DEVICE_LIST_REFETCH_MS,
@@ -149,7 +150,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(DEVICE_AREA_RESOURCE)), {
+                l.place(relatedList(DEVICE_AREA_RESOURCE), {
                   key: 'covered-areas',
                   props: {
                     // Both keys seed "+ Create": a covered area carries its device's facility.
@@ -166,7 +167,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ACCESS_POINT_DEVICE_RESOURCE)), {
+                l.place(relatedList(ACCESS_POINT_DEVICE_RESOURCE), {
                   key: 'bound-access-points',
                   props: {
                     where: [
@@ -186,7 +187,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
                   key: 'health-chart',
                   props: { deviceId: l.ref('record', 'id') },
                 }),
-                l.place(relatedList(resourceByName(DEVICE_HEALTH_METRIC_RESOURCE)), {
+                l.place(relatedList(DEVICE_HEALTH_METRIC_RESOURCE), {
                   key: 'health-samples',
                   props: {
                     where: [{ field: 'device_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -199,7 +200,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(DEVICE_EVENT_RESOURCE)), {
+                l.place(relatedList(DEVICE_EVENT_RESOURCE), {
                   key: 'device-events',
                   props: {
                     view: 'timeline',
@@ -212,7 +213,7 @@ export const device = defineResource(DEVICE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'device-monitoring-events',
                   props: {
                     where: [{ field: 'device_id', op: 'eq', value: l.ref('record', 'id') }],

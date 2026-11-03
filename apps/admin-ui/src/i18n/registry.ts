@@ -62,6 +62,7 @@ export function buildLocaleRegistry(): LocaleRegistry {
     namespace: 'common',
     priority: 0,
     source: '@burojs/react',
+    layer: 'kit',
     bundle: frameworkEn,
   });
 

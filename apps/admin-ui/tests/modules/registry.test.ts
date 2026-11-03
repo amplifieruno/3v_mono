@@ -1,3 +1,4 @@
+import { scopeColumnOf } from '@burojs/core';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { Kind, type OperationDefinitionNode, parse } from 'graphql';
@@ -257,7 +258,7 @@ describe('module registries', () => {
     ]);
     const unscoped = bound
       .filter((resource) => !personal.has(resource.name))
-      .filter((resource) => resource.data?.scope?.facility?.field !== 'facility_id')
+      .filter((resource) => { const dimension = resource.data?.scope?.facility; return dimension === undefined || scopeColumnOf(dimension) !== 'facility_id'; })
       .map((resource) => resource.name);
     expect(unscoped).toEqual([]);
   });

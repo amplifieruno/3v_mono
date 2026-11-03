@@ -1,7 +1,6 @@
 import { defineResource, ref, relatedList } from '@burojs/core';
 import { type FieldValidator, f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { enumField } from '../../enums/field';
 import {
   ACCESS_POINT_DIRECTIONS,
@@ -186,11 +185,11 @@ export const accessPoint = defineResource(ACCESS_POINT_RESOURCE, {
   data: { provider: 'hasura', scope: { facility: { field: 'facility_id' } } },
   prefill: { fromQuery: ['facility_id', 'area_id'] },
   fields: accessPointFields,
-  actions: (r) => ({ item: [r.action.flow('test_access', checkAccessFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('test_access', checkAccessFlow)] }),
   views: {
     list: {
       columns: ['name', 'kind', 'facility_id', 'area_id', 'from_area_id', 'direction', 'is_entry_exit', 'status'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name'] },
       filters: { fields: ['kind', 'direction', 'status', 'is_entry_exit', 'face_credential', 'facility_id'] },
     },
@@ -212,7 +211,7 @@ export const accessPoint = defineResource(ACCESS_POINT_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ACCESS_POINT_DEVICE_RESOURCE)), {
+                l.place(relatedList(ACCESS_POINT_DEVICE_RESOURCE), {
                   key: 'bound-devices',
                   props: {
                     // Both keys seed "+ Create": a binding carries its access point's facility.

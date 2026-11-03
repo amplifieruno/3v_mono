@@ -134,9 +134,9 @@ describe('refusals through the provider (Review Focus 2)', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -151,7 +151,7 @@ describe('refusals through the provider (Review Focus 2)', () => {
     await expect(provider.mutations?.custom?.(call('publishEventRuleVersion'), {} as never)).rejects.toMatchObject({
       kind: 'validation',
       code: 'version_already_published',
-      details: { issues: [{ message: { default: expect.stringMatching(/already the one in force.*Nothing was changed/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/already the one in force.*Nothing was changed/) } }],
     });
   });
 

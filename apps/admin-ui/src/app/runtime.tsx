@@ -9,7 +9,7 @@ import {
   createDataRuntimeTransitionParticipant,
   createDataSession,
 } from '@burojs/react';
-import { Toaster, defaultNavLayouts, shadcnPresentationHosts } from '@burojs/ui-shadcn';
+import { Toaster, defaultNavLayouts, shadcnPresentationHosts, webPlatform } from '@burojs/ui-shadcn';
 import * as React from 'react';
 import type { ItapAuthProvider, TokenStore } from '../auth';
 import { createItapQueryClient } from '../data/query-client';
@@ -25,6 +25,9 @@ import { appFrameImplementations } from './frame-implementations';
 import { IdentitySync } from './identity-sync';
 import { initialScopeKey } from './scope';
 import { SessionWatch } from './session-watch';
+
+/** Browser behaviour: storage, drafts, saved views, downloads, the clipboard, the navigation guard. */
+const PLATFORM = webPlatform();
 
 /** The slot registry handed to `<BuroProvider components>`. */
 const components: Record<string, unknown> = { ...defaultNavLayouts };
@@ -113,6 +116,7 @@ export function AppRuntime({
   return (
     <ConsoleContext.Provider value={context}>
       <BuroProvider
+        platform={PLATFORM}
         app={booted.app}
         dataRuntime={booted.lease}
         authProvider={auth}

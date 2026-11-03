@@ -1,4 +1,4 @@
-import { type ScalarInputProps, resolveValidationMessage, useCustomQuery, useT } from '@burojs/react';
+import { type ScalarInputProps, resolveValidationMessage, useCustomQuery, useI18nCaps, useT } from '@burojs/react';
 import { Button } from '@burojs/ui-shadcn';
 import { ListPlus, Plus } from 'lucide-react';
 import * as React from 'react';
@@ -21,6 +21,7 @@ function useProblems(
   issues: ScalarInputProps<unknown>['issues'],
 ): { readonly problemsAt: (jsonPath: string) => readonly string[]; readonly partsAt: (jsonPath: string) => ReadonlySet<PathPart> } {
   const t = useT();
+  const { has } = useI18nCaps();
   const byNode = new Map<string, string[]>();
   const partsByNode = new Map<string, Set<PathPart>>();
   const put = (path: string | null, text: string) => {
@@ -35,7 +36,7 @@ function useProblems(
   for (const problem of validateSegmentConditions(value, ctx)) {
     put(problem.path, t(problemKey(problem.code), { params: problem.params ?? {} }));
   }
-  for (const issue of issues) put(issueJsonPath(issue), resolveValidationMessage(issue, { t }));
+  for (const issue of issues) put(issueJsonPath(issue), resolveValidationMessage(issue, { t, has }));
   return { problemsAt: (jsonPath) => byNode.get(jsonPath) ?? [], partsAt: (jsonPath) => partsByNode.get(jsonPath) ?? new Set<PathPart>() };
 }
 

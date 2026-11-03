@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -147,17 +148,17 @@ describe.skipIf(!DEV_STACK_ENABLED)('devices against the dev stack', () => {
     const { record } = await mutate(DEVICE_RESOURCE, {
       kind: 'updateOne',
       id: cameraId,
-      input: { name: `Hall camera renamed ${stamp}`, recognition_fps: 3 },
+      changes: setChanges({ name: `Hall camera renamed ${stamp}`, recognition_fps: 3 }),
     });
     expect(record).toMatchObject({ name: `Hall camera renamed ${stamp}`, recognition_fps: 3, username: 'viewer' });
 
     const credentials = 'rtsp://viewer:pw@10.0.0.20/hall';
     expect(streamUrlProblem(credentials)?.code).toBe('device.streamCredentials');
     await expect(
-      mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, input: { stream_url: credentials } }),
+      mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ stream_url: credentials }) }),
     ).rejects.toMatchObject({ message: expect.stringMatching(/no_credentials|[Cc]heck constraint/) });
     await expect(
-      mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, input: { recognition_fps: 6 } }),
+      mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ recognition_fps: 6 }) }),
     ).rejects.toMatchObject({ message: expect.stringMatching(/recognition_fps_range|[Cc]heck constraint/) });
   });
 

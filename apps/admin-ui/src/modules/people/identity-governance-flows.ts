@@ -1,4 +1,4 @@
-import { type FlowConfig, type FlowUnknownCheck, type Layout, type ScreenRef, cond, ref } from '@burojs/core';
+import { type FlowConfig, type FlowUnknownCheck, type Layout, type ScreenRef, ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS } from '../../app/nav';
 import { resourceByName } from '../../data/resource-by-name';
@@ -15,7 +15,6 @@ import { relationshipDetailFields } from './identity-relationship';
 import { mergeIdentities, splitIdentity } from './identity-merge-ops';
 import { identityMergeReviewBlock } from './identity-merge-review-block';
 
-const notMerged = cond.not(cond.equals(ref('record', 'status'), 'merged'));
 
 /** The flow's record id for a placement: a flow form's layout is typed without a record (G20). */
 const recordId = ref('record', 'id') as unknown as ScreenRef<'record'>;
@@ -94,8 +93,8 @@ export const mergeIntoApplied: FlowUnknownCheck = async ({ record, data }) => {
   }
 };
 
-/** The kept identity in the review, which reads the flow's values as its record (G35). */
-const carriedTarget = ref('record', 'target_id') as unknown as ScreenRef<'record'>;
+/** The kept identity in the review: the flow's record. */
+const carriedTarget = ref('record', 'id') as unknown as ScreenRef<'record'>;
 
 /**
  * "Merge into this identity…" on an identity: choose the identities of the same person, review
@@ -118,7 +117,6 @@ export const mergeIntoFlow = {
   icon: NAV_ICONS.mergeIdentities,
   variant: 'destructive',
   surfaces: { default: false, show: 'menu' },
-  when: notMerged,
   confirm: true,
   form: {
     fields: mergeIntoFields,
@@ -147,6 +145,7 @@ export const mergeIntoFlow = {
       return { targetId, sourceIds, reason: typeof values.reason === 'string' ? values.reason : null };
     },
     onUnknown: { check: mergeIntoApplied },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof mergeIntoFields>;
@@ -181,7 +180,6 @@ export const splitFlow = {
   },
   icon: NAV_ICONS.split,
   surfaces: { default: false, show: 'menu' },
-  when: notMerged,
   confirm: true,
   // The field starts as the identity's id, so it can offer that identity's photos.
   form: { fields: splitFields, initial: { parts: ref('record', 'id') } },
@@ -197,6 +195,7 @@ export const splitFlow = {
         embeddingIds: [...choice.embeddingIds],
       };
     },
+    reread: true,
   },
   then: {
     notify: { params: { code: ref('result', 'code') } },
@@ -246,6 +245,7 @@ export const addRelationshipFlow = {
       confidence: typeof values.confidence === 'number' ? values.confidence : null,
       note: typeof values.note === 'string' ? values.note : null,
     }),
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof relationshipFields>;

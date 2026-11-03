@@ -2,7 +2,6 @@ import { type FlowConfig, type Layout, type ScreenRef, cond, ref } from '@burojs
 import { NAV_ICONS } from '../../app/nav';
 import { IDENTITY_DUPLICATE_RESOURCE, IDENTITY_RESOURCE } from '../../data/resource-names';
 import { fieldApplied } from '../../data/status-applied';
-import { carriedId } from '../../fields/carried-id';
 import { enumField } from '../../enums/field';
 import { IDENTITY_MERGE_KEEP, IDENTITY_MERGE_KEEP_ENUM } from '../../enums/identity-governance';
 import { mergeSides } from './identity-merge-plan';
@@ -22,22 +21,12 @@ const keepFields = {
       },
     },
   }),
-  first: carriedId('First identity'),
-  second: carriedId('Second identity'),
 };
 
 /** The pair's two identities for the form. A flow form's layout is typed without a record (G20). */
 const pairProps = {
   first: ref('record', 'identity_a_id') as unknown as ScreenRef<'record'>,
   second: ref('record', 'identity_b_id') as unknown as ScreenRef<'record'>,
-  sourceIds: null,
-};
-
-/** The same for the review, which reads the flow's values as its record (G35). */
-const reviewProps = {
-  first: ref('record', 'first') as unknown as ScreenRef<'record'>,
-  second: ref('record', 'second') as unknown as ScreenRef<'record'>,
-  keep: ref('record', 'keep') as unknown as ScreenRef<'record'>,
   sourceIds: null,
 };
 
@@ -83,19 +72,18 @@ export const mergeDuplicateFlow = {
     fields: keepFields,
     initial: {
       keep: { kind: 'literal', value: 'first' },
-      first: ref('record', 'identity_a_id'),
-      second: ref('record', 'identity_b_id'),
     },
     body: (l: Layout<typeof keepFields>) => ['keep', l.place(identityMergeReviewBlock, { key: 'pair-merge-form', props: pairProps })],
   },
   review: (l: Layout<typeof keepFields>) => [
-    l.place(identityMergeReviewBlock, { key: 'pair-merge-review', props: reviewProps }),
+    l.place(identityMergeReviewBlock, { key: 'pair-merge-review', props: pairProps }),
   ],
   submit: {
     mutation: mergeIdentities,
     retry: 'never',
     input: ({ values, record }) => duplicateMergeInput(record, values.keep),
     onUnknown: { check: fieldApplied(IDENTITY_DUPLICATE_RESOURCE, 'status', 'merged') },
+    reread: true,
   },
   then: { notify: true, open: { resource: IDENTITY_RESOURCE, id: ref('result', 'target_identity_id') } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof keepFields>;

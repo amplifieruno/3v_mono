@@ -78,6 +78,7 @@ export const applyTemplateFlow = {
       // Empty: the facility's top level.
       parentAreaId: ref('values', 'parent_area_id'),
     },
+    reread: true,
   },
   then: {
     notify: {

@@ -36,6 +36,7 @@ export const suspendFlow = {
     retry: 'after-auth-refresh',
     input: { applicationId: ref('record', 'id'), status: 'suspended' },
     onUnknown: { check: statusIs('suspended') },
+    reread: true,
   },
   then: { notify: { params: { code: ref('result', 'code') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -57,6 +58,7 @@ export const reactivateFlow = {
     retry: 'after-auth-refresh',
     input: { applicationId: ref('record', 'id'), status: 'active' },
     onUnknown: { check: statusIs('active') },
+    reread: true,
   },
   then: { notify: { params: { code: ref('result', 'code') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -83,6 +85,7 @@ export const revokeFlow = {
     retry: 'after-auth-refresh',
     input: { applicationId: ref('record', 'id'), status: 'revoked' },
     onUnknown: { check: statusIs('revoked') },
+    reread: true,
   },
   then: { notify: { params: { code: ref('result', 'code') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -124,6 +127,7 @@ export const deleteFlow = {
     retry: 'never',
     input: { applicationId: ref('record', 'id') },
     onUnknown: { check: applicationDeleted },
+    reread: true,
   },
   then: { notify: true, redirect: { resource: CLIENT_APPLICATION_RESOURCE, action: 'list' } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

@@ -1,6 +1,5 @@
 import { type Rule, defineResource, isRecordProbe, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { ACCESS_POLICY_RESOURCE, ACCESS_POLICY_VERSION_RESOURCE } from '../../data/resource-names';
 import { POLICY_COLUMNS, accessPolicyFields } from './policy-fields';
 import { archiveFlow, draftChangeFlow } from './policy-flows';
@@ -50,30 +49,30 @@ export const accessPolicy = defineResource(ACCESS_POLICY_RESOURCE, {
   data: { provider: 'hasura' },
   fields: accessPolicyFields,
   rules: POLICY_RULES,
-  actions: (r) => ({ item: [r.action.flow('draft_change', draftChangeFlow), r.action.flow('archive', archiveFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('draft_change', draftChangeFlow), r.item.flow('archive', archiveFlow)] }),
   views: {
     list: {
       columns: [...POLICY_COLUMNS],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['code', { field: 'name', op: 'contains' }] },
       filters: { pinned: ['is_archived'], fields: ['is_archived', 'current_version_id'] },
       savedViews: [
         {
           id: 'in-force',
           texts: 'In force',
-          state: { filters: [{ field: 'current_version_id', op: 'nnull', value: true }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'current_version_id', op: 'nnull', value: true }] },
         },
         {
           id: 'never-approved',
           texts: 'Never approved',
-          state: {
+          state: { sort: [{ field: 'name', direction: 'asc' }],
             filters: [
               { field: 'current_version_id', op: 'isNull' },
               { field: 'is_archived', op: 'eq', value: false },
             ],
           },
         },
-        { id: 'archived', texts: 'Archived', state: { filters: [{ field: 'is_archived', op: 'eq', value: true }] } },
+        { id: 'archived', texts: 'Archived', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_archived', op: 'eq', value: true }] } },
       ],
     },
     show: {
@@ -95,7 +94,7 @@ export const accessPolicy = defineResource(ACCESS_POLICY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ACCESS_POLICY_VERSION_RESOURCE)), {
+                l.place(relatedList(ACCESS_POLICY_VERSION_RESOURCE), {
                   key: 'policy-versions',
                   props: {
                     where: [{ field: 'policy_id', op: 'eq', value: l.ref('record', 'id') }],

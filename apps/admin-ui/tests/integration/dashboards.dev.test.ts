@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -93,7 +94,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
 
   afterAll(async () => {
     for (const id of created) await mutate({ kind: 'deleteOne', id });
-    if (previousDefault !== null) await mutate({ kind: 'updateOne', id: previousDefault, input: { is_default: true } });
+    if (previousDefault !== null) await mutate({ kind: 'updateOne', id: previousDefault, changes: setChanges({ is_default: true }) });
   });
 
   it('should save a widget of every source and read it back unchanged, owned by the member', async () => {
@@ -154,7 +155,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('dashboards against the dev stack (Nova Towe
 
   it('should show the dashboard marked for the landing page', async () => {
     const id = created[0] as string;
-    await mutate({ kind: 'updateOne', id, input: { is_default: true } });
+    await mutate({ kind: 'updateOne', id, changes: setChanges({ is_default: true }) });
     expect(await custom(OVERVIEW_BINDING, 'landingDashboard')).toMatchObject({ id });
     expect((await mine()).filter((row) => row.is_default === true).map((row) => row.id)).toEqual([id]);
   });

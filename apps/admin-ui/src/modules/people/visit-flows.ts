@@ -39,6 +39,7 @@ export const checkInFlow = {
     retry: 'never',
     input: { visitId: ref('record', 'id'), badgeNumber: ref('values', 'badge_number') },
     onUnknown: { check: fieldApplied(VISIT_RESOURCE, 'status', 'checked_in') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof checkInFields>;
@@ -60,6 +61,7 @@ export const checkOutFlow = {
     retry: 'never',
     input: { visitId: ref('record', 'id') },
     onUnknown: { check: fieldApplied(VISIT_RESOURCE, 'status', 'checked_out') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -90,6 +92,7 @@ export const cancelFlow = {
     retry: 'never',
     input: { visitId: ref('record', 'id'), reason: ref('values', 'reason') },
     onUnknown: { check: fieldApplied(VISIT_RESOURCE, 'status', 'cancelled') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof cancelFields>;

@@ -1,5 +1,4 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   EVENT_RESOURCE,
   EVENT_RULE_SCOPE_HISTORY_RESOURCE,
@@ -62,13 +61,13 @@ export const eventRuleVersion = defineResource(EVENT_RULE_VERSION_RESOURCE, {
   fields: eventRuleVersionFields,
   rules: VERSION_RULES,
   actions: (r) => ({
-    item: [r.action.flow('publish', publishFlow), r.action.flow('rollback', rollbackFlow)],
+    item: [r.item.flow('publish', publishFlow), r.item.flow('rollback', rollbackFlow)],
   }),
   views: {
     list: {
       page: false,
       columns: [...VERSION_COLUMNS],
-      defaultSort: [{ field: 'version', direction: 'desc' }],
+      initial: { sort: [{ field: 'version', direction: 'desc' }] },
     },
     show: {
       header: (l) => [l.grid(['status', 'severity', 'creates_incident', 'published_at'])],
@@ -88,7 +87,7 @@ export const eventRuleVersion = defineResource(EVENT_RULE_VERSION_RESOURCE, {
               [
                 l.panel(
                   [
-                    l.place(relatedList(resourceByName(EVENT_RULE_SCOPE_RESOURCE)), {
+                    l.place(relatedList(EVENT_RULE_SCOPE_RESOURCE), {
                       key: 'open-scope',
                       // Also seeds "+ Create": a new place belongs to this version.
                       props: {
@@ -102,7 +101,7 @@ export const eventRuleVersion = defineResource(EVENT_RULE_VERSION_RESOURCE, {
                 ),
                 l.panel(
                   [
-                    l.place(relatedList(resourceByName(EVENT_RULE_SCOPE_HISTORY_RESOURCE)), {
+                    l.place(relatedList(EVENT_RULE_SCOPE_HISTORY_RESOURCE), {
                       key: 'frozen-scope',
                       props: {
                         where: [{ field: 'version_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -118,7 +117,7 @@ export const eventRuleVersion = defineResource(EVENT_RULE_VERSION_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'version-events',
                   props: {
                     where: [{ field: 'rule_version_id', op: 'eq', value: l.ref('record', 'id') }],

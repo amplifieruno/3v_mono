@@ -96,16 +96,15 @@ export const auditEntry = defineResource(AUDIT_ENTRY_RESOURCE, {
   views: {
     list: {
       columns: ['occurred_at', 'action', 'entity', 'entity_id', 'user_id', 'reason'],
-      defaultSort: [{ field: 'occurred_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: AUDIT_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: AUDIT_PAGE_SIZE,
       filters: { pinned: ['entity', 'action', 'user_id', 'occurred_at'], fields: ['entity', 'action', 'user_id', 'occurred_at', 'entity_id'] },
       savedViews: [
-        { id: 'removed', texts: 'Removed rows', state: { filters: [{ field: 'action', op: 'eq', value: 'delete' }] } },
-        { id: 'sensitive', texts: 'Sensitive data viewed', state: { filters: [{ field: 'action', op: 'eq', value: 'view_sensitive' }] } },
-        { id: 'exports', texts: 'Exports', state: { filters: [{ field: 'action', op: 'eq', value: 'export' }] } },
+        { id: 'removed', texts: 'Removed rows', state: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: AUDIT_PAGE_SIZE, filters: [{ field: 'action', op: 'eq', value: 'delete' }] } },
+        { id: 'sensitive', texts: 'Sensitive data viewed', state: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: AUDIT_PAGE_SIZE, filters: [{ field: 'action', op: 'eq', value: 'view_sensitive' }] } },
+        { id: 'exports', texts: 'Exports', state: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: AUDIT_PAGE_SIZE, filters: [{ field: 'action', op: 'eq', value: 'export' }] } },
       ],
     },
     show: {

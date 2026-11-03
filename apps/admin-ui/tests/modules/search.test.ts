@@ -237,7 +237,7 @@ describe('search refusals', () => {
       defineDataProvider({
         mutations: {
           custom: defineMutationHandler(async () =>
-            Promise.reject({ kind: 'sent', code: 'unexpected', message, details: [{ message, extensions: { code } }] } satisfies DataError),
+            Promise.reject({ kind: 'protocol', applied: 'unknown', code: 'unexpected', details: [{ message, extensions: { code } }] } satisfies DataError),
           ),
         },
       }),
@@ -251,8 +251,8 @@ describe('search refusals', () => {
     await expect(refused('file_not_found')).rejects.toMatchObject({ kind: 'validation', code: 'file_not_found' });
     await expect(refused('invalid_input', 'threshold: expected 0.2..0.95')).rejects.toMatchObject({
       kind: 'validation',
-      details: { issues: [expect.objectContaining({ message: expect.objectContaining({ default: expect.stringContaining('threshold: expected 0.2..0.95') }) })] },
+      issues: [expect.objectContaining({ message: expect.objectContaining({ default: expect.stringContaining('threshold: expected 0.2..0.95') }) })],
     });
-    await expect(refused('internal', 'boom')).rejects.toMatchObject({ kind: 'sent' });
+    await expect(refused('internal', 'boom')).rejects.toMatchObject({ kind: 'protocol', applied: 'unknown' });
   });
 });

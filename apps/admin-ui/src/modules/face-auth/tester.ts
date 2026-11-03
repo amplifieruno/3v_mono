@@ -28,7 +28,7 @@ export const authTester = defineResource(AUTH_TESTER_RESOURCE, {
   operations: { create: false, edit: false, delete: false },
   builtinActions: { edit: false, delete: false },
   fields: authTesterFields,
-  actions: (r) => ({ item: [r.action.flow('authenticate', authenticateFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('authenticate', authenticateFlow)] }),
   views: {
     list: { page: false },
     show: { body: (l) => [l.place(inlineFlow, { key: 'authenticate', props: { flow: 'authenticate' } })] },

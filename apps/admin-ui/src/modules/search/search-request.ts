@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { searchResultsBlock } from '../../blocks/search-results/search-results-block';
@@ -45,14 +46,14 @@ export const searchRequest = defineResource(SEARCH_REQUEST_RESOURCE, {
   builtinActions: { edit: false, delete: false },
   fields: searchRequestFields,
   actions: (r) => ({
-    item: [r.action.flow('run_again', rerunSearchFlow), r.action.flow('run_attributes_again', rerunAttributeSearchFlow)],
+    item: [r.item.flow('run_again', rerunSearchFlow), r.item.flow('run_attributes_again', rerunAttributeSearchFlow)],
   }),
   views: {
     list: {
       columns: ['created_at', 'search_type', 'status', 'results_count', 'top_confidence', 'threshold'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { pinned: ['status', 'search_type'], fields: ['status', 'search_type', 'created_at'] },
-      savedViews: SEARCH_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }] }, SEARCH_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['search_type', 'status', 'created_at', 'saved_search_id', 'bulk_job_id'])],

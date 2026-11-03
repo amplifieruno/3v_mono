@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { DSR_RESOURCE } from '../../data/resource-names';
@@ -51,21 +52,21 @@ export const dataSubjectRequest = defineResource(DSR_RESOURCE, {
   fields: dsrFields,
   actions: (r) => ({
     resource: [
-      r.action.flow('new_access', newAccessRequestFlow),
-      r.action.flow('new_portability', newPortabilityRequestFlow),
-      r.action.flow('new_rectification', newRectificationRequestFlow),
-      r.action.flow('new_restriction', newRestrictionRequestFlow),
-      r.action.flow('new_erasure', newErasureRequestFlow),
+      r.resource.flow('new_access', newAccessRequestFlow),
+      r.resource.flow('new_portability', newPortabilityRequestFlow),
+      r.resource.flow('new_rectification', newRectificationRequestFlow),
+      r.resource.flow('new_restriction', newRestrictionRequestFlow),
+      r.resource.flow('new_erasure', newErasureRequestFlow),
     ],
-    item: [r.action.flow('complete', completeDsrFlow), r.action.flow('reject', rejectDsrFlow), r.action.flow('retry', retryDsrFlow)],
+    item: [r.item.flow('complete', completeDsrFlow), r.item.flow('reject', rejectDsrFlow), r.item.flow('retry', retryDsrFlow)],
   }),
   views: {
     list: {
       columns: [...DSR_COLUMNS],
-      defaultSort: [{ field: 'received_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'received_at', direction: 'desc' }] },
       search: { fields: ['code'] },
       filters: { pinned: ['status', 'request_type'], fields: ['status', 'request_type', 'profile_id', 'received_at', 'due_at', 'partial'] },
-      savedViews: DSR_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'received_at', direction: 'desc' }] }, DSR_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['code', 'request_type', 'status', 'profile_id'])],

@@ -151,9 +151,9 @@ describe('refusals through the provider', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -170,7 +170,7 @@ describe('refusals through the provider', () => {
       await expect(refused(operation, 'incident_invalid_transition'), operation).rejects.toMatchObject({
         kind: 'validation',
         code: 'incident_invalid_transition',
-        details: { issues: [{ message: { default: expect.stringMatching(/Someone else moved.*Nothing was changed/) } }] },
+        issues: [{ message: { default: expect.stringMatching(/Someone else moved.*Nothing was changed/) } }],
       });
     }
   });
@@ -192,7 +192,7 @@ describe('refusals through the provider', () => {
       await expect(refused(operation, 'member_not_active:assigned_to'), operation).rejects.toMatchObject({
         kind: 'validation',
         code: 'member_not_active',
-        details: { issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }] },
+        issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }],
       });
     }
   });

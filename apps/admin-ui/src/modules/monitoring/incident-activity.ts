@@ -82,11 +82,10 @@ export const incidentActivity = defineResource(INCIDENT_ACTIVITY_RESOURCE, {
     list: {
       page: false,
       columns: [...INCIDENT_ACTIVITY_COLUMNS],
-      defaultSort: [{ field: 'occurred_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: INCIDENT_ACTIVITY_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: INCIDENT_ACTIVITY_PAGE_SIZE,
     },
     show: { page: false },
   },

@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { LEGAL_HOLD_RESOURCE, USER_RESOURCE } from '../../data/resource-names';
 import { dateTime } from '../../fields/date-time';
 import { checkNotBlank } from '../../fields/not-blank';
@@ -77,16 +76,16 @@ export const legalHold = defineResource(LEGAL_HOLD_RESOURCE, {
   fields: legalHoldFields,
   rules: LEGAL_HOLD_RULES,
   checks: LEGAL_HOLD_CHECKS,
-  actions: (r) => ({ item: [r.action.flow('end_now', endHoldFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('end_now', endHoldFlow)] }),
   views: {
     list: {
       columns: ['name', 'starts_at', 'ends_at', 'created_by', 'created_at'],
-      defaultSort: [{ field: 'starts_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'starts_at', direction: 'desc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { pinned: ['starts_at', 'ends_at'], fields: ['starts_at', 'ends_at', 'created_at'] },
       savedViews: [
-        { id: 'open-ended', texts: 'Until further notice', state: { filters: [{ field: 'ends_at', op: 'isNull' }] } },
-        { id: 'with-end', texts: 'With an end', state: { filters: [{ field: 'ends_at', op: 'isNotNull' }] } },
+        { id: 'open-ended', texts: 'Until further notice', state: { sort: [{ field: 'starts_at', direction: 'desc' }], filters: [{ field: 'ends_at', op: 'isNull' }] } },
+        { id: 'with-end', texts: 'With an end', state: { sort: [{ field: 'starts_at', direction: 'desc' }], filters: [{ field: 'ends_at', op: 'isNotNull' }] } },
       ],
     },
     show: {
@@ -98,7 +97,7 @@ export const legalHold = defineResource(LEGAL_HOLD_RESOURCE, {
             ...HOLD_TARGETS.map((spec) =>
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(spec.resource)), {
+                  l.place(relatedList(spec.resource), {
                     key: `hold-${spec.column}`,
                     texts: { title: spec.labelPlural },
                     // Also seeds "+ Create": the new target is for this hold; the form asks for the target.

@@ -27,7 +27,7 @@ export const searchWorkspace = defineResource(SEARCH_WORKSPACE_RESOURCE, {
   operations: { create: false, edit: false, delete: false },
   builtinActions: { edit: false, delete: false },
   fields: searchWorkspaceFields,
-  actions: (r) => ({ item: [r.action.flow('search', searchFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('search', searchFlow)] }),
   views: {
     list: { page: false },
     show: { body: (l) => [l.place(inlineFlow, { key: 'search', props: { flow: 'search' } })] },

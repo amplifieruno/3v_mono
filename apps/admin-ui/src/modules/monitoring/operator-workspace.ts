@@ -55,7 +55,7 @@ export const operatorWorkspace = defineResource(OPERATOR_WORKSPACE_RESOURCE, {
   prefill: { fromQuery: ['name'] },
   fields: operatorWorkspaceFields,
   views: {
-    list: { columns: ['name', 'is_default', 'layout', 'updated_at'], defaultSort: [{ field: 'name', direction: 'asc' }] },
+    list: { columns: ['name', 'is_default', 'layout', 'updated_at'], initial: { sort: [{ field: 'name', direction: 'asc' }] } },
     show: { body: (l) => [l.grid(['name', 'is_default']), 'layout', l.grid(['created_at', 'updated_at'])] },
     create: { body: (l) => [l.grid(['name', 'is_default']), 'layout'] },
     edit: { body: (l) => [l.grid(['name', 'is_default']), 'layout'] },

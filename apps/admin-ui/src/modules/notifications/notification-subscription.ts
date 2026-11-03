@@ -1,6 +1,5 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { NOTIFICATION_DELIVERY_RESOURCE, NOTIFICATION_SUBSCRIPTION_RESOURCE } from '../../data/resource-names';
 import { SUBSCRIPTION_CHECKS, notificationSubscriptionFields } from './notification-subscription-fields';
 
@@ -48,11 +47,11 @@ export const notificationSubscription = defineResource(NOTIFICATION_SUBSCRIPTION
   views: {
     list: {
       columns: ['event_type', 'facility_id', 'profile_id', 'identity_id', 'watch_list_id', 'min_severity', 'channel', 'is_active'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { pinned: ['is_active', 'channel'], fields: ['is_active', 'channel', 'event_type', 'min_severity', 'facility_id', 'watch_list_id'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } },
-        { id: 'inactive', texts: 'Switched off', state: { filters: [{ field: 'is_active', op: 'eq', value: false }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } },
+        { id: 'inactive', texts: 'Switched off', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'is_active', op: 'eq', value: false }] } },
       ],
     },
     show: {
@@ -66,7 +65,7 @@ export const notificationSubscription = defineResource(NOTIFICATION_SUBSCRIPTION
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
                   key: 'subscription-deliveries',
                   props: {
                     where: [{ field: 'subscription_id', op: 'eq', value: l.ref('record', 'id') }],

@@ -64,7 +64,7 @@ export const startRecognitionFlow = {
       texts: 'The camera has no stream URL. Edit the camera and enter it first.',
     },
   ],
-  submit: { mutation: recognitionStart, input, onUnknown: { check: recognitionApplied(true) } },
+  submit: { mutation: recognitionStart, input, onUnknown: { check: recognitionApplied(true) }, reread: true },
   then: { notify: true },
 } satisfies FlowConfig;
 
@@ -84,6 +84,6 @@ export const stopRecognitionFlow = {
   icon: NAV_ICONS.stopRecognition,
   surfaces,
   when: cond.all([isCamera, isOn]),
-  submit: { mutation: recognitionStop, input, onUnknown: { check: recognitionApplied(false) } },
+  submit: { mutation: recognitionStop, reread: true, input, onUnknown: { check: recognitionApplied(false) } },
   then: { notify: true },
 } satisfies FlowConfig;

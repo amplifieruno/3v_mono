@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import { type DataProvider, type MutationContext, createMutationDescriptor } from '@burojs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ItapAuthProvider } from '../../src/auth';
@@ -66,7 +67,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('recipient groups, escalation and on-call ag
 
   const update = (resource: string, id: string, input: Row) =>
     provider.mutations?.updateOne?.(
-      createMutationDescriptor({ ...IDENTITY, ref: { namespace: 'default', id: resource }, resource, idField: 'id', kind: 'updateOne', id, input } as never) as never,
+      createMutationDescriptor({ ...IDENTITY, ref: { namespace: 'default', id: resource }, resource, idField: 'id', kind: 'updateOne', id, changes: setChanges(input) } as never) as never,
       context(),
     ) as Promise<{ record: Row }>;
 

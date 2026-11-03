@@ -97,13 +97,12 @@ describe('refusals (Review Focus 2)', () => {
   const actionRefusal = (code: string): DataError => ({
     kind: 'protocol',
     code,
-    message: code.replace(/_/gu, ' '),
     details: [{ message: code.replace(/_/gu, ' '), extensions: { code } }],
   });
   const sqlRefusal = (message: string): DataError => ({
-    kind: 'sent',
+    kind: 'protocol',
+    applied: 'unknown',
     code: 'permission-error',
-    message,
     details: [{ message, extensions: { code: 'permission-error' } }],
   });
 
@@ -111,7 +110,7 @@ describe('refusals (Review Focus 2)', () => {
     await expect(failing(actionRefusal('client_key_limit')).mutations?.custom?.(call('rotateClientKey'), {} as never)).rejects.toMatchObject({
       kind: 'validation',
       code: 'client_key_limit',
-      details: { issues: [{ message: { default: expect.stringMatching(/already has two active keys.*Revoke the key it no longer uses/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/already has two active keys.*Revoke the key it no longer uses/) } }],
     });
   });
 
@@ -126,7 +125,7 @@ describe('refusals (Review Focus 2)', () => {
     ] as const) {
       await expect(failing(actionRefusal(code)).mutations?.custom?.(call('rotateClientKey'), {} as never)).rejects.toMatchObject({
         kind: 'validation',
-        details: { issues: [{ message: { default: expect.stringMatching(text) } }] },
+        issues: [{ message: { default: expect.stringMatching(text) } }],
       });
     }
     await expect(failing(actionRefusal('internal')).mutations?.custom?.(call('rotateClientKey'), {} as never)).rejects.toMatchObject({ kind: 'protocol' });

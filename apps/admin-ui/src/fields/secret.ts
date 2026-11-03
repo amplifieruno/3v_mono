@@ -57,7 +57,7 @@ export function secret(opts: SecretOptions = {}) {
   return {
     ...base,
     ui: { ...base.ui, input: SECRET_FIELD, display: SECRET_FIELD },
-    meta: { writeOnly: true, ...(opts.required === true ? { removable: false } : {}) },
+    meta: { writeOnly: true },
   };
 }
 

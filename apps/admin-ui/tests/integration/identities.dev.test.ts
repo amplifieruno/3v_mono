@@ -129,8 +129,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
     await expect(mutate('createIdentityFromPhotos', { fileIds: [noFace, group] })).rejects.toMatchObject({
       kind: 'validation',
       code: 'no_valid_photos',
-      details: {
-        issues: [
+      issues: [
           {
             path: ['fileIds'],
             message: {
@@ -139,7 +138,6 @@ describe.skipIf(!DEV_STACK_ENABLED)('identities and enrollment against the dev s
             },
           },
         ],
-      },
     });
   }, 60_000);
 

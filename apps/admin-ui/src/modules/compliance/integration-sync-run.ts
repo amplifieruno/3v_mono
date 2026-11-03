@@ -98,13 +98,12 @@ export const integrationSyncRun = defineResource(INTEGRATION_SYNC_RUN_RESOURCE, 
   views: {
     list: {
       columns: ['started_at', 'integration_id', 'trigger', 'status', 'records_in', 'records_out', 'skipped_count', 'error'],
-      defaultSort: [{ field: 'started_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: SYNC_RUN_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: SYNC_RUN_PAGE_SIZE,
       filters: { pinned: ['integration_id', 'status'], fields: ['integration_id', 'status', 'trigger', 'started_at'] },
-      savedViews: [{ id: 'failed', texts: 'Failed', state: { filters: [{ field: 'status', op: 'eq', value: 'failed' }] } }],
+      savedViews: [{ id: 'failed', texts: 'Failed', state: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: SYNC_RUN_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'failed' }] } }],
     },
     show: {
       header: (l) => [l.grid(['integration_id', 'status', 'trigger', 'started_at'])],

@@ -40,8 +40,7 @@ export const areaOccupancy = defineResource(AREA_OCCUPANCY_RESOURCE, {
   views: {
     list: {
       columns: [...AREA_OCCUPANCY_COLUMNS],
-      defaultSort: [{ field: 'last_seen_at', direction: 'desc' }],
-      pageSize: AREA_OCCUPANCY_PAGE_SIZE,
+      initial: { sort: [{ field: 'last_seen_at', direction: 'desc' }], pageSize: AREA_OCCUPANCY_PAGE_SIZE },
       refetchInterval: OCCUPANCY_POLL_MS,
       filters: { pinned: ['area_id'], fields: ['area_id', 'facility_id', 'identity_id', 'entered_at'] },
     },

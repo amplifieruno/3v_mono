@@ -1,6 +1,5 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { AUTHENTICATION_ATTEMPT_RESOURCE, AUTHENTICATION_SESSION_RESOURCE } from '../../data/resource-names';
 import { recordDate } from '../people/record-date';
 import { AUTH_LOG_PAGE_SIZE } from './attempt-fields';
@@ -35,19 +34,18 @@ export const authenticationSession = defineResource(AUTHENTICATION_SESSION_RESOU
     list: {
       columns: [...AUTHENTICATION_SESSION_COLUMNS],
       optionalColumns: ['claimed_identity_id', 'access_point_id', 'recapture_count', 'device_ref', 'expires_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: AUTH_LOG_PAGE_SIZE,
       filters: {
         pinned: ['status', 'application_id', 'mode', 'created_at'],
         fields: ['status', 'application_id', 'mode', 'access_point_id', 'claimed_identity_id', 'created_at', 'closed_at'],
       },
       savedViews: [
-        { id: 'review', texts: 'Waiting for review', state: { filters: [{ field: 'status', op: 'eq', value: 'review' }] } },
-        { id: 'failed', texts: 'Failed', state: { filters: [{ field: 'status', op: 'eq', value: 'failed' }] } },
-        { id: 'succeeded', texts: 'Succeeded', state: { filters: [{ field: 'status', op: 'eq', value: 'succeeded' }] } },
+        { id: 'review', texts: 'Waiting for review', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'review' }] } },
+        { id: 'failed', texts: 'Failed', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'failed' }] } },
+        { id: 'succeeded', texts: 'Succeeded', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'succeeded' }] } },
       ],
     },
     show: {
@@ -57,7 +55,7 @@ export const authenticationSession = defineResource(AUTHENTICATION_SESSION_RESOU
           [
             l.panel(
               [
-                l.place(relatedList(resourceByName(AUTHENTICATION_ATTEMPT_RESOURCE)), {
+                l.place(relatedList(AUTHENTICATION_ATTEMPT_RESOURCE), {
                   key: 'session-attempts',
                   props: {
                     where: [{ field: 'session_id', op: 'eq', value: l.ref('record', 'id') }],

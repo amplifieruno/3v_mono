@@ -153,9 +153,9 @@ describe('refusals through the provider', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -173,7 +173,7 @@ describe('refusals through the provider', () => {
       providerFailing('Check constraint violation. identity_profile_mismatch').mutations?.custom?.(call('checkAccess'), {} as never),
     ).rejects.toMatchObject({
       code: 'identity_profile_mismatch',
-      details: { issues: [{ message: { default: expect.stringMatching(/No decision was recorded/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/No decision was recorded/) } }],
     });
   });
 });

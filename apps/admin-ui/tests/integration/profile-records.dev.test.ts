@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -193,7 +194,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profile documents, consent, restriction and
         resource: CONSENT_RECORD_RESOURCE,
         idField: 'id',
         id,
-        input: { status: 'withdrawn' },
+        changes: setChanges({ status: 'withdrawn' }),
       } as never) as never,
       context(),
     );

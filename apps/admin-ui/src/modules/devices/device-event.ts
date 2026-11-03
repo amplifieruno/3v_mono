@@ -82,13 +82,11 @@ export const deviceEvent = defineResource(DEVICE_EVENT_RESOURCE, {
   fields: deviceEventFields,
   views: {
     list: {
-      view: 'timeline',
+      initial: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: DEVICE_EVENT_PAGE_SIZE, view: 'timeline' },
       columns: ['kind', 'device_id', 'message', 'occurred_at'],
-      defaultSort: [{ field: 'occurred_at', direction: 'desc' }],
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: DEVICE_EVENT_PAGE_SIZE,
       search: { fields: [{ field: 'message', op: 'contains' }] },
       filters: { pinned: ['kind'], fields: ['kind', 'device_id', 'occurred_at'] },
     },

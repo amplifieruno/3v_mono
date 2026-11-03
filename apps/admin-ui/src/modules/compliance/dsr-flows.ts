@@ -39,6 +39,7 @@ export const rejectDsrFlow = {
     retry: 'never',
     input: { requestId: ref('record', 'id'), reason: ref('values', 'reason') },
     onUnknown: { check: fieldApplied(DSR_RESOURCE, 'status', 'rejected') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof rejectFields>;
@@ -73,6 +74,7 @@ export const completeDsrFlow = {
     retry: 'never',
     input: { requestId: ref('record', 'id'), outcome: ref('values', 'outcome') },
     onUnknown: { check: fieldApplied(DSR_RESOURCE, 'status', 'completed') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof completeFields>;
@@ -108,6 +110,7 @@ export const retryDsrFlow = {
     retry: 'never',
     input: { requestId: ref('record', 'id') },
     onUnknown: { check: dsrRetryApplied },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

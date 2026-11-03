@@ -36,8 +36,6 @@ const common = {
   }),
   step_no: f.number({
     required: true,
-    integer: true,
-    min: STEP_NO.min,
     default: 1,
     validate: rangeValidator(STEP_NO),
     texts: {
@@ -50,8 +48,6 @@ const common = {
   }),
   after_minutes: f.number({
     required: true,
-    integer: true,
-    min: AFTER_MINUTES.min,
     default: 0,
     validate: rangeValidator(AFTER_MINUTES),
     texts: {
@@ -152,7 +148,7 @@ export const escalationStep = defineResource(ESCALATION_STEP_RESOURCE, {
   operations: { create: false, edit: false, delete: false },
   fields: escalationStepFields,
   views: {
-    list: { page: false, columns: [...STEP_COLUMNS], defaultSort: [{ field: 'step_no', direction: 'asc' }] },
+    list: { page: false, columns: [...STEP_COLUMNS], initial: { sort: [{ field: 'step_no', direction: 'asc' }] } },
     show: { page: false },
   },
 });
@@ -170,7 +166,7 @@ export const escalationGroupStep = defineResource(ESCALATION_GROUP_STEP_RESOURCE
   prefill: { fromQuery: ['policy_id'] },
   fields: escalationGroupStepFields,
   views: {
-    list: { page: false, columns: [...GROUP_STEP_COLUMNS], defaultSort: [{ field: 'step_no', direction: 'asc' }] },
+    list: { page: false, columns: [...GROUP_STEP_COLUMNS], initial: { sort: [{ field: 'step_no', direction: 'asc' }] } },
     show: { page: false },
     create: { body: (l) => ['policy_id', l.grid(['step_no', 'after_minutes']), l.grid(['recipient_group_id', 'channel'])] },
     edit: { body: (l) => ['policy_id', l.grid(['step_no', 'after_minutes']), l.grid(['recipient_group_id', 'channel'])] },
@@ -190,7 +186,7 @@ export const escalationOnCallStep = defineResource(ESCALATION_ON_CALL_STEP_RESOU
   prefill: { fromQuery: ['policy_id'] },
   fields: escalationOnCallStepFields,
   views: {
-    list: { page: false, columns: [...ON_CALL_STEP_COLUMNS], defaultSort: [{ field: 'step_no', direction: 'asc' }] },
+    list: { page: false, columns: [...ON_CALL_STEP_COLUMNS], initial: { sort: [{ field: 'step_no', direction: 'asc' }] } },
     show: { page: false },
     create: { body: (l) => ['policy_id', l.grid(['step_no', 'after_minutes']), l.grid(['on_call_schedule_id', 'channel'])] },
     edit: { body: (l) => ['policy_id', l.grid(['step_no', 'after_minutes']), l.grid(['on_call_schedule_id', 'channel'])] },

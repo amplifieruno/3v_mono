@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Rule, defineResource } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { VISIT_RESOURCE } from '../../data/resource-names';
@@ -46,21 +47,21 @@ export const visit = defineResource(VISIT_RESOURCE, {
   rules: VISIT_RULES,
   actions: (r) => ({
     item: [
-      r.action.flow('check_in', checkInFlow),
-      r.action.flow('check_out', checkOutFlow),
-      r.action.flow('cancel', cancelFlow),
+      r.item.flow('check_in', checkInFlow),
+      r.item.flow('check_out', checkOutFlow),
+      r.item.flow('cancel', cancelFlow),
     ],
   }),
   views: {
     list: {
       columns: ['code', 'visitor_profile_id', 'host_profile_id', 'company_id', 'expected_start', 'expected_end', 'status'],
       optionalColumns: ['facility_id', 'purpose', 'badge_number', 'checked_in_at', 'checked_out_at'],
-      defaultSort: [{ field: 'expected_start', direction: 'desc' }],
+      initial: { sort: [{ field: 'expected_start', direction: 'desc' }] },
       search: { fields: ['code', 'purpose', 'badge_number'] },
       filters: {
         fields: ['status', 'visitor_profile_id', 'host_profile_id', 'company_id', 'facility_id', 'expected_start', 'expected_end'],
       },
-      savedViews: visitSavedViews(),
+      savedViews: viewsOpeningAs({ sort: [{ field: 'expected_start', direction: 'desc' }] }, visitSavedViews()),
     },
     show: {
       header: (l) => [l.grid(['code', 'status', 'expected_start', 'expected_end'])],

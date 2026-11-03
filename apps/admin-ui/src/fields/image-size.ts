@@ -1,4 +1,5 @@
 import type { FieldTexts } from '@burojs/core';
+import { ref } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { rangeValidator } from './bounded-number';
 
@@ -21,13 +22,12 @@ export interface ImageSizeOptions {
 export function imageSize(opts: ImageSizeOptions) {
   const base = f.number({
     required: true,
-    integer: true,
     validate: rangeValidator({ min: 1, integer: true }),
     ...(opts.texts === undefined ? {} : { texts: opts.texts }),
   });
   return {
     ...base,
     ui: { ...base.ui, input: IMAGE_SIZE_FIELD },
-    meta: { axis: opts.axis, imageField: opts.imageField },
+    meta: { axis: opts.axis, imageField: opts.imageField, reads: [ref('values', opts.imageField)] },
   };
 }

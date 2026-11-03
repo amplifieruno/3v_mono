@@ -82,15 +82,14 @@ export const terminalPolicySync = defineResource(TERMINAL_POLICY_SYNC_RESOURCE, 
     list: {
       columns: ['created_at', 'device_id', 'result', 'epoch', 'urgent', 'forced', 'error'],
       optionalColumns: ['facility_id'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: SYNC_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: SYNC_PAGE_SIZE,
       filters: { pinned: ['result', 'device_id', 'created_at'], fields: ['result', 'device_id', 'facility_id', 'urgent', 'forced', 'created_at'] },
       savedViews: [
-        { id: 'not-synced', texts: 'Not delivered', state: { filters: [{ field: 'result', op: 'ne', value: 'synced' }] } },
-        { id: 'published', texts: 'Published by hand', state: { filters: [{ field: 'forced', op: 'eq', value: true }] } },
+        { id: 'not-synced', texts: 'Not delivered', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: SYNC_PAGE_SIZE, filters: [{ field: 'result', op: 'ne', value: 'synced' }] } },
+        { id: 'published', texts: 'Published by hand', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: SYNC_PAGE_SIZE, filters: [{ field: 'forced', op: 'eq', value: true }] } },
       ],
     },
     show: {

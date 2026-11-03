@@ -18,8 +18,6 @@ export const THRESHOLD_RANGE = { min: 0, max: 1 } as const;
 function threshold(initial: number, texts: FieldTexts) {
   return f.number({
     required: true,
-    min: THRESHOLD_RANGE.min,
-    max: THRESHOLD_RANGE.max,
     default: initial,
     validate: rangeValidator(THRESHOLD_RANGE),
     in: ['list', 'show', 'create', 'edit'],

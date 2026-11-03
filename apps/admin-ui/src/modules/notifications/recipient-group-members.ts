@@ -142,7 +142,7 @@ export const recipientGroupUserMember = defineResource(RECIPIENT_GROUP_USER_MEMB
   prefill: { fromQuery: ['group_id'] },
   fields: recipientGroupUserMemberFields,
   views: {
-    list: { page: false, columns: [...USER_MEMBER_COLUMNS], defaultSort: [{ field: 'created_at', direction: 'asc' }] },
+    list: { page: false, columns: [...USER_MEMBER_COLUMNS], initial: { sort: [{ field: 'created_at', direction: 'asc' }] } },
     show: { page: false },
     create: { body: (l) => ['group_id', l.grid(['user_id', 'channel'])] },
     edit: { body: (l) => ['group_id', l.grid(['user_id', 'channel'])] },
@@ -163,7 +163,7 @@ export const recipientGroupAddressMember = defineResource(RECIPIENT_GROUP_ADDRES
   fields: recipientGroupAddressMemberFields,
   checks: ADDRESS_MEMBER_CHECKS,
   views: {
-    list: { page: false, columns: [...ADDRESS_MEMBER_COLUMNS], defaultSort: [{ field: 'created_at', direction: 'asc' }] },
+    list: { page: false, columns: [...ADDRESS_MEMBER_COLUMNS], initial: { sort: [{ field: 'created_at', direction: 'asc' }] } },
     show: { page: false },
     create: { body: (l) => ['group_id', l.grid(['channel', 'external_address'])] },
     edit: { body: (l) => ['group_id', l.grid(['channel', 'external_address'])] },

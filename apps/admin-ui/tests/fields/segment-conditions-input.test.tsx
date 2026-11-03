@@ -38,7 +38,7 @@ const props = (value: unknown, extra: Record<string, unknown> = {}) =>
     issues: [],
     value,
     path: ['conditions'],
-    form: { target: 'profiles' },
+    refValues: { target: 'profiles' },
     ...extra,
   }) as unknown as ScalarInputProps<unknown, SegmentConditionsMeta>;
 
@@ -91,7 +91,7 @@ describe('the conditions editor', () => {
   });
 
   it('should ask for the target before offering fields', async () => {
-    render(<SegmentConditionsInput {...props({}, { form: {} })} />, { wrapper: Wrapper });
+    render(<SegmentConditionsInput {...props({}, { refValues: {} })} />, { wrapper: Wrapper });
     expect(await screen.findByText(/Choose who the members are first/)).toBeDefined();
   });
 

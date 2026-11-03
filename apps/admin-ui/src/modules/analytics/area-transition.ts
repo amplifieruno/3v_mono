@@ -46,9 +46,8 @@ export const areaTransition = defineResource(AREA_TRANSITION_RESOURCE, {
   views: {
     list: {
       columns: ['day', 'from_area_id', 'to_area_id', 'count', 'facility_id'],
-      defaultSort: [{ field: 'day', direction: 'desc' }],
+      initial: { sort: [{ field: 'day', direction: 'desc' }], pageSize: 50 },
       sortTiebreaker: 'id',
-      pageSize: 50,
       filters: { pinned: ['from_area_id', 'to_area_id'], fields: ['from_area_id', 'to_area_id', 'facility_id', 'day', 'count'] },
     },
     show: {

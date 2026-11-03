@@ -54,9 +54,8 @@ export const areaHourlyStat = defineResource(AREA_HOURLY_STAT_RESOURCE, {
     list: {
       columns: ['hour', 'facility_id', 'area_id', 'unique_identities', 'entries', 'exits', 'peak_occupancy'],
       optionalColumns: ['dwell_seconds', 'avg_dwell_seconds'],
-      defaultSort: [{ field: 'hour', direction: 'desc' }],
+      initial: { sort: [{ field: 'hour', direction: 'desc' }], pageSize: 50 },
       sortTiebreaker: 'id',
-      pageSize: 50,
       filters: { pinned: ['area_id'], fields: ['area_id', 'facility_id', 'hour', 'unique_identities'] },
     },
     show: {

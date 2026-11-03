@@ -34,11 +34,10 @@ export const identityLocation = defineResource(IDENTITY_LOCATION_RESOURCE, {
   views: {
     list: {
       columns: ['occurred_at', 'movement_type', 'identity_id', 'area_id', 'access_point_id', 'device_id'],
-      defaultSort: [{ field: 'occurred_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: IDENTITY_LOCATION_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: IDENTITY_LOCATION_PAGE_SIZE,
       filters: {
         pinned: ['area_id', 'movement_type', 'occurred_at'],
         fields: ['area_id', 'access_point_id', 'device_id', 'identity_id', 'movement_type', 'occurred_at', 'facility_id'],

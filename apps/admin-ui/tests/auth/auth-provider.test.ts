@@ -220,7 +220,7 @@ describe('ItapAuthProvider', () => {
   it('refreshes after an auth error from the data layer', async () => {
     const { provider, world } = setup();
     await provider.login?.(creds, ctx);
-    const error: DataError = { kind: 'auth', code: 'invalid-jwt', message: 'expired' };
+    const error: DataError = { kind: 'auth', code: 'invalid-jwt', message: { key: 'errors.test', default: 'expired' } };
     expect(await provider.onError?.(error, ctx)).toEqual({ action: 'refreshed' });
     expect(world.switchCalls).toBe(2);
   });
@@ -230,7 +230,7 @@ describe('ItapAuthProvider', () => {
     await provider.login?.(creds, ctx);
     world.now += 16 * 60_000;
     world.refreshRejected = true;
-    const error: DataError = { kind: 'auth', code: 'invalid-jwt', message: 'expired' };
+    const error: DataError = { kind: 'auth', code: 'invalid-jwt', message: { key: 'errors.test', default: 'expired' } };
     expect(await provider.onError?.(error, ctx)).toEqual({ action: 'logout' });
     expect(store.snapshot()).toEqual({ base: null, org: null });
     expect(await provider.check(ctx)).toEqual({ authenticated: false, reason: 'signed-out' });
@@ -267,7 +267,7 @@ describe('ItapAuthProvider', () => {
     const result = await provider.switchOrganization(RIVER);
     expect(result).toMatchObject({
       success: false,
-      error: { kind: 'forbidden', code: 'membership_inactive', message: 'Your membership in this organization is not active' },
+      error: { kind: 'forbidden', code: 'membership_inactive', message: { key: 'errors.membership_inactive', default: 'Your membership in this organization is not active' } },
     });
     expect(store.snapshot()).toEqual(before);
   });
@@ -281,7 +281,7 @@ describe('ItapAuthProvider', () => {
 
   it('propagates non-auth errors', async () => {
     const { provider } = setup();
-    const error: DataError = { kind: 'validation', code: 'bad', message: 'nope' };
+    const error: DataError = { kind: 'validation', code: 'bad', message: { key: 'errors.test', default: 'nope' } };
     expect(await provider.onError?.(error, ctx)).toEqual({ action: 'propagate', error });
   });
 

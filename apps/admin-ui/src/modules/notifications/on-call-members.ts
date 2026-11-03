@@ -22,8 +22,6 @@ export const onCallScheduleMemberFields = {
   }),
   position: f.number({
     required: true,
-    integer: true,
-    min: POSITION.min,
     validate: rangeValidator(POSITION),
     texts: {
       label: 'Position',
@@ -63,7 +61,7 @@ export const onCallScheduleMember = defineResource(ON_CALL_SCHEDULE_MEMBER_RESOU
   prefill: { fromQuery: ['schedule_id'] },
   fields: onCallScheduleMemberFields,
   views: {
-    list: { page: false, columns: [...ON_CALL_MEMBER_COLUMNS], defaultSort: [{ field: 'position', direction: 'asc' }] },
+    list: { page: false, columns: [...ON_CALL_MEMBER_COLUMNS], initial: { sort: [{ field: 'position', direction: 'asc' }] } },
     show: { page: false },
     create: { body: (l) => ['schedule_id', l.grid(['position', 'user_id'])] },
     edit: { body: (l) => ['schedule_id', l.grid(['position', 'user_id'])] },

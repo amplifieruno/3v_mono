@@ -1,7 +1,6 @@
 import { type ScreenRef, cond, defineResource, ref, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   IDENTITY_MERGE_RESOURCE,
   IDENTITY_MERGE_SOURCE_RESOURCE,
@@ -112,7 +111,7 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
   fields: identityMergeFields,
   actions: (r) => ({
     item: [
-      r.action.flow('rollback', {
+      r.item.flow('rollback', {
         texts: {
           label: 'Roll back',
           confirm:
@@ -129,7 +128,7 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
         when: completed,
         confirm: true,
         // The dialog opens on what goes back; the review step shows it again before the confirm.
-        // A review reads only the flow's values (G35): the merge's id is carried as one.
+        // The merge's id is carried in the flow's values for the review.
         form: {
           fields: { merge_id: carriedId('Merge') },
           initial: { merge_id: ref('record', 'id') },
@@ -143,7 +142,7 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
         review: (l) => [
           l.place(mergeRollbackReviewBlock, {
             key: 'rollback-review',
-            props: { mergeId: ref('record', 'merge_id') as unknown as ScreenRef<'record'> },
+            props: { mergeId: ref('record', 'id') as unknown as ScreenRef<'record'> },
           }),
         ],
         submit: {
@@ -151,6 +150,7 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
           retry: 'never',
           input: { mergeId: ref('record', 'id') },
           onUnknown: { check: fieldApplied(IDENTITY_MERGE_RESOURCE, 'status', 'rolled_back') },
+          reread: true,
         },
         then: { notify: true },
       }),
@@ -159,10 +159,10 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
   views: {
     list: {
       columns: ['created_at', 'target_identity_id', 'status', 'reason', 'merged_by', 'rolled_back_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { fields: ['status', 'target_identity_id', 'created_at'] },
       savedViews: [
-        { id: 'completed', texts: 'Completed', state: { filters: [{ field: 'status', op: 'eq', value: 'completed' }] } },
+        { id: 'completed', texts: 'Completed', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'completed' }] } },
       ],
     },
     show: {
@@ -171,7 +171,7 @@ export const identityMerge = defineResource(IDENTITY_MERGE_RESOURCE, {
         l.grid(['target_identity_id', 'reason']),
         l.grid(['inherited_profile_id', 'inherited_primary']),
         l.grid(['rolled_back_at', 'rolled_back_by']),
-        l.place(relatedList(resourceByName(IDENTITY_MERGE_SOURCE_RESOURCE)), {
+        l.place(relatedList(IDENTITY_MERGE_SOURCE_RESOURCE), {
           key: 'merge-sources',
           texts: { title: 'Merged identities' },
           props: {

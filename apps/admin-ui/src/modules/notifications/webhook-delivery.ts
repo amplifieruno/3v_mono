@@ -32,18 +32,17 @@ export const webhookDelivery = defineResource(WEBHOOK_DELIVERY_RESOURCE, {
   views: {
     list: {
       columns: ['created_at', 'subscription_id', 'event_type', 'status', 'attempts', 'response_code', 'error'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: 25 },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: 25,
       filters: {
         pinned: ['status', 'subscription_id'],
         fields: ['status', 'subscription_id', 'event_type', 'response_code', 'created_at'],
       },
       savedViews: [
-        { id: 'problems', texts: 'Failed', state: { filters: [{ field: 'status', op: 'in', value: ['failed', 'retrying'] }] } },
-        { id: 'dead-letters', texts: 'Dead letters', state: { filters: [{ field: 'status', op: 'eq', value: 'dead_letter' }] } },
+        { id: 'problems', texts: 'Failed', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: 25, filters: [{ field: 'status', op: 'in', value: ['failed', 'retrying'] }] } },
+        { id: 'dead-letters', texts: 'Dead letters', state: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: 25, filters: [{ field: 'status', op: 'eq', value: 'dead_letter' }] } },
       ],
     },
     show: {

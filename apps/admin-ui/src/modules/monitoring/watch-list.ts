@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   WATCH_LIST_IDENTITY_ENTRY_RESOURCE,
   WATCH_LIST_PROFILE_ENTRY_RESOURCE,
@@ -73,7 +72,7 @@ export const watchList = defineResource(WATCH_LIST_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'kind', 'severity', 'color', 'created_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { fields: ['kind', 'severity'] },
     },
@@ -87,7 +86,7 @@ export const watchList = defineResource(WATCH_LIST_RESOURCE, {
               l.panel(['name', 'description', l.grid(['created_at', 'updated_at'])], { key: 'details', texts: 'Details' }),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(WATCH_LIST_PROFILE_ENTRY_RESOURCE)), {
+                  l.place(relatedList(WATCH_LIST_PROFILE_ENTRY_RESOURCE), {
                     key: 'list-profile-entries',
                     props: {
                       where: [...byList, { field: 'profile_id', op: 'nnull', value: true }],
@@ -100,7 +99,7 @@ export const watchList = defineResource(WATCH_LIST_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(WATCH_LIST_IDENTITY_ENTRY_RESOURCE)), {
+                  l.place(relatedList(WATCH_LIST_IDENTITY_ENTRY_RESOURCE), {
                     key: 'list-identity-entries',
                     props: {
                       where: [...byList, { field: 'identity_id', op: 'nnull', value: true }],

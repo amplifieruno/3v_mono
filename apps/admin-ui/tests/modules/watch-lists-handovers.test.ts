@@ -194,9 +194,9 @@ describe('refusals through the provider', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'constraint-violation',
-              message,
               details: [{ message, extensions: { code: 'constraint-violation' } }],
             } satisfies DataError),
           ),
@@ -214,7 +214,7 @@ describe('refusals through the provider', () => {
     await expect(refused('acknowledgeShiftHandover', 'handover_not_recipient')).rejects.toMatchObject({
       kind: 'validation',
       code: 'handover_not_recipient',
-      details: { issues: [{ message: { default: expect.stringMatching(/Only the operator the shift is handed over to/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/Only the operator the shift is handed over to/) } }],
     });
     for (const code of ['handover_not_found', 'handover_not_sender', 'handover_acknowledged']) {
       await expect(refused('addOpenIncidentsToHandover', code), code).rejects.toMatchObject({ kind: 'validation', code });
@@ -226,7 +226,7 @@ describe('refusals through the provider', () => {
       await expect(refused(operation, 'member_not_active:to_user_id'), operation).rejects.toMatchObject({
         kind: 'validation',
         code: 'member_not_active',
-        details: { issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }] },
+        issues: [{ message: { default: expect.stringMatching(/no longer an active member.*Nothing was changed/) } }],
       });
     }
   });

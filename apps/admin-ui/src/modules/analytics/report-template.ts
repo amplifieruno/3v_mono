@@ -1,7 +1,6 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { REPORT_RESOURCE, REPORT_SCHEDULE_RESOURCE, REPORT_TEMPLATE_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { REPORT_FORMAT_ENUM, REPORT_FORMATS } from '../../enums/incidents';
@@ -98,12 +97,12 @@ export const reportTemplate = defineResource(REPORT_TEMPLATE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'report_type', 'format', 'parameters', 'is_system'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { fields: ['report_type', 'format', 'is_system'] },
       savedViews: [
-        { id: 'built-in', texts: 'Built in', state: { filters: [{ field: 'is_system', op: 'eq', value: true }] } },
-        { id: 'own', texts: 'Our own', state: { filters: [{ field: 'is_system', op: 'eq', value: false }] } },
+        { id: 'built-in', texts: 'Built in', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: true }] } },
+        { id: 'own', texts: 'Our own', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: false }] } },
       ],
     },
     show: {
@@ -116,7 +115,7 @@ export const reportTemplate = defineResource(REPORT_TEMPLATE_RESOURCE, {
             [
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(REPORT_SCHEDULE_RESOURCE)), {
+                  l.place(relatedList(REPORT_SCHEDULE_RESOURCE), {
                     key: 'template-schedules',
                     props: { where: [...byTemplate], columns: ['name', 'cron', 'channel', 'is_active', 'next_run_at'], open: 'page' },
                   }),
@@ -125,7 +124,7 @@ export const reportTemplate = defineResource(REPORT_TEMPLATE_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(REPORT_RESOURCE)), {
+                  l.place(relatedList(REPORT_RESOURCE), {
                     key: 'template-reports',
                     props: { where: [...byTemplate], columns: ['code', 'title', 'status', 'created_at'], open: 'page' },
                   }),

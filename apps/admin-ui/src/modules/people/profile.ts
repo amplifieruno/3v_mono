@@ -1,6 +1,6 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Check, defineResource, facts, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { profileAccessPanel } from '../access/access-tabs';
 import { profileHoldNotice } from '../compliance/hold-notice';
 import { SUBJECT_ENTRY_COLUMNS } from '../monitoring/watch-list-entry-fields';
@@ -76,11 +76,11 @@ export const profile = defineResource(PROFILE_RESOURCE, {
   rules: PROFILE_RULES,
   actions: (r) => ({
     item: [
-      r.action.flow('enroll_face', enrollFaceFlow),
-      r.action.flow('upload_document', uploadDocumentFlow),
-      r.action.flow('restrict_processing', restrictProcessingFlow),
-      r.action.flow('lift_restriction', liftRestrictionFlow),
-      r.action.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('profiles')),
+      r.item.flow('enroll_face', enrollFaceFlow),
+      r.item.flow('upload_document', uploadDocumentFlow),
+      r.item.flow('restrict_processing', restrictProcessingFlow),
+      r.item.flow('lift_restriction', liftRestrictionFlow),
+      r.item.flow(ADD_TO_SEGMENT_FLOW, addToSegmentFlow('profiles')),
     ],
   }),
   types: {
@@ -96,12 +96,12 @@ export const profile = defineResource(PROFILE_RESOURCE, {
     list: {
       columns: ['code', 'last_name', 'first_name', 'profile_type', 'company_id', 'status', 'has_face', 'is_blacklisted'],
       optionalColumns: ['email', 'phone', 'access_level', 'department', 'job_title', 'start_date', 'end_date', 'identities_count', 'processing_restricted'],
-      defaultSort: [{ field: 'last_name', direction: 'asc' }],
+      initial: { sort: [{ field: 'last_name', direction: 'asc' }] },
       search: { fields: ['last_name', 'first_name', 'email', 'code', 'employee_id'] },
       filters: {
         fields: ['profile_type', 'status', 'company_id', 'access_level', 'has_face', 'is_blacklisted', 'processing_restricted', 'start_date', 'end_date'],
       },
-      savedViews: profileSavedViews(),
+      savedViews: viewsOpeningAs({ sort: [{ field: 'last_name', direction: 'asc' }] }, profileSavedViews()),
     },
     show: {
       header: (l) => [l.grid(['profile_type', 'status', 'access_level', 'has_face', 'is_blacklisted'])],
@@ -145,7 +145,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             l.panel(
               [
                 'identities_count',
-                l.place(relatedList(resourceByName(IDENTITY_RESOURCE)), {
+                l.place(relatedList(IDENTITY_RESOURCE), {
                   key: 'profile-identities',
                   props: {
                     where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -165,7 +165,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(PROFILE_DOCUMENT_RESOURCE)), {
+                l.place(relatedList(PROFILE_DOCUMENT_RESOURCE), {
                   key: 'profile-documents',
                   props: {
                     where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -177,7 +177,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(CONSENT_RECORD_RESOURCE)), {
+                l.place(relatedList(CONSENT_RECORD_RESOURCE), {
                   key: 'profile-consents',
                   props: {
                     // Also seeds "+ Create": a new consent is recorded for this person.
@@ -191,7 +191,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             profileVisitsPanel(l),
             l.panel(
               [
-                l.place(relatedList(resourceByName(TRACKING_SESSION_RESOURCE)), {
+                l.place(relatedList(TRACKING_SESSION_RESOURCE), {
                   key: 'profile-sessions',
                   props: {
                     where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -206,7 +206,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
               [
                 // A detection's `profile_id` is computed from its identity: the detections of every identity
                 // linked to the person now.
-                l.place(relatedList(resourceByName(DETECTION_RESOURCE)), {
+                l.place(relatedList(DETECTION_RESOURCE), {
                   key: 'profile-detections',
                   props: {
                     where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -219,7 +219,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'profile-events',
                   props: {
                     where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -232,7 +232,7 @@ export const profile = defineResource(PROFILE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(WATCH_LIST_PROFILE_ENTRY_RESOURCE)), {
+                l.place(relatedList(WATCH_LIST_PROFILE_ENTRY_RESOURCE), {
                   key: 'profile-watch-lists',
                   // Also seeds "+ Create": the new entry is for this profile; the form asks for the list.
                   props: { where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...SUBJECT_ENTRY_COLUMNS], open: 'none' },

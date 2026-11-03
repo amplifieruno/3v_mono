@@ -1,5 +1,4 @@
 import { type Layout, relatedList } from '@burojs/core';
-import { resourceByName } from '../../data/resource-by-name';
 import { VISIT_RESOURCE } from '../../data/resource-names';
 import type { profileFields } from './profile-fields';
 
@@ -12,7 +11,7 @@ export function profileVisitsPanel(l: Layout<typeof profileFields>) {
     [
       l.panel(
         [
-          l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+          l.place(relatedList(VISIT_RESOURCE), {
             key: 'profile-visits',
             props: {
               // Also seeds "+ Create": a new visit is for this visitor.
@@ -25,7 +24,7 @@ export function profileVisitsPanel(l: Layout<typeof profileFields>) {
       ),
       l.panel(
         [
-          l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+          l.place(relatedList(VISIT_RESOURCE), {
             key: 'profile-hosted-visits',
             props: {
               // Also seeds "+ Create": a new visit is hosted by this person.

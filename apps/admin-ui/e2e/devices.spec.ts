@@ -161,11 +161,11 @@ test.describe.serial('devices smoke', () => {
 
     // Remove the stored password: the request carries null and the server accepts it.
     mutations.length = 0;
-    await page.goto(`/devices/${id}/edit`);
-    await page.getByTestId('form-field-input:device:edit:password:remove').click();
-    await expect(page.getByText('The stored value is removed on save.')).toBeVisible();
-    await page.getByTestId('form-submit:device:edit').click();
-    await expect(page).toHaveURL(new RegExp(`/devices/${id}$`));
+    await page.goto(`/devices/${id}`);
+    await page.getByRole('button', { name: 'More' }).first().click();
+    await page.getByRole('menuitem', { name: 'Remove password' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Remove password' }).click();
+    await expect(page.getByText('The password is removed.')).toBeVisible();
     expect(mutations.some((body) => /"password":null/u.test(body))).toBe(true);
   });
 

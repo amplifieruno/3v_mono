@@ -17,8 +17,6 @@ export const relationshipDetailFields = {
   }),
   confidence: f.number({
     nullable: true,
-    min: 0,
-    max: 1,
     // The record form does not enforce `min`/`max` (G14): restated as a validator.
     validate: rangeValidator({ min: 0, max: 1 }),
     texts: {

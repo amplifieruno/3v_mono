@@ -62,7 +62,7 @@ describe('org client errors', () => {
 
   it('should report a refused switch as forbidden', async () => {
     const client = orgClient(() => json({ errors: [{ message: 'Membership is not active', extensions: { code: 'unexpected' } }] }));
-    await expect(client.switchOrganization('b', 'org-1')).rejects.toMatchObject({ kind: 'forbidden', message: 'Membership is not active' });
+    await expect(client.switchOrganization('b', 'org-1')).rejects.toMatchObject({ kind: 'forbidden', message: { default: 'Membership is not active' } });
   });
 });
 

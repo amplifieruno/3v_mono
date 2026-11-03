@@ -42,7 +42,7 @@ export const operatorWorkspacePage = defineCustomPage({
               props: {
                 where: [{ field: 'status', op: 'in', value: [...ACTIVE_STATUSES] }],
                 columns: [...INCIDENT_COLUMNS],
-                pageSize: PANEL_ROWS,
+                initial: { pageSize: PANEL_ROWS },
                 open: 'page',
               },
             }),
@@ -55,7 +55,7 @@ export const operatorWorkspacePage = defineCustomPage({
               props: {
                 where: [{ field: 'severity', op: 'in', value: l.ref('workspace', 'event_severities') }],
                 columns: ['occurred_at', 'severity', 'event_type', 'title', 'area_id'],
-                pageSize: PANEL_ROWS,
+                initial: { pageSize: PANEL_ROWS },
                 open: 'page',
               },
             }),

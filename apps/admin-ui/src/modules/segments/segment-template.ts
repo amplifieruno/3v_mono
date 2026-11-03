@@ -1,7 +1,6 @@
 import { type Check, type Rule, defineResource, ref, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { SEGMENT_RESOURCE, SEGMENT_TEMPLATE_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { SEGMENT_TARGETS, SEGMENT_TARGET_ENUM } from '../../enums/segments';
@@ -97,7 +96,7 @@ export const segmentTemplate = defineResource(SEGMENT_TEMPLATE_RESOURCE, {
   checks: TEMPLATE_CHECKS,
   actions: (r) => ({
     item: [
-      r.action.flow('create_segment', {
+      r.item.flow('create_segment', {
         texts: {
           label: 'Create segment',
           notify: 'Segment created',
@@ -128,6 +127,7 @@ export const segmentTemplate = defineResource(SEGMENT_TEMPLATE_RESOURCE, {
               description: typed ? values.description : (template.description ?? null),
             };
           },
+          reread: true,
         },
         then: { notify: true, open: { resource: SEGMENT_RESOURCE, id: ref('result', 'id') } },
       }),
@@ -136,12 +136,12 @@ export const segmentTemplate = defineResource(SEGMENT_TEMPLATE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'target', 'category', 'is_system'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { pinned: ['target', 'is_system'], fields: ['target', 'category', 'is_system'] },
       savedViews: [
-        { id: 'built-in', texts: 'Built in', state: { filters: [{ field: 'is_system', op: 'eq', value: true }] } },
-        { id: 'own', texts: 'Our own', state: { filters: [{ field: 'is_system', op: 'eq', value: false }] } },
+        { id: 'built-in', texts: 'Built in', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: true }] } },
+        { id: 'own', texts: 'Our own', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: false }] } },
       ],
     },
     show: {
@@ -154,7 +154,7 @@ export const segmentTemplate = defineResource(SEGMENT_TEMPLATE_RESOURCE, {
           [
             l.panel(
               [
-                l.place(relatedList(resourceByName(SEGMENT_RESOURCE)), {
+                l.place(relatedList(SEGMENT_RESOURCE), {
                   key: 'template-segments',
                   props: {
                     where: [{ field: 'template_id', op: 'eq', value: l.ref('record', 'id') }],

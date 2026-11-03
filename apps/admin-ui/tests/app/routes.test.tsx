@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { AuthResult } from '@burojs/core';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type * as React from 'react';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -57,7 +57,7 @@ function fakeAuth(state: FakeState): ItapAuthProvider {
       if (!state.signedIn) return null;
       if ((state.identityFailures ?? 0) > 0) {
         state.identityFailures = (state.identityFailures ?? 0) - 1;
-        throw { kind: 'transport', code: 'network', message: 'Cannot reach the server.' };
+        throw { kind: 'transport', code: 'network', message: { key: 'errors.test', default: 'Cannot reach the server.' } };
       }
       return {
         id: 'user-1',
@@ -141,23 +141,25 @@ describe('console routes', () => {
   });
 
   it('should keep the current organization and show the reason when a switch is refused', async () => {
-    renderAt('/dashboard', {
+    renderAt('/companies', {
       signedIn: true,
       organizationId: NOVA,
       memberships: [member(NOVA, 'Nova Tower Business Center'), member(RIVER, 'Riverside Office Park')],
       refusal: {
         success: false,
-        error: { kind: 'forbidden', code: 'membership-inactive', message: 'Your membership in Riverside is suspended.' },
+        error: { kind: 'forbidden', code: 'membership-inactive', message: { key: 'errors.test', default: 'Your membership in Riverside is suspended.' } },
       },
     });
 
-    const switcher = await screen.findByRole('button', { name: 'Organization: Nova Tower Business Center' });
-    fireEvent.keyDown(switcher, { key: 'Enter' });
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Riverside Office Park/ }));
+    // The shell mounts its header again once the permission map settles: open the menu on the live one.
+    await waitFor(() => {
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Organization: Nova Tower Business Center' }), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('menuitem', { name: /Riverside Office Park/ }));
+    });
 
     expect(await screen.findByText('Your membership in Riverside is suspended.')).toBeDefined();
     expect(screen.getByRole('button', { name: 'Organization: Nova Tower Business Center' })).toBeDefined();
-    expect(screen.getByTestId('location').textContent).toBe('/dashboard');
+    expect(screen.getByTestId('location').textContent).toBe('/companies');
   });
 
   it('should offer a retry, not "no organization", when the memberships cannot be loaded', async () => {

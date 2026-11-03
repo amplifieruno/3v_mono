@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -145,7 +146,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('recognition, health and events against the 
   });
 
   it('should start and stop recognition and return the real flag', async () => {
-    await mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, input: { status: 'active' } });
+    await mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ status: 'active' }) });
     try {
       const started = recognitionStatusOutput.parse(
         await custom('mutation', DEVICES_BINDING, 'recognitionStart', { deviceId: cameraId }),
@@ -156,7 +157,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('recognition, health and events against the 
       );
       expect(stopped).toMatchObject({ device_id: cameraId, enabled: false });
     } finally {
-      await mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, input: { status: 'maintenance' } });
+      await mutate(DEVICE_RESOURCE, { kind: 'updateOne', id: cameraId, changes: setChanges({ status: 'maintenance' }) });
     }
     const status = recognitionStatusOutput.parse(
       await custom('query', DEVICES_BINDING, 'recognitionStatus', { deviceId: cameraId }),

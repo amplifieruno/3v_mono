@@ -127,7 +127,7 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
   fields: invitationFields,
   actions: (r) => ({
     resource: [
-      r.action.flow('invite', {
+      r.resource.flow('invite', {
         texts: {
           label: 'Invite member',
           doc: {
@@ -166,11 +166,10 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
       }),
     ],
     item: [
-      r.action.flow('revoke', {
+      r.item.flow('revoke', {
         texts: {
           label: 'Revoke',
           confirm: 'Revoke this invitation? Its token stops working at once.',
-          reread: 'The invitation is no longer pending.',
           doc: { summary: 'Withdraws a pending invitation; its token can no longer be accepted.' },
         },
         icon: NAV_ICONS.revoke,
@@ -178,10 +177,11 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
         surfaces: { default: false, row: 'auto', show: 'auto' },
         when: cond.equals(ref('record', 'status'), 'pending'),
         confirm: true,
+        checks: [{ id: 'stillPending', severity: 'error', when: cond.not(cond.equals(ref('record', 'status'), 'pending')), texts: 'The invitation is no longer pending.' }],
         submit: {
           update: INVITATION_RESOURCE,
           input: { status: 'revoked' },
-          reread: { expect: cond.equals(ref('record', 'status'), 'pending') },
+          reread: true,
           onUnknown: { check: revokeApplied },
         },
       }),
@@ -190,7 +190,7 @@ export const organizationInvitation = defineResource(INVITATION_RESOURCE, {
   views: {
     list: {
       columns: ['email', 'role', 'status', 'expires_at', 'invited_by', 'created_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       search: { fields: ['email'] },
       filters: { fields: ['status'] },
     },

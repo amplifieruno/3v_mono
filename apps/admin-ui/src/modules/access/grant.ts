@@ -1,6 +1,5 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { ACCESS_DECISION_RESOURCE, ACCESS_GRANT_RESOURCE } from '../../data/resource-names';
 import { DECISION_RELATED_COLUMNS } from './decision-fields';
 import { GRANT_COLUMNS, accessGrantFields } from './grant-fields';
@@ -34,22 +33,22 @@ export const accessGrant = defineResource(ACCESS_GRANT_RESOURCE, {
   fields: accessGrantFields,
   rules: GRANT_RULES,
   checks: GRANT_CHECKS,
-  actions: (r) => ({ item: [r.action.flow('revoke', revokeGrantFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('revoke', revokeGrantFlow)] }),
   views: {
     list: {
       columns: [...GRANT_COLUMNS],
       optionalColumns: ['reason', 'granted_by', 'created_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: {
         pinned: ['profile_id', 'single_use'],
         fields: ['profile_id', 'area_id', 'access_point_id', 'single_use', 'valid_from', 'valid_until', 'used_at', 'revoked_at'],
       },
       savedViews: [
-        { id: 'not-revoked', texts: 'Not revoked', state: { filters: [{ field: 'revoked_at', op: 'isNull' }] } },
+        { id: 'not-revoked', texts: 'Not revoked', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'revoked_at', op: 'isNull' }] } },
         {
           id: 'single-use-unused',
           texts: 'Single use, unused',
-          state: {
+          state: { sort: [{ field: 'created_at', direction: 'desc' }],
             filters: [
               { field: 'single_use', op: 'eq', value: true },
               { field: 'used_at', op: 'isNull' },
@@ -57,8 +56,8 @@ export const accessGrant = defineResource(ACCESS_GRANT_RESOURCE, {
             ],
           },
         },
-        { id: 'used', texts: 'Used', state: { filters: [{ field: 'used_at', op: 'isNotNull' }] } },
-        { id: 'revoked', texts: 'Revoked', state: { filters: [{ field: 'revoked_at', op: 'isNotNull' }] } },
+        { id: 'used', texts: 'Used', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'used_at', op: 'isNotNull' }] } },
+        { id: 'revoked', texts: 'Revoked', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'revoked_at', op: 'isNotNull' }] } },
       ],
     },
     show: {
@@ -82,7 +81,7 @@ export const accessGrant = defineResource(ACCESS_GRANT_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ACCESS_DECISION_RESOURCE)), {
+                l.place(relatedList(ACCESS_DECISION_RESOURCE), {
                   key: 'grant-decisions',
                   props: {
                     where: [{ field: 'grant_id', op: 'eq', value: l.ref('record', 'id') }],

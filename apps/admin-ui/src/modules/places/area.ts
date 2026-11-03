@@ -88,7 +88,6 @@ export const areaFields = {
   description: f.text({ nullable: true, texts: 'Description' }),
   capacity: f.number({
     nullable: true,
-    integer: true,
     validate: rangeValidator({ min: 0, integer: true }),
     texts: {
       label: 'Capacity',
@@ -100,7 +99,6 @@ export const areaFields = {
   }),
   loitering_threshold_seconds: f.number({
     nullable: true,
-    integer: true,
     validate: rangeValidator({ min: 1, integer: true }),
     texts: {
       label: 'Loitering after (seconds)',
@@ -186,7 +184,7 @@ export const area = defineResource(AREA_RESOURCE, {
         'capacity',
         'current_occupancy',
       ],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name'] },
       filters: { fields: ['area_type', 'access_level', 'status', 'facility_id'] },
     },
@@ -223,7 +221,7 @@ export const area = defineResource(AREA_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(AREA_RESOURCE)), {
+                l.place(relatedList(AREA_RESOURCE), {
                   key: 'sub-areas',
                   props: {
                     where: [{ field: 'parent_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -236,7 +234,7 @@ export const area = defineResource(AREA_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'area-events',
                   props: {
                     where: [{ field: 'area_id', op: 'eq', value: l.ref('record', 'id') }],

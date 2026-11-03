@@ -1,7 +1,6 @@
 import { type Check, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   RECIPIENT_GROUP_RESOURCE,
   REPORT_RESOURCE,
@@ -132,10 +131,10 @@ export const reportSchedule = defineResource(REPORT_SCHEDULE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'template_id', 'cron', 'channel', 'recipient_group_id', 'is_active', 'next_run_at', 'last_run_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { fields: ['is_active', 'channel', 'template_id', 'recipient_group_id'] },
-      savedViews: [{ id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } }],
+      savedViews: [{ id: 'active', texts: 'Active', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } }],
     },
     show: {
       header: (l) => [l.grid(['name', 'template_id', 'is_active', 'next_run_at', 'last_run_at'])],
@@ -150,7 +149,7 @@ export const reportSchedule = defineResource(REPORT_SCHEDULE_RESOURCE, {
         l.grid(['channel', 'recipient_group_id']),
         l.panel(
           [
-            l.place(relatedList(resourceByName(REPORT_RESOURCE)), {
+            l.place(relatedList(REPORT_RESOURCE), {
               key: 'schedule-reports',
               props: {
                 where: [{ field: 'schedule_id', op: 'eq', value: l.ref('record', 'id') }],

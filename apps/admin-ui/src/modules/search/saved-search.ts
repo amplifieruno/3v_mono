@@ -1,7 +1,7 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Rule, type RuleContext, defineResource, isRecordProbe, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { searchResultsBlock } from '../../blocks/search-results/search-results-block';
-import { resourceByName } from '../../data/resource-by-name';
 import { SAVED_SEARCH_RESOURCE, SEARCH_REQUEST_RESOURCE } from '../../data/resource-names';
 import { savedSearchFields } from './saved-search-fields';
 import { editSavedSearchFlow, newSavedSearchFlow, runSavedSearchFlow } from './saved-search-flows';
@@ -100,16 +100,16 @@ export const savedSearch = defineResource(SAVED_SEARCH_RESOURCE, {
   fields: savedSearchFields,
   rules: SAVED_SEARCH_RULES,
   actions: (r) => ({
-    resource: [r.action.flow('new_saved_search', newSavedSearchFlow)],
-    item: [r.action.flow('run_now', runSavedSearchFlow), r.action.flow('edit_search', editSavedSearchFlow)],
+    resource: [r.resource.flow('new_saved_search', newSavedSearchFlow)],
+    item: [r.item.flow('run_now', runSavedSearchFlow), r.item.flow('edit_search', editSavedSearchFlow)],
   }),
   views: {
     list: {
       columns: ['name', 'search_type', 'schedule_cron', 'alert_on_match', 'is_shared', 'owner_id', 'last_run_at', 'last_run_status'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
       filters: { pinned: ['search_type'], fields: ['search_type', 'is_shared', 'alert_on_match', 'last_run_status', 'owner_id'] },
-      savedViews: SAVED_SEARCH_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'name', direction: 'asc' }] }, SAVED_SEARCH_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['name', 'search_type', 'is_shared', 'owner_id'])],
@@ -153,7 +153,7 @@ export const savedSearch = defineResource(SAVED_SEARCH_RESOURCE, {
         ),
         l.panel(
           [
-            l.place(relatedList(resourceByName(SEARCH_REQUEST_RESOURCE)), {
+            l.place(relatedList(SEARCH_REQUEST_RESOURCE), {
               key: 'saved-search-runs',
               props: {
                 where: [{ field: 'saved_search_id', op: 'eq', value: l.ref('record', 'id') }],

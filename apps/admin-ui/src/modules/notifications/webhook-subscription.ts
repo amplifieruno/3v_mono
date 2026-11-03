@@ -1,6 +1,5 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   WEBHOOK_DELIVERY_RESOURCE,
   WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE,
@@ -41,15 +40,15 @@ export const webhookSubscription = defineResource(WEBHOOK_SUBSCRIPTION_RESOURCE,
   views: {
     list: {
       columns: ['url', 'description', 'is_active', 'last_delivery_status', 'last_delivery_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       search: { fields: [{ field: 'url', op: 'contains' }, { field: 'description', op: 'contains' }] },
       filters: { pinned: ['is_active', 'last_delivery_status'], fields: ['is_active', 'last_delivery_status', 'last_delivery_at'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } },
         {
           id: 'failing',
           texts: 'Failing',
-          state: { filters: [{ field: 'last_delivery_status', op: 'in', value: ['failed', 'retrying', 'dead_letter'] }] },
+          state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'last_delivery_status', op: 'in', value: ['failed', 'retrying', 'dead_letter'] }] },
         },
       ],
     },
@@ -63,7 +62,7 @@ export const webhookSubscription = defineResource(WEBHOOK_SUBSCRIPTION_RESOURCE,
               l.panel(['url', 'description', l.grid(['created_at', 'updated_at'])], { key: 'details', texts: 'Details' }),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE)), {
+                  l.place(relatedList(WEBHOOK_SUBSCRIPTION_EVENT_TYPE_RESOURCE), {
                     key: 'webhook-event-types',
                     // Also seeds "+ Create": a new event type belongs to this webhook.
                     props: { where: [...bySubscription], columns: ['event_type', 'created_at'], open: 'none' },
@@ -73,7 +72,7 @@ export const webhookSubscription = defineResource(WEBHOOK_SUBSCRIPTION_RESOURCE,
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(WEBHOOK_DELIVERY_RESOURCE)), {
+                  l.place(relatedList(WEBHOOK_DELIVERY_RESOURCE), {
                     key: 'webhook-deliveries',
                     props: { where: [...bySubscription], columns: [...SUBSCRIPTION_DELIVERY_COLUMNS], open: 'page' },
                   }),
@@ -108,7 +107,7 @@ export const webhookSubscriptionEventType = defineResource(WEBHOOK_SUBSCRIPTION_
   builtinActions: { edit: false },
   fields: webhookSubscriptionEventTypeFields,
   views: {
-    list: { page: false, columns: ['event_type', 'created_at'], defaultSort: [{ field: 'event_type', direction: 'asc' }] },
+    list: { page: false, columns: ['event_type', 'created_at'], initial: { sort: [{ field: 'event_type', direction: 'asc' }] } },
     show: { page: false },
     create: { body: () => ['subscription_id', 'event_type'] },
   },

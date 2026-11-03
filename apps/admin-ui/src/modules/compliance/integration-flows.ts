@@ -68,6 +68,7 @@ export const setSecretFlow = {
     retry: 'never',
     input: { integrationId: ref('record', 'id'), secret: ref('values', 'secret') },
     onUnknown: { check: secretStored(true) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof secretFields>;
@@ -89,6 +90,7 @@ export const clearSecretFlow = {
     retry: 'never',
     input: { integrationId: ref('record', 'id'), secret: { kind: 'literal', value: null } },
     onUnknown: { check: secretStored(false) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -138,6 +140,7 @@ export const runSyncFlow = {
     retry: 'never',
     input: { integrationId: ref('record', 'id') },
     onUnknown: { check: syncStarted },
+    reread: true,
   },
   then: { notify: true, open: { resource: INTEGRATION_SYNC_RUN_RESOURCE, id: ref('result', 'run_id') } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -176,6 +179,7 @@ export const scheduleFlow = {
       cron: ref('values', 'cron'),
       timezone: ref('values', 'timezone'),
     },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof scheduleFields>;

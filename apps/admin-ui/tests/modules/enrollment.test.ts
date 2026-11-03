@@ -38,16 +38,14 @@ const target = (resource: string, action: string) => ({ resource, action }) as c
 const noValidPhotos: DataError = {
   kind: 'validation',
   code: 'no_valid_photos',
-  message: '',
-  details: {
-    issues: [
-      {
-        code: 'no_valid_photos',
-        message: { key: 'validation.itap.action.no_valid_photos', default: 'No photo shows a usable face, so nothing was saved. Photo 1: no face found.' },
-        path: ['fileIds'],
-      },
-    ],
-  },
+  applied: 'no',
+  issues: [
+    {
+      code: 'no_valid_photos',
+      message: { key: 'validation.itap.action.no_valid_photos', default: 'No photo shows a usable face, so nothing was saved. Photo 1: no face found.' },
+      path: ['fileIds'],
+    },
+  ],
 };
 
 beforeAll(async () => {
@@ -229,7 +227,6 @@ describe('withActionRefusals', () => {
   const hasuraError = (code: string, message: string): DataError => ({
     kind: 'protocol',
     code: 'graphql-error',
-    message,
     details: [{ message, extensions: { code } }],
   });
   const providerFailing = (error: DataError) =>
@@ -245,15 +242,13 @@ describe('withActionRefusals', () => {
     await expect(provider.mutations?.custom?.(call('enrollFace'), {} as never)).rejects.toMatchObject({
       kind: 'validation',
       code: 'duplicate_identity',
-      details: {
-        issues: [
+      issues: [
           {
             message: { key: 'validation.itap.action.duplicate_identity', default: 'Belongs to IDENTITY-00003.' },
             path: ['fileIds'],
             severity: 'error',
           },
         ],
-      },
     });
   });
 

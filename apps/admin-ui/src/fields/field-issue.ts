@@ -1,4 +1,4 @@
-import type { ValidationIssue } from '@burojs/core';
+import type { IssueInput } from '@burojs/core';
 import type { FieldValidator } from '@burojs/field-types';
 
 /**
@@ -20,14 +20,15 @@ export const problemKey = (code: string): string => `validation.itap.${code}`;
  * The validator result buro's runner reads as one issue (`normalize`): the key differs from
  * `validation.<code>`, so the form looks the key up before falling back to `text`.
  */
-export function problemIssue(
-  problem: FieldProblem,
-): Pick<ValidationIssue, 'code' | 'message' | 'path' | 'params'> {
+export function problemIssue(problem: FieldProblem): IssueInput {
   return {
     code: problem.code,
-    message: { key: problemKey(problem.code), default: problem.text },
+    message: {
+      key: problemKey(problem.code),
+      default: problem.text,
+      ...(problem.params === undefined ? {} : { params: problem.params }),
+    },
     path: [],
-    ...(problem.params === undefined ? {} : { params: problem.params }),
   };
 }
 

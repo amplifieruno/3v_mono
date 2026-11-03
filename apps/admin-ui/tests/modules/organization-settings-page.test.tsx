@@ -114,7 +114,7 @@ describe('organization settings page', () => {
     const alert = await screen.findByRole('alert');
     // The refusal reaches the form as `forbidden` without a field (`tasks/ui/buro-gaps.md` G14); the
     // form-level alert reads it from the message as a validation failure.
-    expect(alert.textContent).toContain('Validation failed');
+    expect(alert.textContent).toContain('This value is not accepted');
     expect(mutations()).toBe(1);
   });
 });

@@ -107,7 +107,7 @@ export const organizationMember = defineResource(MEMBER_RESOURCE, {
         'joined_at',
         'expires_at',
       ],
-      defaultSort: [{ field: 'joined_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'joined_at', direction: 'desc' }] },
       filters: { fields: ['status'] },
     },
   },

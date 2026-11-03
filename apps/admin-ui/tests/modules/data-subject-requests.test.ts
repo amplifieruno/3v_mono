@@ -181,7 +181,7 @@ describe('closing a request', () => {
   it('should read the closing refusals as sentences', async () => {
     const refused = async (operation: string, message: string) => {
       const custom = defineMutationHandler(async () =>
-        Promise.reject({ kind: 'sent', code: 'permission-error', message, details: [{ message, extensions: { code: 'permission-error' } }] } satisfies DataError),
+        Promise.reject({ kind: 'protocol', applied: 'unknown', code: 'permission-error', details: [{ message, extensions: { code: 'permission-error' } }] } satisfies DataError),
       );
       const provider = withActionRefusals(defineDataProvider({ mutations: { custom } }), ACTION_REFUSALS);
       const call = { kind: 'custom', resource: COMPLIANCE_BINDING, operation, input: {} } as never;

@@ -141,7 +141,7 @@ describe('ending an override early (Review Focus 3)', () => {
 describe('refusals', () => {
   const refused = async (operation: string, message: string, code = 'constraint-violation') => {
     const custom = defineMutationHandler(async () =>
-      Promise.reject({ kind: 'sent', code, message, details: [{ message, extensions: { code } }] } satisfies DataError),
+      Promise.reject({ kind: 'protocol', applied: 'unknown', code, details: [{ message, extensions: { code } }] } satisfies DataError),
     );
     const provider = withActionRefusals(defineDataProvider({ mutations: { custom } }), ACTION_REFUSALS);
     const call = { kind: 'custom', resource: ACCESS_BINDING, operation, input: {} } as never;

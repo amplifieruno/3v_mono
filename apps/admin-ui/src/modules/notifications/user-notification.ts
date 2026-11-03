@@ -37,21 +37,21 @@ export const userNotification = defineResource(USER_NOTIFICATION_RESOURCE, {
   builtinActions: { edit: false, delete: false },
   fields: userNotificationFields,
   actions: (r) => ({
-    resource: [r.action.flow('mark_all_read', markAllReadFlow)],
-    item: [r.action.flow('mark_read', markReadFlow), r.action.flow('acknowledge', acknowledgeNotificationFlow)],
+    resource: [r.resource.flow('mark_all_read', markAllReadFlow)],
+    item: [r.item.flow('mark_read', markReadFlow), r.item.flow('acknowledge', acknowledgeNotificationFlow)],
   }),
   views: {
     list: {
       columns: ['created_at', 'title', 'priority', 'read_at', 'acknowledged_at', 'incident_id'],
       optionalColumns: ['event_id'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       sortTiebreaker: 'id',
       refetchInterval: INBOX_POLL_MS,
       search: { fields: [{ field: 'title', op: 'contains' }] },
       filters: { pinned: ['priority'], fields: ['priority', 'read_at', 'acknowledged_at', 'incident_id', 'created_at'] },
       savedViews: [
-        { id: 'unread', texts: 'Unread', state: { filters: [{ field: 'read_at', op: 'isNull' }] } },
-        { id: 'unacknowledged', texts: 'Not acknowledged', state: { filters: [{ field: 'acknowledged_at', op: 'isNull' }] } },
+        { id: 'unread', texts: 'Unread', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'read_at', op: 'isNull' }] } },
+        { id: 'unacknowledged', texts: 'Not acknowledged', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'acknowledged_at', op: 'isNull' }] } },
       ],
     },
     show: {

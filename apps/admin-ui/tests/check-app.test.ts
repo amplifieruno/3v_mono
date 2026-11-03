@@ -59,6 +59,19 @@ const ACCEPTED: readonly { code: string; location: string }[] = [
   // is idempotent: it merges (or deletes) only the two schedule keys of `config`, so resending the
   // same schedule leaves the same row; the unknown screen tells the user to look at the schedule.
   { code: 'flow.unknown-unhandled', location: 'integration toolbar.item.1.submit' },
+  // The junction's `facility_id` is required, so a link panel could not attach a row. The console
+  // draws these links as read-only chips and creates a link on the junction's own form, which asks
+  // for the facility: no panel, nothing to attach from.
+  { code: 'relation.through-required-attributes', location: 'device fields.also_covers.meta.through' },
+  { code: 'relation.through-required-attributes', location: 'device fields.access_points.meta.through' },
+  { code: 'relation.through-required-attributes', location: 'access_point fields.devices.meta.through' },
+  // A report's facilities and segments are set when it is requested and never edited: its link
+  // tables take no writes, by design.
+  { code: 'relation.link-read-only', location: 'report fields.facilities.meta.through' },
+  { code: 'relation.link-read-only', location: 'report fields.segments.meta.through' },
+  // `clear_password`: the column is write-only, so nothing can check a lost answer. The unknown
+  // screen stands; removing it again is harmless.
+  { code: 'flow.unknown-unhandled', location: 'device toolbar.item.2.submit' },
 ];
 
 describe('checkApp over the console and its bundles', () => {

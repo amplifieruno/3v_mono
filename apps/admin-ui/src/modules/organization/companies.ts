@@ -9,7 +9,6 @@ import {
   COMPANY_STATUSES,
   COMPANY_STATUS_ENUM,
 } from '../../enums/organization';
-import { resourceByName } from '../../data/resource-by-name';
 import { COMPANY_RESOURCE, PROFILE_RESOURCE, VISIT_RESOURCE } from '../../data/resource-names';
 
 export { COMPANY_RESOURCE };
@@ -87,19 +86,19 @@ export const company = defineResource(COMPANY_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'kind', 'status', 'suite', 'contact_email'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name', 'contact_email', 'cost_center'] },
       filters: { fields: ['kind', 'status'] },
       savedViews: [
         {
           id: 'tenants',
           texts: 'Tenants',
-          state: { filters: [{ field: 'kind', op: 'eq', value: 'tenant' }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'kind', op: 'eq', value: 'tenant' }] },
         },
         {
           id: 'contractors',
           texts: 'Contractors and vendors',
-          state: {
+          state: { sort: [{ field: 'name', direction: 'asc' }],
             filters: [
               { field: 'kind', op: 'in', value: ['contractor_vendor', 'service_provider'] },
             ],
@@ -121,7 +120,7 @@ export const company = defineResource(COMPANY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(PROFILE_RESOURCE)), {
+                l.place(relatedList(PROFILE_RESOURCE), {
                   key: 'company-profiles',
                   props: {
                     // Also seeds "+ Create": a new profile starts in this company.
@@ -134,7 +133,7 @@ export const company = defineResource(COMPANY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(VISIT_RESOURCE)), {
+                l.place(relatedList(VISIT_RESOURCE), {
                   key: 'company-visits',
                   props: {
                     // Also seeds "+ Create": a new visit is for this company.

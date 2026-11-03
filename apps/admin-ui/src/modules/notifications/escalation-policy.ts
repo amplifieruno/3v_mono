@@ -1,7 +1,6 @@
 import { type Check, type Layout, defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   ESCALATION_GROUP_STEP_RESOURCE,
   ESCALATION_ON_CALL_STEP_RESOURCE,
@@ -38,8 +37,6 @@ export const escalationPolicyFields = {
   }),
   max_cycles: f.number({
     nullable: true,
-    integer: true,
-    min: MAX_CYCLES.min,
     validate: rangeValidator(MAX_CYCLES),
     texts: {
       label: 'Passes at most',
@@ -106,7 +103,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'repeat', 'max_cycles'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
     },
     show: {
@@ -121,7 +118,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
               // The whole sequence, both kinds in step order; read only.
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(ESCALATION_STEP_RESOURCE)), {
+                  l.place(relatedList(ESCALATION_STEP_RESOURCE), {
                     key: 'policy-all-steps',
                     props: { where: byPolicy, columns: [...STEP_COLUMNS], open: 'none' },
                   }),
@@ -131,7 +128,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
               // Adding, changing and removing: one list per kind, each carrying its own target (G45).
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(ESCALATION_GROUP_STEP_RESOURCE)), {
+                  l.place(relatedList(ESCALATION_GROUP_STEP_RESOURCE), {
                     key: 'policy-group-steps',
                     // Also seeds "+ Create": a new step belongs to this policy.
                     props: {
@@ -145,7 +142,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(ESCALATION_ON_CALL_STEP_RESOURCE)), {
+                  l.place(relatedList(ESCALATION_ON_CALL_STEP_RESOURCE), {
                     key: 'policy-on-call-steps',
                     props: {
                       where: [...byPolicy, { field: 'on_call_schedule_id', op: 'nnull', value: true }],
@@ -158,7 +155,7 @@ export const escalationPolicy = defineResource(ESCALATION_POLICY_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_RULE_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_RULE_RESOURCE), {
                     key: 'policy-rules',
                     props: {
                       where: [{ field: 'escalation_policy_id', op: 'eq', value: l.ref('record', 'id') }],

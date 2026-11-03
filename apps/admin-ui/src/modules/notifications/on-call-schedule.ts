@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   ESCALATION_ON_CALL_STEP_RESOURCE,
   ON_CALL_SCHEDULE_MEMBER_RESOURCE,
@@ -44,8 +43,6 @@ export const onCallScheduleFields = {
   }),
   shift_length_hours: f.number({
     required: true,
-    integer: true,
-    min: SHIFT_HOURS.min,
     default: 24,
     validate: rangeValidator(SHIFT_HOURS),
     texts: {
@@ -114,7 +111,7 @@ export const onCallSchedule = defineResource(ON_CALL_SCHEDULE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'on_call_user_id', 'shift_length_hours', 'timezone'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
     },
     show: {
@@ -128,7 +125,7 @@ export const onCallSchedule = defineResource(ON_CALL_SCHEDULE_RESOURCE, {
           [
             l.panel(
               [
-                l.place(relatedList(resourceByName(ON_CALL_SCHEDULE_MEMBER_RESOURCE)), {
+                l.place(relatedList(ON_CALL_SCHEDULE_MEMBER_RESOURCE), {
                   key: 'schedule-members',
                   // Also seeds "+ Create": a new member rotates in this schedule.
                   props: {
@@ -142,7 +139,7 @@ export const onCallSchedule = defineResource(ON_CALL_SCHEDULE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ESCALATION_ON_CALL_STEP_RESOURCE)), {
+                l.place(relatedList(ESCALATION_ON_CALL_STEP_RESOURCE), {
                   key: 'schedule-steps',
                   props: {
                     where: [{ field: 'on_call_schedule_id', op: 'eq', value: l.ref('record', 'id') }],

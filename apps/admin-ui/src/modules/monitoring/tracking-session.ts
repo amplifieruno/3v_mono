@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { recordDate } from '../people/record-date';
-import { resourceByName } from '../../data/resource-by-name';
 import { IDENTITY_LOCATION_RESOURCE, TRACKING_SESSION_RESOURCE } from '../../data/resource-names';
 import { trackingSessionFields } from './tracking-session-fields';
 
@@ -51,19 +50,18 @@ export const trackingSession = defineResource(TRACKING_SESSION_RESOURCE, {
     list: {
       columns: [...TRACKING_SESSION_COLUMNS],
       optionalColumns: ['ended_at'],
-      defaultSort: [{ field: 'started_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: TRACKING_SESSION_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: TRACKING_SESSION_PAGE_SIZE,
       filters: {
         pinned: ['status', 'facility_id', 'started_at'],
         fields: ['status', 'facility_id', 'last_area_id', 'identity_id', 'profile_id', 'visit_id', 'started_at', 'ended_at'],
       },
       savedViews: [
-        { id: 'active', texts: 'Active now', state: { filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
-        { id: 'lost', texts: 'Lost from sight', state: { filters: [{ field: 'status', op: 'eq', value: 'lost' }] } },
-        { id: 'visits', texts: 'With a visit', state: { filters: [{ field: 'visit_id', op: 'isNotNull' }] } },
+        { id: 'active', texts: 'Active now', state: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: TRACKING_SESSION_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
+        { id: 'lost', texts: 'Lost from sight', state: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: TRACKING_SESSION_PAGE_SIZE, filters: [{ field: 'status', op: 'eq', value: 'lost' }] } },
+        { id: 'visits', texts: 'With a visit', state: { sort: [{ field: 'started_at', direction: 'desc' }], pageSize: TRACKING_SESSION_PAGE_SIZE, filters: [{ field: 'visit_id', op: 'isNotNull' }] } },
       ],
     },
     show: {
@@ -81,7 +79,7 @@ export const trackingSession = defineResource(TRACKING_SESSION_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(IDENTITY_LOCATION_RESOURCE)), {
+                l.place(relatedList(IDENTITY_LOCATION_RESOURCE), {
                   key: 'session-path',
                   props: {
                     where: [{ field: 'session_id', op: 'eq', value: l.ref('record', 'id') }],

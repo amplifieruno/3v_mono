@@ -1,6 +1,6 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   SHIFT_HANDOVER_INCIDENT_HISTORY_RESOURCE,
   SHIFT_HANDOVER_INCIDENT_RESOURCE,
@@ -39,18 +39,18 @@ export const shiftHandover = defineResource(SHIFT_HANDOVER_RESOURCE, {
   checks: SHIFT_HANDOVER_CHECKS,
   rules: SHIFT_HANDOVER_RULES,
   actions: (r) => ({
-    item: [r.action.flow('acknowledge', acknowledgeHandoverFlow), r.action.flow('add_open_incidents', addOpenIncidentsFlow)],
+    item: [r.item.flow('acknowledge', acknowledgeHandoverFlow), r.item.flow('add_open_incidents', addOpenIncidentsFlow)],
   }),
   views: {
     list: {
       columns: ['created_at', 'from_user_id', 'to_user_id', 'shift_started_at', 'shift_ended_at', 'acknowledged_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       search: { fields: [{ field: 'summary', op: 'contains' }] },
       filters: {
         pinned: ['addressed_to_me', 'acknowledged_at'],
         fields: ['addressed_to_me', 'sent_by_me', 'from_user_id', 'to_user_id', 'acknowledged_at', 'shift_started_at', 'created_at'],
       },
-      savedViews: SHIFT_HANDOVER_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }] }, SHIFT_HANDOVER_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['from_user_id', 'to_user_id', 'acknowledged_at'])],
@@ -59,7 +59,7 @@ export const shiftHandover = defineResource(SHIFT_HANDOVER_RESOURCE, {
         const editable = l.all([l.not(l.present(l.ref('record', 'acknowledged_at'))), l.equals(l.ref('record', 'sent_by_me'), true)]);
         const byHandover = [{ field: 'handover_id', op: 'eq', value: l.ref('record', 'id') }] as const;
         const incidents = (key: string, name: string) =>
-          l.place(relatedList(resourceByName(name)), {
+          l.place(relatedList(name), {
             key,
             props: { where: [...byHandover], columns: [...HANDOVER_INCIDENT_COLUMNS], open: 'none' },
           });

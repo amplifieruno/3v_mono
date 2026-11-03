@@ -1,7 +1,6 @@
 import { defineResource, facts, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { ACCESS_POINT_RESOURCE, EVENT_RESOURCE, FACILITY_RESOURCE } from '../../data/resource-names';
 import { enumField } from '../../enums/field';
 import { FACILITY_STATUSES, FACILITY_STATUS_ENUM } from '../../enums/places';
@@ -166,11 +165,11 @@ export const facility = defineResource(FACILITY_RESOURCE, {
   displayField: 'name',
   data: { provider: 'hasura' },
   fields: facilityFields,
-  actions: (r) => ({ item: [r.action.flow('apply_template', applyTemplateFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('apply_template', applyTemplateFlow)] }),
   views: {
     list: {
       columns: ['code', 'name', 'status', 'timezone', 'areas_count', 'current_occupancy'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name', 'code', 'address'] },
       filters: { fields: ['status'] },
     },
@@ -208,7 +207,7 @@ export const facility = defineResource(FACILITY_RESOURCE, {
             }),
             l.panel(
               [
-                l.place(relatedList(resourceByName(ACCESS_POINT_RESOURCE)), {
+                l.place(relatedList(ACCESS_POINT_RESOURCE), {
                   key: 'access-points-list',
                   props: {
                     where: [{ field: 'facility_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -221,7 +220,7 @@ export const facility = defineResource(FACILITY_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'facility-events',
                   props: {
                     where: [{ field: 'facility_id', op: 'eq', value: l.ref('record', 'id') }],

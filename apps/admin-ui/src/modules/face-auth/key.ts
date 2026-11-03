@@ -87,9 +87,9 @@ export const clientApplicationKey = defineResource(CLIENT_APPLICATION_KEY_RESOUR
   operations: { create: false, edit: false, delete: false },
   builtinActions: { edit: false, delete: false },
   fields: clientKeyFields,
-  actions: (r) => ({ item: [r.action.flow('revoke_key', revokeKeyFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('revoke_key', revokeKeyFlow)] }),
   views: {
-    list: { page: false, columns: [...CLIENT_KEY_COLUMNS], defaultSort: [{ field: 'created_at', direction: 'desc' }] },
+    list: { page: false, columns: [...CLIENT_KEY_COLUMNS], initial: { sort: [{ field: 'created_at', direction: 'desc' }] } },
     show: { page: false },
   },
 });

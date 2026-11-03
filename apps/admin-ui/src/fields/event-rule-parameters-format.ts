@@ -149,9 +149,9 @@ export function validateParameters(value: unknown, ruleType: unknown): FieldProb
 
 /** The rule type of the row or record the field belongs to, if it carries one. */
 export function ruleTypeOf(
-  props: { readonly record?: Readonly<Record<string, unknown>>; readonly form?: Readonly<Record<string, unknown>> },
+  props: { readonly record?: Readonly<Record<string, unknown>>; readonly refValues?: Readonly<Record<string, unknown>> },
   typeField: string,
 ): string | undefined {
-  const type = props.form?.[typeField] ?? props.record?.[typeField];
+  const type = props.refValues?.[typeField] ?? props.record?.[typeField];
   return typeof type === 'string' ? type : undefined;
 }

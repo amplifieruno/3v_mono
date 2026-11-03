@@ -1,6 +1,5 @@
 import { type Check, type Rule, type RuleContext, defineResource, isRecordProbe, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { INTEGRATION_RESOURCE, INTEGRATION_SYNC_RUN_RESOURCE } from '../../data/resource-names';
 import { integrationFields } from './integration-fields';
 import { clearSecretFlow, runSyncFlow, scheduleFlow, setSecretFlow } from './integration-flows';
@@ -76,19 +75,19 @@ export const integration = defineResource(INTEGRATION_RESOURCE, {
   checks: INTEGRATION_CHECKS,
   actions: (r) => ({
     item: [
-      r.action.flow('run_sync', runSyncFlow),
-      r.action.flow('schedule', scheduleFlow),
-      r.action.flow('set_secret', setSecretFlow),
-      r.action.flow('clear_secret', clearSecretFlow),
+      r.item.flow('run_sync', runSyncFlow),
+      r.item.flow('schedule', scheduleFlow),
+      r.item.flow('set_secret', setSecretFlow),
+      r.item.flow('clear_secret', clearSecretFlow),
     ],
   }),
   views: {
     list: {
       columns: ['code', 'name', 'kind', 'provider', 'direction', 'status', 'has_secret', 'last_sync_at'],
-      defaultSort: [{ field: 'code', direction: 'asc' }],
+      initial: { sort: [{ field: 'code', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }, 'code'] },
       filters: { pinned: ['kind', 'status'], fields: ['kind', 'status', 'direction'] },
-      savedViews: [{ id: 'error', texts: 'In error', state: { filters: [{ field: 'status', op: 'eq', value: 'error' }] } }],
+      savedViews: [{ id: 'error', texts: 'In error', state: { sort: [{ field: 'code', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'error' }] } }],
     },
     show: {
       header: (l) => [l.grid(['code', 'kind', 'status', 'direction'])],
@@ -107,7 +106,7 @@ export const integration = defineResource(INTEGRATION_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(INTEGRATION_SYNC_RUN_RESOURCE)), {
+                l.place(relatedList(INTEGRATION_SYNC_RUN_RESOURCE), {
                   key: 'integration-sync-runs',
                   props: { where: [{ field: 'integration_id', op: 'eq', value: l.ref('record', 'id') }], columns: [...SYNC_RUN_COLUMNS], open: 'page' },
                 }),

@@ -85,7 +85,7 @@ export const profileDocument = defineResource(PROFILE_DOCUMENT_RESOURCE, {
   views: {
     list: {
       columns: ['title', 'kind', 'profile_id', 'file_id', 'version', 'valid_until', 'created_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       search: { fields: ['title'] },
       filters: { fields: ['kind', 'valid_until'] },
     },

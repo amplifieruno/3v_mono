@@ -1,3 +1,4 @@
+import type { ValidationIssue } from '@burojs/core';
 import { createI18nFromRegistry } from '@burojs/i18n-core';
 import { resolveValidationMessage } from '@burojs/react';
 import { expect } from 'vitest';
@@ -27,7 +28,7 @@ export async function expectTranslated(problem: FieldProblem): Promise<string> {
     problem.text,
   );
   const issue = problemIssue(problem);
-  const shown = resolveValidationMessage(issue, { t: (k, options) => i18n.t(k, options) });
+  const shown = resolveValidationMessage(issue as ValidationIssue, { t: (k, options) => i18n.t(k, options), has: (k) => i18n.has(k) });
   expect(shown).toBe(problem.text);
   return shown;
 }

@@ -130,7 +130,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('client application keys against the dev sta
     await expect(custom('rotateClientKey', { applicationId: app, expiresAt: null })).rejects.toMatchObject({
       kind: 'validation',
       code: 'client_key_limit',
-      details: { issues: [{ message: { default: expect.stringMatching(/already has two active keys/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/already has two active keys/) } }],
     });
     expect(await listKeys()).toHaveLength(2);
 

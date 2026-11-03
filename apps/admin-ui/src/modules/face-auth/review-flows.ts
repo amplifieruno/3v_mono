@@ -43,6 +43,7 @@ export const approveAttemptFlow = {
     retry: 'never',
     input: { attemptId: ref('record', 'id'), approve: { kind: 'literal', value: true }, note: ref('values', 'note') },
     onUnknown: { check: fieldApplied(AUTHENTICATION_ATTEMPT_RESOURCE, 'review_status', 'approved') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof approveFields>;
@@ -70,6 +71,7 @@ export const rejectAttemptFlow = {
     retry: 'never',
     input: { attemptId: ref('record', 'id'), approve: { kind: 'literal', value: false }, note: ref('values', 'note') },
     onUnknown: { check: fieldApplied(AUTHENTICATION_ATTEMPT_RESOURCE, 'review_status', 'rejected') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof rejectFields>;

@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -187,16 +188,16 @@ describe.skipIf(!DEV_STACK_ENABLED)('floor plans against the dev stack (Nova Tow
     const saved = await mutate(AREA_RESOURCE, {
       kind: 'updateOne',
       id: room.id,
-      input: { shape: polygon },
+      changes: setChanges({ shape: polygon }),
     });
     expect(saved.record.shape).toEqual(polygon);
     const circle = { type: 'Circle', center: [600, 400], radius: 50 };
     expect(
-      (await mutate(AREA_RESOURCE, { kind: 'updateOne', id: room.id, input: { shape: circle } }))
+      (await mutate(AREA_RESOURCE, { kind: 'updateOne', id: room.id, changes: setChanges({ shape: circle }) }))
         .record.shape,
     ).toEqual(circle);
     expect(
-      (await mutate(AREA_RESOURCE, { kind: 'updateOne', id: room.id, input: { shape: null } }))
+      (await mutate(AREA_RESOURCE, { kind: 'updateOne', id: room.id, changes: setChanges({ shape: null }) }))
         .record.shape,
     ).toBeNull();
   });
@@ -215,7 +216,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('floor plans against the dev stack (Nova Tow
     };
     expect(validateShape(two, null)?.code).toBe('areaShape.tooFewPoints');
     await expect(
-      mutate(AREA_RESOURCE, { kind: 'updateOne', id: zone.id, input: { shape: two } }),
+      mutate(AREA_RESOURCE, { kind: 'updateOne', id: zone.id, changes: setChanges({ shape: two }) }),
     ).rejects.toMatchObject({
       message: expect.stringMatching(/areas_shape_valid|[Cc]heck constraint/),
     });

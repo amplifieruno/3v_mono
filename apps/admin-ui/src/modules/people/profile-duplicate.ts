@@ -79,8 +79,8 @@ export const profileDuplicate = defineResource(PROFILE_DUPLICATE_RESOURCE, {
   fields: profileDuplicateFields,
   actions: (r) => ({
     item: [
-      r.action.flow('merge_profiles', mergeProfilesFlow),
-      r.action.flow('dismiss', {
+      r.item.flow('merge_profiles', mergeProfilesFlow),
+      r.item.flow('dismiss', {
         texts: {
           label: 'Not a duplicate',
           confirm: 'Mark the two as different people? The pair leaves the open queue; it can be reopened.',
@@ -91,15 +91,16 @@ export const profileDuplicate = defineResource(PROFILE_DUPLICATE_RESOURCE, {
         surfaces: { default: 'menu', show: 'auto' },
         when: isOpen,
         confirm: true,
+        checks: [{ id: 'stillOpen', severity: 'error', when: cond.not(isOpen), texts: 'This pair is no longer open.' }],
         submit: {
           update: PROFILE_DUPLICATE_RESOURCE,
           input: { status: 'dismissed' },
-          reread: { expect: isOpen },
+          reread: true,
           onUnknown: { check: fieldApplied(PROFILE_DUPLICATE_RESOURCE, 'status', 'dismissed') },
         },
         then: { notify: true },
       }),
-      r.action.flow('reopen', {
+      r.item.flow('reopen', {
         texts: {
           label: 'Reopen',
           notify: 'Pair reopened.',
@@ -108,10 +109,11 @@ export const profileDuplicate = defineResource(PROFILE_DUPLICATE_RESOURCE, {
         icon: NAV_ICONS.reopen,
         surfaces: { default: 'menu', show: 'menu' },
         when: cond.equals(ref('record', 'status'), 'dismissed'),
+        checks: [{ id: 'stillDismissed', severity: 'error', when: cond.not(cond.equals(ref('record', 'status'), 'dismissed')), texts: 'This pair is no longer dismissed.' }],
         submit: {
           update: PROFILE_DUPLICATE_RESOURCE,
           input: { status: 'open' },
-          reread: { expect: cond.equals(ref('record', 'status'), 'dismissed') },
+          reread: true,
           onUnknown: { check: fieldApplied(PROFILE_DUPLICATE_RESOURCE, 'status', 'open') },
         },
         then: { notify: true },
@@ -121,13 +123,13 @@ export const profileDuplicate = defineResource(PROFILE_DUPLICATE_RESOURCE, {
   views: {
     list: {
       columns: ['profile_a_id', 'profile_b_id', 'similarity', 'reasons', 'status', 'detected_at'],
-      defaultSort: [{ field: 'detected_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'detected_at', direction: 'desc' }] },
       filters: { fields: ['status', 'detected_at'] },
       savedViews: [
         {
           id: 'open',
           texts: 'Open',
-          state: { filters: [{ field: 'status', op: 'eq', value: 'open' }] },
+          state: { sort: [{ field: 'detected_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'open' }] },
         },
       ],
     },

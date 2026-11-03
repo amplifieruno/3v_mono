@@ -201,6 +201,7 @@ export const editSavedSearchFlow = {
       return lastEdited;
     },
     onUnknown: { check: savedSearchSaved },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, SavedSearchFormFields>;
@@ -226,6 +227,7 @@ export const runSavedSearchFlow = {
     retry: 'never',
     input: ({ record }) => rememberSent(runNowDefinitionOf((record ?? {}) as Readonly<Record<string, unknown>>)),
     onUnknown: { check: searchRan },
+    reread: true,
   },
   then: { notify: true, open: { resource: SEARCH_REQUEST_RESOURCE, id: ref('result', 'search_request_id') } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

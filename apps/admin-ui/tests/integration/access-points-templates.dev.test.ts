@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -158,7 +159,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
       mutate(FACILITY_TEMPLATE_RESOURCE, {
         kind: 'updateOne',
         id: templateId,
-        input: { structure: bad },
+        changes: setChanges({ structure: bad }),
       }),
     ).rejects.toMatchObject({ message: expect.stringMatching(/structure_valid|[Cc]heck constraint/) });
   });
@@ -213,7 +214,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('access points and templates against the dev
       mutate(ACCESS_POINT_RESOURCE, {
         kind: 'updateOne',
         id: record.id,
-        input: { from_area_id: office?.id },
+        changes: setChanges({ from_area_id: office?.id }),
       }),
     ).rejects.toMatchObject({ message: expect.stringMatching(/areas_differ|[Cc]heck constraint/) });
   });

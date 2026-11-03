@@ -132,9 +132,9 @@ export const exportJob = defineResource(EXPORT_JOB_RESOURCE, {
   views: {
     list: {
       columns: ['created_at', 'definition_id', 'entity', 'format', 'status', 'row_count', 'requested_by', 'finished_at'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       filters: { pinned: ['definition_id', 'status'], fields: ['definition_id', 'status', 'entity', 'trigger', 'requested_by', 'created_at'] },
-      savedViews: [{ id: 'failed', texts: 'Failed', state: { filters: [{ field: 'status', op: 'eq', value: 'failed' }] } }],
+      savedViews: [{ id: 'failed', texts: 'Failed', state: { sort: [{ field: 'created_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'failed' }] } }],
     },
     show: {
       header: (l) => [l.grid(['definition_id', 'status', 'trigger', 'created_at'])],

@@ -25,7 +25,6 @@ export const cameraFields = {
   }),
   fps: f.number({
     nullable: true,
-    integer: true,
     validate: rangeValidator({ min: 1, integer: true }),
     texts: {
       label: 'Frame rate',
@@ -45,9 +44,8 @@ export const cameraFields = {
   }),
   recognition_fps: f.number({
     required: true,
-    integer: true,
     default: 1,
-    validate: rangeValidator({ min: 1, max: 5, integer: true }),
+    validate: rangeValidator({ min: 1, integer: true }),
     texts: {
       label: 'Recognition rate',
       description: 'Frames per second analysed while recognition runs, 1 to 5.',

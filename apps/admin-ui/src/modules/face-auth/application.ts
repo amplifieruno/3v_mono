@@ -1,6 +1,5 @@
 import { type Layout, type ScreenCondition, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   AUTHENTICATION_ATTEMPT_RESOURCE,
   AUTHENTICATION_SESSION_RESOURCE,
@@ -36,7 +35,7 @@ function bindingPanel(l: Layout<Fields>, kind: BindingKind, description: string,
   const key = `${spec.basePath.slice(1)}${options.variant === undefined ? '' : `-${options.variant}`}`;
   return l.panel(
     [
-      l.place(relatedList(resourceByName(spec.resource)), {
+      l.place(relatedList(spec.resource), {
         key: `${key}-list`,
         props: {
           where: [{ field: 'application_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -58,7 +57,7 @@ function bindingPanel(l: Layout<Fields>, kind: BindingKind, description: string,
 function logPanel(l: Layout<Fields>, resource: string, key: string, title: string, columns: readonly string[]) {
   return l.panel(
     [
-      l.place(relatedList(resourceByName(resource)), {
+      l.place(relatedList(resource), {
         key: `${key}-list`,
         props: {
           where: [{ field: 'application_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -99,26 +98,26 @@ export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
   checks: THRESHOLD_CHECKS,
   actions: (r) => ({
     item: [
-      ...BINDING_FLOWS.map(([name, flow]) => r.action.flow(name, flow)),
-      r.action.flow('rotate_key', rotateKeyFlow),
-      r.action.flow('suspend', suspendFlow),
-      r.action.flow('reactivate', reactivateFlow),
-      r.action.flow('revoke', revokeFlow),
+      ...BINDING_FLOWS.map(([name, flow]) => r.item.flow(name, flow)),
+      r.item.flow('rotate_key', rotateKeyFlow),
+      r.item.flow('suspend', suspendFlow),
+      r.item.flow('reactivate', reactivateFlow),
+      r.item.flow('revoke', revokeFlow),
       // Replaces the built-in Delete: the refusal of an application with history reads as a sentence.
-      r.action.flow('delete', deleteFlow),
+      r.item.flow('delete', deleteFlow),
     ],
   }),
   views: {
     list: {
       columns: [...CLIENT_APPLICATION_COLUMNS],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['code', { field: 'name', op: 'contains' }] },
       filters: { pinned: ['status', 'platform', 'is_sandbox'], fields: ['status', 'platform', 'is_sandbox', 'liveness_required'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
-        { id: 'suspended', texts: 'Suspended', state: { filters: [{ field: 'status', op: 'eq', value: 'suspended' }] } },
-        { id: 'sandbox', texts: 'Sandbox', state: { filters: [{ field: 'is_sandbox', op: 'eq', value: true }] } },
-        { id: 'revoked', texts: 'Revoked', state: { filters: [{ field: 'status', op: 'eq', value: 'revoked' }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
+        { id: 'suspended', texts: 'Suspended', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'suspended' }] } },
+        { id: 'sandbox', texts: 'Sandbox', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_sandbox', op: 'eq', value: true }] } },
+        { id: 'revoked', texts: 'Revoked', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'revoked' }] } },
       ],
     },
     show: {
@@ -176,7 +175,7 @@ export const clientApplication = defineResource(CLIENT_APPLICATION_RESOURCE, {
               [
                 l.panel(
                   [
-                    l.place(relatedList(resourceByName(CLIENT_APPLICATION_KEY_RESOURCE)), {
+                    l.place(relatedList(CLIENT_APPLICATION_KEY_RESOURCE), {
                       key: 'keys-list',
                       props: {
                         where: [{ field: 'application_id', op: 'eq', value: l.ref('record', 'id') }],

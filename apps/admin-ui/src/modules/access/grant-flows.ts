@@ -116,6 +116,7 @@ export const revokeGrantFlow = {
     retry: 'never',
     input: { grantId: ref('record', 'id'), reason: ref('values', 'reason') },
     onUnknown: { check: grantRevoked },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof revokeFields>;

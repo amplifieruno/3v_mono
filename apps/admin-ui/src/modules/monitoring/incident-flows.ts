@@ -69,6 +69,7 @@ export const acknowledgeFlow = {
   when: IS_OPEN,
   submit: {
     mutation: acknowledgeIncident,
+    reread: true,
     // Idempotent: a repeated call answers the acknowledged incident unchanged.
     retry: 'after-auth-refresh',
     input,
@@ -87,7 +88,7 @@ export const startInvestigationFlow = {
   icon: NAV_ICONS.investigate,
   surfaces,
   when: CAN_INVESTIGATE,
-  submit: { mutation: startInvestigation, retry: 'never', input, onUnknown: { check: statusIs('investigating') } },
+  submit: { mutation: startInvestigation, reread: true, retry: 'never', input, onUnknown: { check: statusIs('investigating') } },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 
@@ -106,7 +107,7 @@ export const reopenFlow = {
   surfaces: { default: 'menu', show: 'menu', row: 'menu' },
   when: IS_RESOLVED,
   confirm: true,
-  submit: { mutation: startInvestigation, retry: 'never', input, onUnknown: { check: statusIs('investigating') } },
+  submit: { mutation: startInvestigation, reread: true, retry: 'never', input, onUnknown: { check: statusIs('investigating') } },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 
@@ -143,6 +144,7 @@ export const escalateFlow = {
     onUnknown: {
       check: incidentApplied((now, before) => Number(now.escalation_step) > Number(before.escalation_step ?? 0)),
     },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof escalateFields>;
@@ -184,6 +186,7 @@ export const resolveFlow = {
       resolution: ref('values', 'resolution'),
     },
     onUnknown: { check: statusIs('resolved') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof resolveFields>;
@@ -200,7 +203,7 @@ export const closeFlow = {
   surfaces,
   when: IS_RESOLVED,
   confirm: true,
-  submit: { mutation: closeIncident, retry: 'never', input, onUnknown: { check: statusIs('closed') } },
+  submit: { mutation: closeIncident, reread: true, retry: 'never', input, onUnknown: { check: statusIs('closed') } },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 
@@ -234,6 +237,7 @@ export const generateReportFlow = {
     // Each call queues another report: never repeated on its own.
     retry: 'never',
     input: { incidentId: ref('record', 'id'), format: ref('values', 'format') },
+    reread: true,
   },
   then: { notify: { params: { code: ref('result', 'code') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof reportFields>;

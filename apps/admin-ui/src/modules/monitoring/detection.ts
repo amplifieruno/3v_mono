@@ -1,3 +1,4 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { recordDate } from '../people/record-date';
@@ -76,16 +77,15 @@ export const detection = defineResource(DETECTION_RESOURCE, {
     list: {
       columns: [...DETECTION_COLUMNS],
       optionalColumns: ['facility_id', 'is_new_identity'],
-      defaultSort: [{ field: 'detected_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'detected_at', direction: 'desc' }], pageSize: DETECTION_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: DETECTION_PAGE_SIZE,
       filters: {
         pinned: ['facility_id', 'area_id', 'device_id', 'detected_at'],
         fields: ['facility_id', 'area_id', 'device_id', 'detected_at', 'profile_id', 'identity_id', 'is_new_identity'],
       },
-      savedViews: DETECTION_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'detected_at', direction: 'desc' }], pageSize: DETECTION_PAGE_SIZE }, DETECTION_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['detected_at', 'device_id', 'area_id'])],

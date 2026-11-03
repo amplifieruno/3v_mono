@@ -31,6 +31,7 @@ export const draftChangeFlow = {
     retry: 'after-auth-refresh',
     input: { policyId: ref('record', 'id'), fromVersionId: null },
     onUnknown: { check: openVersionExists('id') },
+    reread: true,
   },
   then: {
     notify: { params: { version: ref('result', 'version') } },
@@ -65,6 +66,7 @@ export const archiveFlow = {
     retry: 'never',
     input: { policyId: ref('record', 'id') },
     onUnknown: { check: fieldApplied(ACCESS_POLICY_RESOURCE, 'is_archived', true) },
+    reread: true,
   },
   then: { notify: { params: { code: ref('result', 'code') } } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

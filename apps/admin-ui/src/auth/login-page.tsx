@@ -14,7 +14,7 @@ function destination(state: unknown): string {
 /**
  * Email and password sign-in, outside the shell. `useLogin()` resolves with
  * the provider's `AuthResult`; `<LoginForm>` shows an error only for a
- * rejection, so a refusal is rethrown with the server's message.
+ * rejection, so a refusal is rethrown as the `DataError`, which the form resolves.
  */
 export function LoginPage(): React.ReactElement {
   const { mutateAsync: login } = useLogin();
@@ -24,7 +24,7 @@ export function LoginPage(): React.ReactElement {
 
   const onSubmit = async (credentials: LoginCredentials): Promise<void> => {
     const result = await login(credentials);
-    if (!result.success) throw new Error(result.error.message);
+    if (!result.success) throw result.error;
     navigate(destination(location.state), { replace: true });
   };
 

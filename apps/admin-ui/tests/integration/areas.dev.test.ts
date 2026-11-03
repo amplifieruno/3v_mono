@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -133,15 +134,15 @@ describe.skipIf(!DEV_STACK_ENABLED)('areas against the dev stack (Nova Tower)', 
     // What the advisory area-parent-guard block reads: the chosen parent's path holds the moved area.
     expect(isInsideArea(leaf.path, String(top.id))).toBe(true);
     await expect(
-      mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, input: { parent_id: leaf.id } }),
+      mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, changes: setChanges({ parent_id: leaf.id }) }),
     ).rejects.toMatchObject({ message: expect.stringContaining('area_cycle') });
     await expect(
-      mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, input: { parent_id: top.id } }),
+      mutate(AREA_RESOURCE, { kind: 'updateOne', id: top.id, changes: setChanges({ parent_id: top.id }) }),
     ).rejects.toMatchObject({ message: expect.stringContaining('area_cycle') });
 
     // A legal move rewrites the subtree's paths.
     const other = await createArea(`Other ${stamp}`, null);
-    await mutate(AREA_RESOURCE, { kind: 'updateOne', id: middle.id, input: { parent_id: other.id } });
+    await mutate(AREA_RESOURCE, { kind: 'updateOne', id: middle.id, changes: setChanges({ parent_id: other.id }) });
     const { data } = await query(AREA_RESOURCE, { kind: 'one', id: leaf.id });
     expect(data).toMatchObject({ depth: 2, path: [other.id, middle.id, leaf.id] });
   });

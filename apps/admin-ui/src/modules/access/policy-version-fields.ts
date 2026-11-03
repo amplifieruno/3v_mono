@@ -90,8 +90,6 @@ export const accessPolicyVersionFields = {
   }),
   max_risk: f.number({
     nullable: true,
-    min: MAX_RISK_RANGE.min,
-    max: MAX_RISK_RANGE.max,
     validate: rangeValidator(MAX_RISK_RANGE),
     in: ['list', 'show', 'edit'],
     texts: {

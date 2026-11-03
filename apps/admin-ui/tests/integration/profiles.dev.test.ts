@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -52,7 +53,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('profiles against the dev stack', () => {
         resource: PROFILE_RESOURCE,
         idField: 'id',
         id,
-        input,
+        changes: setChanges(input),
       } as never) as never,
       context(),
     ) as Promise<{ record: Row }>;

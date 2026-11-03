@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -186,11 +187,11 @@ describe.skipIf(!DEV_STACK_ENABLED)('integrations and exports against the dev st
     await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, cron: '0 3 * * *', timezone: 'Europe/Moscow' });
     expect((await one(INTEGRATION_RESOURCE, throwaway)).config).toEqual({ endpoint: 'https://example.test/hook', schedule_cron: '0 3 * * *', schedule_timezone: 'Europe/Moscow' });
     // A setting changed after the page was read is kept: the flow writes only the schedule keys.
-    await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, input: { config: { endpoint: 'https://example.test/other', schedule_cron: '0 3 * * *', schedule_timezone: 'Europe/Moscow' } } });
+    await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, changes: setChanges({ config: { endpoint: 'https://example.test/other', schedule_cron: '0 3 * * *', schedule_timezone: 'Europe/Moscow' } }) });
     await custom('mutations', COMPLIANCE_BINDING, 'setIntegrationSchedule', { integrationId: throwaway, cron: null, timezone: null });
     expect((await one(INTEGRATION_RESOURCE, throwaway)).config).toEqual({ endpoint: 'https://example.test/other' });
 
-    await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, input: { status: 'paused' } });
+    await mutate(INTEGRATION_RESOURCE, { kind: 'updateOne', id: throwaway, changes: setChanges({ status: 'paused' }) });
     expect(await refused(custom('mutations', COMPLIANCE_BINDING, 'runIntegrationSync', { integrationId: throwaway }))).toMatchObject({
       kind: 'validation',
       code: 'integration_paused',

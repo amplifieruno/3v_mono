@@ -242,6 +242,7 @@ export const endOverrideFlow = {
     retry: 'never',
     input: { overrideId: ref('record', 'id'), reason: ref('values', 'reason') },
     onUnknown: { check: overrideEnded },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof endFields>;

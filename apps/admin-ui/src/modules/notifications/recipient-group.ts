@@ -1,7 +1,6 @@
 import { defineResource, relatedList } from '@burojs/core';
 import { f } from '@burojs/field-types';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   ESCALATION_GROUP_STEP_RESOURCE,
   NOTIFICATION_RULE_RESOURCE,
@@ -49,7 +48,7 @@ export const recipientGroup = defineResource(RECIPIENT_GROUP_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'description'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }] },
     },
     show: {
@@ -62,7 +61,7 @@ export const recipientGroup = defineResource(RECIPIENT_GROUP_RESOURCE, {
             [
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(RECIPIENT_GROUP_USER_MEMBER_RESOURCE)), {
+                  l.place(relatedList(RECIPIENT_GROUP_USER_MEMBER_RESOURCE), {
                     key: 'group-people',
                     // Also seeds "+ Create": a new member belongs to this group.
                     props: { where: [...byGroup, { field: 'user_id', op: 'nnull', value: true }], columns: [...USER_MEMBER_COLUMNS], open: 'none' },
@@ -72,7 +71,7 @@ export const recipientGroup = defineResource(RECIPIENT_GROUP_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE)), {
+                  l.place(relatedList(RECIPIENT_GROUP_ADDRESS_MEMBER_RESOURCE), {
                     key: 'group-addresses',
                     props: {
                       where: [...byGroup, { field: 'external_address', op: 'nnull', value: true }],
@@ -85,7 +84,7 @@ export const recipientGroup = defineResource(RECIPIENT_GROUP_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_RULE_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_RULE_RESOURCE), {
                     key: 'group-rules',
                     props: {
                       where: [{ field: 'recipient_group_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -98,7 +97,7 @@ export const recipientGroup = defineResource(RECIPIENT_GROUP_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(ESCALATION_GROUP_STEP_RESOURCE)), {
+                  l.place(relatedList(ESCALATION_GROUP_STEP_RESOURCE), {
                     key: 'group-steps',
                     props: {
                       where: [{ field: 'recipient_group_id', op: 'eq', value: l.ref('record', 'id') }],

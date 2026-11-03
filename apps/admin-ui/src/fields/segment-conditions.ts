@@ -1,3 +1,4 @@
+import { ref } from '@burojs/core';
 import type { FieldTexts } from '@burojs/core';
 import { type FieldValidator, type JsonFieldOpts, f } from '@burojs/field-types';
 import { problemIssue } from './field-issue';
@@ -57,6 +58,6 @@ export function segmentConditions(opts: SegmentConditionsOptions) {
   return {
     ...base,
     ui: { ...base.ui, input: SEGMENT_CONDITIONS_FIELD, display: SEGMENT_CONDITIONS_FIELD },
-    meta: { targetField: opts.targetField },
+    meta: { targetField: opts.targetField, reads: [ref('values', opts.targetField)] },
   };
 }

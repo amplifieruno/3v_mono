@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -80,7 +81,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('retention and legal holds against the dev s
   };
   const update = async (resource: string, id: string, input: Row): Promise<Row> => {
     const updated = (await provider.mutations?.updateOne?.(
-      createMutationDescriptor({ ...IDENTITY, kind: 'updateOne', ref: { namespace: 'default', id: resource }, resource, idField: 'id', id, input } as never) as never,
+      createMutationDescriptor({ ...IDENTITY, kind: 'updateOne', ref: { namespace: 'default', id: resource }, resource, idField: 'id', id, changes: setChanges(input) } as never) as never,
       mutationContext(),
     )) as { record: Row };
     return updated.record;

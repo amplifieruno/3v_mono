@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import { type DataProvider, type MutationContext, createMutationDescriptor, createQueryDescriptor } from '@burojs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ItapAuthProvider } from '../../src/auth';
@@ -54,7 +55,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('storage files against the dev stack (Nova T
       resource: ORGANIZATION_RESOURCE,
       idField: 'id',
       id: organizationId,
-      input: { logo_file_id: logo },
+      changes: setChanges({ logo_file_id: logo }),
     } as never);
     const result = (await provider.mutations?.updateOne?.(update as never, context())) as {
       record: Record<string, unknown>;

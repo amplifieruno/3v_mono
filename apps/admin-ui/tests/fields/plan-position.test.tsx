@@ -62,14 +62,14 @@ async function serve(_input: RequestInfo | URL, init?: RequestInit): Promise<Res
 
 function renderInput(
   value: unknown,
-  form: Record<string, unknown>,
+  refValues: Record<string, unknown>,
   onChange: (value: unknown) => void,
 ) {
   const props = {
     meta: META,
     value,
     onChange,
-    form,
+    refValues,
     presentation: 'default',
     accessibility: { input: 'position' },
     testIds: { input: 'position-input' },

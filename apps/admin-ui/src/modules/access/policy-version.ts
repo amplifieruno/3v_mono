@@ -1,6 +1,5 @@
 import { type Layout, cond, defineResource, ref, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   ACCESS_POLICY_ACCESS_LEVEL_SUBJECT_RESOURCE,
   ACCESS_POLICY_ACCESS_POINT_TARGET_RESOURCE,
@@ -55,7 +54,7 @@ function membersTab(
         kinds.map(([resource, column, kindKey, kindTitle]) =>
           l.panel(
             [
-              l.place(relatedList(resourceByName(resource)), {
+              l.place(relatedList(resource), {
                 key: `draft-${kindKey}`,
                 // Also seeds "+ Create": a new row belongs to this version.
                 props: {
@@ -72,7 +71,7 @@ function membersTab(
       ),
       l.panel(
         [
-          l.place(relatedList(resourceByName(all.resource)), {
+          l.place(relatedList(all.resource), {
             key: `frozen-${key}`,
             props: { where: [...byVersion], columns: [...all.columns], open: 'none' },
           }),
@@ -112,10 +111,10 @@ export const accessPolicyVersion = defineResource(ACCESS_POLICY_VERSION_RESOURCE
   checks: VERSION_CHECKS,
   actions: (r) => ({
     item: [
-      r.action.flow('submit', submitFlow),
-      r.action.flow('approve', approveFlow),
-      r.action.flow('reject', rejectFlow),
-      r.action.modal(
+      r.item.flow('submit', submitFlow),
+      r.item.flow('approve', approveFlow),
+      r.item.flow('reject', rejectFlow),
+      r.item.modal(
         'simulate',
         { block: simulationBlock, props: { versionId: ref('record', 'id') }, host: 'sheet' },
         {
@@ -131,22 +130,22 @@ export const accessPolicyVersion = defineResource(ACCESS_POLICY_VERSION_RESOURCE
           when: cond.in(ref('record', 'status'), ['draft', 'pending_approval', 'superseded']),
         },
       ),
-      r.action.flow('rollback', rollbackFlow),
+      r.item.flow('rollback', rollbackFlow),
     ],
   }),
   views: {
     list: {
       columns: ['policy_id', ...POLICY_VERSION_COLUMNS],
-      defaultSort: [{ field: 'submitted_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'submitted_at', direction: 'desc' }] },
       filters: { pinned: ['status', 'effect'], fields: ['status', 'effect', 'policy_id', 'submitted_at', 'published_at'] },
       savedViews: [
         {
           id: 'awaiting-approval',
           texts: 'Awaiting approval',
-          state: { filters: [{ field: 'status', op: 'eq', value: 'pending_approval' }] },
+          state: { sort: [{ field: 'submitted_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'pending_approval' }] },
         },
-        { id: 'drafts', texts: 'Drafts', state: { filters: [{ field: 'status', op: 'eq', value: 'draft' }] } },
-        { id: 'in-force', texts: 'In force', state: { filters: [{ field: 'status', op: 'eq', value: 'published' }] } },
+        { id: 'drafts', texts: 'Drafts', state: { sort: [{ field: 'submitted_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'draft' }] } },
+        { id: 'in-force', texts: 'In force', state: { sort: [{ field: 'submitted_at', direction: 'desc' }], filters: [{ field: 'status', op: 'eq', value: 'published' }] } },
       ],
     },
     show: {

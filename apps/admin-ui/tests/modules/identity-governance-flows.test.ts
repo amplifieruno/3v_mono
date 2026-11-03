@@ -74,6 +74,7 @@ describe('merge into this identity', () => {
         record,
         args: {},
         key: 'k',
+        input: undefined,
         signal: new AbortController().signal,
         data: {
           one: async (_resource: unknown, params: { id: string }) => {
@@ -196,8 +197,8 @@ describe('roll back', () => {
     const refused: DataError = {
       kind: 'validation',
       code: 'merge_target_merged',
-      message: '',
-      details: { issues: [{ code: 'merge_target_merged', message: 'Roll back that later merge first.', path: [] }] },
+      applied: 'no',
+      issues: [{ code: 'merge_target_merged', message: { key: 'validation.itap.action.merge_target_merged', default: 'Roll back that later merge first.' }, path: [] }],
     };
     const flow = await rollbackFlow(merge, { 'itap:rollback-merge': [reject(refused)] }).open();
     await flow.submit();
@@ -266,7 +267,7 @@ describe('SQL function refusals through the provider', () => {
       defineDataProvider({
         mutations: {
           custom: defineMutationHandler(async () =>
-            Promise.reject({ kind: 'sent', code, message, details: [{ message, extensions: { code } }] } satisfies DataError),
+            Promise.reject({ kind: 'protocol', applied: 'unknown', code, details: [{ message, extensions: { code } }] } satisfies DataError),
           ),
         },
       }),
@@ -279,7 +280,7 @@ describe('SQL function refusals through the provider', () => {
     await expect(provider.mutations?.custom?.(call('mergeIdentities'), {} as never)).rejects.toMatchObject({
       kind: 'validation',
       code: 'merge_profile_conflict',
-      details: { issues: [{ message: { default: expect.stringMatching(/different profiles/) }, path: [] }] },
+      issues: [{ message: { default: expect.stringMatching(/different profiles/) }, path: [] }],
     });
   });
 
@@ -287,7 +288,7 @@ describe('SQL function refusals through the provider', () => {
     const provider = providerFailing('Check constraint violation. merge_rows_moved:3');
     await expect(provider.mutations?.custom?.(call('rollbackMerge'), {} as never)).rejects.toMatchObject({
       code: 'merge_rows_moved',
-      details: { issues: [{ message: { default: expect.stringMatching(/^3 of the photos/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/^3 of the photos/) } }],
     });
   });
 
@@ -301,7 +302,7 @@ describe('SQL function refusals through the provider', () => {
       await expect(provider.mutations?.custom?.(call('mergeProfiles'), {} as never)).rejects.toMatchObject({
         kind: 'validation',
         code,
-        details: { issues: [{ message: { default: expect.stringMatching(said) } }] },
+        issues: [{ message: { default: expect.stringMatching(said) } }],
       });
     }
     for (const code of ['identity_merged_frozen', 'profile_processing_restricted']) {
@@ -329,7 +330,7 @@ describe('SQL function refusals through the provider', () => {
       await expect(provider.mutations?.custom?.(call('uploadProfileDocument'), {} as never)).rejects.toMatchObject({
         kind: 'validation',
         code,
-        details: { issues: [{ message: { default: expect.stringMatching(said) }, path: [] }] },
+        issues: [{ message: { default: expect.stringMatching(said) }, path: [] }],
       });
     }
   });
@@ -341,7 +342,7 @@ describe('SQL function refusals through the provider', () => {
     );
     await expect(provider.mutations?.custom?.(call('addIdentityRelationship'), {} as never)).rejects.toMatchObject({
       code: 'identity_relationships_pair_key',
-      details: { issues: [{ message: { default: expect.stringMatching(/already related/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/already related/) } }],
     });
   });
 });

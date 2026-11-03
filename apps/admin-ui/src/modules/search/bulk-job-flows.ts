@@ -192,7 +192,7 @@ export const retryBulkJobFlow = {
   surfaces: { default: 'menu', show: 'auto', row: 'menu' },
   when: cond.in(ref('record', 'status'), [...RETRYABLE_STATUSES]),
   confirm: true,
-  submit: { mutation: retryBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: retryApplied } },
+  submit: { mutation: retryBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: retryApplied }, reread: true },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
 
@@ -208,6 +208,6 @@ export const cancelBulkJobFlow = {
   surfaces: { default: 'menu', show: 'auto', row: 'menu' },
   when: cond.in(ref('record', 'status'), [...CANCELLABLE_STATUSES]),
   confirm: true,
-  submit: { mutation: cancelBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: statusIn(['cancelled']) } },
+  submit: { mutation: cancelBulkJob, retry: 'never', input: { jobId: ref('record', 'id') }, onUnknown: { check: statusIn(['cancelled']) }, reread: true },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

@@ -1,6 +1,6 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { incidentHoldNotice } from '../compliance/hold-notice';
 import {
   INCIDENT_ACTIVITY_RESOURCE,
@@ -114,20 +114,20 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
   fields: incidentFields,
   actions: (r) => ({
     item: [
-      r.action.flow('acknowledge', acknowledgeFlow),
-      r.action.flow('start_investigation', startInvestigationFlow),
-      r.action.flow('resolve', resolveFlow),
-      r.action.flow('close', closeFlow),
-      r.action.flow('reopen', reopenFlow),
-      r.action.flow('escalate', escalateFlow),
-      r.action.flow('generate_report', generateReportFlow),
+      r.item.flow('acknowledge', acknowledgeFlow),
+      r.item.flow('start_investigation', startInvestigationFlow),
+      r.item.flow('resolve', resolveFlow),
+      r.item.flow('close', closeFlow),
+      r.item.flow('reopen', reopenFlow),
+      r.item.flow('escalate', escalateFlow),
+      r.item.flow('generate_report', generateReportFlow),
     ],
   }),
   views: {
     list: {
       columns: [...INCIDENT_COLUMNS],
       optionalColumns: ['area_id', 'rule_id', 'disposition', 'acknowledged_at', 'escalation_step'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }] },
       refetchInterval: INCIDENT_POLL_MS,
       search: { fields: ['code', { field: 'title', op: 'contains' }] },
       filters: {
@@ -145,7 +145,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
           'created_at',
         ],
       },
-      savedViews: INCIDENT_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }] }, INCIDENT_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['code', 'status', 'severity', 'assigned_to'])],
@@ -156,11 +156,11 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
           l.panel(
             [
               l.panel(
-                [l.place(relatedList(resourceByName(open)), { key: `${key}-open`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
+                [l.place(relatedList(open), { key: `${key}-open`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
                 { key: `${key}-editable`, when: l.not(isClosed) },
               ),
               l.panel(
-                [l.place(relatedList(resourceByName(frozen)), { key: `${key}-frozen`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
+                [l.place(relatedList(frozen), { key: `${key}-frozen`, props: { where: [...byIncident], columns: [...columns], open: rows } })],
                 { key: `${key}-closed`, when: isClosed },
               ),
             ],
@@ -194,7 +194,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(INCIDENT_ACTIVITY_RESOURCE)), {
+                  l.place(relatedList(INCIDENT_ACTIVITY_RESOURCE), {
                     key: 'incident-activity',
                     props: { where: [...byIncident], columns: [...INCIDENT_ACTIVITY_COLUMNS], open: 'none' },
                   }),
@@ -212,7 +212,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                  l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
                     key: 'incident-deliveries',
                     props: { where: [...byIncident], columns: [...DELIVERY_TAB_COLUMNS], open: 'page' },
                   }),
@@ -221,7 +221,7 @@ export const incident = defineResource(INCIDENT_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(REPORT_RESOURCE)), {
+                  l.place(relatedList(REPORT_RESOURCE), {
                     key: 'incident-reports',
                     props: { where: [...byIncident], columns: ['code', 'format', 'status', 'created_at', 'generated_at'], open: 'page' },
                   }),

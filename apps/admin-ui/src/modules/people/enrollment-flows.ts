@@ -84,6 +84,7 @@ export const addPhotosFlow = {
     mutation: addIdentityPhotos,
     retry: 'never',
     input: { identityId: ref('record', 'id'), fileIds: ref('values', 'photos') },
+    reread: true,
   },
   then: showResult,
 } satisfies FlowConfig<unknown, Record<never, never>, typeof photoFields>;
@@ -109,6 +110,7 @@ export const enrollFaceFlow = {
     mutation: enrollFace,
     retry: 'never',
     input: { profileId: ref('record', 'id'), fileIds: ref('values', 'photos') },
+    reread: true,
   },
   then: showResult,
 } satisfies FlowConfig<unknown, Record<never, never>, typeof photoFields>;

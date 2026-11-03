@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type AuthContext,
   type DataProvider,
@@ -70,7 +71,7 @@ describe.skipIf(!DEV_STACK_ENABLED)(
         resource: SETTINGS_RESOURCE,
         idField: 'organization_id',
         id: organizationId,
-        input,
+        changes: setChanges(input),
       } as never);
       return provider.mutations?.updateOne?.(descriptor as never, context());
     }

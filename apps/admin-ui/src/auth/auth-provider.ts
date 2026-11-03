@@ -24,7 +24,7 @@ const BASE_SKEW_MS = 5_000;
 
 function toDataError(value: unknown): DataError {
   if (isDataError(value)) return value;
-  return { kind: 'transport', code: 'unexpected-error', message: value instanceof Error ? value.message : 'Unexpected error.' };
+  return { kind: 'transport', code: 'unexpected-error', details: value instanceof Error ? value.message : value };
 }
 
 function failure(value: unknown): AuthResult {
@@ -225,10 +225,10 @@ export function createItapAuthProvider(options: ItapAuthProviderOptions): ItapAu
     async switchOrganization(organizationId) {
       try {
         const base = await freshBase();
-        if (!base) return failure({ kind: 'auth', code: 'unauthenticated', message: 'You are signed out.' });
+        if (!base) return failure({ kind: 'auth', code: 'unauthenticated', message: { key: 'errors.unauthenticated', default: 'You are signed out.' } });
         const next = await org.switchOrganization(base.accessToken, organizationId);
         if (!store.snapshot().base) {
-          return failure({ kind: 'auth', code: 'unauthenticated', message: 'You are signed out.' });
+          return failure({ kind: 'auth', code: 'unauthenticated', message: { key: 'errors.unauthenticated', default: 'You are signed out.' } });
         }
         store.setOrg(next);
         return { success: true };

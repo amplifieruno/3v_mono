@@ -2,7 +2,6 @@ import { defineResource, ref, relatedList } from '@burojs/core';
 import type { Layout } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
 import { segmentStatsBlock } from '../../blocks/segment-stats/segment-stats-block';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   EVENT_RULE_SCOPE_HISTORY_RESOURCE,
   SEGMENT_DAILY_STAT_RESOURCE,
@@ -69,7 +68,7 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
   checks: SEGMENT_CHECKS,
   actions: (r) => ({
     resource: [
-      r.action.link(
+      r.resource.link(
         'from_template',
         { to: { resource: SEGMENT_TEMPLATE_RESOURCE, action: 'list' } },
         {
@@ -83,11 +82,11 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
       ),
     ],
     item: [
-      r.action.flow('evaluate_now', evaluateNowFlow),
-      r.action.flow(ADD_PROFILES_FLOW, addProfilesFlow),
-      r.action.flow(ADD_IDENTITIES_FLOW, addIdentitiesFlow),
+      r.item.flow('evaluate_now', evaluateNowFlow),
+      r.item.flow(ADD_PROFILES_FLOW, addProfilesFlow),
+      r.item.flow(ADD_IDENTITIES_FLOW, addIdentitiesFlow),
       // Replaces the built-in Delete: the refusals of the guard and the foreign keys read as sentences.
-      r.action.flow('delete', {
+      r.item.flow('delete', {
         texts: {
           label: 'Delete',
           confirm: 'Delete this segment? A segment that is in use or has history cannot be deleted: archive it instead.',
@@ -107,6 +106,7 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
           retry: 'never',
           input: { segmentId: ref('record', 'id') },
           onUnknown: { check: segmentDeleted },
+          reread: true,
         },
         then: { notify: true, redirect: { resource: SEGMENT_RESOURCE, action: 'list' } },
       }),
@@ -116,24 +116,24 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
     list: {
       columns: [...SEGMENT_COLUMNS],
       optionalColumns: ['color', 'template_id', 'last_evaluation_failed_at'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['code', { field: 'name', op: 'contains' }] },
       filters: {
         pinned: ['kind', 'target', 'status'],
         fields: ['kind', 'target', 'status', 'template_id', 'member_count', 'last_evaluated_at', 'last_evaluation_failed_at'],
       },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
-        { id: 'dynamic', texts: 'Dynamic', state: { filters: [{ field: 'kind', op: 'eq', value: 'dynamic' }] } },
-        { id: 'manual', texts: 'Manual', state: { filters: [{ field: 'kind', op: 'eq', value: 'manual' }] } },
-        { id: 'profiles', texts: 'Of profiles', state: { filters: [{ field: 'target', op: 'eq', value: 'profiles' }] } },
-        { id: 'identities', texts: 'Of identities', state: { filters: [{ field: 'target', op: 'eq', value: 'identities' }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'active' }] } },
+        { id: 'dynamic', texts: 'Dynamic', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'kind', op: 'eq', value: 'dynamic' }] } },
+        { id: 'manual', texts: 'Manual', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'kind', op: 'eq', value: 'manual' }] } },
+        { id: 'profiles', texts: 'Of profiles', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'target', op: 'eq', value: 'profiles' }] } },
+        { id: 'identities', texts: 'Of identities', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'target', op: 'eq', value: 'identities' }] } },
         {
           id: 'failing',
           texts: 'Evaluation failing',
-          state: { filters: [{ field: 'last_evaluation_failed_at', op: 'nnull', value: true }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'last_evaluation_failed_at', op: 'isNotNull' }] },
         },
-        { id: 'archived', texts: 'Archived', state: { filters: [{ field: 'status', op: 'eq', value: 'archived' }] } },
+        { id: 'archived', texts: 'Archived', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'status', op: 'eq', value: 'archived' }] } },
       ],
     },
     show: {
@@ -159,7 +159,7 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
               l.panel(
                 [
                   l.place(segmentStatsBlock, { key: 'segment-trend', props: { segmentId: l.ref('record', 'id') } }),
-                  l.place(relatedList(resourceByName(SEGMENT_DAILY_STAT_RESOURCE)), {
+                  l.place(relatedList(SEGMENT_DAILY_STAT_RESOURCE), {
                     key: 'segment-daily-stats',
                     props: { where: [...bySegment], columns: ['day', 'member_count', 'added', 'removed'], open: 'none' },
                   }),
@@ -168,7 +168,7 @@ export const segment = defineResource(SEGMENT_RESOURCE, {
               ),
               l.panel(
                 [
-                  l.place(relatedList(resourceByName(EVENT_RULE_SCOPE_HISTORY_RESOURCE)), {
+                  l.place(relatedList(EVENT_RULE_SCOPE_HISTORY_RESOURCE), {
                     key: 'segment-rule-scopes',
                     props: { where: [...bySegment], columns: ['version_id', 'created_at'], open: 'none' },
                   }),

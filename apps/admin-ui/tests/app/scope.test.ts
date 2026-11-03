@@ -120,7 +120,7 @@ describe('performOrganizationSwitch', () => {
   it('should return a refusal unchanged and keep the session', async () => {
     const refusal: AuthResult = {
       success: false,
-      error: { kind: 'forbidden', code: 'membership-inactive', message: 'Your membership is not active.' },
+      error: { kind: 'forbidden', code: 'membership-inactive', message: { key: 'errors.test', default: 'Your membership is not active.' } },
     };
     const dataSession = fakeSession();
 

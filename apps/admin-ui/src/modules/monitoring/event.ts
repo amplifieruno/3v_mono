@@ -1,6 +1,6 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { EVENT_RESOURCE, INCIDENT_EVENT_HISTORY_RESOURCE, NOTIFICATION_DELIVERY_RESOURCE } from '../../data/resource-names';
 import { severitiesFrom } from '../../enums/events';
 import { eventFields } from './event-fields';
@@ -77,10 +77,9 @@ export const event = defineResource(EVENT_RESOURCE, {
     list: {
       columns: [...EVENT_COLUMNS],
       optionalColumns: ['facility_id', 'identity_id', 'rule_version_id'],
-      defaultSort: [{ field: 'occurred_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: EVENT_PAGE_SIZE },
       sortTiebreaker: 'id',
       count: 'manual',
-      pageSize: EVENT_PAGE_SIZE,
       refetchInterval: EVENT_POLL_MS,
       search: { fields: [{ field: 'title', op: 'contains' }] },
       filters: {
@@ -97,7 +96,7 @@ export const event = defineResource(EVENT_RESOURCE, {
           'occurred_at',
         ],
       },
-      savedViews: EVENT_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'occurred_at', direction: 'desc' }], pageSize: EVENT_PAGE_SIZE }, EVENT_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['severity', 'event_type', 'occurred_at'])],
@@ -112,7 +111,7 @@ export const event = defineResource(EVENT_RESOURCE, {
         'created_at',
         l.panel(
           [
-            l.place(relatedList(resourceByName(INCIDENT_EVENT_HISTORY_RESOURCE)), {
+            l.place(relatedList(INCIDENT_EVENT_HISTORY_RESOURCE), {
               key: 'event-incidents',
               props: {
                 where: [{ field: 'event_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -125,7 +124,7 @@ export const event = defineResource(EVENT_RESOURCE, {
         ),
         l.panel(
           [
-            l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+            l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
               key: 'event-deliveries',
               props: {
                 where: [{ field: 'event_id', op: 'eq', value: l.ref('record', 'id') }],

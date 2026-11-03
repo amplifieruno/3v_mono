@@ -135,8 +135,8 @@ describe('webhook signing secret', () => {
     expect(validate('x'.repeat(257), { values: {} })).toMatchObject({ code: 'webhookSecret.length' });
   });
 
-  it('should be write-only and offer no removal (the column is NOT NULL)', () => {
-    expect(def(WEBHOOK_SUBSCRIPTION_RESOURCE).fields.secret?.meta).toEqual({ writeOnly: true, removable: false });
+  it('should be write-only', () => {
+    expect(def(WEBHOOK_SUBSCRIPTION_RESOURCE).fields.secret?.meta).toEqual({ writeOnly: true });
     expect(secret().meta).toEqual({ writeOnly: true });
   });
 });

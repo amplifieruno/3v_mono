@@ -210,8 +210,9 @@ describe('scheduling a visit', () => {
     await waitFor(() => expect(mutations()).toHaveLength(1));
     expect(mutations()[0]?.variables?.object).toMatchObject({
       visitor_profile_id: GUEST,
-      expected_start: new Date('2026-10-22T09:30').toISOString(),
-      expected_end: new Date('2026-10-22T11:00').toISOString(),
+      // The shortest exact instant reaches the provider (buro 0.8, A20).
+      expected_start: new Date('2026-10-22T09:30').toISOString().replace('.000Z', 'Z'),
+      expected_end: new Date('2026-10-22T11:00').toISOString().replace('.000Z', 'Z'),
     });
   });
 });

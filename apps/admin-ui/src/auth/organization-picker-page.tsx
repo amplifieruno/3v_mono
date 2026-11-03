@@ -1,4 +1,4 @@
-import { useDataRuntime, useIdentity, useIsAuthenticated, useLogout, useT } from '@burojs/react';
+import { resolveErrorText, useDataRuntime, useI18nCaps, useIdentity, useIsAuthenticated, useLogout, useT } from '@burojs/react';
 import {
   AuthPage,
   Button,
@@ -29,6 +29,7 @@ function OrganizationChoices({ memberships }: { memberships: readonly Membership
   const { dataSession } = useDataRuntime();
   const navigate = useNavigate();
   const location = useLocation();
+  const caps = useI18nCaps();
   const [pending, setPending] = React.useState<string | null>(null);
 
   const choose = async (organizationId: string): Promise<void> => {
@@ -36,7 +37,7 @@ function OrganizationChoices({ memberships }: { memberships: readonly Membership
     try {
       const result = await performOrganizationSwitch(auth, dataSession, organizationId);
       if (!result.success) {
-        toast.error(result.error.message);
+        toast.error(resolveErrorText(result.error, caps));
         return;
       }
       navigate(destination(location.state), { replace: true });

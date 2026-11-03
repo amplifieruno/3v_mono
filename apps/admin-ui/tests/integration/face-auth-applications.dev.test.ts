@@ -160,7 +160,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('client applications against the dev stack (
     await expect(custom('bindFacility', { applicationId: app, value: facility })).rejects.toMatchObject({
       kind: 'validation',
       code: 'sandbox_location_binding',
-      details: { issues: [{ message: { default: expect.stringMatching(/sandbox application binds no facilities or access points/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/sandbox application binds no facilities or access points/) } }],
     });
     expect(await list(CLIENT_APPLICATION_FACILITY_RESOURCE, app)).toEqual([]);
   }, 60_000);
@@ -181,7 +181,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('client applications against the dev stack (
     expect(seeded).toEqual(expect.any(String));
     await expect(custom('deleteClientApplication', { applicationId: seeded })).rejects.toMatchObject({
       kind: 'validation',
-      details: { issues: [{ message: { default: expect.stringMatching(/Revoke the application instead/) } }] },
+      issues: [{ message: { default: expect.stringMatching(/Revoke the application instead/) } }],
     });
   }, 60_000);
 

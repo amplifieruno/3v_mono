@@ -52,19 +52,11 @@ export const rangeValidator = (range: NumberRange): FieldValidator<number> =>
   problemValidator<number>((value) => checkRange(value, range));
 
 /**
- * A required number field limited to `range`. The record form does not enforce the
- * declaration's own `min`/`max` (it validates presence and `validate` only), so the
- * range is restated as `validate`, whose message names the range (`tasks/ui/buro-gaps.md`
- * G14). Callers mirror the database CHECK constraint where the column has one.
+ * A required number field limited to `range`. The range is stated once, as `validate`, whose
+ * message names it: buro also checks a field's own `min` / `max` / `integer` in forms, which would
+ * show a second sentence. Callers mirror the database CHECK constraint where the column has one.
  */
 export function boundedNumber(options: BoundedNumberOptions) {
   const { texts, ...range } = options;
-  return f.number({
-    required: true,
-    min: range.min,
-    ...(range.max === undefined ? {} : { max: range.max }),
-    ...(range.integer ? { integer: true } : {}),
-    validate: rangeValidator(range),
-    texts,
-  });
+  return f.number({ required: true, validate: rangeValidator(range), texts });
 }

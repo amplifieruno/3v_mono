@@ -1,4 +1,5 @@
 import type { FieldTexts } from '@burojs/core';
+import { ref } from '@burojs/core';
 import { type FieldValidator, type JsonFieldOpts, f } from '@burojs/field-types';
 import { problemValidator } from './field-issue';
 import { validatePlanPoint } from './plan-shape-check';
@@ -41,6 +42,7 @@ export function planPosition(opts: PlanPositionOptions) {
       channel,
       areaField: opts.areaField,
       facilityField: opts.facilityField ?? 'facility_id',
+      reads: [ref('values', opts.facilityField ?? 'facility_id'), ref('values', opts.areaField)],
     },
   };
 }

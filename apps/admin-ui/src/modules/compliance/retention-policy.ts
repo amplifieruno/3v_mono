@@ -1,6 +1,5 @@
 import { type Layout, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { RETENTION_POLICY_RESOURCE, RETENTION_RUN_CLASS_RESOURCE } from '../../data/resource-names';
 import { FACILITY_CLASSES } from './retention-classes';
 import { activatePolicyFlow, deactivatePolicyFlow, deletePolicyFlow } from './retention-policy-flows';
@@ -32,27 +31,27 @@ export const retentionPolicy = defineResource(RETENTION_POLICY_RESOURCE, {
   order: 10,
   icon: NAV_ICONS.retentionPolicies,
   displayField: 'data_class',
-  recordTitle: () => 'Retention policy',
+  recordTitle: (record) => (typeof record.data_class === 'string' ? `Retention policy: ${record.data_class}` : null),
   data: { provider: 'hasura' },
   fields: retentionPolicyFields,
   checks: RETENTION_POLICY_CHECKS,
   actions: (r) => ({
     item: [
-      r.action.flow('deactivate', deactivatePolicyFlow),
-      r.action.flow('activate', activatePolicyFlow),
+      r.item.flow('deactivate', deactivatePolicyFlow),
+      r.item.flow('activate', activatePolicyFlow),
       // Replaces the built-in Delete: the foreign key's refusal reads as a sentence.
-      r.action.flow('delete', deletePolicyFlow),
+      r.item.flow('delete', deletePolicyFlow),
     ],
   }),
   views: {
     list: {
       columns: ['data_class', 'facility_id', 'retain_days', 'action', 'is_active', 'description'],
-      defaultSort: [{ field: 'data_class', direction: 'asc' }],
+      initial: { sort: [{ field: 'data_class', direction: 'asc' }] },
       filters: { pinned: ['data_class', 'is_active'], fields: ['data_class', 'facility_id', 'action', 'is_active'] },
       savedViews: [
-        { id: 'active', texts: 'Active', state: { filters: [{ field: 'is_active', op: 'eq', value: true }] } },
-        { id: 'inactive', texts: 'Inactive', state: { filters: [{ field: 'is_active', op: 'eq', value: false }] } },
-        { id: 'facility', texts: 'Facility-specific', state: { filters: [{ field: 'facility_id', op: 'isNotNull' }] } },
+        { id: 'active', texts: 'Active', state: { sort: [{ field: 'data_class', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: true }] } },
+        { id: 'inactive', texts: 'Inactive', state: { sort: [{ field: 'data_class', direction: 'asc' }], filters: [{ field: 'is_active', op: 'eq', value: false }] } },
+        { id: 'facility', texts: 'Facility-specific', state: { sort: [{ field: 'data_class', direction: 'asc' }], filters: [{ field: 'facility_id', op: 'isNotNull' }] } },
       ],
     },
     show: {
@@ -63,7 +62,7 @@ export const retentionPolicy = defineResource(RETENTION_POLICY_RESOURCE, {
             l.panel(['description', l.grid(['created_by', 'created_at', 'updated_at'])], { key: 'details', texts: 'Details' }),
             l.panel(
               [
-                l.place(relatedList(resourceByName(RETENTION_RUN_CLASS_RESOURCE)), {
+                l.place(relatedList(RETENTION_RUN_CLASS_RESOURCE), {
                   key: 'policy-runs',
                   texts: { title: 'What the nightly runs did under this policy' },
                   props: {

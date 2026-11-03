@@ -39,21 +39,20 @@ export const accessDecision = defineResource(ACCESS_DECISION_RESOURCE, {
     list: {
       columns: ['decided_at', 'result', 'reason', 'profile_id', 'access_point_id', 'risk_score'],
       optionalColumns: ['identity_id', 'facility_id', 'device_id', 'policy_version_id', 'grant_id', 'override_id'],
-      defaultSort: [{ field: 'decided_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: DECISION_PAGE_SIZE,
       filters: {
         pinned: ['result', 'reason', 'access_point_id', 'decided_at'],
         fields: ['result', 'reason', 'access_point_id', 'profile_id', 'identity_id', 'facility_id', 'decided_at', 'policy_version_id', 'grant_id', 'override_id'],
       },
       savedViews: [
-        { id: 'denied', texts: 'Denied', state: { filters: [{ field: 'result', op: 'eq', value: 'denied' }] } },
-        { id: 'granted', texts: 'Granted', state: { filters: [{ field: 'result', op: 'eq', value: 'granted' }] } },
-        { id: 'by-grant', texts: 'Decided by a grant', state: { filters: [{ field: 'grant_id', op: 'isNotNull' }] } },
-        { id: 'by-override', texts: 'Decided by an override', state: { filters: [{ field: 'override_id', op: 'isNotNull' }] } },
-        { id: 'unknown-faces', texts: 'Unknown faces', state: { filters: [{ field: 'reason', op: 'eq', value: 'unknown_person' }] } },
+        { id: 'denied', texts: 'Denied', state: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE, filters: [{ field: 'result', op: 'eq', value: 'denied' }] } },
+        { id: 'granted', texts: 'Granted', state: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE, filters: [{ field: 'result', op: 'eq', value: 'granted' }] } },
+        { id: 'by-grant', texts: 'Decided by a grant', state: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE, filters: [{ field: 'grant_id', op: 'isNotNull' }] } },
+        { id: 'by-override', texts: 'Decided by an override', state: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE, filters: [{ field: 'override_id', op: 'isNotNull' }] } },
+        { id: 'unknown-faces', texts: 'Unknown faces', state: { sort: [{ field: 'decided_at', direction: 'desc' }], pageSize: DECISION_PAGE_SIZE, filters: [{ field: 'reason', op: 'eq', value: 'unknown_person' }] } },
       ],
     },
     show: {

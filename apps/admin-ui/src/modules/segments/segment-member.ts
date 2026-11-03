@@ -22,9 +22,9 @@ export const segmentProfileMember = defineResource(SEGMENT_PROFILE_MEMBER_RESOUR
   data: { provider: 'hasura' },
   operations: { create: false, edit: false, delete: false },
   fields: segmentProfileMemberFields,
-  actions: (r) => ({ item: [r.action.flow('remove_from_segment', removeFromSegmentFlow('profiles'))] }),
+  actions: (r) => ({ item: [r.item.flow('remove_from_segment', removeFromSegmentFlow('profiles'))] }),
   views: {
-    list: { page: false, columns: ['segment_id', 'profile_id', 'source', 'added_at', 'removed_at'], defaultSort: [{ field: 'added_at', direction: 'desc' }] },
+    list: { page: false, columns: ['segment_id', 'profile_id', 'source', 'added_at', 'removed_at'], initial: { sort: [{ field: 'added_at', direction: 'desc' }] } },
     show: { page: false, body: (l) => [l.grid(['segment_id', 'profile_id', 'source']), l.grid(['added_at', 'added_by']), l.grid(['removed_at', 'removed_by'])] },
   },
 });
@@ -44,9 +44,9 @@ export const segmentIdentityMember = defineResource(SEGMENT_IDENTITY_MEMBER_RESO
   data: { provider: 'hasura' },
   operations: { create: false, edit: false, delete: false },
   fields: segmentIdentityMemberFields,
-  actions: (r) => ({ item: [r.action.flow('remove_from_segment', removeFromSegmentFlow('identities'))] }),
+  actions: (r) => ({ item: [r.item.flow('remove_from_segment', removeFromSegmentFlow('identities'))] }),
   views: {
-    list: { page: false, columns: ['segment_id', 'identity_id', 'source', 'added_at', 'removed_at'], defaultSort: [{ field: 'added_at', direction: 'desc' }] },
+    list: { page: false, columns: ['segment_id', 'identity_id', 'source', 'added_at', 'removed_at'], initial: { sort: [{ field: 'added_at', direction: 'desc' }] } },
     show: { page: false, body: (l) => [l.grid(['segment_id', 'identity_id', 'source']), l.grid(['added_at', 'added_by']), l.grid(['removed_at', 'removed_by'])] },
   },
 });

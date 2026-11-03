@@ -44,6 +44,7 @@ function bindingFlow(spec: BindingSpec) {
       // A lost answer is not retried: sent again, a binding that landed reads "already bound".
       retry: 'never',
       input: { applicationId: ref('record', 'id'), value: ref('values', spec.column) },
+      reread: true,
     },
     then: { notify: true },
   } satisfies FlowConfig<unknown, Record<never, never>, typeof fields>;

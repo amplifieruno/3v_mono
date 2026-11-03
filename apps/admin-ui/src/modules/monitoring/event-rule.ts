@@ -1,6 +1,5 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import {
   EVENT_RESOURCE,
   EVENT_RULE_RESOURCE,
@@ -53,19 +52,19 @@ export const eventRule = defineResource(EVENT_RULE_RESOURCE, {
   data: { provider: 'hasura' },
   fields: eventRuleFields,
   rules: RULE_RULES,
-  actions: (r) => ({ item: [r.action.flow('edit_draft', editDraftFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('edit_draft', editDraftFlow)] }),
   views: {
     list: {
       columns: ['code', 'name', 'rule_type', 'is_enabled', 'current_version_id', 'last_triggered_at', 'trigger_count'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['code', { field: 'name', op: 'contains' }] },
       filters: { pinned: ['rule_type', 'is_enabled'], fields: ['rule_type', 'is_enabled', 'last_triggered_at'] },
       savedViews: [
-        { id: 'enabled', texts: 'Enabled', state: { filters: [{ field: 'is_enabled', op: 'eq', value: true }] } },
+        { id: 'enabled', texts: 'Enabled', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_enabled', op: 'eq', value: true }] } },
         {
           id: 'never-published',
           texts: 'Never published',
-          state: { filters: [{ field: 'current_version_id', op: 'isNull' }] },
+          state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'current_version_id', op: 'isNull' }] },
         },
       ],
     },
@@ -85,7 +84,7 @@ export const eventRule = defineResource(EVENT_RULE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RULE_VERSION_RESOURCE)), {
+                l.place(relatedList(EVENT_RULE_VERSION_RESOURCE), {
                   key: 'rule-versions',
                   props: {
                     where: [{ field: 'rule_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -98,7 +97,7 @@ export const eventRule = defineResource(EVENT_RULE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(INCIDENT_RESOURCE)), {
+                l.place(relatedList(INCIDENT_RESOURCE), {
                   key: 'rule-incidents',
                   props: {
                     where: [{ field: 'rule_id', op: 'eq', value: l.ref('record', 'id') }],
@@ -111,7 +110,7 @@ export const eventRule = defineResource(EVENT_RULE_RESOURCE, {
             ),
             l.panel(
               [
-                l.place(relatedList(resourceByName(EVENT_RESOURCE)), {
+                l.place(relatedList(EVENT_RESOURCE), {
                   key: 'rule-events',
                   props: {
                     where: [{ field: 'rule_version_id', op: 'eq', value: l.ref('record', 'current_version_id') }],

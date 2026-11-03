@@ -1,3 +1,4 @@
+import { setChanges } from '../support/changes';
 import {
   type DataProvider,
   type MutationContext,
@@ -115,7 +116,7 @@ describe.skipIf(!DEV_STACK_ENABLED)('custom operations against the dev stack (No
       resource: INVITATION_RESOURCE,
       idField: 'id',
       id: created.invitation_id,
-      input: { status: 'revoked' },
+      changes: setChanges({ status: 'revoked' }),
     } as never);
     const revoked = await provider.mutations?.updateOne?.(revoke as never, context());
     expect(revoked).toMatchObject({ record: { status: 'revoked' } });

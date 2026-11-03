@@ -1,6 +1,6 @@
+import { viewsOpeningAs } from '../../data/saved-views';
 import { defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { NOTIFICATION_DELIVERY_RESOURCE } from '../../data/resource-names';
 import { notificationDeliveryFields } from './notification-delivery-fields';
 
@@ -60,17 +60,16 @@ export const notificationDelivery = defineResource(NOTIFICATION_DELIVERY_RESOURC
     list: {
       columns: [...DELIVERY_COLUMNS],
       optionalColumns: ['priority', 'rule_id', 'escalation_policy_id', 'event_id', 'incident_id', 'error'],
-      defaultSort: [{ field: 'created_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'created_at', direction: 'desc' }], pageSize: DELIVERY_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: DELIVERY_PAGE_SIZE,
       search: { fields: [{ field: 'title', op: 'contains' }, { field: 'recipient_address', op: 'contains' }] },
       filters: {
         pinned: ['status', 'channel', 'origin'],
         fields: ['status', 'channel', 'origin', 'priority', 'recipient_user_id', 'rule_id', 'incident_id', 'to_me', 'created_at'],
       },
-      savedViews: DELIVERY_SAVED_VIEWS,
+      savedViews: viewsOpeningAs({ sort: [{ field: 'created_at', direction: 'desc' }], pageSize: DELIVERY_PAGE_SIZE }, DELIVERY_SAVED_VIEWS),
     },
     show: {
       header: (l) => [l.grid(['status', 'channel', 'origin', 'created_at'])],
@@ -100,7 +99,7 @@ export const notificationDelivery = defineResource(NOTIFICATION_DELIVERY_RESOURC
             l.panel(['content'], { key: 'content', texts: 'Content' }),
             l.panel(
               [
-                l.place(relatedList(resourceByName(NOTIFICATION_DELIVERY_RESOURCE)), {
+                l.place(relatedList(NOTIFICATION_DELIVERY_RESOURCE), {
                   key: 'digest-item-list',
                   props: {
                     where: [{ field: 'digested_into', op: 'eq', value: l.ref('record', 'id') }],

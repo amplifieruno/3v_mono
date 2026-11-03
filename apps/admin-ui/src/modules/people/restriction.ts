@@ -95,6 +95,7 @@ export const restrictProcessingFlow = {
     mutation: setProcessingRestriction,
     input: { profileId: ref('record', 'id'), restricted: true, reason: ref('values', 'reason') },
     onUnknown: { check: fieldApplied(PROFILE_RESOURCE, 'processing_restricted', true) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof reasonFields>;
@@ -120,6 +121,7 @@ export const liftRestrictionFlow = {
     mutation: setProcessingRestriction,
     input: { profileId: ref('record', 'id'), restricted: false, reason: ref('values', 'reason') },
     onUnknown: { check: fieldApplied(PROFILE_RESOURCE, 'processing_restricted', false) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, typeof reasonFields>;

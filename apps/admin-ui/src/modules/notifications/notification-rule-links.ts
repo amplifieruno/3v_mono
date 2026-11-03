@@ -68,7 +68,7 @@ export const notificationRuleEventType = defineResource(NOTIFICATION_RULE_EVENT_
   builtinActions: { edit: false },
   fields: notificationRuleEventTypeFields,
   views: {
-    list: { page: false, columns: ['event_type', 'created_at'], defaultSort: [{ field: 'event_type', direction: 'asc' }] },
+    list: { page: false, columns: ['event_type', 'created_at'], initial: { sort: [{ field: 'event_type', direction: 'asc' }] } },
     show: { page: false },
     create: { body: () => ['rule_id', 'event_type'] },
   },
@@ -95,7 +95,7 @@ export const notificationRuleChannel = defineResource(NOTIFICATION_RULE_CHANNEL_
   builtinActions: { edit: false },
   fields: notificationRuleChannelFields,
   views: {
-    list: { page: false, columns: ['channel', 'created_at'], defaultSort: [{ field: 'channel', direction: 'asc' }] },
+    list: { page: false, columns: ['channel', 'created_at'], initial: { sort: [{ field: 'channel', direction: 'asc' }] } },
     show: { page: false },
     create: { body: () => ['rule_id', 'channel'] },
   },

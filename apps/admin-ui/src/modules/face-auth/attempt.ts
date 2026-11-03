@@ -39,30 +39,29 @@ export const authenticationAttempt = defineResource(AUTHENTICATION_ATTEMPT_RESOU
   operations: { create: false, edit: false, delete: false },
   builtinActions: { edit: false, delete: false },
   fields: authenticationAttemptFields,
-  actions: (r) => ({ item: [r.action.flow('approve', approveAttemptFlow), r.action.flow('reject', rejectAttemptFlow)] }),
+  actions: (r) => ({ item: [r.item.flow('approve', approveAttemptFlow), r.item.flow('reject', rejectAttemptFlow)] }),
   views: {
     list: {
       columns: [...AUTHENTICATION_ATTEMPT_COLUMNS],
       optionalColumns: ['session_id', 'step', 'attack_outcome', 'population_size', 'latency_ms', 'matched_identity_id', 'profile_id', 'access_point_id'],
-      defaultSort: [{ field: 'attempted_at', direction: 'desc' }],
+      initial: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE },
       sortTiebreaker: 'id',
       pagination: 'cursor',
       count: 'manual',
-      pageSize: AUTH_LOG_PAGE_SIZE,
       filters: {
         pinned: ['outcome', 'review_status', 'application_id', 'attempted_at'],
         fields: ['outcome', 'review_status', 'failure_reason', 'attack_outcome', 'application_id', 'mode', 'step', 'profile_id', 'access_point_id', 'attempted_at'],
       },
       savedViews: [
-        { id: 'review-queue', texts: 'Waiting for review', state: { filters: [...REVIEW_QUEUE_FILTERS] } },
-        { id: 'failures', texts: 'Failures', state: { filters: [{ field: 'outcome', op: 'eq', value: 'failure' }] } },
-        { id: 'partial', texts: 'Partial matches', state: { filters: [{ field: 'outcome', op: 'eq', value: 'partial_match' }] } },
+        { id: 'review-queue', texts: 'Waiting for review', state: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [...REVIEW_QUEUE_FILTERS] } },
+        { id: 'failures', texts: 'Failures', state: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'outcome', op: 'eq', value: 'failure' }] } },
+        { id: 'partial', texts: 'Partial matches', state: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'outcome', op: 'eq', value: 'partial_match' }] } },
         {
           id: 'attacks',
           texts: 'Attacks detected',
-          state: { filters: [{ field: 'failure_reason', op: 'eq', value: 'attack_detected' }] },
+          state: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'failure_reason', op: 'eq', value: 'attack_detected' }] },
         },
-        { id: 'reviewed', texts: 'Reviewed', state: { filters: [{ field: 'review_status', op: 'in', value: ['approved', 'rejected'] }] } },
+        { id: 'reviewed', texts: 'Reviewed', state: { sort: [{ field: 'attempted_at', direction: 'desc' }], pageSize: AUTH_LOG_PAGE_SIZE, filters: [{ field: 'review_status', op: 'in', value: ['approved', 'rejected'] }] } },
       ],
     },
     show: {

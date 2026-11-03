@@ -38,6 +38,7 @@ export const evaluateNowFlow = {
       return { segmentId, conditions: record?.conditions };
     },
     onUnknown: { check: evaluationApplied },
+    reread: true,
   },
   then: {
     open: {
@@ -119,6 +120,7 @@ function addMembersFlow(name: string, target: SegmentTarget) {
         return { segmentId, subjectIds };
       },
       onUnknown: { check: addApplied(name) },
+      reread: true,
     },
     then: { notify: { params: { count: ref('result', 'count'), kept: ref('result', 'kept') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, typeof fields>;

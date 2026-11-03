@@ -44,6 +44,7 @@ export const endHoldFlow = {
     retry: 'after-auth-refresh',
     input: { holdId: ref('record', 'id') },
     onUnknown: { check: holdEndedApplied },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

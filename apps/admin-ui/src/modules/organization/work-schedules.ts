@@ -64,7 +64,7 @@ export const workSchedule = defineResource(WORK_SCHEDULE_RESOURCE, {
   views: {
     list: {
       columns: ['name', 'timezone', 'windows', 'description'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: ['name'] },
     },
   },

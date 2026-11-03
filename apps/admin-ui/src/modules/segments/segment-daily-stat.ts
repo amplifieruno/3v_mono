@@ -49,7 +49,7 @@ export const segmentDailyStat = defineResource(SEGMENT_DAILY_STAT_RESOURCE, {
   builtinActions: { edit: false, delete: false },
   fields: segmentDailyStatFields,
   views: {
-    list: { page: false, columns: ['day', 'member_count', 'added', 'removed'], defaultSort: [{ field: 'day', direction: 'desc' }] },
+    list: { page: false, columns: ['day', 'member_count', 'added', 'removed'], initial: { sort: [{ field: 'day', direction: 'desc' }] } },
     show: { page: false },
   },
 });

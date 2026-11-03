@@ -1,6 +1,5 @@
 import { type Rule, defineResource, relatedList } from '@burojs/core';
 import { NAV_ICONS, NAV_SECTIONS } from '../../app/nav';
-import { resourceByName } from '../../data/resource-by-name';
 import { NOTIFICATION_RULE_RESOURCE, NOTIFICATION_TEMPLATE_RESOURCE } from '../../data/resource-names';
 import { NOTIFICATION_RULE_COLUMNS } from './notification-rule';
 import { NOTIFICATION_TEMPLATE_CHECKS, notificationTemplateFields } from './notification-template-fields';
@@ -47,12 +46,12 @@ export const notificationTemplate = defineResource(NOTIFICATION_TEMPLATE_RESOURC
   views: {
     list: {
       columns: ['name', 'channel', 'locale', 'subject', 'is_system'],
-      defaultSort: [{ field: 'name', direction: 'asc' }],
+      initial: { sort: [{ field: 'name', direction: 'asc' }] },
       search: { fields: [{ field: 'name', op: 'contains' }, { field: 'subject', op: 'contains' }] },
       filters: { pinned: ['channel', 'locale'], fields: ['channel', 'locale', 'is_system'] },
       savedViews: [
-        { id: 'own', texts: 'Our templates', state: { filters: [{ field: 'is_system', op: 'eq', value: false }] } },
-        { id: 'system', texts: 'System templates', state: { filters: [{ field: 'is_system', op: 'eq', value: true }] } },
+        { id: 'own', texts: 'Our templates', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: false }] } },
+        { id: 'system', texts: 'System templates', state: { sort: [{ field: 'name', direction: 'asc' }], filters: [{ field: 'is_system', op: 'eq', value: true }] } },
       ],
     },
     show: {
@@ -63,7 +62,7 @@ export const notificationTemplate = defineResource(NOTIFICATION_TEMPLATE_RESOURC
             l.panel(['subject', 'body', l.grid(['created_at', 'updated_at'])], { key: 'wording', texts: 'Wording' }),
             l.panel(
               [
-                l.place(relatedList(resourceByName(NOTIFICATION_RULE_RESOURCE)), {
+                l.place(relatedList(NOTIFICATION_RULE_RESOURCE), {
                   key: 'template-rules',
                   props: {
                     where: [{ field: 'template_id', op: 'eq', value: l.ref('record', 'id') }],

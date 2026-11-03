@@ -1,4 +1,4 @@
-import type { ValidationIssue } from '@burojs/core';
+import type { IssueInput } from '@burojs/core';
 import { type FieldProblem, problemIssue } from '../../fields/field-issue';
 
 /** A problem of a webhook address, with how hard it stops the save. */
@@ -117,7 +117,7 @@ export function webhookUrlProblem(value: unknown): WebhookUrlProblem | null {
 }
 
 /** {@link webhookUrlProblem} as a field validator: the issue on the field, a warning not stopping the save. */
-export function checkWebhookUrl(value: unknown): Pick<ValidationIssue, 'code' | 'message' | 'path' | 'params' | 'severity'> | null {
+export function checkWebhookUrl(value: unknown): IssueInput | null {
   const problem = webhookUrlProblem(value);
   return problem === null ? null : { ...problemIssue(problem), severity: problem.severity };
 }

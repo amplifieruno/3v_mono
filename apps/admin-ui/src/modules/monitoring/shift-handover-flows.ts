@@ -107,6 +107,7 @@ export const acknowledgeHandoverFlow = {
   when: NOT_ACKNOWLEDGED,
   submit: {
     mutation: acknowledgeShiftHandover,
+    reread: true,
     // Idempotent: a repeat answers the acknowledged handover unchanged.
     retry: 'after-auth-refresh',
     input,
@@ -135,6 +136,7 @@ export const addOpenIncidentsFlow = {
   when: NOT_ACKNOWLEDGED,
   submit: {
     mutation: addOpenIncidentsToHandover,
+    reread: true,
     // Idempotent: a repeat skips what is linked already.
     retry: 'after-auth-refresh',
     input,

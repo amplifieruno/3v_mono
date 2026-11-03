@@ -13,13 +13,13 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "dependencies": {
-    "@burojs/context": "0.6.0",
-    "@burojs/core": "0.6.0",
-    "@burojs/field-types": "0.6.0",
-    "@burojs/hasura": "0.6.0",
-    "@burojs/i18n-core": "0.6.0",
-    "@burojs/react": "0.6.0",
-    "@burojs/ui-shadcn": "0.6.0",
+    "@burojs/context": "0.11.0",
+    "@burojs/core": "0.11.0",
+    "@burojs/field-types": "0.11.0",
+    "@burojs/hasura": "0.11.0",
+    "@burojs/i18n-core": "0.11.0",
+    "@burojs/react": "0.11.0",
+    "@burojs/ui-shadcn": "0.11.0",
     "@tanstack/react-query": "5.100.7",
     "hls.js": "1.7.3",
     "i18next": "^25.0.0",
@@ -31,8 +31,8 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@burojs/test-helpers": "0.6.0",
-    "@burojs/testing": "0.6.0",
+    "@burojs/test-helpers": "0.11.0",
+    "@burojs/testing": "0.11.0",
     "@eslint/js": "^9.25.0",
     "@playwright/test": "^1.49.0",
     "@tailwindcss/vite": "^4.2.0",

@@ -67,6 +67,7 @@ export function addToSegmentFlow(target: SegmentTarget) {
         return { segmentId, subjectIds: [subjectId] };
       },
       onUnknown: { check: addApplied(ADD_TO_SEGMENT_FLOW) },
+      reread: true,
     },
     then: { notify: { params: { count: ref('result', 'count'), kept: ref('result', 'kept') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, typeof fields>;
@@ -103,6 +104,7 @@ export function removeFromSegmentFlow(target: SegmentTarget) {
       retry: 'after-auth-refresh',
       input: ({ record }) => ({ segmentId: String(record?.segment_id ?? ''), subjectIds: [String(record?.[subject] ?? '')] }),
       onUnknown: { check: removeApplied(target) },
+      reread: true,
     },
     then: { notify: { params: { count: ref('result', 'count') } } },
   } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

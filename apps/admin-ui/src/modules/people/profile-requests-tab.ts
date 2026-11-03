@@ -1,5 +1,4 @@
 import { type Layout, relatedList } from '@burojs/core';
-import { resourceByName } from '../../data/resource-by-name';
 import { DSR_RESOURCE } from '../../data/resource-names';
 import type { profileFields } from './profile-fields';
 
@@ -11,7 +10,7 @@ import type { profileFields } from './profile-fields';
 export function profileRequestsPanel(l: Layout<typeof profileFields>) {
   return l.panel(
     [
-      l.place(relatedList(resourceByName(DSR_RESOURCE)), {
+      l.place(relatedList(DSR_RESOURCE), {
         key: 'profile-requests',
         props: {
           where: [{ field: 'profile_id', op: 'eq', value: l.ref('record', 'id') }],

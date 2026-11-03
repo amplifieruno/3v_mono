@@ -162,9 +162,9 @@ describe('refusals through the provider', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'permission-error',
-              message,
               details: [{ message, extensions: { code: 'permission-error' } }],
             } satisfies DataError),
           ),
@@ -180,7 +180,7 @@ describe('refusals through the provider', () => {
       await expect(refused('Check constraint violation. sandbox_location_binding', operation)).rejects.toMatchObject({
         kind: 'validation',
         code: 'sandbox_location_binding',
-        details: { issues: [{ message: { default: expect.stringMatching(/sandbox application binds no facilities or access points/) } }] },
+        issues: [{ message: { default: expect.stringMatching(/sandbox application binds no facilities or access points/) } }],
       });
     }
   });
@@ -188,7 +188,7 @@ describe('refusals through the provider', () => {
   it('should read a duplicate binding, a revoked status and a delete with history as sentences', async () => {
     await expect(
       refused('Uniqueness violation. duplicate key value violates unique constraint "client_application_segments_key"', 'bindSegment'),
-    ).rejects.toMatchObject({ details: { issues: [{ message: { default: expect.stringMatching(/already bound/) } }] } });
+    ).rejects.toMatchObject({ issues: [{ message: { default: expect.stringMatching(/already bound/) } }] });
     await expect(refused('Check constraint violation. client_application_revoked', 'setClientApplicationStatus')).rejects.toMatchObject({
       code: 'client_application_revoked',
     });
@@ -197,7 +197,7 @@ describe('refusals through the provider', () => {
         'Foreign key violation. update or delete on table "client_applications" violates foreign key constraint "authentication_attempts_application_fkey" on table "authentication_attempts"',
         'deleteClientApplication',
       ),
-    ).rejects.toMatchObject({ details: { issues: [{ message: { default: expect.stringMatching(/Revoke the application instead/) } }] } });
+    ).rejects.toMatchObject({ issues: [{ message: { default: expect.stringMatching(/Revoke the application instead/) } }] });
   });
 
   it('should name every face-auth operation in the refusal registry', () => {

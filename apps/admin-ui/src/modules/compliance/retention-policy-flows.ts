@@ -36,6 +36,7 @@ export const deactivatePolicyFlow = {
     retry: 'after-auth-refresh',
     input: { policyId: ref('record', 'id'), active: false },
     onUnknown: { check: fieldApplied(RETENTION_POLICY_RESOURCE, 'is_active', false) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -61,6 +62,7 @@ export const activatePolicyFlow = {
     retry: 'after-auth-refresh',
     input: { policyId: ref('record', 'id'), active: true },
     onUnknown: { check: fieldApplied(RETENTION_POLICY_RESOURCE, 'is_active', true) },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -99,6 +101,7 @@ export const deletePolicyFlow = {
     retry: 'never',
     input: { policyId: ref('record', 'id') },
     onUnknown: { check: policyDeleted },
+    reread: true,
   },
   then: { notify: true, redirect: { resource: RETENTION_POLICY_RESOURCE, action: 'list' } },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;

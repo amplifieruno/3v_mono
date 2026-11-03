@@ -37,7 +37,7 @@ export function AreaShapeInput(
     readOnly,
     meta,
     record,
-    form,
+    refValues,
     testIds,
     accessibility,
   } = props;
@@ -49,9 +49,9 @@ export function AreaShapeInput(
   const [dragging, setDragging] = React.useState<ShapeHandle | null>(null);
   const selfId = meta.selfIsArea ? idOf(record?.id) : null;
   const state = usePlanContext({
-    facilityId: idOf(form?.[meta.facilityField]) ?? idOf(record?.[meta.facilityField]),
+    facilityId: idOf(refValues[meta.facilityField]) ?? idOf(record?.[meta.facilityField]),
     selfId,
-    startId: idOf((form ?? record)?.[meta.areaField]),
+    startId: idOf(refValues[meta.areaField] ?? record?.[meta.areaField]),
   });
   const plan = state.status === 'ready' ? state.plan : null;
   React.useEffect(

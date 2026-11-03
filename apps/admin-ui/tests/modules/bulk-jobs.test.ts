@@ -206,7 +206,7 @@ describe('bulk job refusals', () => {
       defineDataProvider({
         mutations: {
           custom: defineMutationHandler(async () =>
-            Promise.reject({ kind: 'sent', code: 'constraint-violation', message, details: [{ message, extensions: { code: 'constraint-violation' } }] } satisfies DataError),
+            Promise.reject({ kind: 'protocol', applied: 'unknown', code: 'constraint-violation', details: [{ message, extensions: { code: 'constraint-violation' } }] } satisfies DataError),
           ),
         },
       }),

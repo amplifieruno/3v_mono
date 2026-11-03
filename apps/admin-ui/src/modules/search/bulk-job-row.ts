@@ -118,7 +118,7 @@ export const bulkJobRow = defineResource(BULK_JOB_ROW_RESOURCE, {
     list: {
       page: false,
       columns: [...PROFILE_ROW_COLUMNS],
-      defaultSort: [{ field: 'row_no', direction: 'asc' }],
+      initial: { sort: [{ field: 'row_no', direction: 'asc' }] },
     },
     show: {
       header: (l) => [l.grid(['bulk_job_id', 'row_no', 'outcome'])],

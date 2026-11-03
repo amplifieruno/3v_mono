@@ -35,7 +35,7 @@ const hold = (extra: Record<string, unknown> = {}) => ({ id: HOLD, name: 'Litiga
 const ruleDenies = (target: { kind: string; name: string }, record: Record<string, unknown>, rules = LEGAL_HOLD_RULES) =>
   rules.some((rule) => {
     const names = Array.isArray(rule.target.name) ? rule.target.name : [rule.target.name];
-    return rule.target.kind === target.kind && names.includes(target.name) && rule.when?.({ record } as RuleContext) === true;
+    return rule.target.kind === target.kind && names.includes(target.name) && typeof rule.when === 'function' && rule.when({ record } as RuleContext) === true;
   });
 
 const checkFires = (id: string, values: Record<string, unknown>, record?: Record<string, unknown>) => {
@@ -123,7 +123,7 @@ describe('refusals', () => {
   it('should read the timeline and target refusals as sentences', async () => {
     const refused = async (operation: string, message: string) => {
       const custom = defineMutationHandler(async () =>
-        Promise.reject({ kind: 'sent', code: 'permission-error', message, details: [{ message, extensions: { code: 'permission-error' } }] } satisfies DataError),
+        Promise.reject({ kind: 'protocol', applied: 'unknown', code: 'permission-error', details: [{ message, extensions: { code: 'permission-error' } }] } satisfies DataError),
       );
       const provider = withActionRefusals(defineDataProvider({ mutations: { custom } }), ACTION_REFUSALS);
       const call = { kind: 'custom', resource: COMPLIANCE_BINDING, operation, input: {} } as never;

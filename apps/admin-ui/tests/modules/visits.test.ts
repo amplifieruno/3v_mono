@@ -153,9 +153,9 @@ describe('refusals through the provider', () => {
         mutations: {
           custom: defineMutationHandler(async () =>
             Promise.reject({
-              kind: 'sent',
+              kind: 'protocol',
+              applied: 'unknown',
               code: 'permission-error',
-              message,
               details: [{ message, extensions: { code: 'permission-error' } }],
             } satisfies DataError),
           ),
@@ -171,7 +171,7 @@ describe('refusals through the provider', () => {
       await expect(provider.mutations?.custom?.(call(operation), {} as never)).rejects.toMatchObject({
         kind: 'validation',
         code: 'visit_invalid_transition',
-        details: { issues: [{ message: { default: expect.stringMatching(/status changed in the meantime.*Nothing was changed/) } }] },
+        issues: [{ message: { default: expect.stringMatching(/status changed in the meantime.*Nothing was changed/) } }],
       });
     }
   });

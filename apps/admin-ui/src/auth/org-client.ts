@@ -43,9 +43,9 @@ function isTransient(status: number): boolean {
 function toError(body: GraphQlBody, status: number): DataError {
   const first = body.errors?.[0];
   const code = first?.extensions?.code ?? (status === 401 ? 'unauthenticated' : isTransient(status) ? `http-${status}` : 'unknown');
-  const message = first?.message ?? 'The request failed.';
+  const text = first?.message ?? 'The request failed.';
   const kind = AUTH_CODES.has(code) || status === 401 ? 'auth' : isTransient(status) ? 'transport' : 'forbidden';
-  return { kind, code, message, status };
+  return { kind, code, message: { key: `errors.${code}`, default: text }, details: text, status };
 }
 
 /** The `exp - iat` lifetime of a JWT in ms, or `null` when the token carries none. */
@@ -78,7 +78,7 @@ function clientExpiry(token: OrgTokenRow, now: number): number {
   throw {
     kind: 'protocol',
     code: 'bad-org-token',
-    message: 'The organization token has no valid expiry.',
+    details: 'The organization token has no valid expiry.',
   } satisfies DataError;
 }
 
@@ -114,7 +114,7 @@ export function createOrgClient(options: OrgClientOptions): OrgClient {
         body: JSON.stringify({ query, variables }),
       });
     } catch (cause) {
-      throw { kind: 'transport', code: 'network', message: 'Cannot reach the server.', cause } satisfies DataError;
+      throw { kind: 'transport', code: 'network', message: { key: 'errors.network', default: 'Cannot reach the server.' }, cause } satisfies DataError;
     }
     let body: GraphQlBody = {};
     try {

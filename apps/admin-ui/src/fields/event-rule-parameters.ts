@@ -1,3 +1,4 @@
+import { ref } from '@burojs/core';
 import type { FieldTexts } from '@burojs/core';
 import { type FieldValidator, f } from '@burojs/field-types';
 import { problemIssue } from './field-issue';
@@ -40,6 +41,6 @@ export function eventRuleParameters(opts: EventRuleParametersOptions) {
   return {
     ...base,
     ui: { ...base.ui, input: EVENT_RULE_PARAMETERS_FIELD, display: EVENT_RULE_PARAMETERS_FIELD },
-    meta: { typeField: opts.typeField },
+    meta: { typeField: opts.typeField, reads: [ref('values', opts.typeField)] },
   };
 }

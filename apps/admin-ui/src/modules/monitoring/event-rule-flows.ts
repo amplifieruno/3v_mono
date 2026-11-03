@@ -53,6 +53,7 @@ export const editDraftFlow = {
     retry: 'after-auth-refresh',
     input: { ruleId: ref('record', 'id') },
     onUnknown: { check: draftExists },
+    reread: true,
   },
   then: {
     notify: { params: { version: ref('result', 'version') } },
@@ -85,6 +86,7 @@ export const publishFlow = {
     retry: 'never',
     input: { versionId: ref('record', 'id') },
     onUnknown: { check: fieldApplied(EVENT_RULE_VERSION_RESOURCE, 'status', 'published') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
@@ -110,6 +112,7 @@ export const rollbackFlow = {
     retry: 'never',
     input: { versionId: ref('record', 'id') },
     onUnknown: { check: fieldApplied(EVENT_RULE_VERSION_RESOURCE, 'status', 'published') },
+    reread: true,
   },
   then: { notify: true },
 } satisfies FlowConfig<unknown, Record<never, never>, Record<never, never>>;
