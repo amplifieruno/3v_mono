@@ -16,6 +16,10 @@ export interface DetectionOverlayProps {
   readonly boxes: readonly DetectionMessage[];
   readonly name: string;
   readonly t: LiveCameraT;
+  /** The video fills its box and is cropped (`object-cover`), as on the live wall's tiles. */
+  readonly cover?: boolean;
+  /** Label size as a share of the frame height: larger on the wall's small tiles. */
+  readonly labelShare?: number;
 }
 
 /**
@@ -23,16 +27,22 @@ export interface DetectionOverlayProps {
  * an SVG with the frame's size laid over the video (both letterboxed the same way), labelled,
  * and fading out over the last half second of its two ({@link BOX_FADE}).
  */
-export function DetectionOverlay({ boxes, name, t }: DetectionOverlayProps): React.ReactElement | null {
+export function DetectionOverlay({
+  boxes,
+  name,
+  t,
+  cover = false,
+  labelShare = 1 / 28,
+}: DetectionOverlayProps): React.ReactElement | null {
   const frame = boxes.at(-1);
   if (!frame) return null;
   const width = frame.frameWidth;
   const height = frame.frameHeight;
-  const font = Math.max(12, Math.round(height / 28));
+  const font = Math.max(12, Math.round(height * labelShare));
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="xMidYMid meet"
+      preserveAspectRatio={cover ? 'xMidYMid slice' : 'xMidYMid meet'}
       className="pointer-events-none absolute inset-0 size-full"
       role="img"
       aria-label={t('overlay', { params: { name } })}
@@ -44,7 +54,7 @@ export function DetectionOverlay({ boxes, name, t }: DetectionOverlayProps): Rea
         const x = message.bbox.x * sx;
         const y = message.bbox.y * sy;
         const kind = boxKindOf(message);
-        const label = boxLabel(message, t);
+        const label = boxLabel(message, t, cover);
         const above = y - font * 0.4;
         return (
           <g

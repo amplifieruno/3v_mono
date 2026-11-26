@@ -99,7 +99,7 @@ describe('seed facility plan', () => {
     }
   });
 
-  it('should map the four stream-server streams to Nova cameras without credentials', () => {
+  it('should map the nine stream-server streams to Nova cameras without credentials', () => {
     const streams = SEED_DEVICES.nova.filter((d) => d.stream).map((d) => d.stream);
     expect([...streams].sort()).toEqual([...STREAM_IDS]);
     expect(SEED_DEVICES.riverside.every((d) => !d.stream)).toBe(true);

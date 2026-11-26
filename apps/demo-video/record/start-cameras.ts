@@ -5,10 +5,15 @@ const CAMERAS = [
   'Server Room Camera',
   'Lobby Camera',
   'Main Entrance Camera',
+  'Reception Camera',
+  'Elevator Hall Camera',
+  'Parking P-1 Camera',
+  'Floor 12 Stairwell Camera',
+  'Floor 12 Corridor Camera',
 ];
 const action = process.argv[2] === 'stop' ? 'Stop recognition' : 'Start recognition';
 
-/** Starts (or, with `stop`, stops) recognition on the four stream cameras through the console. */
+/** Starts (or, with `stop`, stops) recognition on the nine stream cameras through the console. */
 const { browser, page } = await openSession();
 try {
   for (const camera of CAMERAS) {

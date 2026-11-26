@@ -73,6 +73,8 @@ export const deviceFields = {
     to: AREA_RESOURCE,
     nullable: true,
     open: 'page',
+    // The Hasura relationship, so a list can read the area's name with the device (the live wall).
+    providerOptions: { relationship: 'area' },
     candidates: [...sameFacility],
     texts: {
       label: 'Area',

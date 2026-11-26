@@ -1,13 +1,15 @@
 {
   "voice": "af_heart",
   "speed": 0.96,
-  "pronounce": { "ITAP": "I-T-A-P" },
+  "pronounce": {
+    "ITAP": "I-T-A-P"
+  },
   "lines": {
     "title": "This is ITAP: identity, tracking and access, in one platform. Let's spend a day at Nova Tower.",
     "overview-workspace": "Operators work from one screen. Every camera in the building is live, right next to the events it raises.",
     "overview-dashboard": "The dashboard sums up the day: who is on site right now, who came in, and what needs attention.",
     "recognition-camera": "Each camera recognises faces as people walk past. A known person is named on screen, live.",
-    "recognition-wall": "The live wall brings every camera together, so the whole building can be watched from one place.",
+    "recognition-wall": "The live wall is the guard's screen: every camera at once, with alerts beside them, and the camera that needs attention lights up.",
     "people-faces": "Every face the cameras see becomes an identity, known or not.",
     "people-photos": "Each identity keeps its captures from every camera, so you know what a person looked like, and where.",
     "people-timeline": "And their whole day reads as one timeline: when they arrived, which doors they used, and every zone along the way.",

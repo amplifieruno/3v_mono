@@ -78,7 +78,7 @@ export const SCENES: Scene[] = [
     title: 'Every camera knows who it sees',
     beats: [
       beat('recognition-camera', { at: 'named-box', text: 'Faces matched live' }),
-      beat('recognition-wall', { at: 'wall', text: 'Every camera, live' }),
+      beat('recognition-wall', { at: 'wall', text: 'Alert on camera' }),
     ],
   },
   {

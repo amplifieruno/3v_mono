@@ -117,7 +117,7 @@ Callout text is a starting point: the final wording must match what the footage 
 - Replace `entrance.mp4` with a real entrance clip with visible faces.
 - Optionally, give the erasure request a subject with history, if that stays cheap.
 
-**Recording-day checklist:** `prep-report.md` §2. Re-seed the same day, sign in, start recognition on all four cameras, wait about 2 minutes, record, stop recognition. Record ids change on every re-seed, so scripts must find records by name (for example "Thomas Kirby", "Blacklist match", "Lobby (ground floor)") and never by id.
+**Recording-day checklist:** `prep-report.md` §2. Re-seed the same day, sign in, start recognition on all nine cameras, wait about 2 minutes, record, stop recognition. Record ids change on every re-seed, so scripts must find records by name (for example "Thomas Kirby", "Blacklist match", "Lobby (ground floor)") and never by id.
 
 **Open issues seen in the after-screens. They must be fixed or kept out of frame:**
 1. **Some face boxes on the live wall show codes ("IDENTITY-00162") instead of names. This is intended, not a label bug.** The box shows the profile name when the face matched a person with a profile (`boxLabel` in `apps/admin-ui/src/blocks/live-camera/detection-label.ts`). Otherwise it shows the code of an unknown identity. The codes in the after-screens are fresh unknown identities: an angled face or a face under a hard hat failed to match the enrolled person (the same cause as issue 3). For scene 2, record long enough and cut to the moments when named boxes ("Isabella Donovan", "Emma Dawson", "Thomas Kirby") are on screen.

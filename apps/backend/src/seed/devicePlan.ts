@@ -39,6 +39,7 @@ export type DeviceSpec = {
 const LOBBY = 'Nova Tower/Lobby';
 const P1 = 'Nova Tower/Parking/Parking Level P-1';
 const FLOOR3 = `Nova Tower/${floorName(3)}`;
+const FLOOR12 = `Nova Tower/${floorName(12)}`;
 const FLOOR24 = `Nova Tower/${floorName(24)}`;
 
 const TURNSTILE_X = [480, 560, 640, 720];
@@ -117,6 +118,54 @@ const NOVA_DEVICES: DeviceSpec[] = [
     coverage: { center: [1020, 170], radius: 140 },
     ip: '10.10.0.13',
     accessPoints: [{ name: 'Loading Dock Door', role: 'camera' }],
+  },
+  // The rest of the live wall: one stream each, no access point (they watch, the readers decide).
+  {
+    ...camera,
+    name: 'Reception Camera',
+    stream: 'reception',
+    area: `${LOBBY}/Reception`,
+    position: [90, 490],
+    coverage: { center: [220, 570], radius: 130 },
+    ip: '10.10.0.14',
+  },
+  {
+    ...camera,
+    name: 'Elevator Hall Camera',
+    stream: 'elevator',
+    area: `${LOBBY}/Elevator Hall`,
+    position: [600, 110],
+    coverage: { center: [600, 230], radius: 140 },
+    ip: '10.10.0.15',
+  },
+  {
+    ...camera,
+    name: 'Parking P-1 Camera',
+    stream: 'parking',
+    area: P1,
+    covers: [`${P1}/Row A`],
+    position: [580, 330],
+    coverage: { center: [580, 220], radius: 150 },
+    ip: '10.10.90.11',
+  },
+  {
+    ...camera,
+    name: 'Floor 12 Stairwell Camera',
+    stream: 'stairs',
+    area: `${FLOOR12}/Elevator Lobby 12`,
+    position: [520, 320],
+    coverage: { center: [600, 400], radius: 90 },
+    ip: '10.10.12.11',
+  },
+  {
+    ...camera,
+    // The floor's open corridor, not the suite: no restricted-area alert for every passer-by.
+    name: 'Floor 12 Corridor Camera',
+    stream: 'corridor',
+    area: FLOOR12,
+    position: [480, 520],
+    coverage: { center: [600, 560], radius: 120 },
+    ip: '10.10.12.21',
   },
   {
     // Meeting-room camera without a stream (never probed live): the history shows it overfilled once.
@@ -232,7 +281,7 @@ export const SEED_ACCESS_POINTS: Record<OrgKey, AccessPointSpec[]> = { nova: NOV
 export const SEED_DEVICES: Record<OrgKey, DeviceSpec[]> = { nova: NOVA_DEVICES, riverside: RIVERSIDE_DEVICES };
 
 /** Stream id of each camera video of the stream-server, by the video file name (`warehouse.mp4` -> `warehouse`). */
-export const STREAM_IDS = ['entrance', 'lobby', 'serverroom', 'warehouse'] as const;
+export const STREAM_IDS = ['corridor', 'elevator', 'entrance', 'lobby', 'parking', 'reception', 'serverroom', 'stairs', 'warehouse'] as const;
 
 export function streamUrl(stream: string): string {
   return `rtsp://mediamtx:8554/${stream}`;

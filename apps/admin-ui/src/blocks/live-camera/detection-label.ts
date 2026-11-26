@@ -27,9 +27,14 @@ export const BOX_FILL: Readonly<Record<BoxKind, string>> = {
   unidentified: 'fill-white',
 };
 
-/** The label of a box: the profile name, "New", the identity code, or an unidentified face. */
-export function boxLabel(message: DetectionMessage, t: LiveCameraT): string {
+/**
+ * The label of a box: the profile name, "New", the identity code, or an unidentified face. `short`
+ * (the wall's small tiles) keeps only the code's number (`IDENTITY-00165` -> `#00165`).
+ */
+export function boxLabel(message: DetectionMessage, t: LiveCameraT, short = false): string {
   if (message.profileName) return message.profileName;
   if (message.isNewIdentity) return t('newIdentity');
-  return message.identityCode ?? t('unidentified');
+  if (!message.identityCode) return t('unidentified');
+  const number = short ? /(\d+)$/.exec(message.identityCode)?.[1] : undefined;
+  return number ? `#${number}` : message.identityCode;
 }

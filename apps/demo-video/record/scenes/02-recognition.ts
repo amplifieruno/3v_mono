@@ -49,21 +49,38 @@ export const recognition: RecordedScene = {
       id: 'wall',
       async prepare(page) {
         await open(page, '/live-wall');
+        // Every tile playing: as many LIVE marks as tiles (a stream that hiccups is tried again within seconds).
         await page
           .waitForFunction(
-            () => (document.body.innerText.match(/Stream live/g) ?? []).length >= 4,
-            undefined,
-            {
-              timeout: 90_000,
+            () => {
+              const tiles = [...document.querySelectorAll('[data-testid="wall-tile"]')];
+              return tiles.length >= 9 && tiles.every((t) => /\bLive\b/.test(t.textContent ?? ''));
             },
+            undefined,
+            { timeout: 120_000, polling: 500 },
           )
           .catch(() => process.stdout.write('  recognition: not every wall stream went live\n'));
         await settle(page, 800);
       },
       async record(page, m) {
         await page.waitForTimeout(1500);
-        await m.shot('wall', page.getByText('Main Entrance Camera').first());
-        await page.waitForTimeout(5000);
+        // Hold until a camera lights up with a fresh alert (restricted areas raise them every minute or
+        // so), so its red ring lasts the whole beat.
+        await m.wait('alert', () =>
+          page
+            .waitForFunction(
+              () =>
+                [...document.querySelectorAll('[data-alert-at]')].some(
+                  (t) => Date.now() - Number(t.getAttribute('data-alert-at')) < 8000,
+                ),
+              undefined,
+              { timeout: 120_000, polling: 250 },
+            )
+            .catch(() => process.stdout.write('  recognition: no fresh alert in 2 min\n')),
+        );
+        const lit = page.locator('[data-alert="true"]').first();
+        await m.shot('wall', (await lit.count()) > 0 ? lit : page.getByTestId('wall-tile').first());
+        await page.waitForTimeout(6000);
       },
     },
   ],

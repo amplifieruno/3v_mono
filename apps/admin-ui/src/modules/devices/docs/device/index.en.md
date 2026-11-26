@@ -93,7 +93,7 @@ new and unidentified.
 
 - A camera whose stream does not answer shows **Stream unavailable** instead
   of the picture, with **Try again**; the view also tries again by itself
-  every 20 seconds.
+  every 5 seconds.
 - Detections arrive over a live connection signed with your organization
   session. When the session is renewed the connection is reopened by itself;
   when you switch organization the old connection is closed at once, so no
@@ -106,10 +106,24 @@ new and unidentified.
 
 ## Live wall
 
-**Devices → Live wall** shows every camera running recognition in the facility
-chosen in the sidebar (all facilities when none is chosen), each live as on its
-own Live tab, with its name linking to the camera. Start recognition on a
-camera to put it on the wall.
+**Devices → Live wall** is the monitor a guard keeps open. It shows every
+camera running recognition in the facility chosen in the sidebar (all
+facilities when none is chosen), one tile per camera. The picture fills the
+tile, with the recognised faces drawn on it: a known person by name, a
+returning stranger by the number of their identity (`#00165`). Each tile marks
+the stream LIVE, counts the faces in view, and names the camera (linked to its
+page) and the area it watches. Above the tiles: how many cameras are live and
+the time.
+
+**Alerts, last hour** beside the tiles lists what a guard must react to, newest
+first: watch-list and blacklist matches, VIP arrivals, entries into restricted
+areas, tailgating, after-hours presence, loitering, overcrowding and cameras
+going offline. Each alert shows the person’s photo, the time and the
+camera, and opens its event. When a camera sees a high or critical alert, its
+tile is ringed in red and names the alert for 20 seconds.
+
+Start recognition on a camera to put it on the wall. The operator workspace
+shows the same tiles without the alert list, next to its own events panel.
 
 ## Position and coverage
 

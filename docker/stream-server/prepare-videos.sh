@@ -25,9 +25,10 @@ for video in "${mp4_files[@]}"; do
     -show_entries stream=r_frame_rate \
     -of default=noprint_wrappers=1:nokey=1 "$video")
 
-  # HLS segments: 1-second .ts files
-  # Re-encode with keyframe every 1s to ensure exact segment boundaries
+  # HLS segments: 1-second .ts files, at most 720p (a browser decodes nine of them at once on the live wall;
+  # recognition reads the full-size frames below). Re-encode with a keyframe every 1s for exact segment boundaries.
   ffmpeg -i "$video" \
+    -vf "scale=-2:'min(720,ih)'" \
     -c:v libx264 -preset ultrafast -crf 23 \
     -g 24 -keyint_min 24 -sc_threshold 0 \
     -c:a aac -b:a 128k \

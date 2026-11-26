@@ -27,7 +27,7 @@ The stack is the dev stack (`make dev-compose`), and the console runs from sourc
    The model files go into `apps/demo-video/.cache/kokoro/`, from the kokoro-onnx `model-files-v1.0` release: `kokoro-v1.0.onnx` and `voices-v1.0.bin`.
 3. **Re-seed the demo data** during the building's working day, after about 10:00 Moscow time, so that "today" has visitors (about 7 minutes):
    `pnpm seed --reset` (from the repo root).
-4. **Start recognition** on the four stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
+4. **Start recognition** on the nine stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
    `pnpm --filter demo-video cameras`
 5. **Record every beat** (about 6 minutes), soon after step 4, before unknown visitors pile up on the floor plans:
    `pnpm --filter demo-video record`. Only some: `pnpm --filter demo-video record places access-trace`.

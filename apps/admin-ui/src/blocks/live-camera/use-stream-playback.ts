@@ -11,7 +11,7 @@ export const STREAM_START_TIMEOUT_MS = 15_000;
 export const STREAM_STALL_MS = 8_000;
 
 /** An unavailable stream is tried again after this long (a camera back online reappears). */
-export const STREAM_RETRY_MS = 20_000;
+export const STREAM_RETRY_MS = 5_000;
 
 export interface StreamPlaybackResult {
   readonly videoRef: React.RefObject<HTMLVideoElement | null>;

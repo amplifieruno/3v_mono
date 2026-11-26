@@ -8,7 +8,7 @@ export const LIVE_CAMERA_TEXTS = {
   loading: 'Connecting to the stream…',
   noStream: 'No stream address is set for this camera.',
   unavailable: 'Stream unavailable',
-  unavailableHint: 'The camera’s stream does not answer. It is tried again every 20 seconds.',
+  unavailableHint: 'The camera’s stream does not answer. It is tried again every 5 seconds.',
   retry: 'Try again',
   stream_loading: 'Stream connecting',
   stream_playing: 'Stream live',

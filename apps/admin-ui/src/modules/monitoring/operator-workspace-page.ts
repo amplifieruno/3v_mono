@@ -34,7 +34,7 @@ export const operatorWorkspacePage = defineCustomPage({
     const content = (panel: WorkspacePanel, key: string) => {
       switch (panel) {
         case 'cameras':
-          return [l.place(liveWallBlock, { key: `${key}-wall` })];
+          return [l.place(liveWallBlock, { key: `${key}-wall`, props: { alerts: false } })];
         case 'incidents':
           return [
             l.place(relatedList(incident), {
