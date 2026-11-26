@@ -1,46 +1,49 @@
 # ITAP demo video
 
-A short product video of the ITAP console. The console is recorded live with Playwright, and the recording is edited by a Remotion composition. The edit is code, so one scene or one line of text can change without redoing the rest.
+A narrated product video of the ITAP console. Playwright records the live console in short beats. A local voice model reads the narration, and a Remotion composition cuts the beats together under the voice. The edit is code: one line of narration, one beat or one title can change without redoing the rest.
 
 - **Design:** `tasks/demo-video/design.md` (intent, storyboard, style, content rules).
-- **Plan:** `tasks/demo-video/plan.md`.
 
 ## How it fits together
 
 | Part | Where | What it does |
 |---|---|---|
-| Recording | `record/` | One Playwright script per scene (`record/scenes/*.ts`). Each signs in once, opens the scene's start page, and records a screencast to `public/clips/<scene>.mp4`. Alongside it, it writes `<scene>.timeline.json`: clicks, waits and named shots with the boxes of what they show. |
-| Scene list | `src/scenes.ts` | Chapter titles, callout texts and seconds per scene. All on-screen copy lives here and on the title and outro cards. |
-| Edit math | `src/timeline.ts` | Speeds waits up (6x, never more than 8 s of output) and fits each clip into its scene. It also moves the camera: a gentle push-in on clicks and a closer hold on focus marks. |
-| Composition | `src/components/` | Draws the blueprint grid, title card, chapter cards, the footage panel with cursor and callouts, and the outro. |
+| Narration | `src/narration.json` | One line per beat, plus `title` and `outro`, with the voice, its speed and a pronunciation map (`ITAP` is read letter by letter). |
+| Voice | `voice/tts.py` | Reads every line with Kokoro-82M (Apache-2.0, runs locally on the CPU) into `public/voice/<id>.wav`. It also writes `manifest.json` with each line's length and the timing of every sentence. The subtitles come from that timing. |
+| Recording | `record/` | One script per chapter (`record/scenes/*.ts`). Each beat is prepared off camera (navigation, tabs, scrolling), then only its visible part is recorded to `public/clips/<scene>-<beat>.mp4`, with `<scene>-<beat>.timeline.json` (focus marks, waits, named shots with element boxes). The page is 1440x810 at 4/3 density, so the 1920x1080 footage carries large, sharp UI text. A beat keeps filming until it covers its narration line. |
+| Storyboard | `src/scenes.ts` | Chapters, their beats and the callout tags. |
+| Edit math | `src/timeline.ts`, `src/voice.ts`, `src/durations.ts` | Speeds waits up (6x, at most 8 s of output) and moves the camera only on focus marks (a slow pull-in). A beat lasts its footage, or its line plus a lead-in and a tail if that is longer. |
+| Composition | `src/components/` | The blueprint grid, title and chapter cards, chapter band with the progress rail, the footage panel with callouts, the narration, the subtitles and the outro. |
 | Content rules | `src/content-rules.ts` | Words that must never appear on screen (technology names). `pnpm test` enforces them. |
 
 ## Make a new cut
 
-The stack is the dev stack (`make dev-compose`). Recording wipes and rebuilds the demo data.
+The stack is the dev stack (`make dev-compose`), and the console runs from source (`pnpm --filter admin-ui dev`, http://127.0.0.1:5173).
 
-1. **Re-seed the demo data** on the day of the recording, after about 09:00 Moscow time so "today" has visitors (about 7 minutes):
-   `pnpm seed --reset` (from the repo root)
-2. **Start recognition** on the four stream cameras, then wait about 2 minutes, until known faces are named and the live incident is open:
+1. **Voice** (about a minute; downloads the model into `.cache/` the first time):
+   `pnpm --filter demo-video voice`. To redo only some lines, run `uv run voice/tts.py overview-dashboard outro` in `apps/demo-video`.
+   The model files go into `apps/demo-video/.cache/kokoro/`, from the kokoro-onnx `model-files-v1.0` release: `kokoro-v1.0.onnx` and `voices-v1.0.bin`.
+2. **Re-seed the demo data** during the building's working day, after about 10:00 Moscow time, so that "today" has visitors (about 7 minutes):
+   `pnpm seed --reset` (from the repo root).
+3. **Start recognition** on the four stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
    `pnpm --filter demo-video cameras`
-3. **Record every scene** (about 5 minutes). Record soon after step 2: the longer the cameras run, the more unknown visitors pile up on the floor plans.
-   `pnpm --filter demo-video record`
-   To record only some scenes: `pnpm --filter demo-video record places access`.
-4. **Stop recognition:**
-   `pnpm --filter demo-video cameras stop`
-5. **Preview** in Remotion Studio, where you can scrub every scene:
-   `pnpm --filter demo-video studio`
-6. **Render** the master (CRF 18), then the light copy for messengers and a contact sheet to review:
+4. **Record every beat** (about 6 minutes), soon after step 3, before unknown visitors pile up on the floor plans:
+   `pnpm --filter demo-video record`. Only some: `pnpm --filter demo-video record places access-trace`.
+5. **Stop recognition:** `pnpm --filter demo-video cameras stop`
+6. **Preview:** `pnpm --filter demo-video studio`
+7. **Render** the master, then a light copy for messengers and a contact sheet to review:
    `pnpm --filter demo-video render && pnpm --filter demo-video render:light && pnpm --filter demo-video sheet`
-   The output goes to `out/`. The `out/` folder and `public/clips/` are git-ignored.
+
+Output goes to `out/`. The folders `out/`, `public/clips/`, `public/voice/` and `.cache/` are git-ignored.
 
 ## Common changes
 
-- **Reword a title or callout:** edit `src/scenes.ts`, then run `pnpm --filter demo-video test`. The test rejects technology words and checks that the total stays between 120 and 150 s.
-- **Make a scene longer or shorter:** change its `seconds`. The footage is sped up to fit, or holds its last frame.
-- **Change what a scene shows:** edit `record/scenes/<nn>-<scene>.ts` and re-record that scene. Scripts find records by their visible names, never by id, so they survive a re-seed.
-- **Point a callout somewhere else:** pass a locator to `m.shot(name, locator)` in the script. The callout follows that element's box.
+- **Reword narration:** edit `src/narration.json`, re-voice that line, and re-record its beat if the new line is longer than the footage. If it is shorter, the beat simply ends sooner.
+- **Reword a title or callout:** edit `src/scenes.ts`, then run `pnpm --filter demo-video test`. The test rejects technology words.
+- **Change what a beat shows:** edit `record/scenes/<nn>-<scene>.ts` and re-record that beat. Scripts find records by their visible names, never by id, so they survive a re-seed.
+- **Add music:** put a licensed track at `public/audio/music.mp3`. It plays quietly under the narration and fades in and out. No music ships with the repo.
 
-## Licence note
+## Licence notes
 
-Remotion is free for individuals and for companies of up to 3 people. This video is made under that free licence. If a larger company renders or develops this video itself, it needs a Remotion company licence ($25 per month per seat, see remotion.pro/license).
+- **Remotion** is free for individuals and for companies of up to 3 people, and this video is made under that free licence. If a larger company renders or develops this video itself, it needs a Remotion company licence ($25 per month per seat, see remotion.pro/license).
+- **Kokoro-82M** model and voices are Apache-2.0, so the narration can be used commercially.

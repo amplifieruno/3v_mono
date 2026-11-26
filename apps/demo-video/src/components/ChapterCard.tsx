@@ -2,16 +2,18 @@ import type { ConsoleScene } from '../scenes';
 import { C, FONT } from '../style';
 import { Corners } from './Corners';
 import { Grid } from './Grid';
+import { ProgressRail } from './ProgressRail';
 import { Rise } from './Rise';
 
 interface ChapterCardProps {
   scene: ConsoleScene;
+  chapters: number;
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 /** Full-frame chapter opener: `[02] RECOGNITION` and the chapter title. */
-export const ChapterCard = ({ scene }: ChapterCardProps): React.ReactElement => (
+export const ChapterCard = ({ scene, chapters }: ChapterCardProps): React.ReactElement => (
   <Grid>
     <Corners delay={0.2} />
     <div
@@ -47,6 +49,9 @@ export const ChapterCard = ({ scene }: ChapterCardProps): React.ReactElement => 
         }}
       >
         {scene.title}
+      </Rise>
+      <Rise delay={0.3} style={{ marginTop: 56 }}>
+        <ProgressRail chapter={scene.chapter} total={chapters} progress={0} />
       </Rise>
     </div>
   </Grid>

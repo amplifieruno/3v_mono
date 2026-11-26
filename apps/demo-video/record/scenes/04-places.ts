@@ -1,6 +1,6 @@
 import type { RecordedScene } from '../scene';
 import { open } from '../session';
-import { navTo, openRow, scroll, tab } from '../ui';
+import { centerPlan, openRow, tab } from '../ui';
 
 /** Scene 4: the facility's area tree, the lobby plan with live occupancy, then another floor. */
 export const places: RecordedScene = {
@@ -22,9 +22,9 @@ export const places: RecordedScene = {
     {
       id: 'lobby',
       async prepare(page) {
-        await navTo(page, 'Floor plans');
+        await open(page, '/floor-plans');
         await openRow(page, ['Lobby (ground floor)']);
-        await scroll(page, undefined, 280, 400);
+        await centerPlan(page, 'Elevator Hall');
       },
       async record(page, m) {
         await page.waitForTimeout(1500);
@@ -38,9 +38,9 @@ export const places: RecordedScene = {
     {
       id: 'floor12',
       async prepare(page) {
-        await navTo(page, 'Floor plans');
+        await open(page, '/floor-plans');
         await openRow(page, ['Floor 12']);
-        await scroll(page, undefined, 280, 400);
+        await centerPlan(page, 'Open Office 1201');
       },
       async record(page) {
         await page.waitForTimeout(4500);

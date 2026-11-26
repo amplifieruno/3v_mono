@@ -82,6 +82,11 @@ export class Marks {
     this.marks.push({ t: this.now(), type: 'shot', name, box });
   }
 
+  /** The timeline so far, as if the recording stopped now. */
+  draft(): Timeline {
+    return { clip: this.scene, duration: this.now(), marks: [...this.marks] };
+  }
+
   async save(dir: string, duration: number): Promise<Timeline> {
     const timeline: Timeline = {
       clip: this.scene,

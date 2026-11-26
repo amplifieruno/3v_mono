@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { Marks } from './marks';
@@ -13,6 +13,7 @@ import { incidents } from './scenes/06-incidents';
 import { analytics } from './scenes/07-analytics';
 import { privacy } from './scenes/08-privacy';
 import { openSession } from './session';
+import { holdSeconds, type VoiceManifest } from '../src/voice';
 
 const ALL: RecordedScene[] = [
   overview,
@@ -26,6 +27,14 @@ const ALL: RecordedScene[] = [
 ];
 const OUT = resolve(import.meta.dirname, '../public/clips');
 const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
+const MANIFEST = resolve(import.meta.dirname, '../public/voice/manifest.json');
+
+/** The narration timing (`uv run voice/tts.py`); without it beats keep their scripted length. */
+function voiceManifest(): VoiceManifest {
+  if (existsSync(MANIFEST)) return JSON.parse(readFileSync(MANIFEST, 'utf8')) as VoiceManifest;
+  process.stdout.write('no voice/manifest.json: beats are not held for narration\n');
+  return {};
+}
 
 function probeSeconds(file: string): number {
   const out = spawnSync(FFMPEG, ['-i', file, '-f', 'null', '-'], { encoding: 'utf8' }).stderr;
@@ -35,7 +44,12 @@ function probeSeconds(file: string): number {
 }
 
 /** Prepares a beat off camera, then records only its visible part as `<scene>-<beat>.mp4` plus a timeline. */
-async function recordBeat(page: Page, clip: string, beat: Beat): Promise<void> {
+async function recordBeat(
+  page: Page,
+  clip: string,
+  beat: Beat,
+  voice: VoiceManifest,
+): Promise<void> {
   await beat.prepare(page);
   const webm = join(OUT, `${clip}.webm`);
   const marks = new Marks(clip);
@@ -47,6 +61,9 @@ async function recordBeat(page: Page, clip: string, beat: Beat): Promise<void> {
   });
   marks.start();
   await beat.record(page, marks);
+  // Keep filming the settled screen until the footage covers the beat's narration.
+  const hold = holdSeconds(marks.draft(), voice[clip]);
+  if (hold > 0) await page.waitForTimeout(Math.ceil((hold + 0.3) * 1000));
   await page.screencast.stop();
   const mp4 = join(OUT, `${clip}.mp4`);
   execFileSync(FFMPEG, [
@@ -85,9 +102,10 @@ async function main(): Promise<void> {
       `nothing matches ${wanted.join(' ')}; known: ${jobs.map((j) => j.clip).join(', ')}`,
     );
   mkdirSync(OUT, { recursive: true });
+  const voice = voiceManifest();
   const { browser, page } = await openSession();
   try {
-    for (const job of picked) await recordBeat(page, job.clip, job.beat);
+    for (const job of picked) await recordBeat(page, job.clip, job.beat, voice);
   } finally {
     await browser.close();
   }

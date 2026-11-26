@@ -1,36 +1,44 @@
 import type { ConsoleScene } from '../scenes';
 import { C, FONT } from '../style';
-import { PANEL } from '../layout';
+import { BAND_Y, PANEL } from '../layout';
+import { ProgressRail } from './ProgressRail';
 
 interface TitleBandProps {
   scene: ConsoleScene;
+  chapters: number;
+  /** How far through this chapter the film is, 0..1. */
+  progress: number;
 }
 
-/** The small chapter reminder above the footage. */
-export const TitleBand = ({ scene }: TitleBandProps): React.ReactElement => (
+/** The chapter reminder above the footage, with the film's progress on the right. */
+export const TitleBand = ({ scene, chapters, progress }: TitleBandProps): React.ReactElement => (
   <div
     style={{
       position: 'absolute',
       left: PANEL.x,
-      top: 48,
+      width: PANEL.w,
+      top: BAND_Y,
       display: 'flex',
-      alignItems: 'baseline',
-      gap: 22,
+      alignItems: 'center',
+      justifyContent: 'space-between',
     }}
   >
-    <span style={{ fontFamily: FONT.mono, fontSize: 22, color: C.accent, fontWeight: 500 }}>
-      [{String(scene.chapter).padStart(2, '0')}] {scene.label}
-    </span>
-    <span
-      style={{
-        fontFamily: FONT.ui,
-        fontSize: 34,
-        fontWeight: 600,
-        letterSpacing: '-0.03em',
-        color: C.ink,
-      }}
-    >
-      {scene.title}
-    </span>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 20 }}>
+      <span style={{ fontFamily: FONT.mono, fontSize: 20, color: C.accent, fontWeight: 500 }}>
+        [{String(scene.chapter).padStart(2, '0')}] {scene.label}
+      </span>
+      <span
+        style={{
+          fontFamily: FONT.ui,
+          fontSize: 30,
+          fontWeight: 600,
+          letterSpacing: '-0.03em',
+          color: C.ink,
+        }}
+      >
+        {scene.title}
+      </span>
+    </div>
+    <ProgressRail chapter={scene.chapter} total={chapters} progress={progress} />
   </div>
 );

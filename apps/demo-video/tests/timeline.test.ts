@@ -107,9 +107,9 @@ test('a click never moves the camera', () => {
 
 test('a focus pulls in slowly and stays inside the page', () => {
   const t = tl([{ t: 2, type: 'focus', box: { x: 1800, y: 1000, w: 100, h: 40 } }]);
-  expect(cameraAt(t, 2.2).scale).toBeLessThan(1.15);
+  expect(cameraAt(t, 2.2).scale).toBeLessThan(1.2);
   const c = cameraAt(t, 4);
-  expect(c.scale).toBeCloseTo(1.25, 2);
+  expect(c.scale).toBeCloseTo(1.33, 2);
   expect(c.cx).toBeLessThanOrEqual(1920 - 1920 / c.scale / 2 + 0.001);
   expect(c.cy).toBeLessThanOrEqual(1080 - 1080 / c.scale / 2 + 0.001);
 });
@@ -222,4 +222,16 @@ test('onView hides points the camera does not show', () => {
   expect(onView(cam, { x: 960, y: 540 })).toEqual({ x: 960, y: 540 });
   expect(onView(cam, { x: 100, y: 540 })).toBeUndefined();
   expect(onView({ scale: 1, cx: 960, cy: 540 }, { x: 960, y: 1200 })).toBeUndefined();
+});
+
+const left = (c: { scale: number; cx: number }): number => c.cx - 1920 / c.scale / 2;
+
+test('a pull-in deep enough to skip the sidebar never shows a sliver of it', () => {
+  const t = tl([{ t: 2, type: 'focus', box: { x: 500, y: 400, w: 100, h: 50 }, zoom: 1.35 }]);
+  expect(left(cameraAt(t, 5))).toBeGreaterThanOrEqual(341);
+});
+
+test('a shallow pull-in keeps the whole sidebar in view', () => {
+  const t = tl([{ t: 2, type: 'focus', box: { x: 500, y: 400, w: 100, h: 50 }, zoom: 1.12 }]);
+  expect(left(cameraAt(t, 5))).toBeCloseTo(0);
 });

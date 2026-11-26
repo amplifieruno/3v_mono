@@ -26,10 +26,7 @@ export const overview: RecordedScene = {
         await streamsLive(page);
       },
       async record(page, m) {
-        await page.waitForTimeout(1500);
-        const cameras = page.getByText('Lobby Camera').first();
-        await m.focus(cameras, 'cameras', 1.15);
-        await page.waitForTimeout(1400);
+        await page.waitForTimeout(2900);
         await m.shot('workspace', page.getByText('Loading Dock Camera').first());
         await page.waitForTimeout(4500);
       },

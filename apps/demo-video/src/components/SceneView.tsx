@@ -1,19 +1,25 @@
 import { AbsoluteFill, interpolate, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
-import { beatFrames, CROSSFADE_FRAMES } from '../durations';
+import { beatFrames, CROSSFADE_FRAMES, sceneFrames } from '../durations';
 import { CARD_SECONDS, FADE_FRAMES } from '../layout';
 import type { Scene } from '../scenes';
 import type { Timeline } from '../timeline';
 import { ease } from '../style';
+import type { VoiceManifest } from '../voice';
 import { ChapterCard } from './ChapterCard';
 import { ConsoleShot } from './ConsoleShot';
 import { Grid } from './Grid';
+import { Narration } from './Narration';
 import { Outro } from './Outro';
+import { Subtitle } from './Subtitle';
 import { TitleBand } from './TitleBand';
 import { TitleCard } from './TitleCard';
 
 interface SceneViewProps {
   scene: Scene;
   timelines: Record<string, Timeline>;
+  voice: VoiceManifest;
+  /** How many chapters the film has, for the progress rail. */
+  chapters: number;
 }
 
 interface FadeInProps {
@@ -30,7 +36,12 @@ const FadeIn = ({ frames, children }: FadeInProps): React.ReactElement => {
 };
 
 /** One storyboard scene. Console scenes open on their chapter card, then cut between their beats with crossfades. */
-export const SceneView = ({ scene, timelines }: SceneViewProps): React.ReactElement => {
+export const SceneView = ({
+  scene,
+  timelines,
+  voice,
+  chapters,
+}: SceneViewProps): React.ReactElement => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const opacity = interpolate(frame, [0, FADE_FRAMES], [0, 1], { extrapolateRight: 'clamp' });
@@ -38,12 +49,14 @@ export const SceneView = ({ scene, timelines }: SceneViewProps): React.ReactElem
     return (
       <AbsoluteFill style={{ opacity }}>
         <TitleCard />
+        {voice.title && <Narration id="title" />}
       </AbsoluteFill>
     );
   if (scene.kind === 'outro')
     return (
       <AbsoluteFill style={{ opacity }}>
         <Outro />
+        {voice.outro && <Narration id="outro" />}
       </AbsoluteFill>
     );
   const card = CARD_SECONDS * fps;
@@ -54,7 +67,8 @@ export const SceneView = ({ scene, timelines }: SceneViewProps): React.ReactElem
   });
   let at = 0;
   const beats = scene.beats.map((b, i) => {
-    const frames = beatFrames(timelines[b.clip], fps);
+    const frames = beatFrames(timelines[b.clip], fps, voice);
+    const line = voice[b.clip];
     const from = i === 0 ? 0 : at - CROSSFADE_FRAMES;
     at = from + frames;
     return (
@@ -64,6 +78,8 @@ export const SceneView = ({ scene, timelines }: SceneViewProps): React.ReactElem
             <ConsoleShot beat={b} timeline={timelines[b.clip]} frames={frames} />
           )}
         </FadeIn>
+        {line && <Narration id={b.clip} />}
+        {line && <Subtitle line={line} />}
       </Sequence>
     );
   });
@@ -78,13 +94,20 @@ export const SceneView = ({ scene, timelines }: SceneViewProps): React.ReactElem
             }),
           }}
         >
-          <ChapterCard scene={scene} />
+          <ChapterCard scene={scene} chapters={chapters} />
         </AbsoluteFill>
       </Sequence>
       <Sequence from={card}>
         <AbsoluteFill style={{ opacity: enter, transform: `translateY(${(1 - enter) * 60}px)` }}>
           <Grid>
-            <TitleBand scene={scene} />
+            <TitleBand
+              scene={scene}
+              chapters={chapters}
+              progress={Math.min(
+                1,
+                (frame - card) / (sceneFrames(scene, timelines, fps, voice) - card),
+              )}
+            />
             {beats}
           </Grid>
         </AbsoluteFill>

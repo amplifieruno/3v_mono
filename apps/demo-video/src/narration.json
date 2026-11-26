@@ -1,0 +1,31 @@
+{
+  "voice": "af_heart",
+  "speed": 0.96,
+  "pronounce": { "ITAP": "I-T-A-P" },
+  "lines": {
+    "title": "This is ITAP: identity, tracking and access, in one platform. Let's spend a day at Nova Tower.",
+    "overview-workspace": "Operators work from one screen. Every camera in the building is live, right next to the events it raises.",
+    "overview-dashboard": "The dashboard sums up the day: who is on site right now, who came in, and what needs attention.",
+    "recognition-camera": "Each camera recognises faces as people walk past. A known person is named on screen, live.",
+    "recognition-wall": "The live wall brings every camera together, so the whole building can be watched from one place.",
+    "people-faces": "Every face the cameras see becomes an identity, known or not.",
+    "people-photos": "Each identity keeps its captures from every camera, so you know what a person looked like, and where.",
+    "people-timeline": "And their whole day reads as one timeline: when they arrived, which doors they used, and every zone along the way.",
+    "places-tree": "Places mirror the building itself. Floors, zones and rooms, each with its own live count.",
+    "places-lobby": "On the floor plan, cameras, doors and zones sit exactly where they are, with occupancy updating as people move.",
+    "places-floor12": "Every floor has its own plan, from the lobby up to the twelfth floor.",
+    "access-list": "Every door decision is recorded: who asked, where, and whether they got in.",
+    "access-trace": "Open any denial to see exactly how it was decided, down to the policy that said no.",
+    "access-policies": "Policy analytics show which rules do the work, and where doors are denied most often.",
+    "incidents-events": "Cameras and doors raise events all day long. Rules decide which of them matter.",
+    "incidents-incident": "When something serious happens, like a watch list match, an incident opens by itself, and escalates if nobody responds.",
+    "incidents-rule": "Before a new alert goes live, you can try it on recent events, and see exactly what it would have caught.",
+    "analytics-charts": "Analytics turn all of this into a clear picture of how the building is used.",
+    "analytics-heatmap": "The busiest hours stand out at a glance.",
+    "analytics-flows": "And you can see how people really move between areas.",
+    "privacy-steps": "Privacy is built in. When someone asks to be forgotten, their data is erased step by step, and every step is on record.",
+    "privacy-retention": "Retention rules clear out old data automatically, for each type of data.",
+    "privacy-help": "And help is written right into the console, for every part of it.",
+    "outro": "ITAP. One platform for identity, access and safety."
+  }
+}

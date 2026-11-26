@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { type Browser, type BrowserContext, chromium, type Page } from '@playwright/test';
 
 export const BASE_URL = process.env.ITAP_URL ?? 'http://127.0.0.1:5173';
@@ -56,15 +56,53 @@ export async function open(page: Page, path: string): Promise<void> {
   await settle(page);
 }
 
-/** One light-theme 1920x1080 browser, signed in once for the whole run. */
+/**
+ * The page is zoomed by `PAGE_ZOOM` (CSS zoom), so it lays out like a 1440x810 screen but renders natively at
+ * 1920x1080: larger UI text, still sharp. (The screencast records CSS pixels, so device scale would not help.)
+ * Element boxes and clicks stay in the 1920x1080 viewport's pixels.
+ */
+export const VIEWPORT = { width: 1920, height: 1080 } as const;
+export const PAGE_ZOOM = 4 / 3;
+
+const FONTS = resolve(import.meta.dirname, '../.cache/fonts');
+
+/**
+ * A fontconfig for the recording browser only: the console uses the system font stack, which is San Francisco
+ * or Segoe UI on clients' machines, but DejaVu Sans on this Linux box. Inter stands in for the system font here.
+ * Fonts: unzip the Inter 4.1 release (github.com/rsms/inter) into `.cache/fonts/inter`.
+ */
+function fontConfig(): string | undefined {
+  const dir = join(FONTS, 'inter/extras/ttf');
+  if (!existsSync(dir)) {
+    process.stdout.write(
+      'no Inter in .cache/fonts: the console renders in the default Linux font\n',
+    );
+    return undefined;
+  }
+  const file = join(FONTS, 'fonts.conf');
+  const alias = (family: string): string =>
+    `<alias binding="strong"><family>${family}</family><prefer><family>Inter</family></prefer></alias>`;
+  writeFileSync(
+    file,
+    `<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig>` +
+      `<include ignore_missing="yes">/etc/fonts/fonts.conf</include><dir>${dir}</dir>` +
+      `${alias('sans-serif')}${alias('system-ui')}${alias('ui-sans-serif')}</fontconfig>`,
+  );
+  return file;
+}
+
+/** One light-theme browser, signed in once for the whole run. */
 export async function openSession(): Promise<{
   browser: Browser;
   context: BrowserContext;
   page: Page;
 }> {
-  const browser = await chromium.launch();
+  const fonts = fontConfig();
+  const browser = await chromium.launch({
+    env: fonts ? { ...process.env, FONTCONFIG_FILE: fonts } : process.env,
+  });
   const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
+    viewport: VIEWPORT,
     deviceScaleFactor: 1,
     colorScheme: 'light',
   });
@@ -76,6 +114,10 @@ export async function openSession(): Promise<{
     }
   });
   const page = await context.newPage();
+  // Re-applied on every document load (navigation happens off camera, so a late rule is never seen).
+  page.on('domcontentloaded', () => {
+    page.addStyleTag({ content: `html { zoom: ${PAGE_ZOOM} !important; }` }).catch(() => undefined);
+  });
   await open(page, '/workspace');
   const facility = page.getByRole('combobox', { name: 'Facility' });
   if (!(await facility.innerText()).includes('Nova Tower')) {

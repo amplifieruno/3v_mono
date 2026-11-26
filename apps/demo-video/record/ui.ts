@@ -2,34 +2,6 @@ import type { Locator, Page } from '@playwright/test';
 import type { Marks } from './marks';
 import { settle } from './session';
 
-const SECTIONS = [
-  'Places',
-  'Devices',
-  'People',
-  'Monitoring',
-  'Notifications',
-  'Analytics',
-  'Access',
-  'Compliance',
-  'Search',
-];
-
-/** Off camera: clicks a sidebar link, opening its section first when it is collapsed. */
-export async function navTo(page: Page, link: string): Promise<void> {
-  const nav = page.getByRole('navigation', { name: 'Main navigation' });
-  const target = nav.getByRole('link', { name: link, exact: true }).first();
-  for (const section of SECTIONS) {
-    if (await target.isVisible()) break;
-    const button = nav.getByRole('button', { name: section, exact: true });
-    if ((await button.count()) && (await button.getAttribute('aria-expanded')) !== 'true') {
-      await button.click();
-      await page.waitForTimeout(250);
-    }
-  }
-  await target.click();
-  await settle(page);
-}
-
 /** Off camera: opens the record of the first list row containing every text. */
 export async function openRow(page: Page, texts: string[], search?: string): Promise<void> {
   if (search) {
@@ -74,7 +46,7 @@ export async function scroll(
   await page.waitForTimeout(300);
 }
 
-/** Scrolls until an element sits about 200 px below the top. */
+/** Scrolls until an element sits about 150 px below the top. */
 export async function scrollTo(
   page: Page,
   m: Marks | undefined,
@@ -82,5 +54,15 @@ export async function scrollTo(
   ms = 1200,
 ): Promise<void> {
   const box = await loc.first().boundingBox();
-  if (box) await scroll(page, m, box.y - 200, ms);
+  if (box) await scroll(page, m, box.y - 150, ms);
+}
+
+/** Off camera: centres the floor plan that shows `label` in the view, so the whole plan is on screen. */
+export async function centerPlan(page: Page, label: string): Promise<void> {
+  await page
+    .locator('text')
+    .filter({ hasText: label })
+    .first()
+    .evaluate((el) => el.closest('svg')?.scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(400);
 }

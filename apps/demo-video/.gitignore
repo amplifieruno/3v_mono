@@ -1,2 +1,5 @@
 public/clips/
+public/voice/
+public/audio/
 out/
+.cache/

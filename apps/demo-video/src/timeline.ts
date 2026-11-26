@@ -1,6 +1,6 @@
 import { Easing } from 'remotion';
 
-/** A box in CSS px of the 1920x1080 page. */
+/** A box in pixels of the 1920x1080 footage. */
 export type Box = { x: number; y: number; w: number; h: number };
 
 /** A moment the recording script marked; `t` is seconds from the clip start. */
@@ -19,8 +19,10 @@ export type Camera = { scale: number; cx: number; cy: number };
 
 const PAGE_W = 1920;
 const PAGE_H = 1080;
+/** Where the console's sidebar ends on the footage (256 CSS px at 4/3 zoom). */
+const CONTENT_LEFT = 341;
 /** Only deliberate focus marks move the camera: a slow, gentle pull-in that holds. Clicks never do. */
-const FOCUS = { zoom: 1.25, hold: 3.5 } as const;
+const FOCUS = { zoom: 1.33, hold: 3.5 } as const;
 const LEAD = 0.3;
 const MOVE = 1.3;
 const REST: Camera = { scale: 1, cx: PAGE_W / 2, cy: PAGE_H / 2 };
@@ -77,9 +79,12 @@ function aim(box: Box, zoom: number): Camera {
   const halfW = PAGE_W / zoom / 2;
   const halfH = PAGE_H / zoom / 2;
   const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
+  // A view either shows the whole sidebar or none of it: a sliver of cut-off menu labels looks broken.
+  const deep = PAGE_W - 2 * halfW >= CONTENT_LEFT;
+  const cx = clamp(box.x + box.w / 2, deep ? CONTENT_LEFT + halfW : halfW, PAGE_W - halfW);
   return {
     scale: zoom,
-    cx: clamp(box.x + box.w / 2, halfW, PAGE_W - halfW),
+    cx: deep || cx - halfW < 1 ? cx : halfW,
     cy: clamp(box.y + box.h / 2, halfH, PAGE_H - halfH),
   };
 }

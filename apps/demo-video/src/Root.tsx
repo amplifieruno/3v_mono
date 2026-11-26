@@ -4,6 +4,7 @@ import { sceneFrames } from './durations';
 import { FPS, SCENES } from './scenes';
 import { HEIGHT, WIDTH } from './style';
 import type { Timeline } from './timeline';
+import type { VoiceManifest } from './voice';
 
 /** Loads every recorded beat's timeline once, before rendering. A missing clip leaves its beat on the grid. */
 const loadTimelines = async (): Promise<Record<string, Timeline>> => {
@@ -17,6 +18,15 @@ const loadTimelines = async (): Promise<Record<string, Timeline>> => {
   return Object.fromEntries(entries.filter((e) => e !== null));
 };
 
+/** The narration timing written by `voice/tts.py`; without it the film is silent. */
+const loadVoice = async (): Promise<VoiceManifest> => {
+  const res = await fetch(staticFile('voice/manifest.json'));
+  return res.ok ? ((await res.json()) as VoiceManifest) : {};
+};
+
+const hasMusic = async (): Promise<boolean> =>
+  (await fetch(staticFile('audio/music.mp3'), { method: 'HEAD' })).ok;
+
 export const RemotionRoot = (): React.ReactElement => (
   <Composition
     id="ItapDemo"
@@ -25,14 +35,18 @@ export const RemotionRoot = (): React.ReactElement => (
     width={WIDTH}
     height={HEIGHT}
     durationInFrames={300}
-    defaultProps={{ scenes: SCENES, timelines: {} } satisfies VideoProps}
+    defaultProps={{ scenes: SCENES, timelines: {}, voice: {}, music: false } satisfies VideoProps}
     calculateMetadata={async ({ props }) => {
-      const timelines = await loadTimelines();
+      const [timelines, voice, music] = await Promise.all([
+        loadTimelines(),
+        loadVoice(),
+        hasMusic(),
+      ]);
       const durationInFrames = props.scenes.reduce(
-        (sum, s) => sum + sceneFrames(s, timelines, FPS),
+        (sum, s) => sum + sceneFrames(s, timelines, FPS, voice),
         0,
       );
-      return { durationInFrames, props: { ...props, timelines } };
+      return { durationInFrames, props: { ...props, timelines, voice, music } };
     }}
   />
 );

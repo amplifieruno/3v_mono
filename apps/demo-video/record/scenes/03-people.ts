@@ -31,7 +31,7 @@ export const people: RecordedScene = {
       },
       async record(page, m) {
         await page.waitForTimeout(1200);
-        await m.focus(page.getByRole('tabpanel').first(), 'gallery', 1.15);
+        await m.focus(page.getByRole('tabpanel').first(), 'gallery');
         await page.waitForTimeout(1400);
         await m.shot('photos', page.getByRole('tabpanel').getByRole('img').first());
         await page.waitForTimeout(4000);

@@ -1,6 +1,6 @@
 import type { RecordedScene } from '../scene';
 import { open, settle } from '../session';
-import { autoRefreshOff, navTo, openRow, scrollTo } from '../ui';
+import { autoRefreshOff, openRow, scrollTo } from '../ui';
 
 /** Scene 6: the event feed, a critical incident escalating on its own, a dry run of the alert rule. */
 export const incidents: RecordedScene = {
@@ -19,7 +19,7 @@ export const incidents: RecordedScene = {
     {
       id: 'incident',
       async prepare(page) {
-        await navTo(page, 'Incidents');
+        await open(page, '/incidents');
         await autoRefreshOff(page);
         await openRow(page, ['Blacklist match', 'Critical']);
         await scrollTo(page, undefined, page.getByText('Escalation', { exact: true }), 400);
@@ -27,7 +27,7 @@ export const incidents: RecordedScene = {
       async record(page, m) {
         await page.waitForTimeout(1500);
         const escalation = page.getByText('Escalation', { exact: true }).first();
-        await m.focus(escalation, 'escalation', 1.2);
+        await m.focus(escalation, 'escalation');
         await page.waitForTimeout(1500);
         await m.shot('incident', escalation);
         await page.waitForTimeout(4500);
@@ -36,7 +36,7 @@ export const incidents: RecordedScene = {
     {
       id: 'rule',
       async prepare(page) {
-        await navTo(page, 'Notification rules');
+        await open(page, '/notification-rules');
         await openRow(page, ['Blacklist matches']);
       },
       async record(page, m) {

@@ -142,7 +142,6 @@ export const SCENES: Scene[] = [
     beats: [
       beat('privacy-steps', { at: 'steps', text: 'Erased on request, step by step' }),
       beat('privacy-retention'),
-      beat('privacy-status', { at: 'status', text: 'Health at a glance' }),
       beat('privacy-help'),
     ],
   },

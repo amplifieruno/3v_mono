@@ -52,7 +52,7 @@ export const ConsoleShot = ({ beat, timeline, frames }: ConsoleShotProps): React
       <Sequence key={i} from={start} durationInFrames={end - start} layout="none">
         <OffthreadVideo
           src={src0}
-          startFrom={Math.round(sourceTimeAt(fitted, start / fps) * fps)}
+          trimBefore={Math.round(sourceTimeAt(fitted, start / fps) * fps)}
           playbackRate={s.rate}
           muted
           style={{ width: 1920, height: 1080 }}
