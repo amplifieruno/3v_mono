@@ -27,9 +27,16 @@ const lerp = (a: number, b: number, f: number): number => a + (b - a) * f;
  * The boxes to draw over the frame shown at `at` (wall-clock ms): for each person, the detection
  * of the latest analysed frame at or before `at`, moved towards their next detection when the
  * next frame is already known, held for {@link BOX_HOLD_MS} after the last one and faded out.
- * A detection whose frame the video has not reached yet is not drawn.
+ * A detection whose frame the video has not reached yet is not drawn, and a face the latest
+ * analysed frame on screen did not find again is dropped (one face never carries two boxes).
  */
 export function boxesAt(history: readonly DetectionMessage[], at: number): SyncedBox[] {
+  // The latest analysed frame on screen: a face it did not find again is gone (or was taken for someone else).
+  let latest = -Infinity;
+  for (const message of history) {
+    const t = timeOf(message);
+    if (t <= at && t > latest) latest = t;
+  }
   const byKey = new Map<string, DetectionMessage[]>();
   for (const message of history) {
     const key = keyOf(message);
@@ -42,7 +49,7 @@ export function boxesAt(history: readonly DetectionMessage[], at: number): Synce
     const sorted = [...list].sort((a, b) => timeOf(a) - timeOf(b));
     const prevIndex = sorted.findLastIndex((message) => timeOf(message) <= at);
     const prev = sorted[prevIndex];
-    if (!prev) continue;
+    if (!prev || timeOf(prev) < latest) continue;
     const since = at - timeOf(prev);
     if (since > BOX_HOLD_MS + BOX_FADE_MS) continue;
     const next = sorted[prevIndex + 1];

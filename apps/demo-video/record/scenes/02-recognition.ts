@@ -13,12 +13,8 @@ export const recognition: RecordedScene = {
         await openRow(page, ['Server Room Camera'], 'Server Room');
         await tab(page, 'Live');
         // The whole camera frame in view: scroll its top up near the header.
-        await scrollTo(
-          page,
-          undefined,
-          page.getByRole('img', { name: /^Faces recognised on/ }),
-          400,
-        );
+        // The video, not the face overlay: the overlay is drawn only while a face is in view.
+        await scrollTo(page, undefined, page.getByLabel(/^Live video of/).first(), 400);
         // Off camera: wait until Thomas Kirby's label is really drawn (matches come and go as faces turn).
         await page
           .locator('text')
@@ -28,7 +24,7 @@ export const recognition: RecordedScene = {
           .catch(() => process.stdout.write('  recognition: Thomas Kirby not named in 3 min\n'));
       },
       async record(page, m) {
-        const overlay = page.getByRole('img', { name: /^Faces recognised on/ });
+        const overlay = page.getByLabel(/^Live video of/).first();
         const label = page.locator('text').filter({ hasText: 'Thomas Kirby' }).first();
         const named = (): Promise<boolean> => label.isVisible().catch(() => false);
         // Labels come and go as the face turns: open the beat once the name has held for 1 s.

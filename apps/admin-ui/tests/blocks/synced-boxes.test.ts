@@ -52,4 +52,9 @@ describe('boxesAt', () => {
     const history = [detection('d1', 'a', 1_000, 100), detection('d2', 'b', 1_000, 500), detection('d3', null, 1_000, 900)];
     expect(boxesAt(history, T0 + 1_100).map((box) => box.key)).toEqual(['a', 'b', 'd3']);
   });
+
+  it('should drop a face that a newer analysed frame did not find again (one face, one box)', () => {
+    const history = [detection('d1', 'a', 1_000, 100), detection('d2', 'b', 1_500, 110)];
+    expect(boxesAt(history, T0 + 1_600).map((box) => box.key)).toEqual(['b']);
+  });
 });
