@@ -29,6 +29,10 @@ The stack is the dev stack (`make dev-compose`), and the console runs from sourc
    `pnpm seed --reset` (from the repo root).
 4. **Start recognition** on the nine stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
    `pnpm --filter demo-video cameras`
+   The camera beat names the receptionist on the Reception camera. After a fresh seed she is a stranger: open her
+   identity (the one the Reception camera sees most, under People → Identities) and link it to a new employee profile
+   *Maya Collins*, Receptionist. Boxes are drawn on the frame each face was found on (the stream carries frame times),
+   so the picture runs a few seconds behind the camera.
 5. **Record every beat** (about 6 minutes), soon after step 4, before unknown visitors pile up on the floor plans:
    `pnpm --filter demo-video record`. Only some: `pnpm --filter demo-video record places access-trace`.
 6. **Stop recognition:** `pnpm --filter demo-video cameras stop`

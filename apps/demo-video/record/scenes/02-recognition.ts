@@ -2,7 +2,7 @@ import type { RecordedScene } from '../scene';
 import { open, settle } from '../session';
 import { openRow, scrollTo, tab } from '../ui';
 
-/** Scene 2: the server-room camera naming Thomas Kirby live, then the live wall. */
+/** Scene 2: the reception camera naming Maya Collins (the receptionist) live, then the live wall. */
 export const recognition: RecordedScene = {
   id: 'recognition',
   beats: [
@@ -10,22 +10,22 @@ export const recognition: RecordedScene = {
       id: 'camera',
       async prepare(page) {
         await open(page, '/devices');
-        await openRow(page, ['Server Room Camera'], 'Server Room');
+        await openRow(page, ['Reception Camera'], 'Reception Camera');
         await tab(page, 'Live');
         // The whole camera frame in view: scroll its top up near the header.
         // The video, not the face overlay: the overlay is drawn only while a face is in view.
         await scrollTo(page, undefined, page.getByLabel(/^Live video of/).first(), 400);
-        // Off camera: wait until Thomas Kirby's label is really drawn (matches come and go as faces turn).
+        // Off camera: wait until Maya Collins's label is really drawn (matches come and go as faces turn).
         await page
           .locator('text')
-          .filter({ hasText: 'Thomas Kirby' })
+          .filter({ hasText: 'Maya Collins' })
           .first()
           .waitFor({ state: 'visible', timeout: 180_000 })
-          .catch(() => process.stdout.write('  recognition: Thomas Kirby not named in 3 min\n'));
+          .catch(() => process.stdout.write('  recognition: Maya Collins not named in 3 min\n'));
       },
       async record(page, m) {
         const overlay = page.getByLabel(/^Live video of/).first();
-        const label = page.locator('text').filter({ hasText: 'Thomas Kirby' }).first();
+        const label = page.locator('text').filter({ hasText: 'Maya Collins' }).first();
         const named = (): Promise<boolean> => label.isVisible().catch(() => false);
         // Labels come and go as the face turns: open the beat once the name has held for 1 s.
         await m.wait('steady name', async () => {
