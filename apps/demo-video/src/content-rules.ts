@@ -36,6 +36,7 @@ export function onScreenTexts(scenes: Scene[]): string[] {
     ...fromScenes,
     TITLE_TEXT.word,
     TITLE_TEXT.tagline,
+    TITLE_TEXT.story,
     ...TITLE_TEXT.corners,
     OUTRO_TEXT.headline,
     ...OUTRO_TEXT.tags,

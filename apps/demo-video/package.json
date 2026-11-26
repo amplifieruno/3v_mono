@@ -8,8 +8,8 @@
     "studio": "remotion studio src/index.ts",
     "record": "tsx record/run.ts",
     "cameras": "tsx record/start-cameras.ts",
-    "render": "remotion render src/index.ts ItapDemo out/itap-demo.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=192k",
-    "render:draft": "remotion render src/index.ts ItapDemo out/draft.mp4 --scale=0.5",
+    "render": "tsx scripts/render.ts out/itap-demo.mp4",
+    "render:draft": "tsx scripts/render.ts out/draft.mp4 --scale=0.5 --crf=26",
     "render:light": "ffmpeg -v error -y -i out/itap-demo.mp4 -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 128k out/itap-demo-light.mp4",
     "sheet": "scripts/contact-sheet.sh out/itap-demo.mp4 out/itap-demo-sheet.png",
     "test": "vitest run",
@@ -18,6 +18,7 @@
     "voice": "uv run voice/tts.py"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.534",
     "@remotion/cli": "4.0.534",
     "@remotion/google-fonts": "4.0.534",
     "@remotion/renderer": "4.0.534",

@@ -42,6 +42,23 @@ export const TitleCard = (): React.ReactElement => {
         >
           {TITLE_TEXT.tagline}
         </Rise>
+        <Rise
+          delay={4}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 18,
+            marginTop: 64,
+            fontFamily: FONT.ui,
+            fontSize: 40,
+            fontWeight: 500,
+            letterSpacing: '-0.02em',
+            color: C.ink,
+          }}
+        >
+          <span style={{ width: 48, height: 2, background: C.accent }} />
+          {TITLE_TEXT.story}
+        </Rise>
       </div>
     </Grid>
   );

@@ -26,6 +26,8 @@ export const FPS = 30;
 export const TITLE_TEXT = {
   word: 'ITAP',
   tagline: 'identity · tracking · access',
+  /** Rises in as the narration turns to the building. */
+  story: 'A day at Nova Tower',
   corners: ['ITAP · OCT 2026', 'NOVA TOWER'],
 };
 export const OUTRO_TEXT = {

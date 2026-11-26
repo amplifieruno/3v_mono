@@ -11,5 +11,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src", "record", "tests", "remotion.config.ts", "vitest.config.ts"]
+  "include": ["src", "record", "scripts", "tests", "remotion.config.ts", "vitest.config.ts"]
 }
