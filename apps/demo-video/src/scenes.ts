@@ -28,7 +28,7 @@ export const TITLE_TEXT = {
   tagline: 'identity · tracking · access',
   /** Rises in as the narration turns to the building. */
   story: 'A day at Nova Tower',
-  corners: ['ITAP · OCT 2026', 'NOVA TOWER'],
+  corners: ['ITAP · NOV 2026', 'NOVA TOWER'],
 };
 export const OUTRO_TEXT = {
   headline: 'One platform for identity, access and safety',
@@ -60,13 +60,7 @@ export const SCENES: Scene[] = [
     label: 'OVERVIEW',
     title: 'One console for the whole building',
     beats: [
-      beat('overview-workspace', {
-        at: 'workspace',
-        text: 'Cameras and events, live',
-        // The Server Room tile's title, so the tag runs into the empty space beside it.
-        target: { x: 412, y: 680, w: 272, h: 22 },
-        side: 'right',
-      }),
+      beat('overview-workspace', { at: 'workspace', text: 'Cameras and events, live' }),
       beat('overview-dashboard', { at: 'dashboard', text: 'Who is on site now' }),
     ],
   },

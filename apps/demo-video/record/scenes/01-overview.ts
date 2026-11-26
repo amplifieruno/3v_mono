@@ -1,13 +1,13 @@
 import type { RecordedScene } from '../scene';
 import { open, settle } from '../session';
 
-/** Waits until every camera tile is live (the stream player retries every 20 s). */
+/** Waits until every camera tile is live: as many LIVE marks as tiles (a stream is retried every 5 s). */
 async function streamsLive(page: import('@playwright/test').Page): Promise<void> {
   await page
     .waitForFunction(
       () => {
-        const text = document.body.innerText;
-        return (text.match(/Stream live/g) ?? []).length >= 4 && !text.includes('Stream down');
+        const tiles = [...document.querySelectorAll('[data-testid="wall-tile"]')];
+        return tiles.length >= 9 && tiles.every((t) => /\bLive\b/.test(t.textContent ?? ''));
       },
       undefined,
       { timeout: 90_000, polling: 500 },
@@ -27,7 +27,7 @@ export const overview: RecordedScene = {
       },
       async record(page, m) {
         await page.waitForTimeout(2900);
-        await m.shot('workspace', page.getByText('Loading Dock Camera').first());
+        await m.shot('workspace', page.getByTestId('wall-tile').first());
         await page.waitForTimeout(4500);
       },
     },

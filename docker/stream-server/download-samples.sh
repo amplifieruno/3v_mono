@@ -31,11 +31,11 @@ declare -A VIDEOS=(
   [corridor]="https://videos.pexels.com/video-files/3201794/3201794-hd_1920_1080_25fps.mp4"
   [elevator]="https://videos.pexels.com/video-files/3044789/3044789-hd_1920_1080_25fps.mp4"
   [reception]="https://videos.pexels.com/video-files/6755014/6755014-hd_1920_1080_25fps.mp4"
-  [stairs]="https://videos.pexels.com/video-files/3044913/3044913-hd_1920_1080_24fps.mp4"
+  [escalator]="https://videos.pexels.com/video-files/7252141/7252141-hd_1920_1080_25fps.mp4"
 )
 
 echo "Downloading sample videos..."
-for name in entrance lobby serverroom warehouse parking corridor elevator reception stairs; do
+for name in entrance lobby serverroom warehouse parking corridor elevator reception escalator; do
   url="${VIDEOS[$name]}"
   dest="$VIDEO_DIR/$name.mp4"
 

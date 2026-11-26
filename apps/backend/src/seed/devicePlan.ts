@@ -150,12 +150,12 @@ const NOVA_DEVICES: DeviceSpec[] = [
   },
   {
     ...camera,
-    name: 'Floor 12 Stairwell Camera',
-    stream: 'stairs',
-    area: `${FLOOR12}/Elevator Lobby 12`,
-    position: [520, 320],
-    coverage: { center: [600, 400], radius: 90 },
-    ip: '10.10.12.11',
+    name: 'Lobby Escalator Camera',
+    stream: 'escalator',
+    area: `${LOBBY}/Turnstile Gallery`,
+    position: [740, 620],
+    coverage: { center: [620, 540], radius: 110 },
+    ip: '10.10.0.16',
   },
   {
     ...camera,
@@ -281,7 +281,7 @@ export const SEED_ACCESS_POINTS: Record<OrgKey, AccessPointSpec[]> = { nova: NOV
 export const SEED_DEVICES: Record<OrgKey, DeviceSpec[]> = { nova: NOVA_DEVICES, riverside: RIVERSIDE_DEVICES };
 
 /** Stream id of each camera video of the stream-server, by the video file name (`warehouse.mp4` -> `warehouse`). */
-export const STREAM_IDS = ['corridor', 'elevator', 'entrance', 'lobby', 'parking', 'reception', 'serverroom', 'stairs', 'warehouse'] as const;
+export const STREAM_IDS = ['corridor', 'elevator', 'entrance', 'escalator', 'lobby', 'parking', 'reception', 'serverroom', 'warehouse'] as const;
 
 export function streamUrl(stream: string): string {
   return `rtsp://mediamtx:8554/${stream}`;

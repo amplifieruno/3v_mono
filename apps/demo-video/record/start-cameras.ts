@@ -8,7 +8,7 @@ const CAMERAS = [
   'Reception Camera',
   'Elevator Hall Camera',
   'Parking P-1 Camera',
-  'Floor 12 Stairwell Camera',
+  'Lobby Escalator Camera',
   'Floor 12 Corridor Camera',
 ];
 const action = process.argv[2] === 'stop' ? 'Stop recognition' : 'Start recognition';
