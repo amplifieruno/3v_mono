@@ -145,3 +145,20 @@ Callout text is a starting point: the final wording must match what the footage 
 - Cursor design, zoom amounts and easing details, within section 4.
 - How timelines are captured (Playwright `screencast` API or `recordVideo` plus own timestamps) and clip conversion (for example 25 → 30 fps).
 - Final callout wording, within section 3.
+
+## 11. Version 2: the narrated cut (Nov 26, 2026)
+
+The owner asked for a polished final cut with a voice-over, more precise and in one cohesive style. What changed against the silent cut:
+
+- **Narration.** One English line per beat, plus the title and the outro (`apps/demo-video/src/narration.json`). It is read locally by Kokoro-82M (Apache-2.0, voice `af_heart`, no cloud service). `ITAP` is spelled out letter by letter. Every line is levelled to the same loudness and checked by transcribing it back with Whisper.
+- **Timing follows the voice.** A beat lasts its footage, or its line plus a 0.7 s lead-in and a 1.1 s tail if that is longer. The recorder keeps filming until the footage covers the line, so beats never freeze on a still frame.
+- **Subtitles.** The sentence being spoken is shown under the panel, timed per sentence, for viewers who watch muted.
+- **Sharper, larger console.** The console is recorded at a CSS zoom of 4/3, so it lays out like a 1440-wide screen, rendered natively at 1920x1080. For the recording browser only, Inter stands in for the system font, as San Francisco would on a Mac; Linux would otherwise fall back to DejaVu. Pull-ins either show the whole sidebar or none of it.
+- **Structure.** The chapter band carries a progress rail (one segment per chapter), and so do the chapter cards. The title card adds "A day at Nova Tower".
+- **Content fixes:**
+  - *System status* was dropped, because its services table names the technology.
+  - *Erasure* is framed on its meaningful final steps.
+  - *The timeline* shows the person's previous full day, because today is full of live server-room denials.
+  - *The alert try-out* runs on the last 100 events, so it finds real matches.
+- **Rendering.** The film is rendered in chunks, each in a fresh process, and the soundtrack once (`scripts/render.ts`): one long render gets killed by the dev box's low-memory watchdog.
+- **Music.** None ships. A licensed track at `public/audio/music.mp3` plays quietly under the voice.

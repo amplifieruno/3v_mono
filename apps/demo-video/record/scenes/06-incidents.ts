@@ -37,14 +37,30 @@ export const incidents: RecordedScene = {
       id: 'rule',
       async prepare(page) {
         await open(page, '/notification-rules');
-        await openRow(page, ['Blacklist matches']);
+        // Restricted-area entries are among the latest events while the cameras run, so the try-out finds matches.
+        await openRow(page, ['Restricted areas']);
       },
       async record(page, m) {
         await page.waitForTimeout(1500);
         await m.click(page.getByRole('button', { name: 'Test rule', exact: true }), 'Test rule');
         await m.wait('dry run', () => settle(page, 800));
         await page.waitForTimeout(800);
-        await m.shot('rule-test', page.getByRole('dialog').getByText('match', { exact: false }));
+        // Try it on a longer stretch of history: pick the largest sample, then run it again.
+        const dialog = page.getByRole('dialog');
+        await m.click(dialog.getByRole('combobox').first(), 'sample');
+        await page.waitForTimeout(500);
+        await m.click(page.getByRole('option').last(), 'largest');
+        await page.waitForTimeout(400);
+        await m.click(
+          dialog.getByRole('button', { name: 'Test again', exact: true }),
+          'Test again',
+        );
+        await m.wait('dry run', () => settle(page, 800));
+        await page.waitForTimeout(600);
+        const verdict = dialog.getByText('would match', { exact: false }).first();
+        await m.focus(verdict, 'verdict');
+        await page.waitForTimeout(1500);
+        await m.shot('rule-test', verdict);
         await page.waitForTimeout(4500);
       },
     },

@@ -60,7 +60,13 @@ export const SCENES: Scene[] = [
     label: 'OVERVIEW',
     title: 'One console for the whole building',
     beats: [
-      beat('overview-workspace', { at: 'workspace', text: 'Cameras and events, live' }),
+      beat('overview-workspace', {
+        at: 'workspace',
+        text: 'Cameras and events, live',
+        // The Server Room tile's title, so the tag runs into the empty space beside it.
+        target: { x: 412, y: 680, w: 272, h: 22 },
+        side: 'right',
+      }),
       beat('overview-dashboard', { at: 'dashboard', text: 'Who is on site now' }),
     ],
   },

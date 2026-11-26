@@ -93,6 +93,9 @@ execFileSync(FFMPEG, [
   '1:a',
   '-c:v',
   'copy',
+  // Speech at the usual level for online video: -16 LUFS, peaks below -1.5 dBTP.
+  '-af',
+  'loudnorm=I=-16:TP=-1.5:LRA=11',
   '-c:a',
   'aac',
   '-b:a',
