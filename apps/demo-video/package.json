@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "voice": "uv run voice/tts.py",
-    "music": "uv run music/compose.py"
+    "music": "uv run music/drive.py"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.534",

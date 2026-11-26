@@ -9,7 +9,7 @@ A narrated product video of the ITAP console. Playwright records the live consol
 | Part | Where | What it does |
 |---|---|---|
 | Narration | `src/narration.json` | One line per beat, plus `title` and `outro`, with the voice, its speed and a pronunciation map (`ITAP` is read letter by letter). |
-| Music | `music/compose.py` | Composes the music bed in code (a calm pad, bass and arpeggio in D major, about 206 s) into `public/audio/music.mp3`. It is ours, so there is no licence to track. It plays quietly under the narration. |
+| Music | `music/drive.py`, `music/compose.py` | Compose the music bed in code into `public/audio/music.mp3`, so it is ours and there is no licence to track. `drive.py` is the livelier one the film uses: 112 BPM with a soft beat, a pulsing bass and an arpeggio, the pad alone under the title and a breakdown halfway. `compose.py` is the calm alternative: a slow pad, bass and arpeggio at 84 BPM. Each is about 206 s, and whichever runs last is the one the film plays. |
 | Voice | `voice/tts.py` | Reads every line with Kokoro-82M (Apache-2.0, runs locally on the CPU) into `public/voice/<id>.wav`. It also writes `manifest.json` with each line's length and the timing of every sentence. The subtitles come from that timing. |
 | Recording | `record/` | One script per chapter (`record/scenes/*.ts`). Each beat is prepared off camera (navigation, tabs, scrolling), then only its visible part is recorded to `public/clips/<scene>-<beat>.mp4`, with `<scene>-<beat>.timeline.json` (focus marks, waits, named shots with element boxes). The page is 1440x810 at 4/3 density, so the 1920x1080 footage carries large, sharp UI text. A beat keeps filming until it covers its narration line. |
 | Storyboard | `src/scenes.ts` | Chapters, their beats and the callout tags. |
@@ -21,7 +21,7 @@ A narrated product video of the ITAP console. Playwright records the live consol
 
 The stack is the dev stack (`make dev-compose`), and the console runs from source (`pnpm --filter admin-ui dev`, http://127.0.0.1:5173).
 
-1. **Music** (about 30 seconds): `pnpm --filter demo-video music`.
+1. **Music** (about 30 seconds): `pnpm --filter demo-video music` (the calm bed: `uv run music/compose.py`).
 2. **Voice** (about a minute; downloads the model into `.cache/` the first time):
    `pnpm --filter demo-video voice`. To redo only some lines, run `uv run voice/tts.py overview-dashboard outro` in `apps/demo-video`.
    The model files go into `apps/demo-video/.cache/kokoro/`, from the kokoro-onnx `model-files-v1.0` release: `kokoro-v1.0.onnx` and `voices-v1.0.bin`.
@@ -43,7 +43,7 @@ Output goes to `out/`. The folders `out/`, `public/clips/`, `public/voice/`, `pu
 - **Reword narration:** edit `src/narration.json`, re-voice that line, and re-record its beat if the new line is longer than the footage. If it is shorter, the beat simply ends sooner.
 - **Reword a title or callout:** edit `src/scenes.ts`, then run `pnpm --filter demo-video test`. The test rejects technology words.
 - **Change what a beat shows:** edit `record/scenes/<nn>-<scene>.ts` and re-record that beat. Scripts find records by their visible names, never by id, so they survive a re-seed.
-- **Change the music:** edit `music/compose.py` (chords, tempo, parts) and run it again, or put any licensed track at `public/audio/music.mp3` instead. It plays under the narration at `MUSIC.volume` in `src/components/Video.tsx` and fades in and out.
+- **Change the music:** edit `music/drive.py` or `music/compose.py` (chords, tempo, parts) and run it again, or put any licensed track at `public/audio/music.mp3` instead. It plays under the narration at `MUSIC.volume` in `src/components/Video.tsx` and fades in and out.
 - **New soundtrack only:** after changing music or voice levels, the picture need not be rendered again: render the audio (`npx remotion render src/index.ts ItapDemo out/audio.wav --codec=wav`) and swap it into the master with ffmpeg (`-map 0:v -map 1:a -c:v copy`, loudnorm to -16 LUFS).
 
 ## Licence notes

@@ -8,7 +8,7 @@
 Bars 1-8 are the pad alone (title), the arpeggio and bass carry the middle, and the last bars settle on
 the home chord. Everything sits low and soft, under the narration.
 
-Usage: uv run music/compose.py
+Usage: uv run music/compose.py   (music/drive.py writes the livelier alternative to the same file)
 """
 
 import subprocess
@@ -149,6 +149,12 @@ def main() -> None:
     wet = np.stack([fftconvolve(send[c], reverb(4.0, c))[:n] for c in range(2)])
     mix = 0.8 * dry + 0.5 * wet
 
+    write(mix)
+    print(f"music.mp3 (calm): {total:.1f}s")
+
+
+def write(mix: np.ndarray) -> None:
+    """Masters a stereo mix into public/audio/music.mp3 at -16 LUFS, the level the film's volume assumes."""
     # Clear the lowest rumble, fade the tail, and keep peaks well clear of clipping.
     mix = np.stack([sosfilt(butter(2, 35, "highpass", fs=RATE, output="sos"), c) for c in mix])
     mix[:, -int(5 * RATE) :] *= np.cos(np.linspace(0, np.pi / 2, int(5 * RATE))) ** 2
@@ -163,7 +169,6 @@ def main() -> None:
         check=True,
     )
     wav.unlink()
-    print(f"music.mp3: {total:.1f}s")
 
 
 if __name__ == "__main__":
