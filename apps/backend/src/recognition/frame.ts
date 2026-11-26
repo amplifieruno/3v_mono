@@ -142,8 +142,8 @@ async function resolveFace(
     similarity: null,
     templates: null,
   };
-  if (capture.quality < MIN_QUALITY) {
-    // Too small/blurry to start a reliable identity: the detection is kept without one.
+  if (capture.quality < MIN_NEW_IDENTITY_QUALITY) {
+    // Too small, blurry or turned away to start a reliable identity: the detection is kept without one.
     return { ...unidentified, isNew: false, thumbnailFileId: null };
   }
   return deps.withIdentityLock(async () => {
@@ -153,6 +153,12 @@ async function resolveFace(
     return { ...unidentified, identityId: created.id, identityCode: created.code, isNew: true, thumbnailFileId: created.cropFileId };
   });
 }
+
+/**
+ * Quality an unknown face needs to start a new identity, above the enrollment floor (MIN_QUALITY): a face seen
+ * from the side or behind still matches a known person, but would start a stranger that never matches again.
+ */
+export const MIN_NEW_IDENTITY_QUALITY = 0.45;
 
 /** Quality a capture must gain over the worst of five templates (same rule as itap.consider_template). */
 export const TEMPLATE_MARGIN = 0.05;

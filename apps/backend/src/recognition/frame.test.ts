@@ -154,6 +154,16 @@ describe('processFrame', () => {
     expect(kept.suppressed).toBe(0);
   });
 
+  it('should keep a poor unknown face (quality 0.38, enough to match) without starting an identity', async () => {
+    const { deps, ops } = stubs([face(1, 0.7, [100, 100, 140, 140])]);
+    const result = await processFrame(deps, DEVICE, frame, AT);
+
+    expect(deps.createIdentity).not.toHaveBeenCalled();
+    const [insert] = ops('RecognitionInsertDetection');
+    expect(insert.vars.object).toEqual(expect.objectContaining({ identity_id: null, is_new_identity: false }));
+    expect(result.detections).toHaveLength(1);
+  });
+
   it('should insert nothing for a frame without faces', async () => {
     const { deps, ops } = stubs([]);
     const result = await processFrame(deps, DEVICE, frame, AT);
