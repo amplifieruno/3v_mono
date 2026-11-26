@@ -252,6 +252,37 @@ describe('live camera view', () => {
     expect(screen.queryByRole('img', { name: 'Faces recognised on Entrance camera' })).toBeNull();
   });
 
+  it('should draw a face when the video reaches the frame it was found on, when the stream tells its time', async () => {
+    const h = harness();
+    let shownAt: number | null = null;
+    const deps = {
+      ...h.deps,
+      attach: (async (video, url, events) => ({
+        ...(await h.deps.attach(video, url, events)),
+        clock: () => shownAt,
+      })) satisfies StreamAttacher,
+    };
+    render(<LiveCameraPanel device={DEVICE} deps={deps} t={t} />);
+    await flush();
+    const video = screen.getByLabelText('Live video of Entrance camera', { selector: 'video' });
+    act(() => void video.dispatchEvent(new Event('playing')));
+    act(() => h.server.accept());
+    const found = message({ detectionId: 'd-1', identityId: 'i-1', profileId: 'p-1', profileName: 'Anna Lee' });
+    const frameAt = Date.parse(found.detectedAt);
+    shownAt = frameAt - 2_000;
+    act(() => h.server.push(found));
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(screen.queryByTestId('live-box')).toBeNull();
+
+    shownAt = frameAt + 100;
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(screen.getByTestId('live-box').querySelector('text')?.textContent).toBe('Anna Lee');
+
+    shownAt = frameAt + 5_000;
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(screen.queryByTestId('live-box')).toBeNull();
+  });
+
   it('should note that recognition is off and when the camera is not in the organization', async () => {
     const h = harness();
     render(<LiveCameraPanel device={{ ...DEVICE, recognition_enabled: false }} deps={h.deps} t={t} />);

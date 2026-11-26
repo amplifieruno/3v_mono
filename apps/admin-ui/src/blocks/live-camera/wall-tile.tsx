@@ -7,6 +7,7 @@ import type { LiveCameraT } from './live-camera-texts';
 import { livePlaylistUrl } from './stream-url';
 import { useDetections } from './use-detections';
 import { useStreamPlayback } from './use-stream-playback';
+import { useSyncedBoxes } from './use-synced-boxes';
 
 export interface WallTileProps {
   readonly device: LiveCameraDevice;
@@ -45,8 +46,9 @@ export function WallTile({ device, area, href, deps, t, alert }: WallTileProps):
   const url = livePlaylistUrl(device.stream_url);
   const playback = useStreamPlayback(url, deps.attach);
   const live = useDetections(device.id, deps);
+  const drawn = useSyncedBoxes(live, playback.clock);
   const playing = url !== null && playback.state === 'playing';
-  const inView = new Set(live.boxes.map((b) => b.detectionId)).size;
+  const inView = drawn.boxes.length;
   const detectionsDown = live.state.status === 'failed' || live.state.status === 'unavailable';
   return (
     <li
@@ -68,7 +70,7 @@ export function WallTile({ device, area, href, deps, t, alert }: WallTileProps):
           className={cn('absolute inset-0 size-full object-cover', !playing && 'invisible')}
         />
       )}
-      {playing ? <DetectionOverlay boxes={live.boxes} name={device.name} t={t} cover labelShare={1 / 15} /> : null}
+      {playing ? <DetectionOverlay boxes={drawn.boxes} synced={drawn.synced} name={device.name} t={t} cover labelShare={1 / 15} /> : null}
       {playing ? null : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-white/70">
           {url !== null && playback.state === 'loading' ? (

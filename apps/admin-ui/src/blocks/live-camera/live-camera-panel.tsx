@@ -10,6 +10,7 @@ import { StreamNote } from './stream-note';
 import { livePlaylistUrl } from './stream-url';
 import { type DetectionDeps, useDetections } from './use-detections';
 import { useStreamPlayback } from './use-stream-playback';
+import { useSyncedBoxes } from './use-synced-boxes';
 
 /** The camera columns the live view reads. */
 export interface LiveCameraDevice {
@@ -42,6 +43,7 @@ export function LiveCameraPanel({ device, deps, t, heading }: LiveCameraPanelPro
   const url = livePlaylistUrl(device.stream_url);
   const playback = useStreamPlayback(url, deps.attach);
   const live = useDetections(device.id, deps);
+  const drawn = useSyncedBoxes(live, playback.clock);
   const params = { params: { name: device.name } };
   const failure =
     live.state.status === 'failed'
@@ -71,7 +73,7 @@ export function LiveCameraPanel({ device, deps, t, heading }: LiveCameraPanelPro
           />
         )}
         {url !== null && playback.state === 'playing' ? (
-          <DetectionOverlay boxes={live.boxes} name={device.name} t={t} />
+          <DetectionOverlay boxes={drawn.boxes} synced={drawn.synced} name={device.name} t={t} />
         ) : null}
         {url === null ? (
           <StreamNote icon={<VideoOff className="size-8" aria-hidden />} title={t('noStream')} />

@@ -82,8 +82,12 @@ they arrive: a box around each face, labelled with the person's name when the
 face matched a profile, **New** when it created a new identity, the identity
 code for a known identity without a profile, or "Unidentified face" for a face
 neither matched nor good enough to keep. Hover a box for the match
-confidence. Each box stays two seconds and then fades; a newer detection of the
-same person replaces it. Faces only appear while recognition runs on the
+confidence. Each box is drawn on the very frame its face was found on: the
+picture plays a few seconds behind the camera, so the recognition is done by
+the time the frame is shown, and a person's box moves with them from one
+analysed frame to the next. It fades out shortly after the face was last
+found. (A stream that does not tell the time of its frames gets each box when
+it arrives, for two seconds.) Faces only appear while recognition runs on the
 camera.
 
 Two badges show where the view stands: the **stream** (connecting, live, down)

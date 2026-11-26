@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { DetectionMessage, DetectionStreamState } from '../../realtime/detection-types';
 import { type DetectionHubSource, sharedDetectionHub } from '../../realtime/shared-hub';
+import { HISTORY_MS } from './synced-boxes';
 
 /** How long a detection's box stays on the video (it fades out over the last half second). */
 export const BOX_LIFETIME_MS = 2_000;
@@ -57,6 +58,8 @@ export interface LiveDetections {
   readonly state: LiveDetectionsState;
   /** The detections of the latest frame, for {@link BOX_LIFETIME_MS} at most, one per identity. */
   readonly boxes: readonly DetectionMessage[];
+  /** Every detection of the last {@link HISTORY_MS} (by frame time), for drawing in step with the video. */
+  readonly history: readonly DetectionMessage[];
   readonly counters: DetectionCounters;
   /** Starts the session's connection over (offered after repeated refusals). */
   readonly reconnect: () => void;
@@ -69,6 +72,7 @@ export interface LiveDetections {
 export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetections {
   const [state, setState] = React.useState<LiveDetectionsState>({ status: 'connecting' });
   const [boxes, setBoxes] = React.useState<readonly DetectionMessage[]>([]);
+  const [history, setHistory] = React.useState<readonly DetectionMessage[]>([]);
   const [counters, setCounters] = React.useState<DetectionCounters>(NO_COUNTERS);
   const hubRef = React.useRef<{ reconnect(): void } | null>(null);
 
@@ -78,10 +82,15 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
     const timers = new Set<ReturnType<typeof setTimeout>>();
     setState({ status: 'connecting' });
     setBoxes([]);
+    setHistory([]);
     setCounters(NO_COUNTERS);
 
     const onDetection = (message: DetectionMessage): void => {
       setBoxes((current) => shown(current, message));
+      setHistory((current) => {
+        const keep = frameTime(message) - HISTORY_MS;
+        return [...current.filter((m) => frameTime(m) >= keep), message];
+      });
       setCounters((current) => counted(current, message));
       const timer = setTimeout(() => {
         timers.delete(timer);
@@ -100,7 +109,10 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
             setState(next);
             // Boxes drawn under a stream that is no longer live (an organization switch, a
             // failure, a reconnect) are not current any more.
-            if (next.status !== 'live') setBoxes([]);
+            if (next.status !== 'live') {
+              setBoxes([]);
+              setHistory([]);
+            }
           },
         });
         close = () => subscription.close();
@@ -119,5 +131,5 @@ export function useDetections(deviceId: string, deps: DetectionDeps): LiveDetect
   }, [deviceId, deps]);
 
   const reconnect = React.useCallback(() => hubRef.current?.reconnect(), []);
-  return { state, boxes, counters, reconnect };
+  return { state, boxes, history, counters, reconnect };
 }

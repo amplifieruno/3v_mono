@@ -1,6 +1,6 @@
 import { cn } from '@burojs/ui-shadcn';
 import type * as React from 'react';
-import type { DetectionMessage } from '../../realtime/detections';
+import type { SyncedBox } from './synced-boxes';
 import { BOX_FILL, BOX_STROKE, boxKindOf, boxLabel } from './detection-label';
 import type { LiveCameraT } from './live-camera-texts';
 
@@ -13,7 +13,9 @@ import type { LiveCameraT } from './live-camera-texts';
 export const BOX_FADE = 'animate-[live-box-fade_2s_linear_forwards] motion-reduce:animate-none';
 
 export interface DetectionOverlayProps {
-  readonly boxes: readonly DetectionMessage[];
+  readonly boxes: readonly SyncedBox[];
+  /** The boxes follow the video ({@link useSyncedBoxes}) and carry their own opacity, instead of fading on a timer. */
+  readonly synced?: boolean;
   readonly name: string;
   readonly t: LiveCameraT;
   /** The video fills its box and is cropped (`object-cover`), as on the live wall's tiles. */
@@ -25,10 +27,12 @@ export interface DetectionOverlayProps {
 /**
  * The faces recognised on the video: one box per detection in the frame's own pixels, drawn on
  * an SVG with the frame's size laid over the video (both letterboxed the same way), labelled,
- * and fading out over the last half second of its two ({@link BOX_FADE}).
+ * and fading out: over the last half second of its two ({@link BOX_FADE}), or as the face leaves
+ * the video when the boxes follow it (`synced`).
  */
 export function DetectionOverlay({
   boxes,
+  synced = false,
   name,
   t,
   cover = false,
@@ -58,10 +62,11 @@ export function DetectionOverlay({
         const above = y - font * 0.4;
         return (
           <g
-            key={message.detectionId}
+            key={message.key}
             data-testid="live-box"
             data-kind={kind}
-            className={BOX_FADE}
+            className={synced ? undefined : BOX_FADE}
+            opacity={synced ? message.opacity : undefined}
           >
             <title>
               {t('confidence', { params: { label, confidence: Math.round(message.confidence * 100) } })}

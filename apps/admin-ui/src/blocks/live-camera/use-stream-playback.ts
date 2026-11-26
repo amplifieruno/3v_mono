@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { StreamAttacher } from './hls-player';
+import type { StreamAttacher, StreamPlayback } from './hls-player';
 
 /** Where the stream is: starting, showing frames, or down. */
 export type PlaybackState = 'loading' | 'playing' | 'unavailable';
@@ -17,6 +17,8 @@ export interface StreamPlaybackResult {
   readonly videoRef: React.RefObject<HTMLVideoElement | null>;
   readonly state: PlaybackState;
   readonly retry: () => void;
+  /** The wall-clock time (ms) of the frame on screen, null while unknown ({@link StreamPlayback.clock}). */
+  readonly clock: () => number | null;
 }
 
 /**
@@ -30,6 +32,8 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
   const [state, setState] = React.useState<PlaybackState>('loading');
   const [round, setRound] = React.useState(0);
   const retry = React.useCallback(() => setRound((value) => value + 1), []);
+  const playbackRef = React.useRef<StreamPlayback | null>(null);
+  const clock = React.useCallback(() => playbackRef.current?.clock?.() ?? null, []);
 
   React.useEffect(() => {
     const video = videoRef.current;
@@ -68,8 +72,10 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
     }, STREAM_START_TIMEOUT_MS);
     attach(video, url, { onUnavailable: unavailable }).then(
       (playback) => {
-        if (active) destroy = () => playback.destroy();
-        else playback.destroy();
+        if (active) {
+          playbackRef.current = playback;
+          destroy = () => playback.destroy();
+        } else playback.destroy();
       },
       unavailable,
     );
@@ -81,6 +87,7 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
       video.removeEventListener('timeupdate', progressed);
       video.removeEventListener('waiting', waiting);
       video.removeEventListener('stalled', waiting);
+      playbackRef.current = null;
       destroy?.();
     };
   }, [url, attach, round]);
@@ -91,5 +98,5 @@ export function useStreamPlayback(url: string | null, attach: StreamAttacher): S
     return () => clearTimeout(timer);
   }, [state, retry]);
 
-  return { videoRef, state, retry };
+  return { videoRef, state, retry, clock };
 }

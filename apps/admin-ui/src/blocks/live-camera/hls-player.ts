@@ -7,6 +7,11 @@ export interface StreamEvents {
 /** A started playback; `destroy` detaches it from the video element. */
 export interface StreamPlayback {
   destroy(): void;
+  /**
+   * The wall-clock time (ms) of the frame on screen, from the playlist's program date-time, or
+   * null when the stream does not carry it. Detections are drawn against it.
+   */
+  readonly clock?: () => number | null;
 }
 
 /** Plays `url` (an HLS playlist) in `video`. */
@@ -35,7 +40,7 @@ export const attachHlsStream: StreamAttacher = async (video, url, events) => {
     });
     hls.loadSource(url);
     hls.attachMedia(video);
-    return { destroy: () => hls.destroy() };
+    return { destroy: () => hls.destroy(), clock: () => hls.playingDate?.getTime() ?? null };
   }
   if (video.canPlayType(HLS_MIME)) {
     const onError = (): void => events.onUnavailable();

@@ -449,8 +449,9 @@ services:
       start_period: 180s
     mem_limit: 4g
     # Face authentication answers within 2 s at p95 (SA_6 §3.4) only with several cores: under 1.0 the multi-threaded
-    # ONNX runtime is CFS-throttled (~600 ms per frame, measured in slice 9).
-    cpus: 4.0
+    # ONNX runtime is CFS-throttled (~600 ms per frame, measured in slice 9). Dev gets 6: live recognition on the nine
+    # demo cameras saturates 4 (about one analysed frame per camera per second).
+    cpus: 6.0
 
   stream-server:
     build:
