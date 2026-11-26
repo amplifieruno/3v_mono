@@ -9,6 +9,7 @@ A narrated product video of the ITAP console. Playwright records the live consol
 | Part | Where | What it does |
 |---|---|---|
 | Narration | `src/narration.json` | One line per beat, plus `title` and `outro`, with the voice, its speed and a pronunciation map (`ITAP` is read letter by letter). |
+| Music | `music/compose.py` | Composes the music bed in code (a calm pad, bass and arpeggio in D major, about 206 s) into `public/audio/music.mp3`. It is ours, so there is no licence to track. It plays quietly under the narration. |
 | Voice | `voice/tts.py` | Reads every line with Kokoro-82M (Apache-2.0, runs locally on the CPU) into `public/voice/<id>.wav`. It also writes `manifest.json` with each line's length and the timing of every sentence. The subtitles come from that timing. |
 | Recording | `record/` | One script per chapter (`record/scenes/*.ts`). Each beat is prepared off camera (navigation, tabs, scrolling), then only its visible part is recorded to `public/clips/<scene>-<beat>.mp4`, with `<scene>-<beat>.timeline.json` (focus marks, waits, named shots with element boxes). The page is 1440x810 at 4/3 density, so the 1920x1080 footage carries large, sharp UI text. A beat keeps filming until it covers its narration line. |
 | Storyboard | `src/scenes.ts` | Chapters, their beats and the callout tags. |
@@ -20,28 +21,30 @@ A narrated product video of the ITAP console. Playwright records the live consol
 
 The stack is the dev stack (`make dev-compose`), and the console runs from source (`pnpm --filter admin-ui dev`, http://127.0.0.1:5173).
 
-1. **Voice** (about a minute; downloads the model into `.cache/` the first time):
+1. **Music** (about 30 seconds): `pnpm --filter demo-video music`.
+2. **Voice** (about a minute; downloads the model into `.cache/` the first time):
    `pnpm --filter demo-video voice`. To redo only some lines, run `uv run voice/tts.py overview-dashboard outro` in `apps/demo-video`.
    The model files go into `apps/demo-video/.cache/kokoro/`, from the kokoro-onnx `model-files-v1.0` release: `kokoro-v1.0.onnx` and `voices-v1.0.bin`.
-2. **Re-seed the demo data** during the building's working day, after about 10:00 Moscow time, so that "today" has visitors (about 7 minutes):
+3. **Re-seed the demo data** during the building's working day, after about 10:00 Moscow time, so that "today" has visitors (about 7 minutes):
    `pnpm seed --reset` (from the repo root).
-3. **Start recognition** on the four stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
+4. **Start recognition** on the four stream cameras. Wait about 2 minutes, until known faces are named and the live incident is open:
    `pnpm --filter demo-video cameras`
-4. **Record every beat** (about 6 minutes), soon after step 3, before unknown visitors pile up on the floor plans:
+5. **Record every beat** (about 6 minutes), soon after step 4, before unknown visitors pile up on the floor plans:
    `pnpm --filter demo-video record`. Only some: `pnpm --filter demo-video record places access-trace`.
-5. **Stop recognition:** `pnpm --filter demo-video cameras stop`
-6. **Preview:** `pnpm --filter demo-video studio`
-7. **Render** the master, then a light copy for messengers and a contact sheet to review:
+6. **Stop recognition:** `pnpm --filter demo-video cameras stop`
+7. **Preview:** `pnpm --filter demo-video studio`
+8. **Render** the master, then a light copy for messengers and a contact sheet to review:
    `pnpm --filter demo-video render && pnpm --filter demo-video render:light && pnpm --filter demo-video sheet`
 
-Output goes to `out/`. The folders `out/`, `public/clips/`, `public/voice/` and `.cache/` are git-ignored.
+Output goes to `out/`. The folders `out/`, `public/clips/`, `public/voice/`, `public/audio/` and `.cache/` are git-ignored.
 
 ## Common changes
 
 - **Reword narration:** edit `src/narration.json`, re-voice that line, and re-record its beat if the new line is longer than the footage. If it is shorter, the beat simply ends sooner.
 - **Reword a title or callout:** edit `src/scenes.ts`, then run `pnpm --filter demo-video test`. The test rejects technology words.
 - **Change what a beat shows:** edit `record/scenes/<nn>-<scene>.ts` and re-record that beat. Scripts find records by their visible names, never by id, so they survive a re-seed.
-- **Add music:** put a licensed track at `public/audio/music.mp3`. It plays quietly under the narration and fades in and out. No music ships with the repo.
+- **Change the music:** edit `music/compose.py` (chords, tempo, parts) and run it again, or put any licensed track at `public/audio/music.mp3` instead. It plays under the narration at `MUSIC.volume` in `src/components/Video.tsx` and fades in and out.
+- **New soundtrack only:** after changing music or voice levels, the picture need not be rendered again: render the audio (`npx remotion render src/index.ts ItapDemo out/audio.wav --codec=wav`) and swap it into the master with ffmpeg (`-map 0:v -map 1:a -c:v copy`, loudnorm to -16 LUFS).
 
 ## Licence notes
 

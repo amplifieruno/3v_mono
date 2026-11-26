@@ -22,7 +22,7 @@ export interface VideoProps extends Record<string, unknown> {
 }
 
 /** Music level under the narration, and its fade in and out in seconds. */
-const MUSIC = { volume: 0.14, fade: 2.5 } as const;
+const MUSIC = { volume: 0.11, fade: 2.5 } as const;
 
 /** The whole film: scenes back to back, each as long as its footage and narration. */
 export const Video = ({ scenes, timelines, voice, music }: VideoProps): React.ReactElement => {

@@ -15,7 +15,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "voice": "uv run voice/tts.py"
+    "voice": "uv run voice/tts.py",
+    "music": "uv run music/compose.py"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.534",
